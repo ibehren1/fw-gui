@@ -3,8 +3,8 @@ Description=VyOS Firewall GUI
 After=network.target
 
 [Service]
-User=ibehr
-WorkingDirectory=/home/ibehr/vyos-fw-gui
+User=www-data
+WorkingDirectory=/opt/vyos-fw-gui
 ExecStart=/usr/bin/env python3 app.py
 Restart=always
 
