@@ -6,6 +6,11 @@
         td,
         th {
             border: 2px solid black;
+            padding: 4px;
+        }
+
+        .centerTable {
+            margin: 0px auto;
         }
 
         table {
@@ -15,14 +20,30 @@
         td {
             vertical-align: top;
         }
+
+        header {
+            text-align: center;
+            padding: .1px;
+            background-color: #ff9900;
+            color: aliceblue;
+        }
+
+        footer {
+            text-align: center;
+            padding: .1px;
+            background-color: #ff9900;
+            color: aliceblue;
+        }
     </style>
 </head>
 
-<body style="background-color:#606263;color:aliceblue">
-    <h1>VyOS Firewall Rule Configuration Generator</h1><br><br>
-    Compatible with Vyos 1.4+.
+<header>
+    <h1 style="font-variant: small-caps;">VyOS Firewall Rule Configuration Generator</h1>
+</header>
 
-    <table>
+<body style="background-color:#606263;color:aliceblue">
+    <br><br>
+    <table class=centerTable>
         <form action="/generate_config" , method="post">
             <tr>
                 <th colspan="5" align="left">
@@ -31,6 +52,12 @@
                     </p>
 
                 </th>
+            </tr>
+            <tr>
+                <td colspan="5">
+                    Compatible with Vyos 1.4+.<br>
+                    Complete form and submit to get commands for cp/paste to the VyOS CLI.
+                </td>
             </tr>
             <tr>
                 <td>
@@ -47,7 +74,7 @@
                         Firewall Table
                     </p>
                     <label for="fw_table">Table Name</label>
-                    <input type="text" id="fw_table" name="fw_table"><br>
+                    <input type="text" id="fw_table" name="fw_table" size=30 value="table-name"><br>
                 </td>
             </tr>
             <tr>
@@ -56,14 +83,14 @@
                         Rule Number
                     </p>
                     <label for="rule">Number</label>
-                    <input type="text" id="rule" name="rule" width="4"><br>
+                    <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
                 </td>
                 <td>
                     <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                         Description
                     </p>
                     <label for="rule">Description</label>
-                    <input type="text" id="description" name="description" width="4"><br>
+                    <input type="text" id="description" name="description" size="25" value="Rule description."><br>
                 </td>
                 <td>
                     <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
@@ -97,13 +124,13 @@
                     </p>
 
                     <label for="dest_address">Address or<br>Group Name</label>
-                    <input type="text" id="dest_address" name="dest_address"><br>
+                    <input type="text" id="dest_address" name="dest_address" size="25"><br>
                     <input type="radio" name="dest_address_type" value="address" checked="checked">Address<br>
                     <input type="radio" name="dest_address_type" value="address_group">Address Group<br>
                     <input type="radio" name="dest_address_type" value="network_group">Network Group<br><br>
 
                     <label for="dest_port">Port or<br>Port Group Name</label>
-                    <input type="text" id="dest_port" name="dest_port"><br>
+                    <input type="text" id="dest_port" name="dest_port" size="21"><br>
                     <input type="radio" name="dest_port_type" value="port" checked="checked">Port<br>
                     <input type="radio" name="dest_port_type" value="port_group">Port Group
 
@@ -114,13 +141,13 @@
                     </p>
 
                     <label for="source_address">Address or<br>Group Name</label>
-                    <input type="text" id="source_address" name="source_address"><br>
+                    <input type="text" id="source_address" name="source_address" size="25"><br>
                     <input type="radio" name="source_address_type" value="address" checked="checked">Address<br>
                     <input type="radio" name="source_address_type" value="address_group">Address Group<br>
                     <input type="radio" name="source_address_type" value="network_group">Network Group<br><br>
 
                     <label for="source_port">Port or<br>Port Group Name</label>
-                    <input type="text" id="source_port" name="source_port"><br>
+                    <input type="text" id="source_port" name="source_port" size="21"><br>
                     <input type="radio" name="source_port_type" value="port" checked="checked">Port<br>
                     <input type="radio" name="source_port_type" value="port_group">Port Group
                 </td>
@@ -129,9 +156,11 @@
                     <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                         Protocol
                     </p>
-                    <input type="radio" name="protocol" value="tcp">TCP<br>
-                    <input type="radio" name="protocol" value="udp">UDP<br>
-                    <input type="radio" name="protocol" value="tcp_udp">TCP & UDP
+                    <input type="radio" name="protocol" value="" checked="checked">any<br>
+                    <input type="radio" name="protocol" value="icmp">icmp<br>
+                    <input type="radio" name="protocol" value="tcp">tcp<br>
+                    <input type="radio" name="protocol" value="udp">udp<br>
+                    <input type="radio" name="protocol" value="tcp_udp">tcp_udp
                 </td>
             <tr>
                 <td rowspan="1">
@@ -148,14 +177,18 @@
                     <label for="state_rel">Related</label><br>
                 </td>
             </tr>
-            <br><br>
             <tr>
                 <td align="right" colspan="5">
-                    <input type="submit" value="Generation Rule Configuration">
+                    <input type="submit" value="Generate Rule Configuration">
                 </td>
             </tr>
         </form>
     </table>
+    <br><br>
 </body>
+
+<footer>
+    <p>Copyright 2023 Isaac Behrens</p>
+</footer>
 
 </html>

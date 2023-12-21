@@ -1,12 +1,23 @@
+"""
+    VyOS Firewall Configuration Gui
+
+    Basic Flask app to present web form and process post from it.
+    Generates VyOS firewall CLI configuration commands to create
+    the corresponding firewall rule.
+
+    Copyright 2023 Isaac Behrens
+"""
 from flask import Flask
 from flask import request
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
 
 app = Flask(__name__)
 
 
 @app.route("/")
-def hello():
-    # open file
+def root():
+    # Open and return firewall_form.html
     with open("firewall_form.html", "r") as f:
         return f.read()
 
@@ -36,7 +47,7 @@ def generate_config():
     state_rel = True if "state_rel" in request.form else False
 
     # Create firewall configuration
-    config = []
+    config = ["<html>", '<body style="background-color:#606263;color:aliceblue">']
 
     config.append("#\n# Rule {0}\n#".format(rule))
 
@@ -132,6 +143,8 @@ def generate_config():
 
     # Protocol
     if protocol != "":
+        if ip_version == "ipv6" and protocol == "icmp":
+            protocol = "ipv6-icmp"
         config.append(
             "set firewall {0} name {1} rule {2} protocol {3}".format(
                 ip_version, fw_table, rule, protocol
@@ -170,11 +183,21 @@ def generate_config():
             )
         )
 
+    # Convert list of lines to single string
     message = ""
     for line in config:
         message = message + line.replace("\n", "<br>") + "<br>"
-    return message
+
+    # Create Jinja2 environment and get template
+    environment = Environment(loader=FileSystemLoader("templates/"))
+    template = environment.get_template("firewall_results.html")
+
+    # Render template with message
+    results = template.render(message=message)
+
+    # Return html page from rendered template
+    return results
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port="8080")
