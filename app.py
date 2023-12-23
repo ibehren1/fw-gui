@@ -11,6 +11,8 @@ from flask import Flask
 from flask import request
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
+from waitress import serve
+import os
 
 app = Flask(__name__)
 
@@ -200,4 +202,11 @@ def generate_config():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port="8080")
+    env = os.environ.get("DEV") or False
+
+    # If environment is DEV, then run app in debug mode on port 8080.
+    if env:
+        app.run(debug=True, host="0.0.0.0", port="8080")
+    # Else, run app in production mode on port 8080.
+    else:
+        serve(app, host="0.0.0.0", port=8080)
