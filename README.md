@@ -1,4 +1,6 @@
-# GUI for creating VyOS firewall rule config commands
+# vyos-fw-gui
+
+## GUI for creating VyOS firewall rule configuration commands
 
 The webform generates and displays the syntactically correct configuration commands can then be cp/pasted to the CLI for firewall rule configuration.
 
