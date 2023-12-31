@@ -1,9 +1,9 @@
 """
     VyOS Firewall Configuration Gui
 
-    Basic Flask app to present web form and process post from it.
+    Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create
-    the corresponding firewall rule.
+    the corresponding firewall tables and rules.
 
     Copyright 2023 Isaac Behrens
 """
@@ -12,7 +12,12 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from waitress import serve
 import os
 
-from package.functions import add_rule_to_data, delete_rule_from_data, generate_config
+from package.functions import (
+    add_default_rule,
+    add_rule_to_data,
+    delete_rule_from_data,
+    generate_config,
+)
 
 app = Flask(__name__)
 app.secret_key = "this is the secret key"
@@ -40,6 +45,23 @@ def add_rule_form():
     else:
         return render_template(
             "add_rule_form.html", firewall_name=session["firewall_name"]
+        )
+
+
+@app.route("/default_rule", methods=["POST"])
+def default_rule():
+    add_default_rule(session, request)
+
+    return redirect(url_for("display_rules"))
+
+
+@app.route("/default_rule_form")
+def default_rule_form():
+    if "firewall_name" not in session:
+        return redirect(url_for("login"))
+    else:
+        return render_template(
+            "default_rule_form.html", firewall_name=session["firewall_name"]
         )
 
 
