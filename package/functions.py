@@ -44,8 +44,8 @@ def add_rule_to_data(session, request):
 
     if ip_version not in user_data:
         user_data[ip_version] = {}
-        if fw_table not in user_data[ip_version]:
-            user_data[ip_version][fw_table] = {}
+    if fw_table not in user_data[ip_version]:
+        user_data[ip_version][fw_table] = {}
 
     # Assemble rule dict
     rule = request.form["rule"]
