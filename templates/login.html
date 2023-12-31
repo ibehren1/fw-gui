@@ -1,0 +1,18 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table align=center border="0">
+    <tr>
+        <td align="center">
+            <h2>Please enter a firewall name.</h2>
+            <form action="/login" , method="post">
+                Firewall Name
+                <input type=text name=firewall_name>
+                <p><input type=submit value=Login>
+            </form>
+        </td>
+    </tr>
+
+</table>
+<br><br>
+{% endblock body %}

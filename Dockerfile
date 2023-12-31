@@ -10,9 +10,10 @@ RUN apt-get install -y python3 python3-pip
 
 # Add application files
 ADD app.py             /opt/vyos-fw-gui/app.py
-ADD firewall_form.html /opt/vyos-fw-gui/firewall_form.html
+ADD package/*          /opt/vyos-fw-gui/package/
 ADD requirements.txt   /opt/vyos-fw-gui/requirements.txt
 ADD templates/*        /opt/vyos-fw-gui/templates/
+RUN mkdir              /opt/vyos-fw-gui/data
 
 # Install pip modules
 RUN pip3 install -r /opt/vyos-fw-gui/requirements.txt
