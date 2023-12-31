@@ -149,11 +149,7 @@ def generate_config(session):
                     source_port_type = user_data[ip_version][fw_table][rule][
                         "source_port_type"
                     ]
-                    protocol = (
-                        user_data[ip_version][fw_table][rule]["protocol"]
-                        if "protocol" in rule
-                        else ""
-                    )
+                    protocol = user_data[ip_version][fw_table][rule]["protocol"]
                     state_est = (
                         True
                         if "state_est" in user_data[ip_version][fw_table][rule]
