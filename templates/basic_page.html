@@ -42,23 +42,29 @@
 
     {% if firewall_name %}
     <table align="right" border="0">
+        <tr align="center">
+            <td text-align="center" colspan="4" style="font-variant: small-caps">
+                <p><b>Firewall Name:</b> {{ firewall_name }}</p>
+                </style>
+            </td>
+        </tr>
         <tr>
-            <td text-align="right">
+            <td>
                 <a href="{{ url_for('add_rule_form')}}">
                     <input type="submit" value="Add Rule">
                 </a>
             </td>
-            <td text-align="right">
+            <td>
                 <a href="{{ url_for('delete_rule_form')}}">
                     <input type="submit" value="Delete Rule">
                 </a>
             </td>
-            <td text-align="right">
+            <td>
                 <a href="{{ url_for('display_rules')}}">
                     <input type="submit" value="Display Rules">
                 </a>
             </td>
-            <td text-align="right">
+            <td>
                 <a href="{{ url_for('logout')}}">
                     <input type="submit" value="Logout">
                 </a>
