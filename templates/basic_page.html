@@ -1,0 +1,84 @@
+<html>
+
+<head>
+    <style>
+        /* table,
+        td,
+        th {
+            border: 2px solid black;
+            padding: 4px;
+        }
+
+        .centerTable {
+            margin: 0px auto;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            vertical-align: top;
+        } */
+
+        header {
+            text-align: center;
+            padding: .1px;
+            background-color: #ff9900;
+            color: aliceblue;
+        }
+
+        footer {
+            text-align: center;
+            padding: .1px;
+            background-color: #ff9900;
+            color: aliceblue;
+        }
+    </style>
+</head>
+
+<header>
+    <h1 style="font-variant: small-caps;">VyOS Firewall Rule Configuration Generator</h1>
+
+    {% if firewall_name %}
+    <table align="right" border="0">
+        <tr>
+            <td text-align="right">
+                <a href="{{ url_for('add_rule_form')}}">
+                    <input type="submit" value="Add Rule">
+                </a>
+            </td>
+            <td text-align="right">
+                <a href="{{ url_for('delete_rule_form')}}">
+                    <input type="submit" value="Delete Rule">
+                </a>
+            </td>
+            <td text-align="right">
+                <a href="{{ url_for('display_rules')}}">
+                    <input type="submit" value="Display Rules">
+                </a>
+            </td>
+            <td text-align="right">
+                <a href="{{ url_for('logout')}}">
+                    <input type="submit" value="Logout">
+                </a>
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+
+</header>
+
+<body style="background-color:#606263;color:aliceblue">
+
+    {% block body %}
+    {% endblock body %}
+
+</body>
+
+<footer>
+    <p>vyos-fw-gui v0.1.0</p>
+    <p>Copyright 2023 Isaac Behrens</p>
+</footer>
+
+</html>

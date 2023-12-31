@@ -1,61 +1,19 @@
-<html>
-
-<head>
-    <style>
-        table,
-        td,
-        th {
-            border: 0px solid black;
-            padding: 4px;
-        }
-
-        .centerTable {
-            margin: 0px auto;
-        }
-
-        table {
-            border-collapse: collapse;
-        }
-
-        td {
-            vertical-align: top;
-        }
-
-        header {
-            text-align: center;
-            padding: .1px;
-            background-color: #ff9900;
-            color: aliceblue;
-        }
-
-        footer {
-            text-align: center;
-            padding: .1px;
-            background-color: #ff9900;
-            color: aliceblue;
-        }
-    </style>
-</head>
-
-<header>
-    <h1 style="font-variant: small-caps;">VyOS Firewall Rule Configuration Generator</h1>
-</header>
-
-<body style="background-color:#606263;color:aliceblue">
-
-    <table class=centerTable>
-        <tr>
-            <td>
-                {{message}}
-            </td>
-        </tr>
-    </table>
-    <br><br>
-
-</body>
-
-<footer>
-    <p>Copyright 2023 Isaac Behrens</p>
-</footer>
-
-</html>
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table align="center">
+    <tr>
+        <td align="center">
+            <h2>Firewall Configuration</h2>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            {% autoescape false %}
+            {{message}}
+            {% endautoescape %}
+        </td>
+    </tr>
+</table>
+<br><br>
+{% endblock body %}
