@@ -22,17 +22,22 @@
         } */
 
         header {
+            margin: auto;
             text-align: center;
             padding: .1px;
-            background-color: #ff9900;
+            width: 75%;
+            align-content: center;
             color: aliceblue;
+            background-image: linear-gradient(to right, #FFBC13, #FF9400);
         }
 
         footer {
+            margin: auto;
             text-align: center;
             padding: .1px;
-            background-color: #ff9900;
+            width: 75%;
             color: aliceblue;
+            background-image: linear-gradient(to right, #FFBC13, #FF9400);
         }
     </style>
 </head>
@@ -44,11 +49,18 @@
     <table align="right" border="0">
         <tr align="center">
             <td text-align="center" colspan="4" style="font-variant: small-caps">
-                <p><b>Firewall Name:</b> {{ firewall_name }}</p>
+                <p><b>Firewall Name:</b>
+                    <font size="+2">{{ firewall_name }}</font>
+                </p>
                 </style>
             </td>
         </tr>
         <tr>
+            <td>
+                <a href="{{ url_for('display_rules')}}">
+                    <input type="submit" value="Display Rules">
+                </a>
+            </td>
             <td>
                 <a href="{{ url_for('add_rule_form')}}">
                     <input type="submit" value="Add Rule">
@@ -60,8 +72,8 @@
                 </a>
             </td>
             <td>
-                <a href="{{ url_for('display_rules')}}">
-                    <input type="submit" value="Display Rules">
+                <a href="{{ url_for('default_rule_form')}}">
+                    <input type="submit" value="Add Default Table Action">
                 </a>
             </td>
             <td>
@@ -83,7 +95,7 @@
 </body>
 
 <footer>
-    <p>vyos-fw-gui v0.1.0</p>
+    <p>vyos-fw-gui v0.2.0</p>
     <p>Copyright 2023 Isaac Behrens</p>
 </footer>
 

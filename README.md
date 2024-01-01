@@ -5,11 +5,14 @@
 The webform generates and displays the syntactically correct configuration commands can then be cp/pasted to the CLI for firewall rule configuration.
 
 Source code: [https://github.com/ibehren1/vyos-fw-gui]( https://github.com/ibehren1/vyos-fw-gui)  
-Working demo:  [https://vyosfwgui.behrenshome.com](https://vyosfwgui.behrenshome.com)
+Working demo:  [https://vyosfwgui.com](https://vyosfwgui.com)
 
 ## Interface
 
-![image](./images/vyos-fw-gui_interface.png)
+![image](./images/vyos-fw-gui_interface_1.png)
+![image](./images/vyos-fw-gui_interface_2.png)
+![image](./images/vyos-fw-gui_interface_3.png)
+![image](./images/vyos-fw-gui_interface_4.png)
 
 ## Sample Output
 
@@ -19,17 +22,42 @@ Working demo:  [https://vyosfwgui.behrenshome.com](https://vyosfwgui.behrenshome
 #
 
 #
-# Table: table-name
+# Table: WAN_IN
 #
+set firewall ipv4 name WAN_IN default-action 'drop'
+set firewall ipv4 name WAN_IN description 'WAN Inbound to LAN'
+
 
 # Rule 10
-set firewall ipv4 name table-name rule 10 description 'Allow DNS.'
-set firewall ipv4 name table-name rule 10 action accept
-set firewall ipv4 name table-name rule 10 destination address 10.1.1.10
-set firewall ipv4 name table-name rule 10 destination port 53
-set firewall ipv4 name table-name rule 10 protocol tcp_udp
-set firewall ipv4 name table-name rule 10 log
-set firewall ipv4 name table-name rule 10 state 'new'
+set firewall ipv4 name WAN_IN rule 10 description 'Allow established/related.'
+set firewall ipv4 name WAN_IN rule 10 action 'accept'
+set firewall ipv4 name WAN_IN rule 10 state 'established'
+set firewall ipv4 name WAN_IN rule 10 state 'related'
+
+# Rule 20
+set firewall ipv4 name WAN_IN rule 20 description 'Drop invalid.'
+set firewall ipv4 name WAN_IN rule 20 action 'drop'
+set firewall ipv4 name WAN_IN rule 20 log
+set firewall ipv4 name WAN_IN rule 20 state 'invalid'
+
+#
+# Table: WAN_LOCAL
+#
+set firewall ipv4 name WAN_LOCAL default-action 'drop'
+set firewall ipv4 name WAN_LOCAL description 'WAN inbound to localhost.'
+
+
+# Rule 10
+set firewall ipv4 name WAN_LOCAL rule 10 description 'Allow established/related.'
+set firewall ipv4 name WAN_LOCAL rule 10 action 'accept'
+set firewall ipv4 name WAN_LOCAL rule 10 state 'established'
+set firewall ipv4 name WAN_LOCAL rule 10 state 'related'
+
+# Rule 20
+set firewall ipv4 name WAN_LOCAL rule 20 description 'Drop invalid.'
+set firewall ipv4 name WAN_LOCAL rule 20 action 'drop'
+set firewall ipv4 name WAN_LOCAL rule 20 log
+set firewall ipv4 name WAN_LOCAL rule 20 state 'invalid'
 ```
 
 ## Docker Run
