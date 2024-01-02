@@ -1,0 +1,57 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table align=center valign=top border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+    <form action="/add_group" , method="post">
+        <tr>
+            <th colspan="5" align="left">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
+                    Add Firewall Group
+                </p>
+
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    IP Version
+                </p>
+
+                <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
+                <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
+
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Group Name
+                </p>
+                <input type="text" id="group_name" name="group_name" size=40 value=""><br>
+                No spaces. Spaces will be removed.
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Group Type
+                </p>
+                <input type="radio" name="group_type" value="address-group" checked="checked">Address Group<br>
+                <input type="radio" name="group_type" value="network-group">Network Group<br>
+                <input type="radio" name="group_type" value="port-group">Port Group<br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Group Value
+                </p>
+                <input type="text" id="group_value" name="group_value" size=40 value=""><br>
+                Multiple values should be comma separated.
+            </td>
+        <tr>
+            <td align="right" colspan="5">
+                <input type="submit" value="Add Group">
+            </td>
+        </tr>
+        </tr>
+    </form>
+</table>
+<br><br>
+{% endblock body %}
