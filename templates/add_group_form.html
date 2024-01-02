@@ -23,14 +23,13 @@
             </td>
             <td>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Group Name
+                    Group Description
                 </p>
-                <input type="text" id="group_name" name="group_name" size=40 value=""><br>
-                No spaces. Spaces will be removed.
+                <input type="text" id="group_desc" name="group_desc" size=40 value=""><br>
             </td>
         </tr>
         <tr>
-            <td>
+            <td rowspan="2">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Group Type
                 </p>
@@ -40,11 +39,20 @@
             </td>
             <td>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Group Name
+                </p>
+                <input type="text" id="group_name" name="group_name" size=40 value=""><br>
+                No spaces. Spaces will be removed.
+            </td>
+        <tr>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Group Value
                 </p>
                 <input type="text" id="group_value" name="group_value" size=40 value=""><br>
                 Multiple values should be comma separated.
             </td>
+        </tr>
         <tr>
             <td align="right" colspan="5">
                 <input type="submit" value="Add Group">
