@@ -5,7 +5,7 @@
     Generates VyOS firewall CLI configuration commands to create
     the corresponding firewall tables and rules.
 
-    Copyright 2023 Isaac Behrens
+    Copyright 2024 Isaac Behrens
 """
 
 from flask import flash, Flask, redirect, render_template, request, session, url_for
