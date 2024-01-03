@@ -1,9 +1,21 @@
 #!/bin/bash
 
-# Build images for ARM64 and AMD64
-docker build -t ibehren1/vyos-fw-gui:arm64 .
-docker build --platform=linux/amd64 -t ibehren1/vyos-fw-gui:amd64 .
+# Source the .env to set the version number
+. .env
 
-# Push images to Docker Hub
-docker push ibehren1/vyos-fw-gui:arm64
-docker push ibehren1/vyos-fw-gui:amd64
+# Set the Docker Hub username and password
+docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
+
+# Build images for ARM64 and AMD64
+docker buildx create \
+    --use \
+    --platform=linux/arm64,linux/amd64 \
+    --name multi-platform-builder
+
+docker buildx inspect \
+    --bootstrap
+
+docker buildx build \
+    --platform=linux/arm64,linux/amd64 \
+    --push \
+    --tag ibehren1/vyos-fw-gui:${VERSION} .

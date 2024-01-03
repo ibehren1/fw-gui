@@ -1,5 +1,4 @@
-
-FROM ubuntu
+FROM ubuntu:22.04
 MAINTAINER isaac@behrenshome.com
 
 RUN apt-get update
@@ -7,6 +6,7 @@ RUN apt-get dist-upgrade -y
 
 # Install app requirements
 RUN apt-get install -y python3 python3-pip
+RUN pip3 install --upgrade pip
 
 # Add application files
 ADD app.py             /opt/vyos-fw-gui/app.py

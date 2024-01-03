@@ -1,0 +1,40 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+    <form action="/add_table" , method="post">
+        <tr>
+            <th colspan="5" align="left">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
+                    Add Firewall Table
+                </p>
+
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    IP Version
+                </p>
+
+                <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
+                <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
+
+            </td>
+            <td colspan="3">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Firewall Table
+                </p>
+                <label for="fw_table">Table Name</label>
+                <input type="text" id="fw_table" name="fw_table" size=30 value="table-name"><br>
+            </td>
+        </tr>
+        <tr>
+            <td align="right" colspan="5">
+                <input type="submit" value="Add Table">
+            </td>
+        </tr>
+    </form>
+</table>
+<br><br>
+{% endblock body %}
