@@ -12,29 +12,21 @@
             </th>
         </tr>
         <tr>
-            <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    IP Version
-                </p>
-
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
-
-            </td>
             <td colspan="3">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Firewall Table
+                    Rule
                 </p>
-                <label for="fw_table">Table Name</label>
-                <input type="text" id="fw_table" name="fw_table" size=30 value="table-name"><br>
+                Choose rule to delete.<br>
+                <label for="fw_table"></label>
+                <select name="rule" id="rule">
+                    {% for rule in rule_list %}
+                    <option value='{{rule[0]}},{{rule[1]}},{{rule[2]}}'>
+                        {{rule[0]}}, {{rule[1]}}, rule {{rule[2]}} ({{rule[3]}})
+                    </option>
+                    {% endfor %}
+                </select>
             </td>
-            <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Rule Number
-                </p>
-                <label for="rule">Number</label>
-                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
-            </td>
+        </tr>
         <tr>
             <td align="right" colspan="5">
                 <input type="submit" value="Delete Rule">

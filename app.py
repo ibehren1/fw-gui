@@ -16,7 +16,10 @@ from package.functions import (
     add_default_rule,
     add_group_to_data,
     add_rule_to_data,
+    add_table_to_data,
     assemble_list_of_groups,
+    assemble_list_of_rules,
+    assemble_list_of_tables,
     delete_group_from_data,
     delete_rule_from_data,
     generate_config,
@@ -32,13 +35,6 @@ def index():
         return redirect(url_for("display_config"))
     else:
         return redirect(url_for("login"))
-
-
-@app.route("/add_rule", methods=["POST"])
-def add_rule():
-    add_rule_to_data(session, request)
-
-    return redirect(url_for("display_config"))
 
 
 @app.route("/add_group", methods=["POST"])
@@ -59,13 +55,43 @@ def add_group_form():
         )
 
 
+@app.route("/add_rule", methods=["POST"])
+def add_rule():
+    add_rule_to_data(session, request)
+
+    return redirect(url_for("display_config"))
+
+
 @app.route("/add_rule_form")
 def add_rule_form():
     if "firewall_name" not in session:
         return redirect(url_for("login"))
     else:
+        table_list = assemble_list_of_tables(session)
+        if table_list == []:
+            return redirect(url_for("add_table_form"))
+
         return render_template(
             "add_rule_form.html",
+            firewall_name=session["firewall_name"],
+            table_list=table_list,
+        )
+
+
+@app.route("/add_table", methods=["POST"])
+def add_table():
+    add_table_to_data(session, request)
+
+    return redirect(url_for("display_config"))
+
+
+@app.route("/add_table_form")
+def add_table_form():
+    if "firewall_name" not in session:
+        return redirect(url_for("login"))
+    else:
+        return render_template(
+            "add_table_form.html",
             firewall_name=session["firewall_name"],
         )
 
@@ -82,8 +108,16 @@ def default_rule_form():
     if "firewall_name" not in session:
         return redirect(url_for("login"))
     else:
+        table_list = assemble_list_of_tables(session)
+
+        # If there are no tables, just display the config
+        if table_list == []:
+            return redirect(url_for("display_config"))
+
         return render_template(
-            "default_rule_form.html", firewall_name=session["firewall_name"]
+            "default_rule_form.html",
+            firewall_name=session["firewall_name"],
+            table_list=table_list,
         )
 
 
@@ -124,8 +158,16 @@ def delete_rule_form():
     if "firewall_name" not in session:
         return redirect(url_for("login"))
     else:
+        rule_list = assemble_list_of_rules(session)
+
+        # If there are no rules, just display the config
+        if rule_list == []:
+            return redirect(url_for("display_config"))
+
         return render_template(
-            "delete_rule_form.html", firewall_name=session["firewall_name"]
+            "delete_rule_form.html",
+            firewall_name=session["firewall_name"],
+            rule_list=rule_list,
         )
 
 

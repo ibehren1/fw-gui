@@ -18,21 +18,18 @@
             </td>
         </tr>
         <tr>
-            <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    IP Version
-                </p>
-
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
-
-            </td>
-            <td colspan="3">
+            <td colspan="4">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Firewall Table
                 </p>
                 <label for="fw_table">Table Name</label>
-                <input type="text" id="fw_table" name="fw_table" size=30 value="table-name"><br>
+                <select name="fw_table" id="fw_table">
+                    {% for table in table_list %}
+                    <option value='{{table[0]}},{{table[1]}}'>
+                        {{table[0]}}: {{table[1]}}
+                    </option>
+                    {% endfor %}
+                </select><br>
             </td>
         </tr>
         <tr>

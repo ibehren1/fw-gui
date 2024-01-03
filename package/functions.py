@@ -10,22 +10,26 @@ def add_default_rule(session, request):
     user_data = read_user_data_file(session["firewall_name"])
 
     # Set local vars from posted form data
-    ip_version = request.form["ip_version"]
-    fw_table = request.form["fw_table"]
+    table = request.form["fw_table"].split(",")
+    ip_version = table[0]
+    fw_table = table[1]
     description = request.form["description"]
     default_action = request.form["default_action"]
 
     # Check and create higher level data structure if it does not exist
     if ip_version not in user_data:
         user_data[ip_version] = {}
-    if fw_table not in user_data[ip_version]:
-        user_data[ip_version][fw_table] = {}
-    if "default" not in user_data[ip_version][fw_table]:
-        user_data[ip_version][fw_table]["default"] = {}
+        user_data[ip_version]["tables"] = {}
+    if fw_table not in user_data[ip_version]["tables"]:
+        user_data[ip_version]["tables"][fw_table] = {}
+    if "default" not in user_data[ip_version]["tables"][fw_table]:
+        user_data[ip_version]["tables"][fw_table]["default"] = {}
 
     # Assign values into data structure
-    user_data[ip_version][fw_table]["default"]["description"] = description
-    user_data[ip_version][fw_table]["default"]["default_action"] = default_action
+    user_data[ip_version]["tables"][fw_table]["default"]["description"] = description
+    user_data[ip_version]["tables"][fw_table]["default"][
+        "default_action"
+    ] = default_action
 
     # Write user_data to file
     write_user_data_file(session["firewall_name"], user_data)
@@ -79,16 +83,18 @@ def add_rule_to_data(session, request):
     user_data = read_user_data_file(session["firewall_name"])
 
     # Set local vars from posted form data
-    ip_version = request.form["ip_version"]
-    fw_table = request.form["fw_table"]
+    table = request.form["fw_table"].split(",")
+    ip_version = table[0]
+    fw_table = table[1]
 
     # Check and create higher level data structure if it does not exist
     if ip_version not in user_data:
         user_data[ip_version] = {}
-    if fw_table not in user_data[ip_version]:
-        user_data[ip_version][fw_table] = {}
-    if "rule-order" not in user_data[ip_version][fw_table]:
-        user_data[ip_version][fw_table]["rule-order"] = []
+        user_data[ip_version]["tables"] = {}
+    if fw_table not in user_data[ip_version]["tables"]:
+        user_data[ip_version]["tables"][fw_table] = {}
+    if "rule-order" not in user_data[ip_version]["tables"][fw_table]:
+        user_data[ip_version]["tables"][fw_table]["rule-order"] = []
 
     # Assemble rule dict
     rule = request.form["rule"]
@@ -120,7 +126,7 @@ def add_rule_to_data(session, request):
         rule_dict["state_rel"] = True
 
     # Assign value to data structure
-    user_data[ip_version][fw_table][rule] = rule_dict
+    user_data[ip_version]["tables"][fw_table][rule] = rule_dict
 
     # Add rule to rule-order in user data
     if rule not in user_data[ip_version]["tables"][fw_table]["rule-order"]:
@@ -137,6 +143,30 @@ def add_rule_to_data(session, request):
     write_user_data_file(session["firewall_name"], user_data)
 
     flash(f"Rule {rule} added to table {ip_version}/{fw_table}.", "success")
+
+    return
+
+
+def add_table_to_data(session, request):
+    # Get user's data
+    user_data = read_user_data_file(session["firewall_name"])
+
+    # Set local vars from posted form data
+    ip_version = request.form["ip_version"]
+    fw_table = request.form["fw_table"]
+
+    # Check and create higher level data structure if it does not exist
+    if ip_version not in user_data:
+        user_data[ip_version] = {}
+        user_data[ip_version]["tables"] = {}
+    if fw_table not in user_data[ip_version]["tables"]:
+        user_data[ip_version]["tables"][fw_table] = {}
+        user_data[ip_version]["tables"][fw_table]["rule-order"] = []
+
+    # Write user_data to file
+    write_user_data_file(session["firewall_name"], user_data)
+
+    flash(f"Table {ip_version}/{fw_table} added.", "success")
 
     return
 
@@ -161,6 +191,58 @@ def assemble_list_of_groups(session):
         flash(f"There are no groups defined.", "danger")
 
     return group_list
+
+
+def assemble_list_of_rules(session):
+    # Get user's data
+    user_data = read_user_data_file(session["firewall_name"])
+
+    # Create list of defined rules
+    rule_list = []
+    try:
+        for ip_version in ["ipv4", "ipv6"]:
+            if ip_version in user_data:
+                for fw_table in user_data[ip_version]["tables"]:
+                    for rule in user_data[ip_version]["tables"][fw_table]["rule-order"]:
+                        rule_list.append(
+                            [
+                                ip_version,
+                                fw_table,
+                                rule,
+                                user_data[ip_version]["tables"][fw_table][rule][
+                                    "description"
+                                ],
+                            ]
+                        )
+    except:
+        pass
+
+    # If there are no rules, flash message
+    if rule_list == []:
+        flash(f"There are no rules defined.", "danger")
+
+    return rule_list
+
+
+def assemble_list_of_tables(session):
+    # Get user's data
+    user_data = read_user_data_file(session["firewall_name"])
+
+    # Create list of defined tables
+    table_list = []
+    try:
+        for ip_version in ["ipv4", "ipv6"]:
+            if ip_version in user_data:
+                for fw_table in user_data[ip_version]["tables"]:
+                    table_list.append([ip_version, fw_table])
+    except:
+        pass
+
+    # If there are no tables, flash message
+    if table_list == []:
+        flash(f"There are no tables defined.", "danger")
+
+    return table_list
 
 
 def delete_group_from_data(session, request):
@@ -200,9 +282,10 @@ def delete_rule_from_data(session, request):
     user_data = read_user_data_file(session["firewall_name"])
 
     # Set local vars from posted form data
-    ip_version = request.form["ip_version"]
-    fw_table = request.form["fw_table"]
-    rule = request.form["rule"]
+    rule = request.form["rule"].split(",")
+    ip_version = rule[0]
+    fw_table = rule[1]
+    rule = rule[2]
 
     # Delete rule from data
     try:
@@ -219,7 +302,7 @@ def delete_rule_from_data(session, request):
     # Clean-up data
     try:
         if len(user_data[ip_version]["tables"][fw_table]["rule-order"]) == 0:
-            del user_data[ip_version][fw_table]
+            del user_data[ip_version]["tables"][fw_table]
         if len(user_data[ip_version]) == 0:
             del user_data[ip_version]
     except:
@@ -239,7 +322,9 @@ def generate_config(session):
     config = []
 
     if user_data == {}:
-        config.append("Empty rule set.  Use buttons on the right to add some rules.")
+        config.append(
+            "Empty rule set.  Start by adding a Table using the button on the right."
+        )
 
     # Work through each IP Version, Table and Rule adding to config
     for ip_version in user_data:
