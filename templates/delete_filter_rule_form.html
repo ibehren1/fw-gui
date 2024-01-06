@@ -6,7 +6,7 @@
         <tr>
             <th colspan="5" align="left">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
-                    Delete Firewall Rule
+                    Delete Filter Rule
                 </p>
 
             </th>
@@ -17,7 +17,7 @@
                     Rule
                 </p>
                 Choose rule to delete.<br>
-                <label for="fw_table"></label>
+                <label for="filter"></label>
                 <select name="rule" id="rule">
                     {% for rule in rule_list %}
                     <option value='{{rule[0]}},{{rule[1]}},{{rule[2]}}'>

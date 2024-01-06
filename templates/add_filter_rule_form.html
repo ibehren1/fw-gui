@@ -63,14 +63,13 @@
             </td>
         </tr>
         <tr>
-            <td rowspan="2">
+            <td>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Action
                 </p>
-                <input type="radio" name="action" value="jump" checked="checked">accept<br>
+                <input type="radio" name="action" value="jump" checked="checked">jump<br>
             </td>
-
-            <td rowspan="2">
+            <td>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Jump Target
                 </p>
@@ -82,6 +81,17 @@
                     </option>
                     {% endfor %}
                 </select><br>
+            </td>
+            <td colspan="2">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Interface
+                </p>
+                <label for="rule">Interface Name</label>
+                <input type="text" id="interface" name="interface" maxlength="10" size="6" value="ethX"><br>
+                <label for="direction">Direction</label>
+                <select name="direction" id="direction">
+                    <option value='inbound'>Inbound</option>
+                    <option value='outbound'>Outbound</option>
             </td>
         </tr>
         <tr>

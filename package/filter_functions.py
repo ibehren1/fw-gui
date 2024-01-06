@@ -29,6 +29,8 @@ def add_filter_rule_to_data(session, request):
     if "log" in request.form:
         rule_dict["log"] = True
     rule_dict["action"] = request.form["action"]
+    rule_dict["interface"] = request.form["interface"]
+    rule_dict["direction"] = request.form["direction"]
 
     # Check and create higher level data structure if it does not exist
     user_data[ip_version]["filters"][filter]["rules"] = {}
@@ -109,5 +111,71 @@ def assemble_list_of_filters(session):
     return filter_list
 
 
+def assemble_list_of_filter_rules(session):
+    # Get user's data
+    user_data = read_user_data_file(session["firewall_name"])
+
+    # Create list of defined rules
+    rule_list = []
+    try:
+        for ip_version in ["ipv4", "ipv6"]:
+            if ip_version in user_data:
+                for filter in user_data[ip_version]["filters"]:
+                    for rule in user_data[ip_version]["filters"][filter]["rule-order"]:
+                        rule_list.append(
+                            [
+                                ip_version,
+                                filter,
+                                rule,
+                                user_data[ip_version]["filters"][filter]["rules"][rule][
+                                    "description"
+                                ],
+                            ]
+                        )
+    except:
+        pass
+
+    # If there are no rules, flash message
+    if rule_list == []:
+        flash(f"There are no filter rules defined.", "danger")
+
+    return rule_list
+
+
 def delete_filter_rule_from_data(session, request):
+    # Get user's data
+    user_data = read_user_data_file(session["firewall_name"])
+
+    # Set local vars from posted form data
+    rule = request.form["rule"].split(",")
+    ip_version = rule[0]
+    filter = rule[1]
+    rule = rule[2]
+
+    # Delete rule from data
+    try:
+        del user_data[ip_version]["filters"][filter]["rules"][rule]
+        user_data[ip_version]["filters"][filter]["rule-order"].remove(rule)
+        flash(f"Deleted rule {rule} from filter {ip_version}/{filter}.", "warning")
+    except:
+        flash(
+            f"Failed to delete rule {rule} from filter {ip_version}/{filter}.",
+            "danger",
+        )
+        pass
+
+    # Clean-up data
+    try:
+        if len(user_data[ip_version]["filters"][filter]["rule-order"]) == 0:
+            del user_data[ip_version]["filters"][filter]
+        if len(user_data[ip_version]["filters"]) == 0:
+            del user_data[ip_version]["filters"]
+        if len(user_data[ip_version]) == 0:
+            del user_data[ip_version]
+    except:
+        pass
+
+    # Write user's data to file
+    write_user_data_file(session["firewall_name"], user_data)
+
     return

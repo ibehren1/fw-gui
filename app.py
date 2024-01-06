@@ -10,14 +10,11 @@
 
 from flask import flash, Flask, redirect, render_template, request, session, url_for
 from waitress import serve
-import os
-
-# from package.data_file_functions import read_user_data_file, write_user_data_file
-
 from package.filter_functions import (
     add_filter_rule_to_data,
     add_filter_to_data,
     assemble_list_of_filters,
+    assemble_list_of_filter_rules,
     delete_filter_rule_from_data,
 )
 from package.generate_config import generate_config
@@ -27,13 +24,13 @@ from package.group_funtions import (
     delete_group_from_data,
 )
 from package.table_functions import (
-    add_default_rule,
     add_rule_to_data,
     add_table_to_data,
     assemble_list_of_rules,
     assemble_list_of_tables,
     delete_rule_from_data,
 )
+import os
 
 app = Flask(__name__)
 app.secret_key = "this is the secret key"
@@ -156,31 +153,6 @@ def add_table_form():
         )
 
 
-@app.route("/default_rule", methods=["POST"])
-def default_rule():
-    add_default_rule(session, request)
-
-    return redirect(url_for("display_config"))
-
-
-@app.route("/default_rule_form")
-def default_rule_form():
-    if "firewall_name" not in session:
-        return redirect(url_for("login"))
-    else:
-        table_list = assemble_list_of_tables(session)
-
-        # If there are no tables, just display the config
-        if table_list == []:
-            return redirect(url_for("display_config"))
-
-        return render_template(
-            "default_rule_form.html",
-            firewall_name=session["firewall_name"],
-            table_list=table_list,
-        )
-
-
 @app.route("/delete_rule", methods=["POST"])
 def delete_rule():
     delete_rule_from_data(session, request)
@@ -265,7 +237,7 @@ def delete_filter_rule_form():
     if "firewall_name" not in session:
         return redirect(url_for("login"))
     else:
-        rule_list = assemble_list_of_rules(session)
+        rule_list = assemble_list_of_filter_rules(session)
 
         # If there are no rules, just display the config
         if rule_list == []:

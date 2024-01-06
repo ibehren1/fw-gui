@@ -27,6 +27,19 @@
                 </p>
                 <label for="fw_table">Table Name</label>
                 <input type="text" id="fw_table" name="fw_table" size=30 value="table-name"><br>
+                <label for="description">Table Description</label>
+                <input type="text" id="description" name="description" size=30 value=""><br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Rule Action
+                </p>
+                <input type="radio" name="default_action" value="accept">accept<br>
+                <input type="radio" name="default_action" value="continue">continue<br>
+                <input type="radio" name="default_action" value="drop" checked="checked">drop<br>
+                <input type="radio" name="default_action" value="jump">jump<br>
+                <input type="radio" name="default_action" value="reject">reject<br>
+                <input type="radio" name="default_action" value="return">return<br>
             </td>
         </tr>
         <tr>
