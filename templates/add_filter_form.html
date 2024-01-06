@@ -1,0 +1,59 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+    <form action="/add_filter" , method="post">
+        <tr>
+            <th colspan="5" align="left">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
+                    Add Filter
+                </p>
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    IP Version
+                </p>
+                <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
+                <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Filter Type
+                </p>
+                <input type="radio" name="type" value="input" checked="checked">input<br>
+                <input type="radio" name="type" value="forward">forward<br>
+                <input type="radio" name="type" value="output">output<br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Description
+                </p>
+                <label for="description"></label>
+                <input type="text" id="description" name="description" size=30 value=""><br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Default Action
+                </p>
+                <input type="radio" name="default_action" value="accept">accept<br>
+                <input type="radio" name="default_action" value="drop" checked="checked">drop<br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Logging
+                </p>
+                <input type="checkbox" id="logging" name="logging" value="True">
+                <label for="logging">Enable</label>
+            </td>
+        </tr>
+        <tr>
+            <td align="right" colspan="5">
+                <input type="submit" value="Add Filter">
+            </td>
+        </tr>
+    </form>
+</table>
+<br><br>
+{% endblock body %}

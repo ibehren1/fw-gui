@@ -113,10 +113,30 @@
             <td align="center" colspan="2">
                 <br> <br>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Rules
+                    Tables
                 </p>
             </td>
         </tr>
+        <tr>
+            <td>
+                <a href="{{ url_for('add_table_form')}}">
+                    <input type="submit" value="Add Table" style="width: 100%">
+                </a>
+            </td>
+            <td>
+                <a href="{{ url_for('default_rule_form')}}">
+                    <input type="submit" value="Default Table Action" style="width: 100%">
+                </a>
+            </td>
+        </tr>
+        <!-- <tr>
+            <td align="center" colspan="2">
+                <br> <br>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Rules
+                </p>
+            </td>
+        </tr> -->
         <tr>
             <td>
                 <a href="{{ url_for('add_rule_form')}}">
@@ -133,19 +153,26 @@
             <td align="center" colspan="2">
                 <br> <br>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Tables
+                    Filters
                 </p>
             </td>
         </tr>
         <tr>
+            <td colspan="2">
+                <a href="{{ url_for('add_filter_form')}}">
+                    <input type="submit" value="Add Filter" style="width: 100%">
+                </a>
+            </td>
+        </tr>
+        <tr>
             <td>
-                <a href="{{ url_for('default_rule_form')}}">
-                    <input type="submit" value="Add Default Table Action" style="width: 100%">
+                <a href="{{ url_for('add_filter_rule_form')}}">
+                    <input type="submit" value="Add Rule" style="width: 100%">
                 </a>
             </td>
             <td>
-                <a href="{{ url_for('add_table_form')}}">
-                    <input type="submit" value="Add Table" style="width: 100%">
+                <a href="{{ url_for('delete_filter_rule_form')}}">
+                    <input type="submit" value="Delete Rule" style="width: 100%">
                 </a>
             </td>
         </tr>
@@ -162,7 +189,7 @@
 </body>
 
 <footer>
-    <p>vyos-fw-gui v0.3.0</p>
+    <p>vyos-fw-gui v0.4.0</p>
     <p>Copyright 2024 Isaac Behrens</p>
 </footer>
 
