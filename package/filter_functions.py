@@ -26,7 +26,7 @@ def add_filter_rule_to_data(session, request):
     rule_dict["description"] = request.form["description"]
     if "rule_disable" in request.form:
         rule_dict["rule_disable"] = True
-    if "log" in request.form:
+    if "logging" in request.form:
         rule_dict["log"] = True
     rule_dict["action"] = request.form["action"]
     rule_dict["interface"] = request.form["interface"]

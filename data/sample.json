@@ -105,6 +105,41 @@
                     "22"
                 ]
             }
+        },
+        "filters": {
+            "input": {
+                "rule-order": [],
+                "description": "Input Filter",
+                "default-action": "drop",
+                "log": "True"
+            },
+            "forward": {
+                "rule-order": [
+                    "10"
+                ],
+                "description": "Forward Filter",
+                "default-action": "drop",
+                "log": "True",
+                "rules": {
+                    "10": {
+                        "ip_version": "ipv4",
+                        "filter": "forward",
+                        "fw_table": "WAN_IN",
+                        "description": "Rule description.",
+                        "rule_disable": true,
+                        "log": true,
+                        "action": "jump",
+                        "interface": "eth0",
+                        "direction": "inbound"
+                    }
+                }
+            },
+            "output": {
+                "rule-order": [],
+                "description": "Output Filter",
+                "default-action": "drop",
+                "log": "True"
+            }
         }
     },
     "ipv6": {
@@ -216,6 +251,13 @@
                     "source_port_type": "port",
                     "protocol": "icmp"
                 }
+            },
+            "Test": {
+                "rule-order": [],
+                "default": {
+                    "description": "Description",
+                    "default_action": "drop"
+                }
             }
         },
         "groups": {
@@ -239,6 +281,54 @@
                 "group_value": [
                     "22"
                 ]
+            }
+        },
+        "filters": {
+            "input": {
+                "rule-order": [
+                    "10"
+                ],
+                "description": "Input Filter",
+                "default-action": "drop",
+                "log": "True",
+                "rules": {
+                    "10": {
+                        "ip_version": "ipv6",
+                        "filter": "input",
+                        "fw_table": "WAN_IN",
+                        "description": "WAN IN",
+                        "rule_disable": true,
+                        "action": "jump",
+                        "interface": "eth0",
+                        "direction": "inbound"
+                    }
+                }
+            },
+            "forward": {
+                "rule-order": [
+                    "10"
+                ],
+                "description": "Forward Filter",
+                "default-action": "drop",
+                "log": "True",
+                "rules": {
+                    "10": {
+                        "ip_version": "ipv6",
+                        "filter": "forward",
+                        "fw_table": "WAN_LOCAL",
+                        "description": "WAN LOCAL",
+                        "rule_disable": true,
+                        "action": "jump",
+                        "interface": "eth0",
+                        "direction": "inbound"
+                    }
+                }
+            },
+            "output": {
+                "rule-order": [],
+                "description": "Output Filter",
+                "default-action": "drop",
+                "log": "True"
             }
         }
     }

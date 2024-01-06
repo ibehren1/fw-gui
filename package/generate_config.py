@@ -18,11 +18,12 @@ def generate_config(session):
 
     # Work through each IP Version, Table and Rule adding to config
     for ip_version in user_data:
-        config.append(f"#\n# {ip_version}\n#\n")
+        config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
 
         if "groups" in user_data[ip_version]:
             config.append(f"#\n# Groups\n#")
             for group_name in user_data[ip_version]["groups"]:
+                # Get Values
                 group_desc = user_data[ip_version]["groups"][group_name]["group_desc"]
                 group_type = user_data[ip_version]["groups"][group_name]["group_type"]
                 group_value = user_data[ip_version]["groups"][group_name]["group_value"]
@@ -34,6 +35,7 @@ def generate_config(session):
                 if group_type == "port-group":
                     value_type = "port"
 
+                # Write Config Statements
                 if ip_version == "ipv4":
                     config.append(
                         f"set firewall group {group_type} {group_name} description '{group_desc}'"
@@ -53,6 +55,107 @@ def generate_config(session):
                         )
 
             config.append("")
+
+        if "filters" in user_data[ip_version]:
+            for filter_name in user_data[ip_version]["filters"]:
+                # Get Values
+                filter_desc = user_data[ip_version]["filters"][filter_name][
+                    "description"
+                ]
+                filter_action = user_data[ip_version]["filters"][filter_name][
+                    "default-action"
+                ]
+                filter_log = user_data[ip_version]["filters"][filter_name]["log"]
+
+                # Write Config Statements
+                config.append(f"#\n# Filter: {filter_name}\n#")
+                config.append(
+                    f"set firewall {ip_version} {filter_name} filter descriptionn '{filter_desc}'"
+                )
+                config.append(
+                    f"set firewall {ip_version} {filter_name} filter default-action '{filter_action}'"
+                )
+                if filter_log:
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter enable-default-log"
+                    )
+                config.append("\n")
+
+                for rule in user_data[ip_version]["filters"][filter_name]["rule-order"]:
+                    for key in user_data[ip_version]["filters"][filter_name]["rules"][
+                        rule
+                    ]:
+                        # Get Values
+                        description = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["description"]
+                        log = (
+                            True
+                            if "log"
+                            in user_data[ip_version]["filters"][filter_name]["rules"][
+                                rule
+                            ]
+                            else False
+                        )
+                        rule_disable = (
+                            True
+                            if "rule_disable"
+                            in user_data[ip_version]["filters"][filter_name]["rules"][
+                                rule
+                            ]
+                            else False
+                        )
+                        action = user_data[ip_version]["filters"][filter_name]["rules"][
+                            rule
+                        ]["action"]
+                        interface = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["interface"]
+                        direction = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["direction"]
+                        jump_target = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["fw_table"]
+
+                    # Write Config Statements
+                    config.append(f"# Rule {rule}")
+
+                    # Description
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} description '{description}'"
+                    )
+
+                    # Action
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} action '{action}'"
+                    )
+
+                    # Interface / Directions
+                    if direction == "inbound":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface '{interface}'"
+                        )
+                    if direction == "outbound":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface '{interface}'"
+                        )
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target '{jump_target}'"
+                    )
+
+                    # Disable
+                    if rule_disable:
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} disable"
+                        )
+
+                    # Log
+                    if log:
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} log"
+                        )
+                    config.append("\n")
 
         if "tables" in user_data[ip_version]:
             for fw_table in user_data[ip_version]["tables"]:
@@ -75,6 +178,7 @@ def generate_config(session):
 
                 for rule in user_data[ip_version]["tables"][fw_table]["rule-order"]:
                     for key in user_data[ip_version]["tables"][fw_table][rule]:
+                        # Get Values
                         description = user_data[ip_version]["tables"][fw_table][rule][
                             "description"
                         ]
@@ -145,6 +249,7 @@ def generate_config(session):
                             else False
                         )
 
+                    # Write Config Statements
                     config.append(f"# Rule {rule}")
 
                     # Disable
