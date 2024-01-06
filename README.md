@@ -141,7 +141,7 @@ docker run \
   --name   vyos-fw-gui \
   --expose 8080 \
   --mount  source=vyos-fw-gui_data,target=/opt/vyos-fw-gui/data \
-  ibehren1/vyos-fw-gui:v0.3.0
+  ibehren1/vyos-fw-gui:v0.4.0
 ```
 
 ## Docker Compose
@@ -150,7 +150,7 @@ docker run \
 version: '3.7'
 services:
   vyos-fw-gui:
-    image: ibehren1/vyos-fw-gui:v0.3.0
+    image: ibehren1/vyos-fw-gui:v0.4.0
     container_name: vyos-fw-gui
     ports:
       - 8080:8080/tcp
