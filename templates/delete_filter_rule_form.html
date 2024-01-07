@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
     <form action="/delete_filter_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
@@ -10,6 +10,15 @@
                 </p>
 
             </th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                Filters are tables of rules pointing to other tables of rules based on interface and traffic direction.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">
+                    Docs&#x2197
+                </a>
+            </td>
         </tr>
         <tr>
             <td colspan="3">

@@ -1,10 +1,10 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
     <form action="/add_table" , method="post">
         <tr>
-            <th colspan="5" align="left">
+            <th colspan="3" align="left">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
                     Add Firewall Table
                 </p>
@@ -12,16 +12,26 @@
             </th>
         </tr>
         <tr>
-            <td>
+            <td colspan="3">
+                For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
+                apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
+                through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
+                be executed.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">
+                    Docs&#x2197
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     IP Version
                 </p>
-
                 <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
                 <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
-
             </td>
-            <td colspan="3">
+            <td style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Firewall Table
                 </p>
@@ -30,7 +40,7 @@
                 <label for="description">Table Description</label>
                 <input type="text" id="description" name="description" size=30 value=""><br>
             </td>
-            <td>
+            <td style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Rule Action
                 </p>
@@ -43,7 +53,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right" colspan="5">
+            <td align="right" colspan="3">
                 <input type="submit" value="Add Table">
             </td>
         </tr>

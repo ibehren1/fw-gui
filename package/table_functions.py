@@ -5,40 +5,6 @@ from package.data_file_functions import read_user_data_file, write_user_data_fil
 from flask import flash
 
 
-# def add_default_rule(session, request):
-#     # Get user's data
-#     user_data = read_user_data_file(session["firewall_name"])
-
-#     # Set local vars from posted form data
-#     table = request.form["fw_table"].split(",")
-#     ip_version = table[0]
-#     fw_table = table[1]
-#     description = request.form["description"]
-#     default_action = request.form["default_action"]
-
-#     # Check and create higher level data structure if it does not exist
-#     if ip_version not in user_data:
-#         user_data[ip_version] = {}
-#         user_data[ip_version]["tables"] = {}
-#     if fw_table not in user_data[ip_version]["tables"]:
-#         user_data[ip_version]["tables"][fw_table] = {}
-#     if "default" not in user_data[ip_version]["tables"][fw_table]:
-#         user_data[ip_version]["tables"][fw_table]["default"] = {}
-
-#     # Assign values into data structure
-#     user_data[ip_version]["tables"][fw_table]["default"]["description"] = description
-#     user_data[ip_version]["tables"][fw_table]["default"][
-#         "default_action"
-#     ] = default_action
-
-#     # Write user_data to file
-#     write_user_data_file(session["firewall_name"], user_data)
-
-#     flash(f"Default action created for table {ip_version}/{fw_table}.", "success")
-
-#     return
-
-
 def add_rule_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(session["firewall_name"])

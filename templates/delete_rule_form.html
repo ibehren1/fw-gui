@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
     <form action="/delete_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
@@ -10,6 +10,18 @@
                 </p>
 
             </th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
+                apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
+                through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
+                be executed.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">
+                    Docs&#x2197
+                </a>
+            </td>
         </tr>
         <tr>
             <td colspan="3">

@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
     <form action="/add_filter_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
@@ -12,9 +12,12 @@
             </th>
         </tr>
         <tr>
-            <td colspan="5">
-                Compatible with Vyos 1.4+.<br>
-                Complete form and submit to get commands for cp/paste to the VyOS CLI.
+            <td colspan="2">
+                Filters are tables of rules pointing to other tables of rules based on interface and traffic direction.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">
+                    Docs&#x2197
+                </a>
             </td>
         </tr>
         <tr>
@@ -63,13 +66,13 @@
             </td>
         </tr>
         <tr>
-            <td>
+            <td style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Action
                 </p>
                 <input type="radio" name="action" value="jump" checked="checked">jump<br>
             </td>
-            <td>
+            <td style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Jump Target
                 </p>
@@ -82,7 +85,7 @@
                     {% endfor %}
                 </select><br>
             </td>
-            <td colspan="2">
+            <td colspan="2" style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Interface
                 </p>
