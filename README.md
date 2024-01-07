@@ -17,19 +17,59 @@ Working demo:  [https://vyos-fw-gui.com](https://vyos-fw-gui.com)
 
 ```text
 #
-# ipv4
+#
+# IPV4
+#
 #
 
 #
 # Groups
 #
+
+# Group: DNS_Servers
 set firewall group address-group DNS_Servers description 'DNS_Servers'
-set firewall group address-group DNS_Servers address '10.1.1.10'
-set firewall group address-group DNS_Servers address '10.1.1.12'
+set firewall group address-group DNS_Servers address '10.53.53.53'
+
+# Group: DNS_Port
 set firewall group port-group DNS_Port description 'DNS_Port'
 set firewall group port-group DNS_Port port '53'
+
+# Group: SSH_Port
 set firewall group port-group SSH_Port description 'SSH_Port'
 set firewall group port-group SSH_Port port '22'
+
+# Group: Web_Ports
+set firewall group port-group Web_Ports description 'Web_Ports'
+set firewall group port-group Web_Ports port '80'
+set firewall group port-group Web_Ports port '443'
+
+#
+# Filter: input
+#
+set firewall ipv4 input filter descriptionn 'Input Filter'
+set firewall ipv4 input filter default-action 'accept'
+
+
+# Rule 10
+set firewall ipv4 input filter rule 10 description 'WAN LOCAL'
+set firewall ipv4 input filter rule 10 action 'jump'
+set firewall ipv4 input filter rule 10 inbound-interface 'eth0'
+set firewall ipv4 input filter rule 10 jump-target 'WAN_LOCAL'
+
+
+#
+# Filter: forward
+#
+set firewall ipv4 forward filter descriptionn 'Forward Filter'
+set firewall ipv4 forward filter default-action 'accept'
+
+
+# Rule 10
+set firewall ipv4 forward filter rule 10 description 'WAN IN'
+set firewall ipv4 forward filter rule 10 action 'jump'
+set firewall ipv4 forward filter rule 10 inbound-interface 'eth0'
+set firewall ipv4 forward filter rule 10 jump-target 'WAN_IN'
+
 
 #
 # Table: WAN_LOCAL
@@ -70,18 +110,59 @@ set firewall ipv4 name WAN_IN rule 20 log
 set firewall ipv4 name WAN_IN rule 20 state 'invalid'
 
 #
-# ipv6
+#
+# IPV6
+#
 #
 
 #
 # Groups
 #
+
+# Group: DNS_Servers
 set firewall group ipv6-address-group DNS_Servers description 'DNS_Servers'
 set firewall group ipv6-address-group DNS_Servers address 'fc00::53'
+
+# Group: DNS_Port
 set firewall group ipv6-port-group DNS_Port description 'DNS_Port'
 set firewall group ipv6-port-group DNS_Port port '53'
+
+# Group: SSH_Port
 set firewall group ipv6-port-group SSH_Port description 'SSH_Port'
 set firewall group ipv6-port-group SSH_Port port '22'
+
+# Group: Web_Ports
+set firewall group ipv6-port-group Web_Ports description 'Web_Ports'
+set firewall group ipv6-port-group Web_Ports port '80'
+set firewall group ipv6-port-group Web_Ports port '443'
+
+#
+# Filter: input
+#
+set firewall ipv6 input filter descriptionn 'Input Filter'
+set firewall ipv6 input filter default-action 'accept'
+
+
+# Rule 10
+set firewall ipv6 input filter rule 10 description 'WAN LOCAL'
+set firewall ipv6 input filter rule 10 action 'jump'
+set firewall ipv6 input filter rule 10 inbound-interface 'eth0'
+set firewall ipv6 input filter rule 10 jump-target 'WAN_LOCAL'
+
+
+#
+# Filter: forward
+#
+set firewall ipv6 forward filter descriptionn 'Forward Filter'
+set firewall ipv6 forward filter default-action 'accept'
+
+
+# Rule 10
+set firewall ipv6 forward filter rule 10 description 'WAN IN'
+set firewall ipv6 forward filter rule 10 action 'jump'
+set firewall ipv6 forward filter rule 10 inbound-interface 'eth0'
+set firewall ipv6 forward filter rule 10 jump-target 'WAN_IN'
+
 
 #
 # Table: WAN_LOCAL
