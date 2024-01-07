@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
     <form action="/add_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
@@ -12,9 +12,15 @@
             </th>
         </tr>
         <tr>
-            <td colspan="5">
-                Compatible with Vyos 1.4+.<br>
-                Complete form and submit to get commands for cp/paste to the VyOS CLI.
+            <td colspan="4">
+                For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
+                apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
+                through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
+                be executed.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">
+                    Docs&#x2197
+                </a>
             </td>
         </tr>
         <tr>
@@ -45,7 +51,7 @@
                     Description
                 </p>
                 <label for="rule">Description</label>
-                <input type="text" id="description" name="description" size="25" value="Rule description."><br>
+                <input type="text" id="description" name="description" size="25" value=""><br>
             </td>
             <td>
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
@@ -63,7 +69,7 @@
             </td>
         </tr>
         <tr>
-            <td rowspan="2">
+            <td rowspan="2" style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Action
                 </p>
@@ -73,7 +79,7 @@
                 <input type="radio" name="action" value="drop">drop
             </td>
 
-            <td rowspan="2">
+            <td rowspan="2" style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Destination
                 </p>
@@ -90,7 +96,7 @@
                 <input type="radio" name="dest_port_type" value="port_group">Port Group
 
             </td>
-            <td rowspan="2">
+            <td rowspan="2" style="vertical-align: top;">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
                     Source
                 </p>

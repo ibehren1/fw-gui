@@ -1,0 +1,108 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
+    <form action="/add_filter_rule" , method="post">
+        <tr>
+            <th colspan="5" align="left">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
+                    Add Filter Rule
+                </p>
+
+            </th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                Filters are tables of rules pointing to other tables of rules based on interface and traffic direction.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">
+                    Docs&#x2197
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Filter
+                </p>
+                <label for="filter">Filter</label>
+                <select name="filter" id="filter">
+                    {% for filter in filter_list %}
+                    <option value='{{filter[0]}},{{filter[1]}}'>
+                        {{filter[0]}}: {{filter[1]}}
+                    </option>
+                    {% endfor %}
+                </select><br>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Rule Number
+                </p>
+                <label for="rule">Number</label>
+                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Description
+                </p>
+                <label for="rule">Description</label>
+                <input type="text" id="description" name="description" size="25" value="Rule description."><br>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Disable
+                </p>
+                <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
+                <label for="rule_disable">Disable</label>
+            </td>
+            <td>
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Logging
+                </p>
+                <input type="checkbox" id="logging" name="logging" value="True">
+                <label for="logging">Enable</label>
+            </td>
+        </tr>
+        <tr>
+            <td style="vertical-align: top;">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Action
+                </p>
+                <input type="radio" name="action" value="jump" checked="checked">jump<br>
+            </td>
+            <td style="vertical-align: top;">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Jump Target
+                </p>
+                <label for="jump_target">Jump Target</label>
+                <select name="jump_target" id="jump_target">
+                    {% for table in table_list %}
+                    <option value='{{table[0]}},{{table[1]}}'>
+                        {{table[0]}}: {{table[1]}}
+                    </option>
+                    {% endfor %}
+                </select><br>
+            </td>
+            <td colspan="2" style="vertical-align: top;">
+                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                    Interface
+                </p>
+                <label for="rule">Interface Name</label>
+                <input type="text" id="interface" name="interface" maxlength="10" size="6" value="ethX"><br>
+                <label for="direction">Direction</label>
+                <select name="direction" id="direction">
+                    <option value='inbound'>Inbound</option>
+                    <option value='outbound'>Outbound</option>
+            </td>
+        </tr>
+        <tr>
+            <td align="right" colspan="5">
+                <input type="submit" value="Add Filter Rule">
+            </td>
+        </tr>
+    </form>
+</table>
+<br><br>
+{% endblock body %}

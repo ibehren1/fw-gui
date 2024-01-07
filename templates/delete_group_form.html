@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border=1px bordercolor="#000000" cellpadding="4px" cellspacing=0>
+<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
     <form action="/delete_group" , method="post">
         <tr>
             <th colspan="5" align="left">
@@ -10,6 +10,15 @@
                 </p>
 
             </th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                Firewall groups represent collections of IP addresses, networks, ports, mac addresses, domains or
+                interfaces. Once created, a group can be referenced by firewall, nat and policy route rules as either a
+                source or destination matcher, and/or as inbound/outbound in the case of interface group.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target=”_blank”
+                    style="color: #FF9400; font-weight: bold;">Docs&#x2197</a>
+            </td>
         </tr>
         <tr>
             <td colspan="3">

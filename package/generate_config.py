@@ -1,317 +1,7 @@
 """
-    Support functions.
+    Generate Configuration
 """
-from flask import flash
-import json
-
-
-def add_default_rule(session, request):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Set local vars from posted form data
-    table = request.form["fw_table"].split(",")
-    ip_version = table[0]
-    fw_table = table[1]
-    description = request.form["description"]
-    default_action = request.form["default_action"]
-
-    # Check and create higher level data structure if it does not exist
-    if ip_version not in user_data:
-        user_data[ip_version] = {}
-        user_data[ip_version]["tables"] = {}
-    if fw_table not in user_data[ip_version]["tables"]:
-        user_data[ip_version]["tables"][fw_table] = {}
-    if "default" not in user_data[ip_version]["tables"][fw_table]:
-        user_data[ip_version]["tables"][fw_table]["default"] = {}
-
-    # Assign values into data structure
-    user_data[ip_version]["tables"][fw_table]["default"]["description"] = description
-    user_data[ip_version]["tables"][fw_table]["default"][
-        "default_action"
-    ] = default_action
-
-    # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
-
-    flash(f"Default action created for table {ip_version}/{fw_table}.", "success")
-
-    return
-
-
-def add_group_to_data(session, request):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Set local vars from posted form data
-    ip_version = request.form["ip_version"]
-    group_desc = request.form["group_desc"]
-    group_name = request.form["group_name"].replace(" ", "")
-    group_type = request.form["group_type"]
-    group_value = request.form["group_value"]
-
-    # Convert group values to list and trim any whitespace
-    group_value_list = []
-    for value in group_value.split(","):
-        group_value_list.append(value.strip())
-
-    # Check and create higher level data structure if it does not exist
-    if ip_version not in user_data:
-        user_data[ip_version] = {}
-    if "groups" not in user_data[ip_version]:
-        user_data[ip_version]["groups"] = {}
-    if "group-name" not in user_data[ip_version]["groups"]:
-        user_data[ip_version]["groups"][group_name] = {}
-
-    # Assign values into data structure
-    user_data[ip_version]["groups"][group_name]["group_desc"] = group_desc
-    user_data[ip_version]["groups"][group_name]["group_type"] = group_type
-    user_data[ip_version]["groups"][group_name]["group_value"] = group_value_list
-
-    # print(json.dumps(user_data, indent=4))
-
-    # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
-
-    flash(f"Group {group_name} added.", "success")
-
-    return
-
-
-def add_rule_to_data(session, request):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Set local vars from posted form data
-    table = request.form["fw_table"].split(",")
-    ip_version = table[0]
-    fw_table = table[1]
-
-    # Check and create higher level data structure if it does not exist
-    if ip_version not in user_data:
-        user_data[ip_version] = {}
-        user_data[ip_version]["tables"] = {}
-    if fw_table not in user_data[ip_version]["tables"]:
-        user_data[ip_version]["tables"][fw_table] = {}
-    if "rule-order" not in user_data[ip_version]["tables"][fw_table]:
-        user_data[ip_version]["tables"][fw_table]["rule-order"] = []
-
-    # Assemble rule dict
-    rule = request.form["rule"]
-    rule_dict = {}
-    rule_dict["description"] = request.form["description"]
-    if "rule_disable" in request.form:
-        rule_dict["rule_disable"] = True
-    if "logging" in request.form:
-        rule_dict["logging"] = True
-    rule_dict["action"] = request.form["action"]
-    rule_dict["dest_address"] = request.form["dest_address"]
-    rule_dict["dest_address_type"] = request.form["dest_address_type"]
-    rule_dict["dest_port"] = request.form["dest_port"]
-    rule_dict["dest_port_type"] = request.form["dest_port_type"]
-    rule_dict["source_address"] = request.form["source_address"]
-    rule_dict["source_address_type"] = request.form["source_address_type"]
-    rule_dict["source_port"] = request.form["source_port"]
-    rule_dict["source_port_type"] = request.form["source_port_type"]
-    rule_dict["protocol"] = (
-        request.form["protocol"] if "protocol" in request.form else ""
-    )
-    if "state_est" in request.form:
-        rule_dict["state_est"] = True
-    if "state_inv" in request.form:
-        rule_dict["state_inv"] = True
-    if "state_new" in request.form:
-        rule_dict["state_new"] = True
-    if "state_rel" in request.form:
-        rule_dict["state_rel"] = True
-
-    # Assign value to data structure
-    user_data[ip_version]["tables"][fw_table][rule] = rule_dict
-
-    # Add rule to rule-order in user data
-    if rule not in user_data[ip_version]["tables"][fw_table]["rule-order"]:
-        user_data[ip_version]["tables"][fw_table]["rule-order"].append(rule)
-
-    # Sort rule-order in user data
-    user_data[ip_version]["tables"][fw_table]["rule-order"] = sorted(
-        user_data[ip_version]["tables"][fw_table]["rule-order"]
-    )
-
-    # print(json.dumps(user_data, indent=4))
-
-    # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
-
-    flash(f"Rule {rule} added to table {ip_version}/{fw_table}.", "success")
-
-    return
-
-
-def add_table_to_data(session, request):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Set local vars from posted form data
-    ip_version = request.form["ip_version"]
-    fw_table = request.form["fw_table"]
-
-    # Check and create higher level data structure if it does not exist
-    if ip_version not in user_data:
-        user_data[ip_version] = {}
-        user_data[ip_version]["tables"] = {}
-    if fw_table not in user_data[ip_version]["tables"]:
-        user_data[ip_version]["tables"][fw_table] = {}
-        user_data[ip_version]["tables"][fw_table]["rule-order"] = []
-
-    # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
-
-    flash(f"Table {ip_version}/{fw_table} added.", "success")
-
-    return
-
-
-def assemble_list_of_groups(session):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Create list of defined groups
-    group_list = []
-    try:
-        for ip_version in ["ipv4", "ipv6"]:
-            if ip_version in user_data:
-                if "groups" in user_data[ip_version]:
-                    for group in user_data[ip_version]["groups"]:
-                        group_list.append([ip_version, group])
-    except:
-        pass
-
-    # If there are no groups, flash message
-    if group_list == []:
-        flash(f"There are no groups defined.", "danger")
-
-    return group_list
-
-
-def assemble_list_of_rules(session):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Create list of defined rules
-    rule_list = []
-    try:
-        for ip_version in ["ipv4", "ipv6"]:
-            if ip_version in user_data:
-                for fw_table in user_data[ip_version]["tables"]:
-                    for rule in user_data[ip_version]["tables"][fw_table]["rule-order"]:
-                        rule_list.append(
-                            [
-                                ip_version,
-                                fw_table,
-                                rule,
-                                user_data[ip_version]["tables"][fw_table][rule][
-                                    "description"
-                                ],
-                            ]
-                        )
-    except:
-        pass
-
-    # If there are no rules, flash message
-    if rule_list == []:
-        flash(f"There are no rules defined.", "danger")
-
-    return rule_list
-
-
-def assemble_list_of_tables(session):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Create list of defined tables
-    table_list = []
-    try:
-        for ip_version in ["ipv4", "ipv6"]:
-            if ip_version in user_data:
-                for fw_table in user_data[ip_version]["tables"]:
-                    table_list.append([ip_version, fw_table])
-    except:
-        pass
-
-    # If there are no tables, flash message
-    if table_list == []:
-        flash(f"There are no tables defined.", "danger")
-
-    return table_list
-
-
-def delete_group_from_data(session, request):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Set local vars from posted form data
-    group = request.form["group"].split(",")
-    ip_version = group[0]
-    group_name = group[1]
-
-    # Delete group from data
-    try:
-        del user_data[ip_version]["groups"][group_name]
-        flash(f"Deleted group {group_name} from table {ip_version}.", "warning")
-    except:
-        flash(f"Failed to delete group {group_name} from table {ip_version}.", "danger")
-        pass
-
-    # Clean-up data
-    try:
-        if len(user_data[ip_version]["groups"]) == 0:
-            del user_data[ip_version]["groups"]
-        if len(user_data[ip_version]) == 0:
-            del user_data[ip_version]
-    except:
-        pass
-
-    # Write user's data to file
-    write_user_data_file(session["firewall_name"], user_data)
-
-    return
-
-
-def delete_rule_from_data(session, request):
-    # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
-
-    # Set local vars from posted form data
-    rule = request.form["rule"].split(",")
-    ip_version = rule[0]
-    fw_table = rule[1]
-    rule = rule[2]
-
-    # Delete rule from data
-    try:
-        del user_data[ip_version]["tables"][fw_table][rule]
-        user_data[ip_version]["tables"][fw_table]["rule-order"].remove(rule)
-        flash(f"Deleted rule {rule} from table {ip_version}/{fw_table}.", "warning")
-    except:
-        flash(
-            f"Failed to delete rule {rule} from table {ip_version}/{fw_table}.",
-            "danger",
-        )
-        pass
-
-    # Clean-up data
-    try:
-        if len(user_data[ip_version]["tables"][fw_table]["rule-order"]) == 0:
-            del user_data[ip_version]["tables"][fw_table]
-        if len(user_data[ip_version]) == 0:
-            del user_data[ip_version]
-    except:
-        pass
-
-    # Write user's data to file
-    write_user_data_file(session["firewall_name"], user_data)
-
-    return
+from package.data_file_functions import read_user_data_file, write_user_data_file
 
 
 def generate_config(session):
@@ -328,11 +18,12 @@ def generate_config(session):
 
     # Work through each IP Version, Table and Rule adding to config
     for ip_version in user_data:
-        config.append(f"#\n# {ip_version}\n#\n")
+        config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
 
         if "groups" in user_data[ip_version]:
             config.append(f"#\n# Groups\n#")
             for group_name in user_data[ip_version]["groups"]:
+                # Get Values
                 group_desc = user_data[ip_version]["groups"][group_name]["group_desc"]
                 group_type = user_data[ip_version]["groups"][group_name]["group_type"]
                 group_value = user_data[ip_version]["groups"][group_name]["group_value"]
@@ -344,6 +35,9 @@ def generate_config(session):
                 if group_type == "port-group":
                     value_type = "port"
 
+                config.append(f"\n# Group: {group_name}")
+
+                # Write Config Statements
                 if ip_version == "ipv4":
                     config.append(
                         f"set firewall group {group_type} {group_name} description '{group_desc}'"
@@ -363,6 +57,107 @@ def generate_config(session):
                         )
 
             config.append("")
+
+        if "filters" in user_data[ip_version]:
+            for filter_name in user_data[ip_version]["filters"]:
+                # Get Values
+                filter_desc = user_data[ip_version]["filters"][filter_name][
+                    "description"
+                ]
+                filter_action = user_data[ip_version]["filters"][filter_name][
+                    "default-action"
+                ]
+                filter_log = user_data[ip_version]["filters"][filter_name]["log"]
+
+                # Write Config Statements
+                config.append(f"#\n# Filter: {filter_name}\n#")
+                config.append(
+                    f"set firewall {ip_version} {filter_name} filter descriptionn '{filter_desc}'"
+                )
+                config.append(
+                    f"set firewall {ip_version} {filter_name} filter default-action '{filter_action}'"
+                )
+                if filter_log:
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter enable-default-log"
+                    )
+                config.append("\n")
+
+                for rule in user_data[ip_version]["filters"][filter_name]["rule-order"]:
+                    for key in user_data[ip_version]["filters"][filter_name]["rules"][
+                        rule
+                    ]:
+                        # Get Values
+                        description = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["description"]
+                        log = (
+                            True
+                            if "log"
+                            in user_data[ip_version]["filters"][filter_name]["rules"][
+                                rule
+                            ]
+                            else False
+                        )
+                        rule_disable = (
+                            True
+                            if "rule_disable"
+                            in user_data[ip_version]["filters"][filter_name]["rules"][
+                                rule
+                            ]
+                            else False
+                        )
+                        action = user_data[ip_version]["filters"][filter_name]["rules"][
+                            rule
+                        ]["action"]
+                        interface = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["interface"]
+                        direction = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["direction"]
+                        jump_target = user_data[ip_version]["filters"][filter_name][
+                            "rules"
+                        ][rule]["fw_table"]
+
+                    # Write Config Statements
+                    config.append(f"# Rule {rule}")
+
+                    # Description
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} description '{description}'"
+                    )
+
+                    # Action
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} action '{action}'"
+                    )
+
+                    # Interface / Directions
+                    if direction == "inbound":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface '{interface}'"
+                        )
+                    if direction == "outbound":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface '{interface}'"
+                        )
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target '{jump_target}'"
+                    )
+
+                    # Disable
+                    if rule_disable:
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} disable"
+                        )
+
+                    # Log
+                    if log:
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} log"
+                        )
+                    config.append("\n")
 
         if "tables" in user_data[ip_version]:
             for fw_table in user_data[ip_version]["tables"]:
@@ -385,6 +180,7 @@ def generate_config(session):
 
                 for rule in user_data[ip_version]["tables"][fw_table]["rule-order"]:
                     for key in user_data[ip_version]["tables"][fw_table][rule]:
+                        # Get Values
                         description = user_data[ip_version]["tables"][fw_table][rule][
                             "description"
                         ]
@@ -455,6 +251,7 @@ def generate_config(session):
                             else False
                         )
 
+                    # Write Config Statements
                     config.append(f"# Rule {rule}")
 
                     # Disable
@@ -561,19 +358,3 @@ def generate_config(session):
 
     # Return message of config commands
     return message
-
-
-def read_user_data_file(filename):
-    try:
-        with open(f"data/{filename}.json", "r") as f:
-            data = f.read()
-            user_data = json.loads(data)
-            return user_data
-    except:
-        return {}
-
-
-def write_user_data_file(filename, data):
-    with open(f"data/{filename}.json", "w") as f:
-        f.write(json.dumps(data, indent=4))
-    return

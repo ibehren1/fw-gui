@@ -11,6 +11,7 @@
         th {
             border: 2px solid black;
             padding: 4px;
+
         }
 
         .centerTable {
@@ -24,6 +25,12 @@
         td {
             vertical-align: top;
         } */
+
+        a:link {
+            color: #FF9400;
+            background-color: transparent;
+            text-decoration: none;
+        }
 
         header {
             margin: auto;
@@ -50,119 +57,147 @@
     <h1 style="font-variant: small-caps;">VyOS Firewall Rule Configuration Generator</h1>
 
     {% if firewall_name %}
-    <table align="right" border="0" width="25%">
-        <colgroup>
-            <col span="1" style="width: 50%;">
-            <col span="1" style="width: 50%;">
-        </colgroup>
-        <tr align="center">
-            <td text-align="center" colspan="2">
-                {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-                {% if flashed_messages %}
-                {% for category, flash_message in flashed_messages %}
-                <div class="alert alert-{{ category }}">
-                    {{flash_message}}
-                </div>
-                {% endfor %}
-                {% endif %}
-                {% endwith %}
-            </td>
-        </tr>
-        <tr align="center">
-            <td text-align="center" colspan="2" style="font-variant: small-caps">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    <b>Firewall Name:</b>
-                    <font size="+2">{{ firewall_name }}</font>
-                </p>
-                </style>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="{{ url_for('display_config')}}">
-                    <input type="submit" value="Display Config" style="width: 100%">
-                </a>
-            </td>
-            <td>
-                <a href="{{ url_for('logout')}}">
-                    <input type="submit" value="Logout" style="width: 100%">
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td align="center" colspan="2">
-                <br> <br>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Groups
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="{{ url_for('add_group_form')}}">
-                    <input type="submit" value="Add Group" style="width: 100%">
-                </a>
-            </td>
-            <td>
-                <a href="{{ url_for('delete_group_form')}}">
-                    <input type="submit" value="Delete Group" style="width: 100%">
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td align="center" colspan="2">
-                <br> <br>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Rules
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="{{ url_for('add_rule_form')}}">
-                    <input type="submit" value="Add Rule" style="width: 100%">
-                </a>
-            </td>
-            <td>
-                <a href="{{ url_for('delete_rule_form')}}">
-                    <input type="submit" value="Delete Rule" style="width: 100%">
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td align="center" colspan="2">
-                <br> <br>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
-                    Tables
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <a href="{{ url_for('default_rule_form')}}">
-                    <input type="submit" value="Add Default Table Action" style="width: 100%">
-                </a>
-            </td>
-            <td>
-                <a href="{{ url_for('add_table_form')}}">
-                    <input type="submit" value="Add Table" style="width: 100%">
-                </a>
-            </td>
-        </tr>
+    <table align="right">
+        <td align="right">
+            <a href="{{ url_for('logout')}}">
+                <input type="submit" value="Logout" style="width: 100%">
+            </a>
+        </td>
     </table>
     {% endif %}
+
 
 </header>
 
 <body style="background-color:#606263;color:aliceblue">
 
-    {% block body %}
-    {% endblock body %}
+    <table border="0" align="center" style="vertical-align: top;">
+        <tr>
+            <td width="65%">
+                {% block body %}
+                {% endblock body %}
+            </td>
+            <td width="35%" style="vertical-align: top;">
+
+                {% if firewall_name %}
+                <table align="right" border="0" width="25%">
+                    <colgroup>
+                        <col span="1" style="width: 50%;">
+                        <col span="1" style="width: 50%;">
+                    </colgroup>
+                    <tr align="center">
+                        <td text-align="center" colspan="2">
+                            {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+                            {% if flashed_messages %}
+                            {% for category, flash_message in flashed_messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{flash_message}}
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    <tr align="center">
+                        <td text-align="center" colspan="2" style="font-variant: small-caps">
+                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                                <b>Firewall Name:</b>
+                                <font size="+2">{{ firewall_name }}</font>
+                            </p>
+                            </style>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <a href="{{ url_for('display_config')}}">
+                                <input type="submit" value="Display Config" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                                Groups
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('add_group_form')}}">
+                                <input type="submit" value="Add Group" style="width: 100%">
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_group_form')}}">
+                                <input type="submit" value="Delete Group" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                                Tables
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <a href="{{ url_for('add_table_form')}}">
+                                <input type="submit" value="Add Table" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('add_rule_form')}}">
+                                <input type="submit" value="Add Rule" style="width: 100%">
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_rule_form')}}">
+                                <input type="submit" value="Delete Rule" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                                Filters
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <a href="{{ url_for('add_filter_form')}}">
+                                <input type="submit" value="Add Filter" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('add_filter_rule_form')}}">
+                                <input type="submit" value="Add Rule" style="width: 100%">
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('delete_filter_rule_form')}}">
+                                <input type="submit" value="Delete Rule" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
 
 </body>
 
 <footer>
-    <p>vyos-fw-gui v0.3.0</p>
+    <p>vyos-fw-gui v0.4.0</p>
     <p>Copyright 2024 Isaac Behrens</p>
 </footer>
 

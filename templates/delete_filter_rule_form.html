@@ -2,22 +2,19 @@
 {% block body %}
 <br><br>
 <table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
-    <form action="/delete_rule" , method="post">
+    <form action="/delete_filter_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
                 <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
-                    Delete Firewall Rule
+                    Delete Filter Rule
                 </p>
 
             </th>
         </tr>
         <tr>
             <td colspan="2">
-                For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
-                apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
-                through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
-                be executed.
-                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
+                Filters are tables of rules pointing to other tables of rules based on interface and traffic direction.
+                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
                     style="color: #FF9400; font-weight: bold;">
                     Docs&#x2197
                 </a>
@@ -29,7 +26,7 @@
                     Rule
                 </p>
                 Choose rule to delete.<br>
-                <label for="fw_table"></label>
+                <label for="filter"></label>
                 <select name="rule" id="rule">
                     {% for rule in rule_list %}
                     <option value='{{rule[0]}},{{rule[1]}},{{rule[2]}}'>
