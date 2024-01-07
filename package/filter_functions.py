@@ -5,10 +5,6 @@ from package.data_file_functions import read_user_data_file, write_user_data_fil
 from flask import flash
 
 
-def add_filter_default_action(session, request):
-    return
-
-
 def add_filter_rule_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(session["firewall_name"])
@@ -61,12 +57,16 @@ def add_filter_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(session["firewall_name"])
 
+    print(request.form)
     # Set local vars from posted form data
     ip_version = request.form["ip_version"]
     type = request.form["type"]
     description = request.form["description"]
     default_action = request.form["default_action"]
-    logging = request.form["logging"]
+    if "logging" in request.form:
+        log = request.form["logging"]
+    else:
+        log = False
 
     # Check and create higher level data structure if it does not exist
     if ip_version not in user_data:
@@ -80,7 +80,7 @@ def add_filter_to_data(session, request):
     # Add filter to data structure
     user_data[ip_version]["filters"][type]["description"] = description
     user_data[ip_version]["filters"][type]["default-action"] = default_action
-    user_data[ip_version]["filters"][type]["log"] = logging
+    user_data[ip_version]["filters"][type]["log"] = log
 
     # Write user_data to file
     write_user_data_file(session["firewall_name"], user_data)

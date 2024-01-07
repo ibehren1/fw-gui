@@ -18,4 +18,4 @@ docker buildx inspect \
 docker buildx build \
     --platform=linux/arm64,linux/amd64 \
     --push \
-    --tag ibehren1/vyos-fw-gui:${VERSION} .
+    --tag ${DOCKER_USER}/vyos-fw-gui:${VERSION} .

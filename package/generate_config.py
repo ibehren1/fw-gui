@@ -35,6 +35,8 @@ def generate_config(session):
                 if group_type == "port-group":
                     value_type = "port"
 
+                config.append(f"\n# Group: {group_name}")
+
                 # Write Config Statements
                 if ip_version == "ipv4":
                     config.append(

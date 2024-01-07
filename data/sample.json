@@ -87,8 +87,7 @@
                 "group_desc": "DNS_Servers",
                 "group_type": "address-group",
                 "group_value": [
-                    "10.1.1.10",
-                    "10.1.1.12"
+                    "10.53.53.53"
                 ]
             },
             "DNS_Port": {
@@ -104,41 +103,54 @@
                 "group_value": [
                     "22"
                 ]
+            },
+            "Web_Ports": {
+                "group_desc": "Web_Ports",
+                "group_type": "port-group",
+                "group_value": [
+                    "80",
+                    "443"
+                ]
             }
         },
         "filters": {
             "input": {
-                "rule-order": [],
-                "description": "Input Filter",
-                "default-action": "drop",
-                "log": "True"
-            },
-            "forward": {
                 "rule-order": [
                     "10"
                 ],
-                "description": "Forward Filter",
-                "default-action": "drop",
-                "log": "True",
+                "description": "Input Filter",
+                "default-action": "accept",
+                "log": false,
                 "rules": {
                     "10": {
                         "ip_version": "ipv4",
-                        "filter": "forward",
-                        "fw_table": "WAN_IN",
-                        "description": "Rule description.",
-                        "rule_disable": true,
-                        "log": true,
+                        "filter": "input",
+                        "fw_table": "WAN_LOCAL",
+                        "description": "WAN LOCAL",
                         "action": "jump",
                         "interface": "eth0",
                         "direction": "inbound"
                     }
                 }
             },
-            "output": {
-                "rule-order": [],
-                "description": "Output Filter",
-                "default-action": "drop",
-                "log": "True"
+            "forward": {
+                "rule-order": [
+                    "10"
+                ],
+                "description": "Forward Filter",
+                "default-action": "accept",
+                "log": false,
+                "rules": {
+                    "10": {
+                        "ip_version": "ipv4",
+                        "filter": "forward",
+                        "fw_table": "WAN_IN",
+                        "description": "WAN IN",
+                        "action": "jump",
+                        "interface": "eth0",
+                        "direction": "inbound"
+                    }
+                }
             }
         }
     },
@@ -251,13 +263,6 @@
                     "source_port_type": "port",
                     "protocol": "icmp"
                 }
-            },
-            "Test": {
-                "rule-order": [],
-                "default": {
-                    "description": "Description",
-                    "default_action": "drop"
-                }
             }
         },
         "groups": {
@@ -281,6 +286,14 @@
                 "group_value": [
                     "22"
                 ]
+            },
+            "Web_Ports": {
+                "group_desc": "Web_Ports",
+                "group_type": "port-group",
+                "group_value": [
+                    "80",
+                    "443"
+                ]
             }
         },
         "filters": {
@@ -289,15 +302,14 @@
                     "10"
                 ],
                 "description": "Input Filter",
-                "default-action": "drop",
-                "log": "True",
+                "default-action": "accept",
+                "log": false,
                 "rules": {
                     "10": {
                         "ip_version": "ipv6",
                         "filter": "input",
-                        "fw_table": "WAN_IN",
-                        "description": "WAN IN",
-                        "rule_disable": true,
+                        "fw_table": "WAN_LOCAL",
+                        "description": "WAN LOCAL",
                         "action": "jump",
                         "interface": "eth0",
                         "direction": "inbound"
@@ -309,26 +321,19 @@
                     "10"
                 ],
                 "description": "Forward Filter",
-                "default-action": "drop",
-                "log": "True",
+                "default-action": "accept",
+                "log": false,
                 "rules": {
                     "10": {
                         "ip_version": "ipv6",
                         "filter": "forward",
-                        "fw_table": "WAN_LOCAL",
-                        "description": "WAN LOCAL",
-                        "rule_disable": true,
+                        "fw_table": "WAN_IN",
+                        "description": "WAN IN",
                         "action": "jump",
                         "interface": "eth0",
                         "direction": "inbound"
                     }
                 }
-            },
-            "output": {
-                "rule-order": [],
-                "description": "Output Filter",
-                "default-action": "drop",
-                "log": "True"
             }
         }
     }
