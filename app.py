@@ -17,7 +17,8 @@ from package.filter_functions import (
     assemble_list_of_filter_rules,
     delete_filter_rule_from_data,
 )
-from package.generate_config import generate_config
+from package.data_file_functions import initialize_data_dir, process_upload
+from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
     add_group_to_data,
     assemble_list_of_groups,
@@ -34,6 +35,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "this is the secret key"
+app.config["UPLOAD_FOLDER"] = "./data/uploads"
 
 
 #
@@ -261,7 +263,33 @@ def display_config():
     )
 
 
+#
+# Download Config
+@app.route("/download_config")
+def download_config():
+    message = generate_config(session)
+
+    return message.replace("<br>", "\n")
+
+
+@app.route("/download_json")
+def download_json():
+    json_data = download_json_data(session)
+
+    return json_data
+
+
+@app.route("/upload_json", methods=["POST"])
+def upload_json():
+    process_upload(session, request, app)
+
+    return redirect(url_for("index"))
+
+
 if __name__ == "__main__":
+    # Initialize Data Directory
+    initialize_data_dir()
+
     # Look for FLASK_ENV environment variable.
     env = os.environ.get("FLASK_ENV") or False
 

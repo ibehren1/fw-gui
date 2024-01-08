@@ -11,8 +11,9 @@ RUN pip3 install --upgrade pip
 # Add application files
 ADD app.py             /opt/vyos-fw-gui/app.py
 ADD package/*          /opt/vyos-fw-gui/package/
-ADD requirements.txt   /opt/vyos-fw-gui/requirements.txt
+ADD examples/*         /opt/vyos-fw-gui/examples/
 ADD templates/*        /opt/vyos-fw-gui/templates/
+ADD requirements.txt   /opt/vyos-fw-gui/requirements.txt
 RUN mkdir              /opt/vyos-fw-gui/data
 
 # Install pip modules

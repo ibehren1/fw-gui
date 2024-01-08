@@ -26,6 +26,7 @@
             vertical-align: top;
         } */
 
+
         a:link {
             color: #FF9400;
             background-color: transparent;
@@ -108,9 +109,20 @@
                         </td>
                     </tr>
                     <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                                Configuration
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
                         <td colspan="2">
                             <a href="{{ url_for('display_config')}}">
-                                <input type="submit" value="Display Config" style="width: 100%">
+                                <input type="submit" value="Display Configuration" style="width: 100%">
+                            </a>
+                            <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
+                                <input type="submit" style="width: 100%;" value="Download Configuration">
                             </a>
                         </td>
                     </tr>
@@ -188,6 +200,25 @@
                             </a>
                         </td>
                     </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                                Import/Export Datafile
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <form action="/upload_json" method=post enctype=multipart/form-data>
+                                <input type="file" name="file">
+                                <input type="submit" style="width: 100%;" value="Upload Datafile">
+                            </form>
+                            <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
+                                <input type="submit" style="width: 100%;" value="Download Datafile">
+                            </a>
+                        </td>
+                    </tr>
                 </table>
                 {% endif %}
             </td>
@@ -197,7 +228,7 @@
 </body>
 
 <footer>
-    <p>vyos-fw-gui v0.4.0</p>
+    <p>vyos-fw-gui v0.5.0</p>
     <p>Copyright 2024 Isaac Behrens</p>
 </footer>
 

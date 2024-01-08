@@ -2,6 +2,14 @@
     Generate Configuration
 """
 from package.data_file_functions import read_user_data_file, write_user_data_file
+import json
+
+
+def download_json_data(session):
+    user_data = read_user_data_file(session["firewall_name"])
+    json_data = json.dumps(user_data, indent=4)
+
+    return json_data
 
 
 def generate_config(session):
