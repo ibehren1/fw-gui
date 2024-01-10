@@ -5,30 +5,28 @@
     <form action="/add_filter" , method="post">
         <tr>
             <th colspan="5" align="left">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9400">
-                    Add Filter
-                </p>
+                <h4>Add Filter</h4>
             </th>
         </tr>
         <tr>
             <td colspan="5">
                 Filters are tables of rules pointing to other tables of rules based on interface and traffic direction.
                 <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                    style="color: #FF9400; font-weight: bold;">
+                    class="docs_link">
                     Docs&#x2197
                 </a>
             </td>
         </tr>
         <tr>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9400">
+                <p class="section_heading">
                     IP Version
                 </p>
                 <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
                 <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9400">
+                <p class="section_heading">
                     Filter Type
                 </p>
                 <input type="radio" name="type" value="input" checked="checked">input<br>
@@ -36,21 +34,21 @@
                 <input type="radio" name="type" value="output">output<br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9400">
+                <p class="section_heading">
                     Description
                 </p>
                 <label for="description"></label>
                 <input type="text" id="description" name="description" size=30 value=""><br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9400">
+                <p class="section_heading">
                     Default Action
                 </p>
                 <input type="radio" name="default_action" value="accept" checked="checked">accept<br>
                 <input type="radio" name="default_action" value="drop">drop<br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9400">
+                <p class="section_heading">
                     Logging
                 </p>
                 <input type="checkbox" id="logging" name="logging" value="True">

@@ -1,0 +1,78 @@
+/* 
+    Local Stylesheet
+*/
+
+.button {
+    top: 50%;
+    background-color: #ff9400;
+    color: #ffffff;
+    border-width: 0px;
+    border-radius: 5px;
+    border-color: #000000;
+    min-height: 30px;
+    width: 100%;
+}
+
+.button:hover {
+    background-color: aliceblue;
+    color: #000000;
+    border: #FFBC13;
+    outline-color: #FFBC13;
+    outline-width: 24px;
+    opacity: 100%;
+    transition: 0s;
+}
+
+.docs_link {
+    color: #FF9400;
+    font-weight: bold;
+}
+
+footer {
+    font-weight: bold;
+    font-variant: small-caps;
+    margin: auto;
+    text-align: center;
+    padding: .1px;
+    color: aliceblue;
+    background-image: linear-gradient(to right, #FFBC13, #FF9400);
+}
+
+h2 {
+    font-weight: bold;
+    font-variant: small-caps;
+    color: #ff9400;
+}
+
+h4 {
+    font-weight: bold;
+    font-variant: small-caps;
+    color: #ff9400;
+}
+
+header {
+    margin: auto;
+    text-align: center;
+    padding: .1px;
+    align-content: center;
+    color: aliceblue;
+    background-image: linear-gradient(to right, #FFBC13, #FF9400);
+}
+
+.page_background {
+    background-color: #606263;
+    color: aliceblue;
+}
+
+
+
+.section_heading {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: large;
+    color: #ff9400;
+}
+
+.table {
+    border: 0;
+}
