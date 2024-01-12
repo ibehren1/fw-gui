@@ -38,6 +38,10 @@ footer {
     background-image: linear-gradient(to right, #FFBC13, #FF9400);
 }
 
+h1 {
+    font-variant: small-caps;
+}
+
 h2 {
     font-weight: bold;
     font-variant: small-caps;
@@ -64,8 +68,6 @@ header {
     color: aliceblue;
 }
 
-
-
 .section_heading {
     font-weight: bold;
     font-variant: small-caps;
@@ -74,5 +76,12 @@ header {
 }
 
 .table {
-    border: 0;
+    color: aliceblue;
+    /* align: center; */
+    border: 1;
+    border-color: "#000000";
+
+    padding: 10px;
+    border-spacing: 0;
+    border-collapse: collapse;
 }

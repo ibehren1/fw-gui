@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="static/styles.css" type="text/css">
 
 <header>
-    <h1 style="font-variant: small-caps;">VyOS Firewall Rule Configuration Generator</h1>
+    <h1>VyOS Firewall Rule Configuration Generator</h1>
 
     {% if firewall_name %}
     <table align="right">
@@ -78,6 +78,10 @@
                             <a href="{{ url_for('display_config')}}">
                                 <input class="button" type="submit" value="Display Configuration" style="width: 100%">
                             </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
                             <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
                                 <input class="button" type="submit" style="width: 100%;" value="Download Configuration">
                             </a>
