@@ -6,7 +6,7 @@ import json
 
 
 def download_json_data(session):
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
     json_data = json.dumps(user_data, indent=4)
 
     return json_data
@@ -14,7 +14,7 @@ def download_json_data(session):
 
 def generate_config(session):
     # Get user data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Create firewall configuration
     config = []

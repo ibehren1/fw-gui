@@ -2,8 +2,6 @@
     Data File Support Functions
 """
 from flask import app, flash, redirect
-
-# from werkzeug.utils import secure_filename
 import json
 import os
 
@@ -75,7 +73,7 @@ def process_upload(session, request, app):
 # Read User Data File
 def read_user_data_file(filename):
     try:
-        with open(f"data/{filename}.json", "r") as f:
+        with open(f"{filename}.json", "r") as f:
             data = f.read()
             user_data = json.loads(data)
             return user_data
@@ -86,6 +84,6 @@ def read_user_data_file(filename):
 #
 # Write User Data File
 def write_user_data_file(filename, data):
-    with open(f"data/{filename}.json", "w") as f:
+    with open(f"{filename}.json", "w") as f:
         f.write(json.dumps(data, indent=4))
     return
