@@ -63,6 +63,10 @@ header {
     background-image: linear-gradient(to right, #FFBC13, #FF9400);
 }
 
+.link {
+    color: #FF9400;
+}
+
 .page_background {
     background-color: #606263;
     color: aliceblue;
