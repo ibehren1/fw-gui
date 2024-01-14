@@ -1,7 +1,7 @@
 """
     Generate Configuration
 """
-from package.data_file_functions import read_user_data_file, write_user_data_file
+from package.data_file_functions import read_user_data_file
 import json
 
 
