@@ -67,6 +67,10 @@ header {
     color: #FF9400;
 }
 
+.link:hover {
+    color: #FF9400;
+}
+
 .page_background {
     background-color: #606263;
     color: aliceblue;
