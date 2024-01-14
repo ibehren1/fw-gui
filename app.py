@@ -360,7 +360,7 @@ def download_json():
 
 @app.route("/select_firewall_config", methods=["POST"])
 def select_firewall_config():
-    session["firewall_name"] = request.form["action"]
+    session["firewall_name"] = request.form["file"]
 
     return redirect(url_for("display_config"))
 

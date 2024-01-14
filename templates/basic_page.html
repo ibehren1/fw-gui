@@ -35,43 +35,58 @@
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
                     </colgroup>
-                    <td align="center">
+                    <td align="center" colspan="2">
                         <p class="section_heading">Firewall Configs</p>
                         Click config name below to view config.
                         <br>
                         <br>
                     </td>
                     {% if file_list%}
-                    {% for file in file_list %}
                     <form action="/select_firewall_config" method=post>
+                        {% for file in file_list %}
                         <tr>
-                            <td align="center">
-                                <input type="radio" name="action" value="{{file}}">{{file}}<br>
+                            <td align="center" colspan="2">
+                                <input class="button" type="submit" name="file" value="{{file}}" style="width: 75%">
                             </td>
                         </tr>
                         {% endfor %}
-                        <tr>
-                            <td align="center">
-                                <input class="button" type="submit" value="Select Config" style="width: 100%">
-                            </td>
-                        </tr>
                     </form>
                     {% endif %}
                     <tr>
-                        <td>
-                            <br>
-                            <br>
-                            <br>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Import Datafile
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
                             <form action="/upload_json" method=post enctype=multipart/form-data>
                                 <input type="file" name="file">
-                                <input class="button" type="submit" style="width: 100%;" value="Upload Datafile">
+                                <input class="button" type="submit" style="width: 75%;" value="Upload Datafile">
                             </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Export Datafile
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
+                                <input class="button" type="submit" value="Download Datafile" style="width: 75%;">
+                            </a>
                         </td>
                     </tr>
                 </table>
                 {% endif %}
             </td>
-            <td width="50%">
+            <td width="50%" style="vertical-align: top;">
                 {% block body %}
                 {% endblock body %}
             </td>
@@ -100,14 +115,15 @@
                         <td text-align="center" colspan="2">
                             <p class="section_heading">
                                 <b>Firewall Name:</b>
-                                <font size="+2">{{ firewall_name }}</font>
+                            </p>
+                            <p>
+                                <font style="font-variant: small-caps;">{{ firewall_name }}</font>
                             </p>
                             </style>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
-                            <br> <br>
                             <p class="section_heading">
                                 Configuration
                             </p>
@@ -198,21 +214,6 @@
                         <td>
                             <a href="{{ url_for('delete_filter_rule_form')}}">
                                 <input class="button" type="submit" value="Delete Rule" style="width: 100%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" colspan="2">
-                            <br> <br>
-                            <p class="section_heading">
-                                Export Datafile
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
-                                <input class="button" type="submit" value="Download Datafile">
                             </a>
                         </td>
                     </tr>
