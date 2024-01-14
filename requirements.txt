@@ -1,4 +1,8 @@
+datetime
 flask
+flask_bcrypt
+flask_login
+flask_sqlalchemy
 Jinja2
 waitress
 werkzeug
