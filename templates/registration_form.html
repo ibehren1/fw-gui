@@ -1,0 +1,69 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<form action="/register" , method="post">
+    <table class="table">
+        <tr>
+            <td align="center" colspan="2">
+                <h2>Register</h2>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+                {% if flashed_messages %}
+                {% for category, flash_message in flashed_messages %}
+                <div class="alert alert-{{ category }}">
+                    {{flash_message}}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="username">Username</label>
+            </td>
+            <td>
+                <input type=text name=username><br>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="email">Email</label>
+            </td>
+            <td>
+                <input type=text name=email><br>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="password">Password</label>
+            </td>
+            <td>
+                <input type=password name=password><br>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="password_confirm">Confirm Password</label>
+            </td>
+            <td>
+                <input type=password name=confirm_password><br>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" colspan="2">
+                <p><input type=submit value=Register>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" colspan="2">
+                Already registered? <a href="{{url_for('login')}}" class="link">Login</a>
+            </td>
+        </tr>
+    </table>
+</form>
+<br><br>
+{% endblock body %}
