@@ -10,7 +10,7 @@
 <header>
     <h1>VyOS Firewall Rule Configuration Generator</h1>
 
-    {% if firewall_name %}
+    {% if current_user.is_authenticated %}
     <table align="right">
         <td align="right">
             <a href="{{ url_for('logout')}}">

@@ -3,24 +3,19 @@
 <br><br>
 <form action="/register" , method="post">
     <table class="table">
-        <tr>
-            <td align="center" colspan="2">
-                <h2>Register</h2>
-            </td>
-        </tr>
+        {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+        {% if flashed_messages %}
         <tr>
             <td colspan="2">
-                {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-                {% if flashed_messages %}
                 {% for category, flash_message in flashed_messages %}
                 <div class="alert alert-{{ category }}">
                     {{flash_message}}
                 </div>
                 {% endfor %}
                 {% endif %}
-                {% endwith %}
             </td>
         </tr>
+        {% endwith %}
         <tr>
             <td>
                 <label for="username">Username</label>
