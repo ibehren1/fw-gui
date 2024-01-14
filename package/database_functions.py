@@ -4,34 +4,52 @@
 from datetime import datetime
 from flask import flash
 from flask_login import login_user
+import os
 
 
 #
 # Process login from user/password
 def process_login(bcrypt, db, request, User):
-    result = query_user_username(db, User, request.form["username"])
+    if request.form["username"] == "":
+        return False, None
+
+    result = query_user_by_username(db, User, request.form["username"])
 
     if result is None:
         flash("Login incorrect.", "warning")
-        return False
+        return False, None
 
     else:
         if bcrypt.check_password_hash(result.password, request.form["password"]):
             print(f'{datetime.now()} User <{request.form["username"]}> logged in.')
             login_user(result)
+            data_dir = f"data/{result.username}"
+            if not os.path.exists(data_dir):
+                os.makedirs(data_dir)
+                os.system(f"cp examples/example.json {data_dir}/example.json")
         else:
             print(
                 f'{datetime.now()} User <{request.form["username"]}> attempted login with incorrect password.'
             )
             flash("Login incorrect.", "warning")
-            return False
+            return False, None
 
-    return True
+    return True, data_dir
+
+
+#
+# Query User table by id
+def query_user_by_id(db, User, id):
+    try:
+        result = db.session.execute(db.select(User).filter_by(id=id)).scalar_one()
+    except:
+        result = None
+    return result
 
 
 #
 # Query User table by username
-def query_user_username(db, User, username):
+def query_user_by_username(db, User, username):
     try:
         result = db.session.execute(
             db.select(User).filter_by(username=username)
@@ -67,7 +85,7 @@ def register_user(bcrypt, db, request, User):
             flash("Passwords do not match", "danger")
             return False
 
-    if query_user_username(db, User, username) is not None:
+    if query_user_by_username(db, User, username) is not None:
         flash("Username already exists.", "danger")
         return False
 

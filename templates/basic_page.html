@@ -28,17 +28,56 @@
 
     <table border="0" align="center" style="vertical-align: top;">
         <tr>
-            <td width="10%">
-
+            <td width="25%" style="vertical-align: top;">
+                {% if current_user.is_authenticated %}
+                <table border="0">
+                    <colgroup>
+                        <col span="1" style="width: 50%;">
+                        <col span="1" style="width: 50%;">
+                    </colgroup>
+                    <td align="center">
+                        <p class="section_heading">Firewall Configs</p>
+                        Click config name below to view config.
+                        <br>
+                        <br>
+                    </td>
+                    {% if file_list%}
+                    {% for file in file_list %}
+                    <form action="/select_firewall_config" method=post>
+                        <tr>
+                            <td align="center">
+                                <input type="radio" name="action" value="{{file}}">{{file}}<br>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td align="center">
+                                <input class="button" type="submit" value="Select Config" style="width: 100%">
+                            </td>
+                        </tr>
+                    </form>
+                    {% endif %}
+                    <tr>
+                        <td>
+                            <br>
+                            <br>
+                            <br>
+                            <form action="/upload_json" method=post enctype=multipart/form-data>
+                                <input type="file" name="file">
+                                <input class="button" type="submit" style="width: 100%;" value="Upload Datafile">
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
             </td>
-            <td width="55%">
+            <td width="50%">
                 {% block body %}
                 {% endblock body %}
             </td>
-            <td width="35%" style="vertical-align: top;">
+            <td width="25%" style="vertical-align: top;">
 
-                {% if firewall_name %}
-                <table align="right" border="0" width="25%">
+                <table align="right" border="0">
                     <colgroup>
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
@@ -56,6 +95,7 @@
                             {% endwith %}
                         </td>
                     </tr>
+                    {% if firewall_name %}
                     <tr align="center">
                         <td text-align="center" colspan="2">
                             <p class="section_heading">
@@ -165,23 +205,19 @@
                         <td align="center" colspan="2">
                             <br> <br>
                             <p class="section_heading">
-                                Import / Export Datafile
+                                Export Datafile
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <td colspan="2">
-                            <form action="/upload_json" method=post enctype=multipart/form-data>
-                                <input type="file" name="file">
-                                <input class="button" type="submit" style="width: 100%;" value="Upload Datafile">
-                            </form>
                             <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
                                 <input class="button" type="submit" value="Download Datafile">
                             </a>
                         </td>
                     </tr>
+                    {% endif %}
                 </table>
-                {% endif %}
             </td>
         </tr>
     </table>
