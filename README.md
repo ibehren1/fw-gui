@@ -7,6 +7,8 @@ The webform generates and displays the syntactically correct configuration comma
 Source code: [https://github.com/ibehren1/vyos-fw-gui]( https://github.com/ibehren1/vyos-fw-gui)  
 Working demo:  [https://vyos-fw-gui.com](https://vyos-fw-gui.com)
 
+Close to 1.0.0 release.
+
 ## Interface
 
 ![image](./images/vyos-fw-gui_interface_1.png)
