@@ -7,7 +7,7 @@ from flask import flash
 
 def add_rule_to_data(session, request):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Set local vars from posted form data
     table = request.form["fw_table"].split(",")
@@ -67,7 +67,7 @@ def add_rule_to_data(session, request):
     # print(json.dumps(user_data, indent=4))
 
     # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
     flash(f"Rule {rule} added to table {ip_version}/{fw_table}.", "success")
 
@@ -76,7 +76,7 @@ def add_rule_to_data(session, request):
 
 def add_table_to_data(session, request):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Set local vars from posted form data
     ip_version = request.form["ip_version"]
@@ -99,7 +99,7 @@ def add_table_to_data(session, request):
     ] = default_action
 
     # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
     flash(f"Table {ip_version}/{fw_table} added.", "success")
 
@@ -108,7 +108,7 @@ def add_table_to_data(session, request):
 
 def assemble_list_of_rules(session):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Create list of defined rules
     rule_list = []
@@ -139,7 +139,7 @@ def assemble_list_of_rules(session):
 
 def assemble_list_of_tables(session):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Create list of defined tables
     table_list = []
@@ -160,7 +160,7 @@ def assemble_list_of_tables(session):
 
 def delete_rule_from_data(session, request):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Set local vars from posted form data
     rule = request.form["rule"].split(",")
@@ -190,6 +190,6 @@ def delete_rule_from_data(session, request):
         pass
 
     # Write user's data to file
-    write_user_data_file(session["firewall_name"], user_data)
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
     return

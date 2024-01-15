@@ -4,59 +4,13 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
     integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
-<head>
-    <style>
-        /* table,
-        td,
-        th {
-            border: 2px solid black;
-            padding: 4px;
-
-        }
-
-        .centerTable {
-            margin: 0px auto;
-        }
-
-        table {
-            border-collapse: collapse;
-        }
-
-        td {
-            vertical-align: top;
-        } */
-
-        a:link {
-            color: #FF9400;
-            background-color: transparent;
-            text-decoration: none;
-        }
-
-        header {
-            margin: auto;
-            text-align: center;
-            padding: .1px;
-            /* width: 75%; */
-            align-content: center;
-            color: aliceblue;
-            background-image: linear-gradient(to right, #FFBC13, #FF9400);
-        }
-
-        footer {
-            margin: auto;
-            text-align: center;
-            padding: .1px;
-            /* width: 75%; */
-            color: aliceblue;
-            background-image: linear-gradient(to right, #FFBC13, #FF9400);
-        }
-    </style>
-</head>
+<!-- Local CSS -->
+<link rel="stylesheet" href="static/styles.css" type="text/css">
 
 <header>
-    <h1 style="font-variant: small-caps;">VyOS Firewall Rule Configuration Generator</h1>
+    <h1>VyOS Firewall Rule Configuration Generator</h1>
 
-    {% if firewall_name %}
+    {% if current_user.is_authenticated %}
     <table align="right">
         <td align="right">
             <a href="{{ url_for('logout')}}">
@@ -69,23 +23,122 @@
 
 </header>
 
-<body style="background-color:#606263;color:aliceblue">
+<body class="page_background">
+
 
     <table border="0" align="center" style="vertical-align: top;">
         <tr>
-            <td width="65%">
+            <td width="25%" style="vertical-align: top;">
+                {% if current_user.is_authenticated %}
+                <table border="0">
+                    <colgroup>
+                        <col span="1" style="width: 50%;">
+                        <col span="1" style="width: 50%;">
+                    </colgroup>
+                    <td align="center" colspan="2">
+                        <p class="section_heading">Firewall<br>Configurations</p>
+                        <font class="page_background">Click config name below to view config.</font>
+                        <br>
+                        <br>
+                    </td>
+                    {% if file_list%}
+                    <form action="/select_firewall_config" method=post>
+                        {% for file in file_list %}
+                        <tr>
+                            <td align="center" colspan="2">
+                                <input class="button" type="submit" name="file" value="{{file}}" style="width: 75%">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </form>
+                    {% endif %}
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Create<br>Firewall Configuration
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <form action="/create_config" method=post enctype=multipart/form-data>
+                                <input type="text" id="config_name" name="config_name" maxlength="50" size="34"><br>
+                                <input class="button" type="submit" style="width: 75%;" value="Create Config">
+                            </form>
+                        </td>
+                    </tr>
+                    {% if file_list%}
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Delete<br>Firewall Configuration
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <form action="/delete_config" method=post>
+                                <label class="page_background" for="delete_config">Delete Config:</label>
+                                <select id="delete_config" name="delete_config">
+                                    <option value=""></option>
+                                    {% for file in file_list %}
+                                    <option value="{{file}}">{{file}}</option>
+                                    {% endfor %}
+                                </select>
+                                <input class="button" type="submit" style="width: 75%;" value="Delete Config">
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Import<br>Configuration Datafile
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <form action="/upload_json" method=post enctype=multipart/form-data>
+                                <input type="file" name="file">
+                                <input class="button" type="submit" style="width: 75%;" value="Upload Datafile">
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Export<br>Configuration Datafile
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
+                                <input class="button" type="submit" value="Download Datafile" style="width: 75%;">
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+            </td>
+            <td width="50%" style="vertical-align: top;">
                 {% block body %}
                 {% endblock body %}
             </td>
-            <td width="35%" style="vertical-align: top;">
+            <td width="25%" style="vertical-align: top;">
 
-                {% if firewall_name %}
-                <table align="right" border="0" width="25%">
+                <table align="right" border="0">
                     <colgroup>
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
                     </colgroup>
                     <tr align="center">
+                        {% if current_user.is_authenticated %}
                         <td text-align="center" colspan="2">
                             {% with flashed_messages = get_flashed_messages(with_categories=true) %}
                             {% if flashed_messages %}
@@ -97,27 +150,46 @@
                             {% endif %}
                             {% endwith %}
                         </td>
+                        {% endif %}
                     </tr>
+                    {% if firewall_name %}
                     <tr align="center">
-                        <td text-align="center" colspan="2" style="font-variant: small-caps">
-                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                        <td text-align="center" colspan="2">
+                            <p class="section_heading">
                                 <b>Firewall Name:</b>
-                                <font size="+2">{{ firewall_name }}</font>
+                            </p>
+                            <p>
+                                <font class="page_background" style="font-variant: small-caps;">{{ firewall_name }}
+                                </font>
                             </p>
                             </style>
                         </td>
                     </tr>
                     <tr>
+                        <td align="center" colspan="2">
+                            <p class="section_heading">
+                                Configuration
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
                         <td colspan="2">
                             <a href="{{ url_for('display_config')}}">
-                                <input type="submit" value="Display Config" style="width: 100%">
+                                <input class="button" type="submit" value="Display Configuration" style="width: 100%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
+                                <input class="button" type="submit" style="width: 100%;" value="Download Configuration">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <br> <br>
-                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                            <p class="section_heading">
                                 Groups
                             </p>
                         </td>
@@ -125,19 +197,19 @@
                     <tr>
                         <td>
                             <a href="{{ url_for('add_group_form')}}">
-                                <input type="submit" value="Add Group" style="width: 100%">
+                                <input class="button" type="submit" value="Add Group" style="width: 100%">
                             </a>
                         </td>
                         <td>
                             <a href="{{ url_for('delete_group_form')}}">
-                                <input type="submit" value="Delete Group" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Group" style="width: 100%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <br> <br>
-                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                            <p class="section_heading">
                                 Tables
                             </p>
                         </td>
@@ -145,26 +217,26 @@
                     <tr>
                         <td colspan="2">
                             <a href="{{ url_for('add_table_form')}}">
-                                <input type="submit" value="Add Table" style="width: 100%">
+                                <input class="button" type="submit" value="Add Table" style="width: 100%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <a href="{{ url_for('add_rule_form')}}">
-                                <input type="submit" value="Add Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Add Rule" style="width: 100%">
                             </a>
                         </td>
                         <td>
                             <a href="{{ url_for('delete_rule_form')}}">
-                                <input type="submit" value="Delete Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Rule" style="width: 100%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <br> <br>
-                            <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                            <p class="section_heading">
                                 Filters
                             </p>
                         </td>
@@ -172,24 +244,24 @@
                     <tr>
                         <td colspan="2">
                             <a href="{{ url_for('add_filter_form')}}">
-                                <input type="submit" value="Add Filter" style="width: 100%">
+                                <input class="button" type="submit" value="Add Filter" style="width: 100%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <a href="{{ url_for('add_filter_rule_form')}}">
-                                <input type="submit" value="Add Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Add Rule" style="width: 100%">
                             </a>
                         </td>
                         <td>
                             <a href="{{ url_for('delete_filter_rule_form')}}">
-                                <input type="submit" value="Delete Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Rule" style="width: 100%">
                             </a>
                         </td>
                     </tr>
+                    {% endif %}
                 </table>
-                {% endif %}
             </td>
         </tr>
     </table>
@@ -197,7 +269,7 @@
 </body>
 
 <footer>
-    <p>vyos-fw-gui v0.4.0</p>
+    <p>vyos-fw-gui v0.5.0</p>
     <p>Copyright 2024 Isaac Behrens</p>
 </footer>
 

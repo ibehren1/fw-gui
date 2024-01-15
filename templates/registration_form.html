@@ -1,9 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<!-- <h2>Please enter a firewall name.</h2> -->
-
-<form action="/login" , method="post">
+<form action="/register" , method="post">
     <table class="table">
         {% with flashed_messages = get_flashed_messages(with_categories=true) %}
         {% if flashed_messages %}
@@ -14,9 +12,9 @@
                     {{flash_message}}
                 </div>
                 {% endfor %}
+                {% endif %}
             </td>
         </tr>
-        {% endif %}
         {% endwith %}
         <tr>
             <td>
@@ -28,6 +26,14 @@
         </tr>
         <tr>
             <td>
+                <label for="email">Email</label>
+            </td>
+            <td>
+                <input type=text name=email><br>
+            </td>
+        </tr>
+        <tr>
+            <td>
                 <label for="password">Password</label>
             </td>
             <td>
@@ -35,14 +41,21 @@
             </td>
         </tr>
         <tr>
-            <td></td>
-            <td align="center">
-                <p><input type=submit value=Login>
+            <td>
+                <label for="password_confirm">Confirm Password</label>
+            </td>
+            <td>
+                <input type=password name=confirm_password><br>
             </td>
         </tr>
         <tr>
             <td align="center" colspan="2">
-                <a href="{{url_for('registration_form')}}" class="link">Register</a> as a new user.
+                <p><input type=submit value=Register>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" colspan="2">
+                Already registered? <a href="{{url_for('login')}}" class="link">Login</a>
             </td>
         </tr>
     </table>

@@ -7,7 +7,7 @@ from flask import flash
 
 def add_group_to_data(session, request):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Set local vars from posted form data
     ip_version = request.form["ip_version"]
@@ -37,7 +37,7 @@ def add_group_to_data(session, request):
     # print(json.dumps(user_data, indent=4))
 
     # Write user_data to file
-    write_user_data_file(session["firewall_name"], user_data)
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
     flash(f"Group {group_name} added.", "success")
 
@@ -46,7 +46,7 @@ def add_group_to_data(session, request):
 
 def assemble_list_of_groups(session):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Create list of defined groups
     group_list = []
@@ -68,7 +68,7 @@ def assemble_list_of_groups(session):
 
 def delete_group_from_data(session, request):
     # Get user's data
-    user_data = read_user_data_file(session["firewall_name"])
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Set local vars from posted form data
     group = request.form["group"].split(",")
@@ -93,6 +93,6 @@ def delete_group_from_data(session, request):
         pass
 
     # Write user's data to file
-    write_user_data_file(session["firewall_name"], user_data)
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
     return

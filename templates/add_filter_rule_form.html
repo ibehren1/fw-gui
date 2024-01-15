@@ -1,28 +1,25 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
+<table class="table">
     <form action="/add_filter_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
-                    Add Filter Rule
-                </p>
-
+                <h4> Add Filter Rule </h4>
             </th>
         </tr>
         <tr>
             <td colspan="2">
                 Filters are tables of rules pointing to other tables of rules based on interface and traffic direction.
                 <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                    style="color: #FF9400; font-weight: bold;">
+                    class="docs_link">
                     Docs&#x2197
                 </a>
             </td>
         </tr>
         <tr>
             <td colspan="4">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Filter
                 </p>
                 <label for="filter">Filter</label>
@@ -37,28 +34,28 @@
         </tr>
         <tr>
             <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Rule Number
                 </p>
                 <label for="rule">Number</label>
                 <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
             </td>
             <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Description
                 </p>
                 <label for="rule">Description</label>
                 <input type="text" id="description" name="description" size="25" value="Rule description."><br>
             </td>
             <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Disable
                 </p>
                 <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
                 <label for="rule_disable">Disable</label>
             </td>
             <td>
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Logging
                 </p>
                 <input type="checkbox" id="logging" name="logging" value="True">
@@ -67,13 +64,13 @@
         </tr>
         <tr>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Action
                 </p>
                 <input type="radio" name="action" value="jump" checked="checked">jump<br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Jump Target
                 </p>
                 <label for="jump_target">Jump Target</label>
@@ -86,7 +83,7 @@
                 </select><br>
             </td>
             <td colspan="2" style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Interface
                 </p>
                 <label for="rule">Interface Name</label>

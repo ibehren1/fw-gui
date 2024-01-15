@@ -1,14 +1,11 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table align=center border="0" bordercolor="#000000" cellpadding="10px" cellspacing=1>
+<table class="table">
     <form action="/add_table" , method="post">
         <tr>
             <th colspan="3" align="left">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:x-large;color:#ff9900">
-                    Add Firewall Table
-                </p>
-
+                <h4> Add Firewall Table </h4>
             </th>
         </tr>
         <tr>
@@ -18,21 +15,21 @@
                 through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
                 be executed.
                 <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                    style="color: #FF9400; font-weight: bold;">
+                    class="docs_link">
                     Docs&#x2197
                 </a>
             </td>
         </tr>
         <tr>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     IP Version
                 </p>
                 <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
                 <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Firewall Table
                 </p>
                 <label for="fw_table">Table Name</label>
@@ -41,7 +38,7 @@
                 <input type="text" id="description" name="description" size=30 value=""><br>
             </td>
             <td style="vertical-align: top;">
-                <p style="font-weight:bold;font-variant:small-caps;font-size:large;color:#ff9900">
+                <p class="section_heading">
                     Rule Action
                 </p>
                 <input type="radio" name="default_action" value="accept">accept<br>
