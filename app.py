@@ -8,30 +8,23 @@
     Copyright 2024 Isaac Behrens
 """
 from datetime import datetime
-from flask import flash, Flask, redirect, render_template, request, session, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 from flask_bcrypt import Bcrypt
+from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from package.database_functions import process_login, query_user_by_id, register_user
-from flask_login import (
-    LoginManager,
-    UserMixin,
-    login_required,
-    login_user,
-    logout_user,
+from package.data_file_functions import (
+    initialize_data_dir,
+    list_user_files,
+    process_upload,
+    write_user_data_file,
 )
-from waitress import serve
-
 from package.filter_functions import (
     add_filter_rule_to_data,
     add_filter_to_data,
     assemble_list_of_filters,
     assemble_list_of_filter_rules,
     delete_filter_rule_from_data,
-)
-from package.data_file_functions import (
-    initialize_data_dir,
-    list_user_files,
-    process_upload,
 )
 from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
@@ -46,7 +39,9 @@ from package.table_functions import (
     assemble_list_of_tables,
     delete_rule_from_data,
 )
+from waitress import serve
 import os
+from flask import flash
 
 db_location = os.path.join(os.getcwd(), "data/database")
 
@@ -64,18 +59,13 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 
-# class User(db.Model, UserMixin):
+#
+# Database User Table Model
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(40), nullable=False)
     password = db.Column(db.String(80), nullable=False)
-
-
-# Create DB if it does not exist -- should only happen on first run
-if not os.path.exists("./data/database/auth.db"):
-    with app.app_context():
-        db.create_all()
 
 
 @login_manager.user_loader
@@ -331,7 +321,7 @@ def display_config():
     file_list = list_user_files(session)
 
     if "firewall_name" not in session:
-        message = "No firewall selected.<br><br>Please select a firewall from the list on the right."
+        message = "No firewall selected.<br><br>Please select a firewall from the list on the left."
 
         return render_template(
             "firewall_results.html", file_list=file_list, message=message
@@ -346,6 +336,46 @@ def display_config():
             firewall_name=session["firewall_name"],
             message=message,
         )
+
+
+#
+# Create Config
+@app.route("/create_config", methods=["POST"])
+@login_required
+def create_config():
+    if request.form["config_name"] == "":
+        flash("Config name cannot be empty", "danger")
+        return redirect(url_for("index"))
+    else:
+        user_data = {}
+
+        session["firewall_name"] = request.form["config_name"]
+        write_user_data_file(
+            f'{session["data_dir"]}/{request.form["config_name"]}', user_data
+        )
+
+    return redirect(url_for("display_config"))
+
+
+#
+# Delete Config
+@app.route("/delete_config", methods=["POST"])
+@login_required
+def delete_config():
+    if request.form["delete_config"] == "":
+        flash("You must select a config to delete.", "danger")
+        return redirect(url_for("index"))
+
+    if "firewall_name" in session:
+        if session["firewall_name"] == request.form["delete_config"]:
+            session.pop("firewall_name")
+
+    os.remove(f'{session["data_dir"]}/{request.form["delete_config"]}.json')
+    flash(
+        f'Firewall config {request.form["delete_config"]} has been deleted.', "success"
+    )
+
+    return redirect(url_for("display_config"))
 
 
 #

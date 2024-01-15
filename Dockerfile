@@ -16,7 +16,6 @@ ADD static/*           /opt/vyos-fw-gui/static/
 ADD templates/*        /opt/vyos-fw-gui/templates/
 ADD requirements.txt   /opt/vyos-fw-gui/requirements.txt
 RUN mkdir              /opt/vyos-fw-gui/data
-RUN mkdir              /opt/vyos-fw-gui/data/database
 
 # Install pip modules
 RUN pip3 install -r /opt/vyos-fw-gui/requirements.txt

@@ -15,13 +15,32 @@ def allowed_file(filename):
 #
 # Initialize the data directory at App start
 def initialize_data_dir():
+    print("Initializing Data Directory...")
+
     if not os.path.exists("data"):
+        print(" |\n |--> Data directory not found, creating...")
         os.makedirs("data")
+
+    if not os.path.exists("data/database"):
+        print(" |\n |--> Database directory not found, creating...")
+        os.makedirs("data/database")
+
     if not os.path.exists("data/uploads"):
+        print(" |\n |--> Uploads directory not found, creating...")
         os.makedirs("data/uploads")
+
     if not os.path.exists("data/example.json"):
+        print(" |\n |--> Example data file not found, copying...")
         os.system("cp examples/example.json data/example.json")
 
+    if not os.path.exists("./data/database/auth.db"):
+        print(" |\n |--> Auth database not found, creating...")
+        from app import app, db
+
+        with app.app_context():
+            db.create_all()
+
+    print(" |\n |--> Data directory initialized.\n |")
     return
 
 

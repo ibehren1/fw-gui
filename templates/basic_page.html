@@ -36,8 +36,8 @@
                         <col span="1" style="width: 50%;">
                     </colgroup>
                     <td align="center" colspan="2">
-                        <p class="section_heading">Firewall Configs</p>
-                        Click config name below to view config.
+                        <p class="section_heading">Firewall<br>Configurations</p>
+                        <font class="page_background">Click config name below to view config.</font>
                         <br>
                         <br>
                     </td>
@@ -56,7 +56,47 @@
                         <td align="center" colspan="2">
                             <br> <br>
                             <p class="section_heading">
-                                Import Datafile
+                                Create<br>Firewall Configuration
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <form action="/create_config" method=post enctype=multipart/form-data>
+                                <input type="text" id="config_name" name="config_name" maxlength="50" size="34"><br>
+                                <input class="button" type="submit" style="width: 75%;" value="Create Config">
+                            </form>
+                        </td>
+                    </tr>
+                    {% if file_list%}
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Delete<br>Firewall Configuration
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <form action="/delete_config" method=post>
+                                <label class="page_background" for="delete_config">Delete Config:</label>
+                                <select id="delete_config" name="delete_config">
+                                    <option value=""></option>
+                                    {% for file in file_list %}
+                                    <option value="{{file}}">{{file}}</option>
+                                    {% endfor %}
+                                </select>
+                                <input class="button" type="submit" style="width: 75%;" value="Delete Config">
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
+                            <p class="section_heading">
+                                Import<br>Configuration Datafile
                             </p>
                         </td>
                     </tr>
@@ -72,7 +112,7 @@
                         <td align="center" colspan="2">
                             <br> <br>
                             <p class="section_heading">
-                                Export Datafile
+                                Export<br>Configuration Datafile
                             </p>
                         </td>
                     </tr>
@@ -98,6 +138,7 @@
                         <col span="1" style="width: 50%;">
                     </colgroup>
                     <tr align="center">
+                        {% if current_user.is_authenticated %}
                         <td text-align="center" colspan="2">
                             {% with flashed_messages = get_flashed_messages(with_categories=true) %}
                             {% if flashed_messages %}
@@ -109,6 +150,7 @@
                             {% endif %}
                             {% endwith %}
                         </td>
+                        {% endif %}
                     </tr>
                     {% if firewall_name %}
                     <tr align="center">
@@ -117,7 +159,8 @@
                                 <b>Firewall Name:</b>
                             </p>
                             <p>
-                                <font style="font-variant: small-caps;">{{ firewall_name }}</font>
+                                <font class="page_background" style="font-variant: small-caps;">{{ firewall_name }}
+                                </font>
                             </p>
                             </style>
                         </td>
