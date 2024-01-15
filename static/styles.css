@@ -93,3 +93,15 @@ header {
     border-spacing: 0;
     border-collapse: collapse;
 }
+
+.table td,
+.table th {
+    padding: .75rem;
+    vertical-align: top;
+    border-top: 0px solid #dee2e6
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 0px solid #dee2e6
+}
