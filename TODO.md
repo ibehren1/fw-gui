@@ -12,4 +12,4 @@
   - [x] Authentication of some form.
 - [x] Implement stylesheets.
 - [ ] Further implement stylesheets.
-- [ ] Add delete configuration option.
+- [x] Add delete configuration option.
