@@ -54,6 +54,12 @@ h4 {
     color: #ff9400;
 }
 
+.h4_white {
+    font-weight: bold;
+    font-variant: small-caps;
+    color: aliceblue;
+}
+
 header {
     margin: auto;
     text-align: center;
@@ -69,6 +75,17 @@ header {
 
 .link:hover {
     color: #FF9400;
+}
+
+.link_white {
+    color: aliceblue;
+    font-variant: small-caps;
+}
+
+.link_white:hover {
+    color: aliceblue;
+    font-variant: small-caps;
+    font-weight: bolder;
 }
 
 .page_background {

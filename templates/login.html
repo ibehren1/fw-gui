@@ -1,8 +1,6 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<!-- <h2>Please enter a firewall name.</h2> -->
-
 <form action="/login" , method="post">
     <table class="table">
         {% with flashed_messages = get_flashed_messages(with_categories=true) %}
