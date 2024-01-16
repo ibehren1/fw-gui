@@ -13,3 +13,4 @@
 - [x] Implement stylesheets.
 - [ ] Further implement stylesheets.
 - [x] Add delete configuration option.
+- [ ] Display groups visually.
