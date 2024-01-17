@@ -1,20 +1,23 @@
 <html>
 
+<!-- Local CSS -->
+<link rel="stylesheet" href="static/styles.css" type="text/css">
 <!-- Bootstrap CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" -->
+<!-- integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
 
 <!-- Local CSS -->
 <link rel="stylesheet" href="static/styles.css" type="text/css">
+<!-- <link rel="stylesheet" href="static/vyos.css" type="text/css"> -->
 
 <header>
-    <h1>VyOS Firewall Rule Configuration Generator</h1>
+    <h1>VyOS Firewall GUI</h1>
 
     {% if current_user.is_authenticated %}
     <table align="right">
         <td align="right">
             <a href="{{ url_for('logout')}}">
-                <input type="submit" value="Logout" style="width: 100%">
+                <input class="button" type="submit" value="Logout" style="width: 100%">
             </a>
         </td>
     </table>
@@ -269,18 +272,18 @@
 </body>
 
 <footer>
-    <table class="table">
+    <table class="table" align="center" width="100%">
         <tr>
             <td width="25%" align="center" style="vertical-align: middle;">
-                <a class="link_white"
-                    href="https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general">Docker Hub</a>
+                <a class="link_dark" href="https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general">Docker
+                    Hub</a>
             </td>
             <td width="50%" align="center" style="vertical-align: middle;">
-                <p class="h4_white">vyos-fw-gui v0.6.0</p>
-                <p class="h4_white">Copyright 2024 Isaac Behrens</p>
+                <p class="h4_dark">vyos-fw-gui v0.6.0</p>
+                <p class="h4_dark">Copyright 2024 Isaac Behrens</p>
             </td>
             <td width="25%" align="center" style="vertical-align: middle;">
-                <a class="link_white" href="https://github.com/ibehren1/vyos-fw-gui">GitHub</a>
+                <a class="link_dark" href="https://github.com/ibehren1/vyos-fw-gui">GitHub</a>
             </td>
         </tr>
     </table>
