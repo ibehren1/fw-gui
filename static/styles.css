@@ -38,15 +38,41 @@ footer {
     background-image: linear-gradient(135deg, #ffbf12, #ff9000);
 }
 
+.configuration {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #E8EBF5;
+    color: #1A1C1A;
+}
+
 h1 {
+    font-variant: small-caps;
+}
+
+.h1_yellow {
     font-variant: small-caps;
 }
 
 h2 {
     font-weight: bold;
     font-variant: small-caps;
+    font-size: xx-large;
     /* color: #ff9000; */
     color: #ffbf12;
+}
+
+h3 {
+    font-weight: bold;
+    font-variant: small-caps;
+    /* color: #ff9000; */
+    color: #ffbf12;
+}
+
+.h3_white {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: x-large;
+    /* color: #ff9000; */
+    color: aliceblue;
 }
 
 h4 {
@@ -60,6 +86,13 @@ h4 {
     font-weight: bold;
     font-variant: small-caps;
     color: aliceblue;
+}
+
+.h3_dark {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: large;
+    color: #323231;
 }
 
 .h4_dark {
@@ -136,6 +169,7 @@ header {
     border-collapse: collapse;
 
     table-layout: fixed;
+    vertical-align: top;
 }
 
 .table td,

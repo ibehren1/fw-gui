@@ -5,7 +5,7 @@
     <form action="/delete_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
-                <h4> Delete Firewall Rule </h4>
+                <h2> Delete Firewall Rule </h2>
             </th>
         </tr>
         <tr>
@@ -21,11 +21,11 @@
             </td>
         </tr>
         <tr>
-            <td colspan="3">
+            <td>
                 <p class="section_heading">
                     Rule
                 </p>
-                Choose rule to delete.<br>
+                Choose rule to delete.&nbsp;
                 <label for="fw_table"></label>
                 <select name="rule" id="rule">
                     {% for rule in rule_list %}
@@ -37,7 +37,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right" colspan="5">
+            <td align="right">
                 <input type="submit" value="Delete Rule">
             </td>
         </tr>

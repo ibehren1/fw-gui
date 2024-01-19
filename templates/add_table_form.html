@@ -5,7 +5,7 @@
     <form action="/add_table" , method="post">
         <tr>
             <th colspan="3" align="left">
-                <h4> Add Firewall Table </h4>
+                <h2> Add Firewall Table </h2>
             </th>
         </tr>
         <tr>
@@ -25,28 +25,42 @@
                 <p class="section_heading">
                     IP Version
                 </p>
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">IPv6<br><br>
+                <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
+                <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
             </td>
             <td style="vertical-align: top;">
                 <p class="section_heading">
                     Firewall Table
                 </p>
-                <label for="fw_table">Table Name</label>
-                <input type="text" id="fw_table" name="fw_table" size=30 value=""><br>
-                <label for="description">Table Description</label>
-                <input type="text" id="description" name="description" size=30 value=""><br>
+                <table>
+                    <tr>
+                        <td>
+                            <label for="fw_table">Table Name</label>
+                        </td>
+                        <td>
+                            <input type="text" id="fw_table" name="fw_table" size=30 value=""><br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="description">Description</label>
+                        </td>
+                        <td>
+                            <input type="text" id="description" name="description" size=30 value=""><br>
+                        </td>
+                    </tr>
+                </table>
             </td>
             <td style="vertical-align: top;">
                 <p class="section_heading">
-                    Rule Action
+                    Default Rule Action
                 </p>
-                <input type="radio" name="default_action" value="accept">accept<br>
-                <input type="radio" name="default_action" value="continue">continue<br>
-                <input type="radio" name="default_action" value="drop" checked="checked">drop<br>
-                <input type="radio" name="default_action" value="jump">jump<br>
-                <input type="radio" name="default_action" value="reject">reject<br>
-                <input type="radio" name="default_action" value="return">return<br>
+                <input type="radio" name="default_action" value="accept">&nbsp;accept<br>
+                <input type="radio" name="default_action" value="continue">&nbsp;continue<br>
+                <input type="radio" name="default_action" value="drop" checked="checked">&nbsp;drop<br>
+                <input type="radio" name="default_action" value="jump">&nbsp;jump<br>
+                <input type="radio" name="default_action" value="reject">&nbsp;reject<br>
+                <input type="radio" name="default_action" value="return">&nbsp;return<br>
             </td>
         </tr>
         <tr>

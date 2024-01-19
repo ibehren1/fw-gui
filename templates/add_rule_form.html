@@ -5,7 +5,7 @@
     <form action="/add_rule" , method="post">
         <tr>
             <th colspan="5" align="left">
-                <h4> Add Firewall Rule </h4>
+                <h2> Add Firewall Rule </h2>
             </th>
         </tr>
         <tr>
@@ -25,7 +25,7 @@
                 <p class="section_heading">
                     Firewall Table
                 </p>
-                <label for="fw_table">Table Name</label>
+                <label for="fw_table">Table Name&nbsp;</label>
                 <select name="fw_table" id="fw_table">
                     {% for table in table_list %}
                     <option value='{{table[0]}},{{table[1]}}'>
@@ -55,14 +55,14 @@
                     Disable
                 </p>
                 <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
-                <label for="rule_disable">Disable</label>
+                <label for="rule_disable">&nbsp;Disable</label>
             </td>
             <td>
                 <p class="section_heading">
                     Logging
                 </p>
                 <input type="checkbox" id="logging" name="logging" value="True">
-                <label for="logging">Enable</label>
+                <label for="logging">&nbsp;Enable</label>
             </td>
         </tr>
         <tr>
@@ -71,9 +71,9 @@
                     Action
                 </p>
 
-                <input type="radio" name="action" value="accept" checked="checked">accept<br>
-                <input type="radio" name="action" value="continue">continue<br>
-                <input type="radio" name="action" value="drop">drop
+                <input type="radio" name="action" value="accept" checked="checked">&nbsp;accept<br>
+                <input type="radio" name="action" value="continue">&nbsp;continue<br>
+                <input type="radio" name="action" value="drop">&nbsp;drop
             </td>
 
             <td rowspan="2" style="vertical-align: top;">
@@ -83,14 +83,14 @@
 
                 <label for="dest_address">Address or<br>Group Name</label>
                 <input type="text" id="dest_address" name="dest_address" size="25"><br>
-                <input type="radio" name="dest_address_type" value="address" checked="checked">Address<br>
-                <input type="radio" name="dest_address_type" value="address_group">Address Group<br>
-                <input type="radio" name="dest_address_type" value="network_group">Network Group<br><br>
+                <input type="radio" name="dest_address_type" value="address" checked="checked">&nbsp;Address<br>
+                <input type="radio" name="dest_address_type" value="address_group">&nbsp;Address Group<br>
+                <input type="radio" name="dest_address_type" value="network_group">&nbsp;Network Group<br><br>
 
                 <label for="dest_port">Port or<br>Port Group Name</label>
                 <input type="text" id="dest_port" name="dest_port" size="21"><br>
-                <input type="radio" name="dest_port_type" value="port" checked="checked">Port<br>
-                <input type="radio" name="dest_port_type" value="port_group">Port Group
+                <input type="radio" name="dest_port_type" value="port" checked="checked">&nbsp;Port<br>
+                <input type="radio" name="dest_port_type" value="port_group">&nbsp;Port Group
 
             </td>
             <td rowspan="2" style="vertical-align: top;">
@@ -100,25 +100,25 @@
 
                 <label for="source_address">Address or<br>Group Name</label>
                 <input type="text" id="source_address" name="source_address" size="25"><br>
-                <input type="radio" name="source_address_type" value="address" checked="checked">Address<br>
-                <input type="radio" name="source_address_type" value="address_group">Address Group<br>
-                <input type="radio" name="source_address_type" value="network_group">Network Group<br><br>
+                <input type="radio" name="source_address_type" value="address" checked="checked">&nbsp;Address<br>
+                <input type="radio" name="source_address_type" value="address_group">&nbsp;Address Group<br>
+                <input type="radio" name="source_address_type" value="network_group">&nbsp;Network Group<br><br>
 
                 <label for="source_port">Port or<br>Port Group Name</label>
                 <input type="text" id="source_port" name="source_port" size="21"><br>
-                <input type="radio" name="source_port_type" value="port" checked="checked">Port<br>
-                <input type="radio" name="source_port_type" value="port_group">Port Group
+                <input type="radio" name="source_port_type" value="port" checked="checked">&nbsp;Port<br>
+                <input type="radio" name="source_port_type" value="port_group">&nbsp;Port Group
             </td>
 
             <td rowspan="1">
                 <p class="section_heading">
                     Protocol
                 </p>
-                <input type="radio" name="protocol" value="" checked="checked">any<br>
-                <input type="radio" name="protocol" value="icmp">icmp<br>
-                <input type="radio" name="protocol" value="tcp">tcp<br>
-                <input type="radio" name="protocol" value="udp">udp<br>
-                <input type="radio" name="protocol" value="tcp_udp">tcp_udp
+                <input type="radio" name="protocol" value="" checked="checked">&nbsp;any<br>
+                <input type="radio" name="protocol" value="icmp">&nbsp;icmp<br>
+                <input type="radio" name="protocol" value="tcp">&nbsp;tcp<br>
+                <input type="radio" name="protocol" value="udp">&nbsp;udp<br>
+                <input type="radio" name="protocol" value="tcp_udp">&nbsp;tcp_udp
             </td>
         <tr>
             <td rowspan="1">
@@ -126,13 +126,13 @@
                     State
                 </p>
                 <input type="checkbox" id="state_est" name="state_est" value="True">
-                <label for="state_est">Established</label><br>
+                <label for="state_est">&nbsp;Established</label><br>
                 <input type="checkbox" id="state_inv" name="state_inv" value="True">
-                <label for="state_inv">Invalid</label><br>
+                <label for="state_inv">&nbsp;Invalid</label><br>
                 <input type="checkbox" id="state_new" name="state_new" value="True">
-                <label for="state_new">New</label><br>
+                <label for="state_new">&nbsp;New</label><br>
                 <input type="checkbox" id="state_rel" name="state_rel" value="True">
-                <label for="state_rel">Related</label><br>
+                <label for="state_rel">&nbsp;Related</label><br>
             </td>
         </tr>
         <tr>
