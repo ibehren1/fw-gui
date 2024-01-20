@@ -247,3 +247,24 @@ body {
 .hs-button:hover {
     background: linear-gradient(135deg, #ffdc7e, #ffbe12)
 } */
+
+
+/*  Alerts */
+
+.alert-danger {
+    color: aliceblue;
+    background-color: #dc2232;
+    border-color: #f5c6cb
+}
+
+.alert-success {
+    color: aliceblue;
+    background-color: #1dbd42;
+    border-color: #c3e6cb
+}
+
+.alert-warning {
+    color: #0c0c0c;
+    background-color: #f7d423;
+    border-color: #ffeeba
+}

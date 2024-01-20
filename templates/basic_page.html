@@ -2,13 +2,6 @@
 
 <!-- Local CSS -->
 <link rel="stylesheet" href="static/styles.css" type="text/css">
-<!-- Bootstrap CSS -->
-<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" -->
-<!-- integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
-
-<!-- Local CSS -->
-<link rel="stylesheet" href="static/styles.css" type="text/css">
-<!-- <link rel="stylesheet" href="static/vyos.css" type="text/css"> -->
 
 <header>
     <h1>VyOS Firewall GUI</h1>
@@ -57,7 +50,7 @@
         <tr>
             <td width="25%" style="vertical-align: top;">
                 {% if current_user.is_authenticated %}
-                <table border="0">
+                <table border="0" width="100%">
                     <colgroup>
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
@@ -159,19 +152,17 @@
             </td>
             <td width="25%" style="vertical-align: top;">
 
-                <table border="0">
+                <table border="0" width="100%">
                     <colgroup>
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
                     </colgroup>
                     {% if firewall_name %}
-                    <tr>
-                        <td align="center" colspan="2">
-                            <p class="section_heading">
-                                Configuration
-                            </p>
-                        </td>
-                    </tr>
+                    <td align="center" colspan="2">
+                        <p class="section_heading">
+                            Configuration
+                        </p>
+                    </td>
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('display_config')}}">
@@ -180,9 +171,9 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td align="center" colspan="2">
                             <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
-                                <input class="button" type="submit" style="width: 100%;" value="Download Configuration">
+                                <input class="button" type="submit" style="width: 75%;" value="Download Configuration">
                             </a>
                         </td>
                     </tr>
@@ -195,14 +186,14 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td align="right">
                             <a href="{{ url_for('add_group_form')}}">
-                                <input class="button" type="submit" value="Add Group" style="width: 100%">
+                                <input class="button" type="submit" value="Add Group" style="width: 75%">
                             </a>
                         </td>
-                        <td>
+                        <td align="left">
                             <a href="{{ url_for('delete_group_form')}}">
-                                <input class="button" type="submit" value="Delete Group" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Group" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -215,21 +206,21 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('add_table_form')}}">
-                                <input class="button" type="submit" value="Add Table" style="width: 100%">
+                                <input class="button" type="submit" value="Add Table" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td align="right">
                             <a href="{{ url_for('add_rule_form')}}">
-                                <input class="button" type="submit" value="Add Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Add Rule" style="width: 75%">
                             </a>
                         </td>
-                        <td>
+                        <td align="left">
                             <a href="{{ url_for('delete_rule_form')}}">
-                                <input class="button" type="submit" value="Delete Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Rule" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -242,21 +233,21 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('add_filter_form')}}">
-                                <input class="button" type="submit" value="Add Filter" style="width: 100%">
+                                <input class="button" type="submit" value="Add Filter" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td align="right">
                             <a href="{{ url_for('add_filter_rule_form')}}">
-                                <input class="button" type="submit" value="Add Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Add Rule" style="width: 75%">
                             </a>
                         </td>
-                        <td>
+                        <td align="left">
                             <a href="{{ url_for('delete_filter_rule_form')}}">
-                                <input class="button" type="submit" value="Delete Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Rule" style="width: 75%">
                             </a>
                         </td>
                     </tr>
