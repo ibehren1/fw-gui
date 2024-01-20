@@ -47,13 +47,15 @@ def generate_config(session):
 
                 # Write Config Statements
                 if ip_version == "ipv4":
-                    config.append(
-                        f"set firewall group {group_type} {group_name} description '{group_desc}'"
-                    )
-                    for value in group_value:
+                    if group_desc != "":
                         config.append(
-                            f"set firewall group {group_type} {group_name} {value_type} '{value}'"
+                            f"set firewall group {group_type} {group_name} description '{group_desc}'"
                         )
+                    for value in group_value:
+                        if value != "":
+                            config.append(
+                                f"set firewall group {group_type} {group_name} {value_type} '{value}'"
+                            )
 
                 if ip_version == "ipv6":
                     config.append(
@@ -132,9 +134,10 @@ def generate_config(session):
                     config.append(f"# Rule {rule}")
 
                     # Description
-                    config.append(
-                        f"set firewall {ip_version} {filter_name} filter rule {rule} description '{description}'"
-                    )
+                    if description != "":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} description '{description}'"
+                        )
 
                     # Action
                     config.append(
@@ -269,9 +272,10 @@ def generate_config(session):
                         )
 
                     # Description
-                    config.append(
-                        f"set firewall {ip_version} name {fw_table} rule {rule} description '{description}'"
-                    )
+                    if description != "":
+                        config.append(
+                            f"set firewall {ip_version} name {fw_table} rule {rule} description '{description}'"
+                        )
 
                     # Action
                     config.append(

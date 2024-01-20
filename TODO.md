@@ -14,3 +14,52 @@
 - [ ] Further implement stylesheets.
 - [x] Add delete configuration option.
 - [ ] Display groups visually.
+
+## Design
+
+- [x] Update colors to make more readable
+- [ ] Default fields/tabbing order in forms
+  - [ ] Short-cuts / tooltips
+- [x] & nbsp around bullets and radio buttons
+- [ ] Alignment of fields on text forms
+
+      Same with the textfields, I prefer to have a fixed aligned left border. Example at “Add table” and the name and description field who currently just gets “dumped” on the page without alignment. Having it aligned (as in the description text is like in its own column and all the white textfields is in its own column) makes it easier to read and less interrupting the read the whole page.
+
+      Another option if you dont want to have two hidden columns for the description vs textfield is to align it vertically instead as you did over at “Add firewall group” where the field name is in orange (on darkgrey), textfield and then tooltip below it if needed. drawback with vertical alignment is that this is less compact than doing it two-column style.
+
+- [x] Alignment of "choose file"
+
+      Similar to the “Choose file” at import to the left which doesnt seem to be centered over the yellow button as delete config selection is over its yellow button.
+
+- [x] Page borders
+
+      And the borders of the page would need some air aswell like at top between the yellow header and the darkgrey regular page. At bottom between “Download datafile” and the yellow footer. Or for that matter in the upper right where the logout button would need some air from both the header and the right side of the browser :slight_smile:
+
+## Suggested updates/features
+
+- [ ] Email account validation
+
+## Firewall functions
+
+- [ ] Flowtables?
+- [ ] Firewall group domain-group
+- [x] Don't include empty fields like descriptions
+
+      When adding a group/table/flter the GUI incorrectly includes empty fields like so (the correct behaviour IMHO is that this config line should not be generated at all if its empty):
+
+      set firewall group address-group description 'asdasd'
+      set firewall group address-group address ''
+
+      set firewall ipv4 name ddsfds default-action 'drop'
+      set firewall ipv4 name ddsfds description ''
+
+- [ ] Wording for firewall tables?
+- [ ] Text editor for config
+
+      Another handy thing would be if the generated config would exist in a textarea with a “Update” button at bottom (or top).
+
+      This way one could use the GUI to make a skeleton, click on “Display config” and then copy paste within the textarea (which probably goes way faster) and once done clicking on “Update”. This would be same as if you would first export the generated config, edit the config in notepad/gedit, import it back to the GUI.
+
+- [ ] Look at options for working with official GUI project.
+
+      Other than that this perhaps should/could be merged (or parts of it) with the ongoing VyOS GUI project as described at:
