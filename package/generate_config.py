@@ -19,7 +19,7 @@ def generate_config(session):
     # Create firewall configuration
     config = []
 
-    if "ipv4" or "ipv6" not in user_data:
+    if "ipv4" not in user_data or "ipv6" not in user_data:
         config.append(
             "Empty rule set.  Start by adding a Chain using the button on the right."
         )

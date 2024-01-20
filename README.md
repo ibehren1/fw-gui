@@ -75,7 +75,7 @@ set firewall ipv4 forward filter rule 10 jump-target 'WAN_IN'
 
 
 #
-# Table: WAN_LOCAL
+# Chain: WAN_LOCAL
 #
 set firewall ipv4 name WAN_LOCAL default-action 'drop'
 set firewall ipv4 name WAN_LOCAL description 'WAN inbound to localhost.'
@@ -94,7 +94,7 @@ set firewall ipv4 name WAN_LOCAL rule 20 log
 set firewall ipv4 name WAN_LOCAL rule 20 state 'invalid'
 
 #
-# Table: WAN_IN
+# Chain: WAN_IN
 #
 set firewall ipv4 name WAN_IN default-action 'drop'
 set firewall ipv4 name WAN_IN description 'WAN inbound to LAN.'
@@ -168,7 +168,7 @@ set firewall ipv6 forward filter rule 10 jump-target 'WAN_IN'
 
 
 #
-# Table: WAN_LOCAL
+# Chain: WAN_LOCAL
 #
 set firewall ipv6 name WAN_LOCAL default-action 'drop'
 set firewall ipv6 name WAN_LOCAL description 'WAN inbound to localhost.'
@@ -192,7 +192,7 @@ set firewall ipv6 name WAN_LOCAL rule 30 action 'accept'
 set firewall ipv6 name WAN_LOCAL rule 30 protocol 'ipv6-icmp'
 
 #
-# Table: WAN_IN
+# Chain: WAN_IN
 #
 set firewall ipv6 name WAN_IN default-action 'drop'
 set firewall ipv6 name WAN_IN description 'WAN inbound to LAN.'
