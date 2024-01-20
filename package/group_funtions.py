@@ -111,9 +111,9 @@ def delete_group_from_data(session, request):
     # Delete group from data
     try:
         del user_data[ip_version]["groups"][group_name]
-        flash(f"Deleted group {group_name} from table {ip_version}.", "warning")
+        flash(f"Deleted group {group_name} from {ip_version}.", "warning")
     except:
-        flash(f"Failed to delete group {group_name} from table {ip_version}.", "danger")
+        flash(f"Failed to delete group {group_name} from {ip_version}.", "danger")
         pass
 
     # Clean-up data

@@ -95,9 +95,52 @@ def read_user_data_file(filename):
         with open(f"{filename}.json", "r") as f:
             data = f.read()
             user_data = json.loads(data)
+            if "version" not in user_data:
+                user_data["version"] = "0"
+                user_data = update_schema(user_data)
+                write_user_data_file(filename, user_data)
             return user_data
     except:
         return {}
+
+
+#
+# Schema Updater
+def update_schema(user_data):
+    if user_data["version"] == "0":
+        for ip_version in ["ipv4", "ipv6"]:
+            # Change "tables" to "chains"
+            if ip_version in user_data:
+                if "tables" in user_data[ip_version]:
+                    user_data[ip_version]["chains"] = user_data[ip_version]["tables"]
+                    del user_data[ip_version]["tables"]
+
+            # Change "fw_table" to "fw_chain"
+            if ip_version in user_data:
+                if "filters" in user_data[ip_version]:
+                    for filter in ["input", "forward", "output"]:
+                        if filter in user_data[ip_version]["filters"]:
+                            if "rule-order" in user_data[ip_version]["filters"][filter]:
+                                for rule in user_data[ip_version]["filters"][filter][
+                                    "rule-order"
+                                ]:
+                                    user_data[ip_version]["filters"][filter]["rules"][
+                                        rule
+                                    ]["fw_chain"] = user_data[ip_version]["filters"][
+                                        filter
+                                    ][
+                                        "rules"
+                                    ][
+                                        rule
+                                    ][
+                                        "fw_table"
+                                    ]
+                                    del user_data[ip_version]["filters"][filter][
+                                        "rules"
+                                    ][rule]["fw_table"]
+    user_data["version"] = "1"
+
+    return user_data
 
 
 #
