@@ -1,0 +1,75 @@
+{% extends "basic_page.html" %}
+{% block body %}
+
+<p class="section_heading">IPv4 Groups</p>
+<table border="1" class="table" width="100%">
+    <th>
+        Group Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list|sort(attribute='group_name') %}
+    {% if item.ip_version == 'ipv4' %}
+    <tr>
+        <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td>
+            {{item.group_type}}
+        </td>
+        <td>
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+
+<p class="section_heading">IPv6 Groups</p>
+<table border="1" class="table" width="100%">
+    <th>
+        Group Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list %}
+    {% if item.ip_version == 'ipv6' %}
+    <tr>
+        <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td>
+            {{item.group_type}}
+        </td>
+        <td>
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+{% endblock body %}

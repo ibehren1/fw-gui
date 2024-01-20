@@ -38,6 +38,12 @@ def generate_config(session):
 
                 if group_type == "address-group":
                     value_type = "address"
+                if group_type == "domain-group":
+                    value_type = "address"
+                if group_type == "interface-group":
+                    value_type = "interface"
+                if group_type == "mac-group":
+                    value_type = "mac-address"
                 if group_type == "network-group":
                     value_type = "network"
                 if group_type == "port-group":
@@ -292,6 +298,14 @@ def generate_config(session):
                             config.append(
                                 f"set firewall {ip_version} name {fw_table} rule {rule} destination group address-group '{dest_address}'"
                             )
+                        elif dest_address_type == "domain_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_table} rule {rule} destination group domain-group '{dest_address}'"
+                            )
+                        elif dest_address_type == "mac_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_table} rule {rule} destination group mac-group '{dest_address}'"
+                            )
                         elif dest_address_type == "network_group":
                             config.append(
                                 f"set firewall {ip_version} name {fw_table} rule {rule} destination group network-group '{dest_address}'"
@@ -315,6 +329,14 @@ def generate_config(session):
                         elif source_address_type == "address_group":
                             config.append(
                                 f"set firewall {ip_version} name {fw_table} rule {rule} source group address-group '{source_address}'"
+                            )
+                        elif source_address_type == "domain_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_table} rule {rule} source group domain-group '{source_address}'"
+                            )
+                        elif source_address_type == "mac_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_table} rule {rule} source group mac-group '{source_address}'"
                             )
                         elif source_address_type == "network_group":
                             config.append(

@@ -32,13 +32,13 @@ def add_rule_to_data(session, request):
     if "logging" in request.form:
         rule_dict["logging"] = True
     rule_dict["action"] = request.form["action"]
-    rule_dict["dest_address"] = request.form["dest_address"]
+    rule_dict["dest_address"] = request.form["dest_address"].strip()
     rule_dict["dest_address_type"] = request.form["dest_address_type"]
-    rule_dict["dest_port"] = request.form["dest_port"]
+    rule_dict["dest_port"] = request.form["dest_port"].strip()
     rule_dict["dest_port_type"] = request.form["dest_port_type"]
-    rule_dict["source_address"] = request.form["source_address"]
+    rule_dict["source_address"] = request.form["source_address"].strip()
     rule_dict["source_address_type"] = request.form["source_address_type"]
-    rule_dict["source_port"] = request.form["source_port"]
+    rule_dict["source_port"] = request.form["source_port"].strip()
     rule_dict["source_port_type"] = request.form["source_port_type"]
     rule_dict["protocol"] = (
         request.form["protocol"] if "protocol" in request.form else ""

@@ -30,6 +30,7 @@ from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
     add_group_to_data,
     assemble_list_of_groups,
+    assemble_detail_list_of_groups,
     delete_group_from_data,
 )
 from package.table_functions import (
@@ -124,7 +125,7 @@ def registration_form():
 def add_group():
     add_group_to_data(session, request)
 
-    return redirect(url_for("display_config"))
+    return redirect(url_for("view_groups"))
 
 
 @app.route("/add_group_form")
@@ -144,7 +145,7 @@ def add_group_form():
 def delete_group():
     delete_group_from_data(session, request)
 
-    return redirect(url_for("display_config"))
+    return redirect(url_for("view_groups"))
 
 
 @app.route("/delete_group_form")
@@ -159,6 +160,20 @@ def delete_group_form():
 
     return render_template(
         "delete_group_form.html",
+        file_list=file_list,
+        firewall_name=session["firewall_name"],
+        group_list=group_list,
+    )
+
+
+@app.route("/view groups")
+@login_required
+def view_groups():
+    file_list = list_user_files(session)
+    group_list = assemble_detail_list_of_groups(session)
+
+    return render_template(
+        "view_groups.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
         group_list=group_list,

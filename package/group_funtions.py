@@ -44,6 +44,39 @@ def add_group_to_data(session, request):
     return
 
 
+def assemble_detail_list_of_groups(session):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Create dict of defined groups
+    group_list_detail = []
+    try:
+        for ip_version in ["ipv4", "ipv6"]:
+            if ip_version in user_data:
+                if "groups" in user_data[ip_version]:
+                    for group_name in user_data[ip_version]["groups"]:
+                        item = user_data[ip_version]["groups"][group_name]
+                        print(item)
+                        group_list_detail.append(
+                            {
+                                "ip_version": ip_version,
+                                "group_name": group_name,
+                                "group_desc": item["group_desc"],
+                                "group_type": item["group_type"],
+                                "group_value": item["group_value"],
+                            }
+                        )
+    except:
+        pass
+
+    # If there are no groups, flash message
+    if group_list_detail == []:
+        flash(f"There are no groups defined.", "danger")
+
+    print(group_list_detail)
+    return group_list_detail
+
+
 def assemble_list_of_groups(session):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
