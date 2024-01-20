@@ -5,6 +5,7 @@
 The webform generates and displays the syntactically correct configuration commands can then be cp/pasted to the CLI for firewall rule configuration.
 
 Source code: [https://github.com/ibehren1/vyos-fw-gui]( https://github.com/ibehren1/vyos-fw-gui)  
+Docker Hub: [https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general)  
 Working demo:  [https://vyos-fw-gui.com](https://vyos-fw-gui.com)
 
 Close to 1.0.0 release.
@@ -224,7 +225,7 @@ docker run \
   --name   vyos-fw-gui \
   --expose 8080 \
   --mount  source=vyos-fw-gui_data,target=/opt/vyos-fw-gui/data \
-  ibehren1/vyos-fw-gui:v0.6.0
+  ibehren1/vyos-fw-gui:v0.7.0
 ```
 
 ## Docker Compose
@@ -233,7 +234,7 @@ docker run \
 version: '3.7'
 services:
   vyos-fw-gui:
-    image: ibehren1/vyos-fw-gui:v0.6.0
+    image: ibehren1/vyos-fw-gui:v0.7.0
     container_name: vyos-fw-gui
     ports:
       - 8080:8080/tcp

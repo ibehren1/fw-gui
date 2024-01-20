@@ -1,36 +1,56 @@
 <html>
 
-<!-- Bootstrap CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-
 <!-- Local CSS -->
 <link rel="stylesheet" href="static/styles.css" type="text/css">
 
 <header>
-    <h1>VyOS Firewall Rule Configuration Generator</h1>
-
-    {% if current_user.is_authenticated %}
-    <table align="right">
-        <td align="right">
-            <a href="{{ url_for('logout')}}">
-                <input type="submit" value="Logout" style="width: 100%">
-            </a>
-        </td>
-    </table>
-    {% endif %}
-
-
+    <h1>VyOS Firewall GUI</h1>
 </header>
 
 <body class="page_background">
 
 
     <table border="0" align="center" style="vertical-align: top;">
+        {% if current_user.is_authenticated %}
+        <tr>
+            <td></td>
+            <td text-align="center">
+                {% if firewall_name %}
+                <p class="section_heading" align="center">
+                    <b>Firewall Name:</b>
+                    <font class="h3_white">
+                        {{ firewall_name }}
+                    </font>
+                    </h3_white>
+                </p>
+                {% endif %}
+            </td>
+            <td align="right" colspan="3">
+                <a href="{{ url_for('logout')}}">
+                    <input class="button" type="submit" value="Logout" style="width: 80px">
+                </a>
+            </td>
+        </tr>
+        {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+        {% if flashed_messages %}
+        <tr>
+            <td></td>
+            <td align="center">
+                {% for category, flash_message in flashed_messages %}
+                <div class="alert alert-{{ category }}">
+                    {{flash_message}}
+                </div>
+            </td>
+            <td></td>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </tr>
+        {% endif %}
         <tr>
             <td width="25%" style="vertical-align: top;">
                 {% if current_user.is_authenticated %}
-                <table border="0">
+                <table border="0" width="100%">
                     <colgroup>
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
@@ -132,57 +152,28 @@
             </td>
             <td width="25%" style="vertical-align: top;">
 
-                <table align="right" border="0">
+                <table border="0" width="100%">
                     <colgroup>
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
                     </colgroup>
-                    <tr align="center">
-                        {% if current_user.is_authenticated %}
-                        <td text-align="center" colspan="2">
-                            {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-                            {% if flashed_messages %}
-                            {% for category, flash_message in flashed_messages %}
-                            <div class="alert alert-{{ category }}">
-                                {{flash_message}}
-                            </div>
-                            {% endfor %}
-                            {% endif %}
-                            {% endwith %}
-                        </td>
-                        {% endif %}
-                    </tr>
                     {% if firewall_name %}
-                    <tr align="center">
-                        <td text-align="center" colspan="2">
-                            <p class="section_heading">
-                                <b>Firewall Name:</b>
-                            </p>
-                            <p>
-                                <font class="page_background" style="font-variant: small-caps;">{{ firewall_name }}
-                                </font>
-                            </p>
-                            </style>
-                        </td>
-                    </tr>
+                    <td align="center" colspan="2">
+                        <p class="section_heading">
+                            Configuration
+                        </p>
+                    </td>
                     <tr>
                         <td align="center" colspan="2">
-                            <p class="section_heading">
-                                Configuration
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
                             <a href="{{ url_for('display_config')}}">
-                                <input class="button" type="submit" value="Display Configuration" style="width: 100%">
+                                <input class="button" type="submit" value="Display Configuration" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td align="center" colspan="2">
                             <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
-                                <input class="button" type="submit" style="width: 100%;" value="Download Configuration">
+                                <input class="button" type="submit" style="width: 75%;" value="Download Configuration">
                             </a>
                         </td>
                     </tr>
@@ -195,14 +186,14 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td align="right">
                             <a href="{{ url_for('add_group_form')}}">
-                                <input class="button" type="submit" value="Add Group" style="width: 100%">
+                                <input class="button" type="submit" value="Add Group" style="width: 75%">
                             </a>
                         </td>
-                        <td>
+                        <td align="left">
                             <a href="{{ url_for('delete_group_form')}}">
-                                <input class="button" type="submit" value="Delete Group" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Group" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -215,21 +206,21 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('add_table_form')}}">
-                                <input class="button" type="submit" value="Add Table" style="width: 100%">
+                                <input class="button" type="submit" value="Add Table" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td align="right">
                             <a href="{{ url_for('add_rule_form')}}">
-                                <input class="button" type="submit" value="Add Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Add Rule" style="width: 75%">
                             </a>
                         </td>
-                        <td>
+                        <td align="left">
                             <a href="{{ url_for('delete_rule_form')}}">
-                                <input class="button" type="submit" value="Delete Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Rule" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -242,21 +233,21 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2">
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('add_filter_form')}}">
-                                <input class="button" type="submit" value="Add Filter" style="width: 100%">
+                                <input class="button" type="submit" value="Add Filter" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td align="right">
                             <a href="{{ url_for('add_filter_rule_form')}}">
-                                <input class="button" type="submit" value="Add Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Add Rule" style="width: 75%">
                             </a>
                         </td>
-                        <td>
+                        <td align="left">
                             <a href="{{ url_for('delete_filter_rule_form')}}">
-                                <input class="button" type="submit" value="Delete Rule" style="width: 100%">
+                                <input class="button" type="submit" value="Delete Rule" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -269,18 +260,29 @@
 </body>
 
 <footer>
-    <table class="table">
+    <table class="table" align="center" width="100%">
         <tr>
             <td width="25%" align="center" style="vertical-align: middle;">
-                <a class="link_white"
-                    href="https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general">Docker Hub</a>
+                <p class="h3_dark">
+                    Host Your Own
+                </p>
+                <p class="h4_dark">
+                    <a class="link_dark"
+                        href="https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general">Docker
+                        Hub</a>
+                </p>
             </td>
             <td width="50%" align="center" style="vertical-align: middle;">
-                <p class="h4_white">vyos-fw-gui v0.6.0</p>
-                <p class="h4_white">Copyright 2024 Isaac Behrens</p>
+                <p class="h4_dark">vyos-fw-gui v0.7.0</p>
+                <p class="h3_dark">Copyright 2024 Isaac Behrens</p>
             </td>
             <td width="25%" align="center" style="vertical-align: middle;">
-                <a class="link_white" href="https://github.com/ibehren1/vyos-fw-gui">GitHub</a>
+                <p class="h3_dark">
+                    Contribute
+                </p>
+                <p class="h4_dark">
+                    <a class="link_dark" href="https://github.com/ibehren1/vyos-fw-gui">GitHub</a>
+                </p>
             </td>
         </tr>
     </table>
