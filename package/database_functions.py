@@ -11,19 +11,20 @@ import os
 # Process login from user/password
 def process_login(bcrypt, db, request, User):
     if request.form["username"] == "":
-        return False, None
+        return False, None, None
 
     result = query_user_by_username(db, User, request.form["username"])
 
     if result is None:
         flash("Login incorrect.", "warning")
-        return False, None
+        return False, None, None
 
     else:
         if bcrypt.check_password_hash(result.password, request.form["password"]):
             print(f'{datetime.now()} User <{request.form["username"]}> logged in.')
             login_user(result)
-            data_dir = f"data/{result.username}"
+            username = f"{result.username}"
+            data_dir = f"data/{username}"
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
                 os.system(f"cp examples/example.json {data_dir}/example.json")
@@ -32,9 +33,9 @@ def process_login(bcrypt, db, request, User):
                 f'{datetime.now()} User <{request.form["username"]}> attempted login with incorrect password.'
             )
             flash("Login incorrect.", "warning")
-            return False, None
+            return False, None, None
 
-    return True, data_dir
+    return True, data_dir, username
 
 
 #

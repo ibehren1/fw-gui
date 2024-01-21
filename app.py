@@ -1,5 +1,5 @@
 """
-    VyOS Firewall Configuration Gui
+    VyOS Firewall GUI
 
     Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create
@@ -7,8 +7,11 @@
 
     Copyright 2024 Isaac Behrens
 """
+
+#
+# Library Imports
 from datetime import datetime
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import flash, Flask, redirect, render_template, request, session, url_for
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
@@ -42,8 +45,10 @@ from package.group_funtions import (
 )
 from waitress import serve
 import os
-from flask import flash
 
+
+#
+# App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
 app = Flask(__name__)
@@ -88,7 +93,9 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        login, session["data_dir"] = process_login(bcrypt, db, request, User)
+        login, session["data_dir"], session["username"] = process_login(
+            bcrypt, db, request, User
+        )
         if login:
             return redirect(url_for("index"))
     else:
@@ -137,6 +144,7 @@ def add_group_form():
         "add_group_form.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
+        username=session["username"],
     )
 
 
@@ -163,6 +171,7 @@ def delete_group_form():
         file_list=file_list,
         firewall_name=session["firewall_name"],
         group_list=group_list,
+        username=session["username"],
     )
 
 
@@ -177,6 +186,7 @@ def view_groups():
         file_list=file_list,
         firewall_name=session["firewall_name"],
         group_list=group_list,
+        username=session["username"],
     )
 
 
@@ -200,9 +210,10 @@ def add_rule_form():
 
     return render_template(
         "add_rule_form.html",
+        chain_list=chain_list,
         file_list=file_list,
         firewall_name=session["firewall_name"],
-        chain_list=chain_list,
+        username=session["username"],
     )
 
 
@@ -223,6 +234,7 @@ def add_chain_form():
         "add_chain_form.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
+        username=session["username"],
     )
 
 
@@ -249,6 +261,7 @@ def delete_rule_form():
         file_list=file_list,
         firewall_name=session["firewall_name"],
         rule_list=rule_list,
+        username=session["username"],
     )
 
 
@@ -275,10 +288,11 @@ def add_filter_rule_form():
 
     return render_template(
         "add_filter_rule_form.html",
-        firewall_name=session["firewall_name"],
+        chain_list=chain_list,
         file_list=file_list,
         filter_list=filter_list,
-        chain_list=chain_list,
+        firewall_name=session["firewall_name"],
+        username=session["username"],
     )
 
 
@@ -299,6 +313,7 @@ def add_filter_form():
         "add_filter_form.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
+        username=session["username"],
     )
 
 
@@ -325,6 +340,7 @@ def delete_filter_rule_form():
         file_list=file_list,
         firewall_name=session["firewall_name"],
         rule_list=rule_list,
+        username=session["username"],
     )
 
 
@@ -345,11 +361,13 @@ def display_config():
     else:
         message = generate_config(session)
 
+        print(session)
         return render_template(
             "firewall_results.html",
             file_list=file_list,
             firewall_name=session["firewall_name"],
             message=message,
+            username=session["username"],
         )
 
 

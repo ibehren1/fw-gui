@@ -13,7 +13,13 @@
     <table border="0" align="center" style="vertical-align: top;">
         {% if current_user.is_authenticated %}
         <tr>
-            <td></td>
+            <td>
+                <p class="section_heading">Username:
+                    <font class="h3_white">
+                        {{ username }}
+                    </font>
+                </p>
+            </td>
             <td text-align="center">
                 {% if firewall_name %}
                 <p class="section_heading" align="center">
