@@ -1,3 +1,5 @@
 **/__pycache__/**
 data/*
 !data/sample.json
+static/vyos.css
+static/Bootstrap.css

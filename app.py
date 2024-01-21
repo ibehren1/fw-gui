@@ -3,7 +3,7 @@
 
     Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create
-    the corresponding firewall tables and rules.
+    the corresponding firewall filters, chains and rules.
 
     Copyright 2024 Isaac Behrens
 """
@@ -12,6 +12,13 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
+from package.chain_functions import (
+    add_rule_to_data,
+    add_chain_to_data,
+    assemble_list_of_rules,
+    assemble_list_of_chains,
+    delete_rule_from_data,
+)
 from package.database_functions import process_login, query_user_by_id, register_user
 from package.data_file_functions import (
     initialize_data_dir,
@@ -30,14 +37,8 @@ from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
     add_group_to_data,
     assemble_list_of_groups,
+    assemble_detail_list_of_groups,
     delete_group_from_data,
-)
-from package.table_functions import (
-    add_rule_to_data,
-    add_table_to_data,
-    assemble_list_of_rules,
-    assemble_list_of_tables,
-    delete_rule_from_data,
 )
 from waitress import serve
 import os
@@ -124,7 +125,7 @@ def registration_form():
 def add_group():
     add_group_to_data(session, request)
 
-    return redirect(url_for("display_config"))
+    return redirect(url_for("view_groups"))
 
 
 @app.route("/add_group_form")
@@ -144,7 +145,7 @@ def add_group_form():
 def delete_group():
     delete_group_from_data(session, request)
 
-    return redirect(url_for("display_config"))
+    return redirect(url_for("view_groups"))
 
 
 @app.route("/delete_group_form")
@@ -165,8 +166,22 @@ def delete_group_form():
     )
 
 
+@app.route("/view groups")
+@login_required
+def view_groups():
+    file_list = list_user_files(session)
+    group_list = assemble_detail_list_of_groups(session)
+
+    return render_template(
+        "view_groups.html",
+        file_list=file_list,
+        firewall_name=session["firewall_name"],
+        group_list=group_list,
+    )
+
+
 #
-# Tables
+# Chains
 @app.route("/add_rule", methods=["POST"])
 @login_required
 def add_rule():
@@ -179,33 +194,33 @@ def add_rule():
 @login_required
 def add_rule_form():
     file_list = list_user_files(session)
-    table_list = assemble_list_of_tables(session)
-    if table_list == []:
-        return redirect(url_for("add_table_form"))
+    chain_list = assemble_list_of_chains(session)
+    if chain_list == []:
+        return redirect(url_for("add_chain_form"))
 
     return render_template(
         "add_rule_form.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
-        table_list=table_list,
+        chain_list=chain_list,
     )
 
 
-@app.route("/add_table", methods=["POST"])
+@app.route("/add_chain", methods=["POST"])
 @login_required
-def add_table():
-    add_table_to_data(session, request)
+def add_chain():
+    add_chain_to_data(session, request)
 
     return redirect(url_for("display_config"))
 
 
-@app.route("/add_table_form")
+@app.route("/add_chain_form")
 @login_required
-def add_table_form():
+def add_chain_form():
     file_list = list_user_files(session)
 
     return render_template(
-        "add_table_form.html",
+        "add_chain_form.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
     )
@@ -252,18 +267,18 @@ def add_filter_rule():
 def add_filter_rule_form():
     file_list = list_user_files(session)
     filter_list = assemble_list_of_filters(session)
-    table_list = assemble_list_of_tables(session)
+    chain_list = assemble_list_of_chains(session)
     if filter_list == []:
         return redirect(url_for("add_filter_form"))
-    if table_list == []:
-        return redirect(url_for("add_table_form"))
+    if chain_list == []:
+        return redirect(url_for("add_chain_form"))
 
     return render_template(
         "add_filter_rule_form.html",
         firewall_name=session["firewall_name"],
         file_list=file_list,
         filter_list=filter_list,
-        table_list=table_list,
+        chain_list=chain_list,
     )
 
 

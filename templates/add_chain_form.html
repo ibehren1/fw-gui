@@ -2,10 +2,10 @@
 {% block body %}
 <br><br>
 <table class="table">
-    <form action="/add_table" , method="post">
+    <form action="/add_chain" , method="post">
         <tr>
             <th colspan="3" align="left">
-                <h2> Add Firewall Table </h2>
+                <h2> Add Firewall Chain </h2>
             </th>
         </tr>
         <tr>
@@ -30,15 +30,15 @@
             </td>
             <td style="vertical-align: top;">
                 <p class="section_heading">
-                    Firewall Table
+                    Firewall Chain
                 </p>
                 <table>
                     <tr>
                         <td>
-                            <label for="fw_table">Table Name</label>
+                            <label for="fw_chain">Chain Name</label>
                         </td>
                         <td>
-                            <input type="text" id="fw_table" name="fw_table" size=30 value=""><br>
+                            <input type="text" id="fw_chain" name="fw_chain" size=30 value=""><br>
                         </td>
                     </tr>
                     <tr>
@@ -65,7 +65,7 @@
         </tr>
         <tr>
             <td align="right" colspan="3">
-                <input type="submit" value="Add Table">
+                <input type="submit" value="Add Chain">
             </td>
         </tr>
     </form>

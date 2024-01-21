@@ -18,7 +18,7 @@ def add_filter_rule_to_data(session, request):
     rule_dict["filter"] = filter[1]
     filter = filter[1]
     jump_target = request.form["jump_target"].split(",")
-    rule_dict["fw_table"] = jump_target[1]
+    rule_dict["fw_chain"] = jump_target[1]
     rule_dict["description"] = request.form["description"]
     if "rule_disable" in request.form:
         rule_dict["rule_disable"] = True
@@ -48,7 +48,7 @@ def add_filter_rule_to_data(session, request):
     # Write user_data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
-    flash(f"Rule {rule} added to table {ip_version}/{filter}.", "success")
+    flash(f"Rule {rule} added to filter {ip_version}/{filter}.", "success")
 
     return
 
@@ -94,7 +94,7 @@ def assemble_list_of_filters(session):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
-    # Create list of defined tables
+    # Create list of defined filters
     filter_list = []
     try:
         for ip_version in ["ipv4", "ipv6"]:
@@ -104,7 +104,7 @@ def assemble_list_of_filters(session):
     except:
         pass
 
-    # If there are no tables, flash message
+    # If there are no filters, flash message
     if filter_list == []:
         flash(f"There are no filters defined.", "danger")
 

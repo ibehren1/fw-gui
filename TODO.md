@@ -13,7 +13,9 @@
 - [x] Implement stylesheets.
 - [ ] Further implement stylesheets.
 - [x] Add delete configuration option.
-- [ ] Display groups visually.
+- [x] Display groups visually.
+  - [ ] Make visual display of groups prettier.
+- [ ] Display chains visually.
 
 ## Design
 
@@ -28,12 +30,7 @@
       Another option if you dont want to have two hidden columns for the description vs textfield is to align it vertically instead as you did over at “Add firewall group” where the field name is in orange (on darkgrey), textfield and then tooltip below it if needed. drawback with vertical alignment is that this is less compact than doing it two-column style.
 
 - [x] Alignment of "choose file"
-
-      Similar to the “Choose file” at import to the left which doesnt seem to be centered over the yellow button as delete config selection is over its yellow button.
-
 - [x] Page borders
-
-      And the borders of the page would need some air aswell like at top between the yellow header and the darkgrey regular page. At bottom between “Download datafile” and the yellow footer. Or for that matter in the upper right where the logout button would need some air from both the header and the right side of the browser :slight_smile:
 
 ## Suggested updates/features
 
@@ -42,18 +39,9 @@
 ## Firewall functions
 
 - [ ] Flowtables?
-- [ ] Firewall group domain-group
+- [x] Firewall group domain-group
 - [x] Don't include empty fields like descriptions
-
-      When adding a group/table/flter the GUI incorrectly includes empty fields like so (the correct behaviour IMHO is that this config line should not be generated at all if its empty):
-
-      set firewall group address-group description 'asdasd'
-      set firewall group address-group address ''
-
-      set firewall ipv4 name ddsfds default-action 'drop'
-      set firewall ipv4 name ddsfds description ''
-
-- [ ] Wording for firewall tables?
+- [x] Update all references of tables to chains.
 - [ ] Text editor for config
 
       Another handy thing would be if the generated config would exist in a textarea with a “Update” button at bottom (or top).

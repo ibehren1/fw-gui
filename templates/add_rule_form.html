@@ -23,13 +23,13 @@
         <tr>
             <td colspan="4">
                 <p class="section_heading">
-                    Firewall Table
+                    Firewall Chain
                 </p>
-                <label for="fw_table">Table Name&nbsp;</label>
-                <select name="fw_table" id="fw_table">
-                    {% for table in table_list %}
-                    <option value='{{table[0]}},{{table[1]}}'>
-                        {{table[0]}}: {{table[1]}}
+                <label for="fw_chain">Chain Name&nbsp;</label>
+                <select name="fw_chain" id="fw_chain">
+                    {% for chain in chain_list %}
+                    <option value='{{chain[0]}},{{chain[1]}}'>
+                        {{chain[0]}}: {{chain[1]}}
                     </option>
                     {% endfor %}
                 </select><br>
@@ -38,7 +38,7 @@
         <tr>
             <td>
                 <p class="section_heading">
-                    Rule Number
+                    Rule
                 </p>
                 <label for="rule">Number</label>
                 <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
@@ -85,6 +85,8 @@
                 <input type="text" id="dest_address" name="dest_address" size="25"><br>
                 <input type="radio" name="dest_address_type" value="address" checked="checked">&nbsp;Address<br>
                 <input type="radio" name="dest_address_type" value="address_group">&nbsp;Address Group<br>
+                <input type="radio" name="dest_address_type" value="address_group">&nbsp;Domain Group<br>
+                <input type="radio" name="dest_address_type" value="address_group">&nbsp;Mac Group<br>
                 <input type="radio" name="dest_address_type" value="network_group">&nbsp;Network Group<br><br>
 
                 <label for="dest_port">Port or<br>Port Group Name</label>
@@ -102,6 +104,8 @@
                 <input type="text" id="source_address" name="source_address" size="25"><br>
                 <input type="radio" name="source_address_type" value="address" checked="checked">&nbsp;Address<br>
                 <input type="radio" name="source_address_type" value="address_group">&nbsp;Address Group<br>
+                <input type="radio" name="source_address_type" value="address_group">&nbsp;Domain Group<br>
+                <input type="radio" name="source_address_type" value="address_group">&nbsp;Mac Group<br>
                 <input type="radio" name="source_address_type" value="network_group">&nbsp;Network Group<br><br>
 
                 <label for="source_port">Port or<br>Port Group Name</label>

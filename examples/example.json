@@ -1,6 +1,7 @@
 {
+    "version": "1",
     "ipv4": {
-        "tables": {
+        "chains": {
             "WAN_LOCAL": {
                 "rule-order": [
                     "10",
@@ -125,7 +126,7 @@
                     "10": {
                         "ip_version": "ipv4",
                         "filter": "input",
-                        "fw_table": "WAN_LOCAL",
+                        "fw_chain": "WAN_LOCAL",
                         "description": "WAN LOCAL",
                         "action": "jump",
                         "interface": "eth0",
@@ -144,7 +145,7 @@
                     "10": {
                         "ip_version": "ipv4",
                         "filter": "forward",
-                        "fw_table": "WAN_IN",
+                        "fw_chain": "WAN_IN",
                         "description": "WAN IN",
                         "action": "jump",
                         "interface": "eth0",
@@ -155,7 +156,7 @@
         }
     },
     "ipv6": {
-        "tables": {
+        "chains": {
             "WAN_LOCAL": {
                 "rule-order": [
                     "10",
@@ -308,7 +309,7 @@
                     "10": {
                         "ip_version": "ipv6",
                         "filter": "input",
-                        "fw_table": "WAN_LOCAL",
+                        "fw_chain": "WAN_LOCAL",
                         "description": "WAN LOCAL",
                         "action": "jump",
                         "interface": "eth0",
@@ -327,7 +328,7 @@
                     "10": {
                         "ip_version": "ipv6",
                         "filter": "forward",
-                        "fw_table": "WAN_IN",
+                        "fw_chain": "WAN_IN",
                         "description": "WAN IN",
                         "action": "jump",
                         "interface": "eth0",
