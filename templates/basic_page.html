@@ -13,7 +13,13 @@
     <table border="0" align="center" style="vertical-align: top;">
         {% if current_user.is_authenticated %}
         <tr>
-            <td></td>
+            <td>
+                <p class="section_heading">Username:
+                    <font class="h3_white">
+                        {{ username }}
+                    </font>
+                </p>
+            </td>
             <td text-align="center">
                 {% if firewall_name %}
                 <p class="section_heading" align="center">
@@ -26,7 +32,7 @@
                 {% endif %}
             </td>
             <td align="right" colspan="3">
-                <a href="{{ url_for('logout')}}">
+                <a href="{{ url_for('user_logout')}}">
                     <input class="button" type="submit" value="Logout" style="width: 80px">
                 </a>
             </td>
@@ -187,19 +193,19 @@
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
-                            <a href="{{ url_for('view_groups')}}">
+                            <a href="{{ url_for('group_view')}}">
                                 <input class="button" type="submit" value="View Groups" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="right">
-                            <a href="{{ url_for('add_group_form')}}">
+                            <a href="{{ url_for('group_add')}}">
                                 <input class="button" type="submit" value="Add Group" style="width: 75%">
                             </a>
                         </td>
                         <td align="left">
-                            <a href="{{ url_for('delete_group_form')}}">
+                            <a href="{{ url_for('group_delete')}}">
                                 <input class="button" type="submit" value="Delete Group" style="width: 75%">
                             </a>
                         </td>
@@ -214,19 +220,19 @@
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
-                            <a href="{{ url_for('add_chain_form')}}">
+                            <a href="{{ url_for('chain_add')}}">
                                 <input class="button" type="submit" value="Add Chain" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="right">
-                            <a href="{{ url_for('add_rule_form')}}">
+                            <a href="{{ url_for('chain_rule_add')}}">
                                 <input class="button" type="submit" value="Add Rule" style="width: 75%">
                             </a>
                         </td>
                         <td align="left">
-                            <a href="{{ url_for('delete_rule_form')}}">
+                            <a href="{{ url_for('chain_rule_delete')}}">
                                 <input class="button" type="submit" value="Delete Rule" style="width: 75%">
                             </a>
                         </td>
@@ -241,19 +247,19 @@
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
-                            <a href="{{ url_for('add_filter_form')}}">
+                            <a href="{{ url_for('filter_add')}}">
                                 <input class="button" type="submit" value="Add Filter" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="right">
-                            <a href="{{ url_for('add_filter_rule_form')}}">
+                            <a href="{{ url_for('filter_rule_add')}}">
                                 <input class="button" type="submit" value="Add Rule" style="width: 75%">
                             </a>
                         </td>
                         <td align="left">
-                            <a href="{{ url_for('delete_filter_rule_form')}}">
+                            <a href="{{ url_for('filter_rule_delete')}}">
                                 <input class="button" type="submit" value="Delete Rule" style="width: 75%">
                             </a>
                         </td>
@@ -280,7 +286,7 @@
                 </p>
             </td>
             <td width="50%" align="center" style="vertical-align: middle;">
-                <p class="h4_dark">vyos-fw-gui v0.7.5</p>
+                <p class="h4_dark">vyos-fw-gui v0.8.0</p>
                 <p class="h3_dark">Copyright 2024 Isaac Behrens</p>
             </td>
             <td width="25%" align="center" style="vertical-align: middle;">

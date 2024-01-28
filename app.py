@@ -1,5 +1,5 @@
 """
-    VyOS Firewall Configuration Gui
+    VyOS Firewall GUI
 
     Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create
@@ -7,8 +7,11 @@
 
     Copyright 2024 Isaac Behrens
 """
+
+#
+# Library Imports
 from datetime import datetime
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import flash, Flask, redirect, render_template, request, session, url_for
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
@@ -42,8 +45,10 @@ from package.group_funtions import (
 )
 from waitress import serve
 import os
-from flask import flash
 
+
+#
+# App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
 app = Flask(__name__)
@@ -57,7 +62,7 @@ bcrypt = Bcrypt(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "login"
+login_manager.login_view = "user_login"
 
 
 #
@@ -85,20 +90,22 @@ def index():
 
 #
 # Sessions
-@app.route("/login", methods=["GET", "POST"])
-def login():
+@app.route("/user_login", methods=["GET", "POST"])
+def user_login():
     if request.method == "POST":
-        login, session["data_dir"] = process_login(bcrypt, db, request, User)
+        login, session["data_dir"], session["username"] = process_login(
+            bcrypt, db, request, User
+        )
         if login:
             return redirect(url_for("index"))
     else:
-        render_template("login.html", session="None")
-    return render_template("login.html")
+        render_template("user_login_form.html", session="None")
+    return render_template("user_login_form.html")
 
 
-@app.route("/logout")
+@app.route("/user_logout")
 @login_required
-def logout():
+def user_logout():
     print(
         f"{datetime.now()} User <{query_user_by_id(db, User, session['_user_id']).username}> logged out."
     )
@@ -107,225 +114,222 @@ def logout():
     return redirect(url_for("index"))
 
 
-@app.route("/register", methods=["GET", "POST"])
-def registration_form():
+@app.route("/user_registration", methods=["GET", "POST"])
+def user_registration():
     if request.method == "POST":
         if register_user(bcrypt, db, request, User):
             return redirect(url_for("login"))
         else:
-            return redirect(url_for("registration_form"))
+            return redirect(url_for("user_registration_form"))
     else:
-        return render_template("registration_form.html")
+        return render_template("user_registration_form.html")
 
 
 #
 # Groups
-@app.route("/add_group", methods=["POST"])
+@app.route("/group_add", methods=["GET", "POST"])
 @login_required
-def add_group():
-    add_group_to_data(session, request)
+def group_add():
+    if request.method == "POST":
+        add_group_to_data(session, request)
 
-    return redirect(url_for("view_groups"))
+        return redirect(url_for("group_view"))
+
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "group_add_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
 
 
-@app.route("/add_group_form")
+@app.route("/group_delete", methods=["GET", "POST"])
 @login_required
-def add_group_form():
-    file_list = list_user_files(session)
+def group_delete():
+    if request.method == "POST":
+        delete_group_from_data(session, request)
 
-    return render_template(
-        "add_group_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-    )
+        return redirect(url_for("group_view"))
+
+    else:
+        file_list = list_user_files(session)
+        group_list = assemble_list_of_groups(session)
+
+        # If there are no groups, just display the config
+        if group_list == []:
+            return redirect(url_for("display_config"))
+
+        return render_template(
+            "group_delete_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            group_list=group_list,
+            username=session["username"],
+        )
 
 
-@app.route("/delete_group", methods=["POST"])
+@app.route("/group_view")
 @login_required
-def delete_group():
-    delete_group_from_data(session, request)
-
-    return redirect(url_for("view_groups"))
-
-
-@app.route("/delete_group_form")
-@login_required
-def delete_group_form():
-    file_list = list_user_files(session)
-    group_list = assemble_list_of_groups(session)
-
-    # If there are no groups, just display the config
-    if group_list == []:
-        return redirect(url_for("display_config"))
-
-    return render_template(
-        "delete_group_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-        group_list=group_list,
-    )
-
-
-@app.route("/view groups")
-@login_required
-def view_groups():
+def group_view():
     file_list = list_user_files(session)
     group_list = assemble_detail_list_of_groups(session)
 
     return render_template(
-        "view_groups.html",
+        "group_view.html",
         file_list=file_list,
         firewall_name=session["firewall_name"],
         group_list=group_list,
+        username=session["username"],
     )
 
 
 #
 # Chains
-@app.route("/add_rule", methods=["POST"])
+@app.route("/chain_add", methods=["GET", "POST"])
 @login_required
-def add_rule():
-    add_rule_to_data(session, request)
+def chain_add():
+    if request.method == "POST":
+        add_chain_to_data(session, request)
 
-    return redirect(url_for("display_config"))
-
-
-@app.route("/add_rule_form")
-@login_required
-def add_rule_form():
-    file_list = list_user_files(session)
-    chain_list = assemble_list_of_chains(session)
-    if chain_list == []:
-        return redirect(url_for("add_chain_form"))
-
-    return render_template(
-        "add_rule_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-        chain_list=chain_list,
-    )
-
-
-@app.route("/add_chain", methods=["POST"])
-@login_required
-def add_chain():
-    add_chain_to_data(session, request)
-
-    return redirect(url_for("display_config"))
-
-
-@app.route("/add_chain_form")
-@login_required
-def add_chain_form():
-    file_list = list_user_files(session)
-
-    return render_template(
-        "add_chain_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-    )
-
-
-@app.route("/delete_rule", methods=["POST"])
-@login_required
-def delete_rule():
-    delete_rule_from_data(session, request)
-
-    return redirect(url_for("display_config"))
-
-
-@app.route("/delete_rule_form")
-@login_required
-def delete_rule_form():
-    file_list = list_user_files(session)
-    rule_list = assemble_list_of_rules(session)
-
-    # If there are no rules, just display the config
-    if rule_list == []:
         return redirect(url_for("display_config"))
 
-    return render_template(
-        "delete_rule_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-        rule_list=rule_list,
-    )
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "chain_add_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
+@app.route("/chain_rule_add", methods=["GET", "POST"])
+@login_required
+def chain_rule_add():
+    if request.method == "POST":
+        add_rule_to_data(session, request)
+
+        return redirect(url_for("display_config"))
+
+    else:
+        file_list = list_user_files(session)
+        chain_list = assemble_list_of_chains(session)
+        if chain_list == []:
+            return redirect(url_for("chain_add"))
+
+        return render_template(
+            "chain_rule_add_form.html",
+            chain_list=chain_list,
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
+@app.route("/chain_rule_delete", methods=["GET", "POST"])
+@login_required
+def chain_rule_delete():
+    if request.method == "POST":
+        delete_rule_from_data(session, request)
+
+        return redirect(url_for("display_config"))
+
+    else:
+        file_list = list_user_files(session)
+        rule_list = assemble_list_of_rules(session)
+
+        # If there are no rules, just display the config
+        if rule_list == []:
+            return redirect(url_for("display_config"))
+
+        return render_template(
+            "chain_rule_delete_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            rule_list=rule_list,
+            username=session["username"],
+        )
 
 
 #
 # Filters
-@app.route("/add_filter_rule", methods=["POST"])
+@app.route("/filter_add", methods=["GET", "POST"])
 @login_required
-def add_filter_rule():
-    add_filter_rule_to_data(session, request)
+def filter_add():
+    if request.method == "POST":
+        add_filter_to_data(session, request)
 
-    return redirect(url_for("display_config"))
-
-
-@app.route("/add_filter_rule_form")
-@login_required
-def add_filter_rule_form():
-    file_list = list_user_files(session)
-    filter_list = assemble_list_of_filters(session)
-    chain_list = assemble_list_of_chains(session)
-    if filter_list == []:
-        return redirect(url_for("add_filter_form"))
-    if chain_list == []:
-        return redirect(url_for("add_chain_form"))
-
-    return render_template(
-        "add_filter_rule_form.html",
-        firewall_name=session["firewall_name"],
-        file_list=file_list,
-        filter_list=filter_list,
-        chain_list=chain_list,
-    )
-
-
-@app.route("/add_filter", methods=["POST"])
-@login_required
-def add_filter():
-    add_filter_to_data(session, request)
-
-    return redirect(url_for("display_config"))
-
-
-@app.route("/add_filter_form")
-@login_required
-def add_filter_form():
-    file_list = list_user_files(session)
-
-    return render_template(
-        "add_filter_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-    )
-
-
-@app.route("/delete_filter_rule", methods=["POST"])
-@login_required
-def delete_filter_rule():
-    delete_filter_rule_from_data(session, request)
-
-    return redirect(url_for("display_config"))
-
-
-@app.route("/delete_filter_action_form")
-@login_required
-def delete_filter_rule_form():
-    file_list = list_user_files(session)
-    rule_list = assemble_list_of_filter_rules(session)
-
-    # If there are no rules, just display the config
-    if rule_list == []:
         return redirect(url_for("display_config"))
 
-    return render_template(
-        "delete_filter_rule_form.html",
-        file_list=file_list,
-        firewall_name=session["firewall_name"],
-        rule_list=rule_list,
-    )
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "filter_add_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
+@app.route("/filter_rule_add", methods=["GET", "POST"])
+@login_required
+def filter_rule_add():
+    if request.method == "POST":
+        add_filter_rule_to_data(session, request)
+
+        return redirect(url_for("display_config"))
+
+    else:
+        file_list = list_user_files(session)
+        filter_list = assemble_list_of_filters(session)
+        chain_list = assemble_list_of_chains(session)
+        if filter_list == []:
+            return redirect(url_for("filter_add"))
+        if chain_list == []:
+            flash(
+                f"Cannot add a filter rule if there are not chains to target.",
+                "warning",
+            )
+            return redirect(url_for("filter_add"))
+
+        return render_template(
+            "filter_rule_add_form.html",
+            chain_list=chain_list,
+            file_list=file_list,
+            filter_list=filter_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
+@app.route("/filter_rule_delete", methods=["GET", "POST"])
+@login_required
+def filter_rule_delete():
+    if request.method == "POST":
+        delete_filter_rule_from_data(session, request)
+
+        return redirect(url_for("display_config"))
+
+    else:
+        file_list = list_user_files(session)
+        rule_list = assemble_list_of_filter_rules(session)
+
+        # If there are no rules, just display the config
+        if rule_list == []:
+            return redirect(url_for("display_config"))
+
+        return render_template(
+            "filter_rule_delete_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            rule_list=rule_list,
+            username=session["username"],
+        )
 
 
 #
@@ -345,11 +349,13 @@ def display_config():
     else:
         message = generate_config(session)
 
+        print(session)
         return render_template(
             "firewall_results.html",
             file_list=file_list,
             firewall_name=session["firewall_name"],
             message=message,
+            username=session["username"],
         )
 
 

@@ -87,6 +87,7 @@ def add_chain_to_data(session, request):
     # Check and create higher level data structure if it does not exist
     if ip_version not in user_data:
         user_data[ip_version] = {}
+    if "chains" not in user_data[ip_version]:
         user_data[ip_version]["chains"] = {}
     if fw_chain not in user_data[ip_version]["chains"]:
         user_data[ip_version]["chains"][fw_chain] = {}

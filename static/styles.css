@@ -2,30 +2,51 @@
     Local Stylesheet
 */
 
-/* .button {
-    top: 50%;
-    background-color: #ff9400;
-    color: #ffffff;
-    border-width: 0px;
-    border-radius: 5px;
-    border-color: #000000;
-    min-height: 30px;
-    width: 100%;
+
+/* --Alerts-- */
+
+.alert-danger {
+    color: aliceblue;
+    background-color: #dc2232;
+    border-color: #f5c6cb
 }
 
-.button:hover {
-    background-color: aliceblue;
-    color: #000000;
-    border: #FFBC13;
-    outline-color: #FFBC13;
-    outline-width: 24px;
-    opacity: 100%;
-    transition: 0s;
-} */
+.alert-success {
+    color: aliceblue;
+    background-color: #1dbd42;
+    border-color: #c3e6cb
+}
 
-.docs_link {
-    color: #FF9000;
-    font-weight: bold;
+.alert-warning {
+    color: #0c0c0c;
+    background-color: #f7d423;
+    border-color: #ffeeba
+}
+
+
+/* --Body-- */
+
+body {
+    font-family: Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+.page_background {
+    background-color: #606263;
+    color: aliceblue;
+}
+
+header {
+    margin: auto;
+    text-align: center;
+    padding: .1px;
+    align-content: center;
+    color: #323231;
+    background-image: linear-gradient(135deg, #ffbf12, #ff9000);
 }
 
 footer {
@@ -43,6 +64,34 @@ footer {
     background-color: #E8EBF5;
     color: #1A1C1A;
 }
+
+
+/* --Buttons-- */
+
+.button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 30px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #ffbf12, #ff9000);
+}
+
+.button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #ffdc7e, #ffbe12)
+}
+
+
+/* --Links to VyOS docs-- */
+
+.docs_link {
+    color: #FF9000;
+    font-weight: bold;
+}
+
+
+/* --Headings-- */
 
 h1 {
     font-variant: small-caps;
@@ -67,6 +116,13 @@ h3 {
     color: #ffbf12;
 }
 
+.h3_dark {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: large;
+    color: #323231;
+}
+
 .h3_white {
     font-weight: bold;
     font-variant: small-caps;
@@ -82,33 +138,28 @@ h4 {
     color: #ffbf12;
 }
 
-.h4_white {
-    font-weight: bold;
-    font-variant: small-caps;
-    color: aliceblue;
-}
-
-.h3_dark {
-    font-weight: bold;
-    font-variant: small-caps;
-    font-size: large;
-    color: #323231;
-}
-
 .h4_dark {
     font-weight: bold;
     font-variant: small-caps;
     color: #323231;
 }
 
-header {
-    margin: auto;
-    text-align: center;
-    padding: .1px;
-    align-content: center;
-    color: #323231;
-    background-image: linear-gradient(135deg, #ffbf12, #ff9000);
+.h4_white {
+    font-weight: bold;
+    font-variant: small-caps;
+    color: aliceblue;
 }
+
+.section_heading {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: x-large;
+    color: #ff9000;
+    color: #ffbf12;
+}
+
+
+/* --Links-- */
 
 .link {
     color: #FF9000;
@@ -135,31 +186,52 @@ header {
     font-weight: bold;
 }
 
-
 .link_white:hover {
     color: #323231;
     font-variant: small-caps;
     font-weight: bolder;
 }
 
-.page_background {
-    background-color: #606263;
-    /* color: #323231; */
+
+/* --Tables-- */
+
+.groups_table {
     color: aliceblue;
+    border: 1;
+    border-color: "#000000";
+
+
+    padding: 10px;
+    border-spacing: 0;
+    border-collapse: collapse;
+
+    table-layout: fixed;
+    vertical-align: top;
 }
 
-.section_heading {
-    font-weight: bold;
-    font-variant: small-caps;
-    font-size: x-large;
-    color: #ff9000;
-    color: #ffbf12;
+.groups_table td {
+    padding: .75rem;
+    vertical-align: top;
+    border-top: 0px solid #dee2e6;
+    table-layout: fixed;
+}
 
+.groups_table th {
+    background-color: #ffbf12;
+    color: #323231;
+    vertical-align: top;
+    border-top: 0px solid #dee2e6;
+    table-layout: fixed;
+}
+
+.groups_table thead th {
+    vertical-align: bottom;
+    border-bottom: 0px solid #dee2e6;
+    table-layout: fixed;
 }
 
 .table {
     color: aliceblue;
-    /* align: center; */
     border: 1;
     border-color: "#000000";
 
@@ -184,87 +256,4 @@ header {
     vertical-align: bottom;
     border-bottom: 0px solid #dee2e6;
     table-layout: fixed;
-}
-
-.button {
-    color: #323231;
-    font-weight: bold;
-    min-height: 30px;
-    width: 100%;
-    border: none;
-    background: linear-gradient(135deg, #ffbf12, #ff9000);
-}
-
-.button:hover {
-    color: #323231;
-    background: linear-gradient(135deg, #ffdc7e, #ffbe12)
-}
-
-/* .btn-outline-secondary.focus,
-.btn-outline-secondary:focus {
-    box-shadow: 0 0 0 .2rem rgba(108, 117, 125, .5)
-}
-
-.btn-outline-secondary.disabled,
-.btn-outline-secondary:disabled {
-    color: #6c757d;
-    background-color: transparent
-}
-
-.btn-outline-secondary:not(:disabled):not(.disabled).active,
-.btn-outline-secondary:not(:disabled):not(.disabled):active,
-.show>.btn-outline-secondary.dropdown-toggle {
-    color: #fff;
-    background-color: #6c757d;
-    border-color: #6c757d
-}
-
-.btn-outline-secondary:not(:disabled):not(.disabled).active:focus,
-.btn-outline-secondary:not(:disabled):not(.disabled):active:focus,
-.show>.btn-outline-secondary.dropdown-toggle:focus {
-    box-shadow: 0 0 0 .2rem rgba(108, 117, 125, .5)
-} */
-
-
-/* From vyos.io */
-
-body {
-    /* margin: 0; */
-    /* background-color: #fff; */
-    font-family: Roboto, sans-serif;
-    font-weight: 400;
-    font-size: 18px;
-    line-height: 1.6;
-    max-width: 100vw;
-    overflow-x: hidden;
-}
-
-/* .hs-button {
-    background: linear-gradient(135deg, #ffbf12, #ff9000);
-    border: none
-}
-
-.hs-button:hover {
-    background: linear-gradient(135deg, #ffdc7e, #ffbe12)
-} */
-
-
-/*  Alerts */
-
-.alert-danger {
-    color: aliceblue;
-    background-color: #dc2232;
-    border-color: #f5c6cb
-}
-
-.alert-success {
-    color: aliceblue;
-    background-color: #1dbd42;
-    border-color: #c3e6cb
-}
-
-.alert-warning {
-    color: #0c0c0c;
-    background-color: #f7d423;
-    border-color: #ffeeba
 }
