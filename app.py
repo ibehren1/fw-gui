@@ -343,7 +343,10 @@ def display_config():
         message = "No firewall selected.<br><br>Please select a firewall from the list on the left."
 
         return render_template(
-            "firewall_results.html", file_list=file_list, message=message
+            "firewall_results.html",
+            file_list=file_list,
+            message=message,
+            username=session["username"],
         )
 
     else:
