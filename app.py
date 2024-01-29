@@ -262,6 +262,9 @@ def chain_view():
     file_list = list_user_files(session)
     chain_dict = assemble_detail_list_of_chains(session)
 
+    if chain_dict == {}:
+        return redirect(url_for("chain_add"))
+
     return render_template(
         "chain_view.html",
         chain_dict=chain_dict,
@@ -368,7 +371,6 @@ def display_config():
     else:
         message = generate_config(session)
 
-        print(session)
         return render_template(
             "firewall_results.html",
             file_list=file_list,
