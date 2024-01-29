@@ -15,7 +15,8 @@
 - [x] Add delete configuration option.
 - [x] Display groups visually.
   - [ ] Make visual display of groups prettier.
-- [ ] Display chains visually.
+- [x] Display chains visually.
+- [ ] Display filters visually.
 
 ## Design
 

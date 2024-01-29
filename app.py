@@ -20,6 +20,7 @@ from package.chain_functions import (
     add_chain_to_data,
     assemble_list_of_rules,
     assemble_list_of_chains,
+    assemble_detail_list_of_chains,
     delete_rule_from_data,
 )
 from package.database_functions import process_login, query_user_by_id, register_user
@@ -194,7 +195,7 @@ def chain_add():
     if request.method == "POST":
         add_chain_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("chain_view"))
 
     else:
         file_list = list_user_files(session)
@@ -213,7 +214,7 @@ def chain_rule_add():
     if request.method == "POST":
         add_rule_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("chain_view"))
 
     else:
         file_list = list_user_files(session)
@@ -236,7 +237,7 @@ def chain_rule_delete():
     if request.method == "POST":
         delete_rule_from_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("chain_view"))
 
     else:
         file_list = list_user_files(session)
@@ -253,6 +254,21 @@ def chain_rule_delete():
             rule_list=rule_list,
             username=session["username"],
         )
+
+
+@app.route("/chain_view")
+@login_required
+def chain_view():
+    file_list = list_user_files(session)
+    chain_dict = assemble_detail_list_of_chains(session)
+
+    return render_template(
+        "chain_view.html",
+        chain_dict=chain_dict,
+        file_list=file_list,
+        firewall_name=session["firewall_name"],
+        username=session["username"],
+    )
 
 
 #

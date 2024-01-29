@@ -102,9 +102,56 @@ def add_chain_to_data(session, request):
     # Write user_data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
-    flash(f"chain {ip_version}/{fw_chain} added.", "success")
+    flash(f"Chain {ip_version}/{fw_chain} added.", "success")
 
     return
+
+
+def assemble_detail_list_of_chains(session):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    import json
+
+    # Create dict of defined groups
+    chain_dict = {}
+    try:
+        for ip_version in ["ipv4", "ipv6"]:
+            if ip_version in user_data:
+                chain_dict[ip_version] = {}
+                if "chains" in user_data[ip_version]:
+                    for chain_name in user_data[ip_version]["chains"]:
+                        chain_dict[ip_version][chain_name] = []
+                        # print(chain_name)
+                        for rule in user_data[ip_version]["chains"][chain_name][
+                            "rule-order"
+                        ]:
+                            # print(rule)
+                            # print(
+                            #     json.dumps(
+                            #         user_data[ip_version]["chains"][chain_name][rule],
+                            #         indent=4,
+                            #     )
+                            # )
+                            rule_detail = user_data[ip_version]["chains"][chain_name][
+                                rule
+                            ]
+                            rule_detail["number"] = rule
+                            chain_dict[ip_version][chain_name].append(rule_detail)
+                            # print(rule_detail)
+                            # print("\n")
+                            # chain_dict[ip_version][chain_name][rule] = rule_detail
+    except:
+        print("Error in assemble_detail_list_of_rules")
+        pass
+
+    # If there are no groups, flash message
+    if chain_dict == {}:
+        flash(f"There are no chains defined.", "danger")
+
+    print(json.dumps(chain_dict, indent=4))
+    # print(group_list_detail)
+    return chain_dict
 
 
 def assemble_list_of_rules(session):
