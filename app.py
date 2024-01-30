@@ -35,6 +35,7 @@ from package.filter_functions import (
     add_filter_to_data,
     assemble_list_of_filters,
     assemble_list_of_filter_rules,
+    assemble_detail_list_of_filters,
     delete_filter_rule_from_data,
 )
 from package.generate_config import download_json_data, generate_config
@@ -349,6 +350,24 @@ def filter_rule_delete():
             rule_list=rule_list,
             username=session["username"],
         )
+
+
+@app.route("/filter_view")
+@login_required
+def filter_view():
+    file_list = list_user_files(session)
+    filter_dict = assemble_detail_list_of_filters(session)
+
+    if filter_dict == {}:
+        return redirect(url_for("filter_add"))
+
+    return render_template(
+        "filter_view.html",
+        file_list=file_list,
+        filter_dict=filter_dict,
+        firewall_name=session["firewall_name"],
+        username=session["username"],
+    )
 
 
 #

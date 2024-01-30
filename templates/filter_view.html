@@ -1,0 +1,134 @@
+{% extends "basic_page.html" %}
+{% block body %}
+
+<p class="section_heading">IPv4 Filters</p>
+<hr>
+
+{% for key, filter_list in filter_dict.ipv4.items() %}
+
+<p class="filter_heading">Filter: {{key}}</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th colspan="2">
+        Rule
+    </th>
+
+    <th colspan="2">
+        Description
+    </th>
+
+    <th colspan="2">
+        Target Chain
+    </th>
+
+    <th colspan="1">
+        Interface
+    </th>
+
+    <th>
+        Direction
+    </th>
+
+    {% for rule in filter_list %}
+    <tr align="center" colspan="2" style="vertical-align: middle;">
+        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+            <font style="font-size:60;">{{rule.number}}</font>
+            <br>
+            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
+        </td>
+
+        <td colspan="2" style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.description}}
+            </font>
+        </td>
+
+        <td colspan="2" style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.fw_chain}}
+            </font>
+        </td>
+
+        <td style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.interface}}
+            </font>
+        </td>
+
+        <td style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.direction}}
+            </font>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endfor %}
+
+
+<br><br>
+
+<p class="section_heading">IPv6 Filters</p>
+<hr>
+{% for key, filter_list in filter_dict.ipv4.items() %}
+
+<p class="filter_heading">Filter: {{key}}</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th colspan="2">
+        Rule
+    </th>
+
+    <th colspan="2">
+        Description
+    </th>
+
+    <th colspan="2">
+        Target Chain
+    </th>
+
+    <th colspan="1">
+        Interface
+    </th>
+
+    <th>
+        Direction
+    </th>
+
+    {% for rule in filter_list %}
+    <tr align="center" colspan="2" style="vertical-align: middle;">
+        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+            <font style="font-size:60;">{{rule.number}}</font>
+            <br>
+            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
+        </td>
+
+        <td colspan="2" style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.description}}
+            </font>
+        </td>
+
+        <td colspan="2" style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.fw_chain}}
+            </font>
+        </td>
+
+        <td style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.interface}}
+            </font>
+        </td>
+
+        <td style="vertical-align: middle;">
+            <font style="font-size:16;">
+                {{rule.direction}}
+            </font>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endfor %}
+
+<br><br>
+
+{% endblock body %}

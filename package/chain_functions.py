@@ -64,8 +64,6 @@ def add_rule_to_data(session, request):
         user_data[ip_version]["chains"][fw_chain]["rule-order"]
     )
 
-    # print(json.dumps(user_data, indent=4))
-
     # Write user_data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
@@ -111,8 +109,6 @@ def assemble_detail_list_of_chains(session):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
-    import json
-
     # Create dict of defined groups
     chain_dict = {}
     try:
@@ -122,25 +118,14 @@ def assemble_detail_list_of_chains(session):
                 if "chains" in user_data[ip_version]:
                     for chain_name in user_data[ip_version]["chains"]:
                         chain_dict[ip_version][chain_name] = []
-                        # print(chain_name)
                         for rule in user_data[ip_version]["chains"][chain_name][
                             "rule-order"
                         ]:
-                            # print(rule)
-                            # print(
-                            #     json.dumps(
-                            #         user_data[ip_version]["chains"][chain_name][rule],
-                            #         indent=4,
-                            #     )
-                            # )
                             rule_detail = user_data[ip_version]["chains"][chain_name][
                                 rule
                             ]
                             rule_detail["number"] = rule
                             chain_dict[ip_version][chain_name].append(rule_detail)
-                            # print(rule_detail)
-                            # print("\n")
-                            # chain_dict[ip_version][chain_name][rule] = rule_detail
     except:
         print("Error in assemble_detail_list_of_rules")
         pass
@@ -149,8 +134,6 @@ def assemble_detail_list_of_chains(session):
     if chain_dict == {}:
         flash(f"There are no chains defined.", "danger")
 
-    print(json.dumps(chain_dict, indent=4))
-    # print(group_list_detail)
     return chain_dict
 
 

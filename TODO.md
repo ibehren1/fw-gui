@@ -16,7 +16,8 @@
 - [x] Display groups visually.
   - [ ] Make visual display of groups prettier.
 - [x] Display chains visually.
-- [ ] Display filters visually.
+- [x] Display filters visually.
+  - [ ] Make visual display of filters prettier.
 
 ## Design
 

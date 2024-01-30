@@ -101,6 +101,14 @@ footer {
     color: #ffbf12;
 }
 
+.filter_heading {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: large;
+    color: #ff9000;
+    color: #ffbf12;
+}
+
 h1 {
     font-variant: small-caps;
 }
