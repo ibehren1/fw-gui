@@ -1,0 +1,250 @@
+{% extends "basic_page.html" %}
+{% block body %}
+
+<p class="section_heading">IPv4 Chains</p>
+<hr>
+
+{% for key, chain_list in chain_dict.ipv4.items() %}
+
+<p class="chain_heading">Chain: {{key}}</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th colspan="2">
+        Rule
+    </th>
+
+    <th colspan="2">
+        Description
+        <br>
+        Enable & Logging
+    </th>
+
+    <th colspan="2">
+        Destination
+    </th>
+
+    <th colspan="2">
+        Source
+    </th>
+
+    <th>
+        Protocols
+        <br>
+        States
+    </th>
+
+    {% for rule in chain_list %}
+    <tr>
+        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+            <font style="font-size:60;">{{rule.number}}</font>
+            <br>
+            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
+        </td>
+
+        <td colspan="2">
+            {{rule.description}}
+        </td>
+
+
+        <td colspan="2">
+            Dest: {{rule.dest_address}}
+            <br>
+            Type: {{rule.dest_address_type}}
+        </td>
+
+        <td colspan="2">
+            Source: {{rule.source_address}}
+            <br>
+            Type: {{rule.source_address_type}}
+        </td>
+
+        <td align="center" style="vertical-align: middle;">
+            {% if rule.protocol == '' %}
+            ANY
+            {% else %}
+            {{rule.protocol}}
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            {% if rule.disable %}
+            &#10060; &nbspDisabled
+            {% else %}
+            &#9989; &nbspEnabled
+            {% endif %}
+            <br>
+            {% if rule.logging %}
+            &#9989; &nbspLog
+            {% else %}
+            &#10060; &nbspLog
+            {% endif %}
+        </td>
+
+        <td colspan="2">
+            Port: {{rule.dest_port}}
+            <br>
+            Type: {{rule.dest_port_type}}
+        </td>
+
+        <td colspan="2">
+            Port: {{rule.source_port}}
+            <br>
+            Type: {{rule.source_port_type}}
+        </td>
+
+        <td>
+            {% if rule.state_est %}
+            &#9989;&nbspEst
+            {% else %}
+            &#10060;&nbspEst
+            {% endif %}
+            <br>
+            {% if rule.state_inv %}
+            &#9989;&nbspInv
+            {% else %}
+            &#10060;&nbspInv
+            {% endif %}
+            <br>
+            {% if rule.state_rel %}
+            &#9989;&nbspRel
+            {% else %}
+            &#10060;&nbspRel
+            {% endif %}
+            <br>
+            {% if rule.state_new %}
+            &#9989;&nbspNew
+            {% else %}
+            &#10060;&nbspNew
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endfor %}
+
+
+<br><br>
+
+<p class="section_heading">IPv6 Chains</p>
+<hr>
+{% for key, chain_list in chain_dict.ipv6.items() %}
+
+<p class="chain_heading">Chain: {{key}}</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th colspan="2">
+        Rule
+    </th>
+
+    <th colspan="2">
+        Description
+        <br>
+        Enable & Logging
+    </th>
+
+    <th colspan="2">
+        Destination
+    </th>
+
+    <th colspan="2">
+        Source
+    </th>
+
+    <th>
+        Protocols
+        <br>
+        States
+    </th>
+
+    {% for rule in chain_list %}
+    <tr>
+        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+            <font style="font-size:60;">{{rule.number}}</font>
+            <br>
+            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
+        </td>
+
+        <td colspan="2">
+            {{rule.description}}
+        </td>
+
+
+        <td colspan="2">
+            Dest: {{rule.dest_address}}
+            <br>
+            Type: {{rule.dest_address_type}}
+        </td>
+
+        <td colspan="2">
+            Source: {{rule.source_address}}
+            <br>
+            Type: {{rule.source_address_type}}
+        </td>
+
+        <td align="center" style="vertical-align: middle;">
+            {% if rule.protocol == '' %}
+            ANY
+            {% else %}
+            {{rule.protocol}}
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            {% if rule.disable %}
+            &#10060; &nbspDisabled
+            {% else %}
+            &#9989; &nbspEnabled
+            {% endif %}
+            <br>
+            {% if rule.logging %}
+            &#9989; &nbspLog
+            {% else %}
+            &#10060; &nbspLog
+            {% endif %}
+        </td>
+
+        <td colspan="2">
+            Port: {{rule.dest_port}}
+            <br>
+            Type: {{rule.dest_port_type}}
+        </td>
+
+        <td colspan="2">
+            Port: {{rule.source_port}}
+            <br>
+            Type: {{rule.source_port_type}}
+        </td>
+
+        <td>
+            {% if rule.state_est %}
+            &#9989;&nbspEst
+            {% else %}
+            &#10060;&nbspEst
+            {% endif %}
+            <br>
+            {% if rule.state_inv %}
+            &#9989;&nbspInv
+            {% else %}
+            &#10060;&nbspInv
+            {% endif %}
+            <br>
+            {% if rule.state_rel %}
+            &#9989;&nbspRel
+            {% else %}
+            &#10060;&nbspRel
+            {% endif %}
+            <br>
+            {% if rule.state_new %}
+            &#9989;&nbspNew
+            {% else %}
+            &#10060;&nbspNew
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endfor %}
+
+<br><br>
+
+{% endblock body %}

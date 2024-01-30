@@ -56,7 +56,6 @@ def assemble_detail_list_of_groups(session):
                 if "groups" in user_data[ip_version]:
                     for group_name in user_data[ip_version]["groups"]:
                         item = user_data[ip_version]["groups"][group_name]
-                        print(item)
                         group_list_detail.append(
                             {
                                 "ip_version": ip_version,
@@ -73,7 +72,6 @@ def assemble_detail_list_of_groups(session):
     if group_list_detail == []:
         flash(f"There are no groups defined.", "danger")
 
-    print(group_list_detail)
     return group_list_detail
 
 

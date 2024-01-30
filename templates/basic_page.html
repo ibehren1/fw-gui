@@ -61,12 +61,15 @@
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
                     </colgroup>
-                    <td align="center" colspan="2">
-                        <p class="section_heading">Firewall<br>Configurations</p>
-                        <font class="page_background">Click config name below to view config.</font>
-                        <br>
-                        <br>
-                    </td>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <p class="section_heading">Firewall<br>Configurations</p>
+                            <font class="page_background">Click config name below to view config.</font>
+                            <br>
+                            <br>
+                        </td>
+                    </tr>
+
                     {% if file_list%}
                     <form action="/select_firewall_config" method=post>
                         {% for file in file_list %}
@@ -163,29 +166,10 @@
                         <col span="1" style="width: 50%;">
                         <col span="1" style="width: 50%;">
                     </colgroup>
+
                     {% if firewall_name %}
-                    <td align="center" colspan="2">
-                        <p class="section_heading">
-                            Configuration
-                        </p>
-                    </td>
                     <tr>
                         <td align="center" colspan="2">
-                            <a href="{{ url_for('display_config')}}">
-                                <input class="button" type="submit" value="Display Configuration" style="width: 75%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" colspan="2">
-                            <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
-                                <input class="button" type="submit" style="width: 75%;" value="Download Configuration">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" colspan="2">
-                            <br> <br>
                             <p class="section_heading">
                                 Groups
                             </p>
@@ -220,6 +204,13 @@
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
+                            <a href="{{ url_for('chain_view')}}">
+                                <input class="button" type="submit" value="View Chains" style="width: 75%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('chain_add')}}">
                                 <input class="button" type="submit" value="Add Chain" style="width: 75%">
                             </a>
@@ -247,6 +238,13 @@
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
+                            <a href="{{ url_for('filter_view')}}">
+                                <input class="button" type="submit" value="View Filters" style="width: 75%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('filter_add')}}">
                                 <input class="button" type="submit" value="Add Filter" style="width: 75%">
                             </a>
@@ -261,6 +259,28 @@
                         <td align="left">
                             <a href="{{ url_for('filter_rule_delete')}}">
                                 <input class="button" type="submit" value="Delete Rule" style="width: 75%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br><br>
+                            <hr width="75%">
+                            <p class="section_heading">
+                                Configuration
+                            </p>
+                        </td>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <a href="{{ url_for('display_config')}}">
+                                <input class="button" type="submit" value="Display Configuration" style="width: 75%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
+                                <input class="button" type="submit" style="width: 75%;" value="Download Configuration">
                             </a>
                         </td>
                     </tr>
@@ -286,7 +306,7 @@
                 </p>
             </td>
             <td width="50%" align="center" style="vertical-align: middle;">
-                <p class="h4_dark">vyos-fw-gui v0.8.0</p>
+                <p class="h4_dark">vyos-fw-gui v0.9.0</p>
                 <p class="h3_dark">Copyright 2024 Isaac Behrens</p>
             </td>
             <td width="25%" align="center" style="vertical-align: middle;">

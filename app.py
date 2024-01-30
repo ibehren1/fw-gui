@@ -20,6 +20,7 @@ from package.chain_functions import (
     add_chain_to_data,
     assemble_list_of_rules,
     assemble_list_of_chains,
+    assemble_detail_list_of_chains,
     delete_rule_from_data,
 )
 from package.database_functions import process_login, query_user_by_id, register_user
@@ -34,6 +35,7 @@ from package.filter_functions import (
     add_filter_to_data,
     assemble_list_of_filters,
     assemble_list_of_filter_rules,
+    assemble_detail_list_of_filters,
     delete_filter_rule_from_data,
 )
 from package.generate_config import download_json_data, generate_config
@@ -194,7 +196,7 @@ def chain_add():
     if request.method == "POST":
         add_chain_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("chain_view"))
 
     else:
         file_list = list_user_files(session)
@@ -213,7 +215,7 @@ def chain_rule_add():
     if request.method == "POST":
         add_rule_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("chain_view"))
 
     else:
         file_list = list_user_files(session)
@@ -236,7 +238,7 @@ def chain_rule_delete():
     if request.method == "POST":
         delete_rule_from_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("chain_view"))
 
     else:
         file_list = list_user_files(session)
@@ -253,6 +255,24 @@ def chain_rule_delete():
             rule_list=rule_list,
             username=session["username"],
         )
+
+
+@app.route("/chain_view")
+@login_required
+def chain_view():
+    file_list = list_user_files(session)
+    chain_dict = assemble_detail_list_of_chains(session)
+
+    if chain_dict == {}:
+        return redirect(url_for("chain_add"))
+
+    return render_template(
+        "chain_view.html",
+        chain_dict=chain_dict,
+        file_list=file_list,
+        firewall_name=session["firewall_name"],
+        username=session["username"],
+    )
 
 
 #
@@ -332,6 +352,24 @@ def filter_rule_delete():
         )
 
 
+@app.route("/filter_view")
+@login_required
+def filter_view():
+    file_list = list_user_files(session)
+    filter_dict = assemble_detail_list_of_filters(session)
+
+    if filter_dict == {}:
+        return redirect(url_for("filter_add"))
+
+    return render_template(
+        "filter_view.html",
+        file_list=file_list,
+        filter_dict=filter_dict,
+        firewall_name=session["firewall_name"],
+        username=session["username"],
+    )
+
+
 #
 # Display Config
 @app.route("/display_config")
@@ -343,13 +381,15 @@ def display_config():
         message = "No firewall selected.<br><br>Please select a firewall from the list on the left."
 
         return render_template(
-            "firewall_results.html", file_list=file_list, message=message
+            "firewall_results.html",
+            file_list=file_list,
+            message=message,
+            username=session["username"],
         )
 
     else:
         message = generate_config(session)
 
-        print(session)
         return render_template(
             "firewall_results.html",
             file_list=file_list,

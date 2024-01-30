@@ -15,6 +15,7 @@ Close to 1.0.0 release.
 ![image](./images/vyos-fw-gui_interface_1.png)
 ![image](./images/vyos-fw-gui_interface_2.png)
 ![image](./images/vyos-fw-gui_interface_3.png)
+![image](./images/vyos-fw-gui_interface_4.png)
 
 ## Sample Output
 
@@ -225,7 +226,7 @@ docker run \
   --name   vyos-fw-gui \
   --expose 8080 \
   --mount  source=vyos-fw-gui_data,target=/opt/vyos-fw-gui/data \
-  ibehren1/vyos-fw-gui:v0.8.0
+  ibehren1/vyos-fw-gui:v0.9.0
 ```
 
 ## Docker Compose
@@ -234,7 +235,7 @@ docker run \
 version: '3.7'
 services:
   vyos-fw-gui:
-    image: ibehren1/vyos-fw-gui:v0.8.0
+    image: ibehren1/vyos-fw-gui:v0.9.0
     container_name: vyos-fw-gui
     ports:
       - 8080:8080/tcp

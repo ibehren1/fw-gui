@@ -90,6 +90,38 @@ def add_filter_to_data(session, request):
     return
 
 
+def assemble_detail_list_of_filters(session):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Create list of defined filters
+    filter_dict = {}
+    try:
+        for ip_version in ["ipv4", "ipv6"]:
+            if ip_version in user_data:
+                filter_dict[ip_version] = {}
+                if "filters" in user_data[ip_version]:
+                    for filter_name in user_data[ip_version]["filters"]:
+                        filter_dict[ip_version][filter_name] = []
+                        for rule in user_data[ip_version]["filters"][filter_name][
+                            "rule-order"
+                        ]:
+                            rule_detail = user_data[ip_version]["filters"][filter_name][
+                                "rules"
+                            ][rule]
+                            rule_detail["number"] = rule
+                            filter_dict[ip_version][filter_name].append(rule_detail)
+    except:
+        print("Error in assemble_detail_list_of_rules")
+        pass
+
+    # If there are no filters, flash message
+    if filter_dict == {}:
+        flash(f"There are no filters defined.", "danger")
+
+    return filter_dict
+
+
 def assemble_list_of_filters(session):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
