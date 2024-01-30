@@ -15,6 +15,7 @@ Close to 1.0.0 release.
 ![image](./images/vyos-fw-gui_interface_1.png)
 ![image](./images/vyos-fw-gui_interface_2.png)
 ![image](./images/vyos-fw-gui_interface_3.png)
+![image](./images/vyos-fw-gui_interface_4.png)
 
 ## Sample Output
 
