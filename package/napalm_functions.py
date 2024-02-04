@@ -1,5 +1,5 @@
 """
-    Napalm Functions
+    Napalm Functions to connect with VyOS Firewall
 """
 
 from flask import flash
@@ -10,7 +10,8 @@ import socket
 def get_diffs_from_firewall(connection_string, session):
     driver = get_network_driver("vyos")
 
-    print("Configuring driver")
+    print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    print(" |--> Configuring driver")
 
     vyos_router = driver(
         hostname=connection_string["hostname"],
@@ -19,33 +20,42 @@ def get_diffs_from_firewall(connection_string, session):
         optional_args={"port": connection_string["port"]},
     )
 
-    print("Opening connection")
+    print(" |--> Opening connection")
 
-    vyos_router.open()
-    vyos_router.load_merge_candidate(
-        filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
-    )
+    try:
+        vyos_router.open()
+        vyos_router.load_merge_candidate(
+            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
+        )
 
-    print("Comparing configuration")
-    diffs = vyos_router.compare_config()
+        print(" |--> Comparing configuration")
+        diffs = vyos_router.compare_config()
 
-    vyos_router.discard_config()
-    vyos_router.close()
+        vyos_router.discard_config()
+        vyos_router.close()
+        print(" |--> Connection closed.\n |")
 
-    if bool(diffs) == True:
-        print(diffs)
+        if bool(diffs) == True:
+            print(diffs)
 
-        return diffs
+            return diffs
 
-    else:
+        else:
 
-        return "No configuration changes to commit."
+            return "No configuration changes to commit."
+
+    except Exception as e:
+        print(f" |--X Error: {e}")
+        flash("Authentication error.", "danger")
+        print(" |")
+        return e
 
 
 def commit_to_firewall(connection_string, session):
     driver = get_network_driver("vyos")
 
-    print("Configuring driver")
+    print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    print(" |--> Configuring driver")
 
     vyos_router = driver(
         hostname=connection_string["hostname"],
@@ -54,28 +64,40 @@ def commit_to_firewall(connection_string, session):
         optional_args={"port": connection_string["port"]},
     )
 
-    print("Opening connection")
+    print(" |--> Opening connection")
 
-    vyos_router.open()
-    vyos_router.load_merge_candidate(
-        filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
-    )
+    try:
+        vyos_router.open()
+        vyos_router.load_merge_candidate(
+            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
+        )
 
-    print("Comparing configuration")
-    diffs = vyos_router.compare_config()
+        print(" |--> Comparing configuration")
+        diffs = vyos_router.compare_config()
 
-    if bool(diffs) == True:
-        print(diffs)
-        print("Committing configuration")
-        commit = vyos_router.commit_config()
-    else:
-        print("No configuration changes to commit")
-        vyos_router.discard_config()
+        if bool(diffs) == True:
+            print(diffs)
+            print(" |--> Committing configuration")
+            commit = vyos_router.commit_config()
 
-    print("Closing connection")
-    vyos_router.close()
+            print(" |--> Connection closed.\n |")
+            vyos_router.close()
 
-    return commit
+            return commit
+
+        else:
+            print(" |--> No configuration changes to commit")
+            vyos_router.discard_config()
+
+            print(" |--> Connection closed.\n |")
+            vyos_router.close()
+            return "No configuration changes to commit."
+
+    except Exception as e:
+        print(f" |--X Error: {e}")
+        flash("Authentication error.", "danger")
+        print(" |")
+        return e
 
 
 def test_connection(session):

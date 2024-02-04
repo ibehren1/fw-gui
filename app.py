@@ -413,7 +413,6 @@ def configuration_push():
             "port": session["port"],
         }
 
-        print(request)
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":
