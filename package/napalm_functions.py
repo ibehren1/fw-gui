@@ -9,6 +9,7 @@ import socket
 
 def get_diffs_from_firewall(connection_string, session):
     driver = get_network_driver("vyos")
+    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
 
     print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
     print(" |--> Configuring driver")
@@ -17,7 +18,7 @@ def get_diffs_from_firewall(connection_string, session):
         hostname=connection_string["hostname"],
         username=connection_string["username"],
         password=connection_string["password"],
-        optional_args={"port": connection_string["port"]},
+        optional_args=optional_args,
     )
 
     print(" |--> Opening connection")
@@ -53,6 +54,7 @@ def get_diffs_from_firewall(connection_string, session):
 
 def commit_to_firewall(connection_string, session):
     driver = get_network_driver("vyos")
+    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
 
     print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
     print(" |--> Configuring driver")
@@ -61,7 +63,7 @@ def commit_to_firewall(connection_string, session):
         hostname=connection_string["hostname"],
         username=connection_string["username"],
         password=connection_string["password"],
-        optional_args={"port": connection_string["port"]},
+        optional_args=optional_args,
     )
 
     print(" |--> Opening connection")
