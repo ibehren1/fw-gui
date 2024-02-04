@@ -1,0 +1,97 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table class="table">
+    <tr>
+        <td align="center" colspan="3">
+            <h2 class="page_heading">Push Firewall Configuration</h2>
+    </tr>
+    <tr>
+        <td colspan="3">
+            The below VyOS CLI configuration commands can be copied and pasted to the CLI for firewall configuration or
+            download the whole configuration with the button on the right.
+            <a href="https://docs.vyos.io/en/sagitta/cli.html" target=”_blank” class="docs_link">
+                Docs&#x2197
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Firewall Hostname
+        </td>
+        <td>
+            SSH Port
+        </td>
+    <tr>
+        <td>
+            {% if firewall_reachable %}
+            &#9989;&nbsp{{firewall_hostname}}
+            {% else %}
+            &#10060;&nbsp{{firewall_hostname}}
+            {% endif %}
+        </td>
+        <td>
+            {{firewall_port}}
+        </td>
+    </tr>
+    <form action="/configuration_push" , method="post">
+        <tr>
+            <th colspan="3" align="left">
+                <h2> View Diff</h2>
+            </th>
+        </tr>
+        <tr>
+            <td colspan="3">
+                Before you can push configurations to a firewall, you need to add the fully qualified hostname and SSH
+                port.
+            </td>
+        </tr>
+        <tr>
+            <td style="vertical-align: top;">
+                <p class="section_heading">
+                    Credentials (never stored!!!)
+                </p>
+                <table>
+                    <tr>
+                        <td>
+                            <label for="username">Username</label>
+                        </td>
+                        <td>
+                            <input type="text" id="username" name="username" size=30 value=""><br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="password">Password</label>
+                        </td>
+                        <td>
+                            <input type="password" id="password" name="password" size=30 value=""><br>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align="right" colspan="3">
+                <input type="submit" name="action" value="View Diffs">
+            </td>
+            <td align="right" colspan="3">
+                <input type="submit" name="action" value="Commit">
+            </td>
+        </tr>
+    </form>
+    <tr>
+        <!-- <td style="font-family: 'Courier New', Courier, monospace;"> -->
+        <td class="configuration" colspan="3">
+            <pre>
+                <code>
+            {% autoescape false %}
+{{message}}
+            {% endautoescape %}
+                </code>
+            </pre>
+        </td>
+    </tr>
+</table>
+<br><br>
+{% endblock body %}

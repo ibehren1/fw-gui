@@ -27,7 +27,7 @@ def generate_config(session):
 
     # Work through each IP Version, Chain and Rule adding to config
     for ip_version in user_data:
-        if ip_version != "version":
+        if ip_version != "version" and ip_version != "system":
             config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
 
             if "groups" in user_data[ip_version]:
