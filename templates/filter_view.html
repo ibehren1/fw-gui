@@ -4,6 +4,7 @@
 <p class="section_heading">IPv4 Filters</p>
 <hr>
 
+{% if filter_dict.ipv4 %}
 {% for key, filter_list in filter_dict.ipv4.items() %}
 
 <p class="filter_heading">Filter: {{key}}</p>
@@ -63,13 +64,15 @@
     {% endfor %}
 </table>
 {% endfor %}
+{% endif %}
 
 
 <br><br>
 
 <p class="section_heading">IPv6 Filters</p>
 <hr>
-{% for key, filter_list in filter_dict.ipv4.items() %}
+{% if filter_dict.ipv6 %}
+{% for key, filter_list in filter_dict.ipv6.items() %}
 
 <p class="filter_heading">Filter: {{key}}</p>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
@@ -128,6 +131,7 @@
     {% endfor %}
 </table>
 {% endfor %}
+{% endif %}
 
 <br><br>
 

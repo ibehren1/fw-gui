@@ -4,6 +4,7 @@
 <p class="section_heading">IPv4 Chains</p>
 <hr>
 
+{% if chain_dict.ipv4 %}
 {% for key, chain_list in chain_dict.ipv4.items() %}
 
 <p class="chain_heading">Chain: {{key}}</p>
@@ -121,12 +122,14 @@
     {% endfor %}
 </table>
 {% endfor %}
+{% endif %}
 
 
 <br><br>
 
 <p class="section_heading">IPv6 Chains</p>
 <hr>
+{% if chain_dict.ipv6 %}
 {% for key, chain_list in chain_dict.ipv6.items() %}
 
 <p class="chain_heading">Chain: {{key}}</p>
@@ -244,6 +247,7 @@
     {% endfor %}
 </table>
 {% endfor %}
+{% endif %}
 
 <br><br>
 
