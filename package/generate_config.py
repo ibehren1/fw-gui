@@ -1,6 +1,7 @@
 """
     Generate Configuration
 """
+
 from package.data_file_functions import read_user_data_file
 import json
 
@@ -19,7 +20,7 @@ def generate_config(session):
     # Create firewall configuration
     config = []
 
-    if "ipv4" not in user_data or "ipv6" not in user_data:
+    if "ipv4" not in user_data and "ipv6" not in user_data:
         config.append(
             "Empty rule set.  Start by adding a Chain using the button on the right."
         )
@@ -400,4 +401,4 @@ def generate_config(session):
         message = message + line.replace("\n", "<br>") + "<br>"
 
     # Return message of config commands
-    return message
+    return message, config

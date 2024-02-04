@@ -28,6 +28,7 @@ from package.data_file_functions import (
     initialize_data_dir,
     list_user_files,
     process_upload,
+    write_user_command_conf_file,
     write_user_data_file,
 )
 from package.filter_functions import (
@@ -45,6 +46,7 @@ from package.group_funtions import (
     assemble_detail_list_of_groups,
     delete_group_from_data,
 )
+from package.napalm_functions import push_config_to_firewall
 from waitress import serve
 import os
 
@@ -371,6 +373,38 @@ def filter_view():
 
 
 #
+# Push to firewall
+@app.route("/push_config", methods=["GET", "POST"])
+def push_config():
+    file_list = list_user_files(session)
+
+    if "firewall_name" not in session:
+        message = "No firewall selected.<br><br>Please select a firewall from the list on the left."
+
+        return render_template(
+            "firewall_results.html",
+            file_list=file_list,
+            message=message,
+            username=session["username"],
+        )
+
+    else:
+        message, config = generate_config(session)
+        write_user_command_conf_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}', config
+        )
+        push_config_to_firewall(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+        return render_template(
+            "firewall_results.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            message=message,
+            username=session["username"],
+        )
+
+
+#
 # Display Config
 @app.route("/display_config")
 @login_required
@@ -388,7 +422,7 @@ def display_config():
         )
 
     else:
-        message = generate_config(session)
+        message, config = generate_config(session)
 
         return render_template(
             "firewall_results.html",
@@ -444,7 +478,7 @@ def delete_config():
 @app.route("/download_config")
 @login_required
 def download_config():
-    message = generate_config(session)
+    message, config = generate_config(session)
 
     return message.replace("<br>", "\n")
 

@@ -1,6 +1,7 @@
 """
     Data File Support Functions
 """
+
 from flask import app, flash, redirect
 import json
 import os
@@ -52,7 +53,8 @@ def list_user_files(session):
     files = os.listdir(f"{session['data_dir']}")
 
     for file in files:
-        file_list.append(file.replace(".json", ""))
+        if ".json" in file:
+            file_list.append(file.replace(".json", ""))
 
     file_list.sort()
 
@@ -141,6 +143,15 @@ def update_schema(user_data):
     user_data["version"] = "1"
 
     return user_data
+
+
+#
+# Write User commands.conf file
+def write_user_command_conf_file(filename, command_list):
+    with open(f"{filename}.conf", "w") as f:
+        for line in command_list:
+            f.write(f"{line}\n")
+    return
 
 
 #
