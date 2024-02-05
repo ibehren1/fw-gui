@@ -270,10 +270,18 @@
                                 Configuration
                             </p>
                         </td>
+                    </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('display_config')}}">
                                 <input class="button" type="submit" value="Display Configuration" style="width: 75%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <a href="{{ url_for('configuration_push')}}">
+                                <input class="button" type="submit" value="Push to Firewall" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -306,7 +314,7 @@
                 </p>
             </td>
             <td width="50%" align="center" style="vertical-align: middle;">
-                <p class="h4_dark">vyos-fw-gui v0.9.0</p>
+                <p class="h4_dark">vyos-fw-gui v0.10.2</p>
                 <p class="h3_dark">Copyright 2024 Isaac Behrens</p>
             </td>
             <td width="25%" align="center" style="vertical-align: middle;">

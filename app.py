@@ -25,9 +25,12 @@ from package.chain_functions import (
 )
 from package.database_functions import process_login, query_user_by_id, register_user
 from package.data_file_functions import (
+    add_hostname,
+    get_system_name,
     initialize_data_dir,
     list_user_files,
     process_upload,
+    write_user_command_conf_file,
     write_user_data_file,
 )
 from package.filter_functions import (
@@ -44,6 +47,11 @@ from package.group_funtions import (
     assemble_list_of_groups,
     assemble_detail_list_of_groups,
     delete_group_from_data,
+)
+from package.napalm_functions import (
+    commit_to_firewall,
+    get_diffs_from_firewall,
+    test_connection,
 )
 from waitress import serve
 import os
@@ -371,27 +379,99 @@ def filter_view():
 
 
 #
-# Display Config
+# Configuration
+@app.route("/configuration_hostname_add", methods=["GET", "POST"])
+@login_required
+def configuration_hostname_add():
+    if request.method == "POST":
+        add_hostname(session, request)
+        session["hostname"] = request.form["hostname"]
+        session["port"] = request.form["port"]
+
+        return redirect(url_for("configuration_push"))
+
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "configuration_hostname_add.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
+@app.route("/configuration_push", methods=["GET", "POST"])
+@login_required
+def configuration_push():
+    if request.method == "POST":
+
+        connection_string = {
+            "hostname": session["hostname"],
+            "username": request.form["username"],
+            "password": request.form["password"],
+            "port": session["port"],
+        }
+
+        if request.form["action"] == "View Diffs":
+            message = get_diffs_from_firewall(connection_string, session)
+        if request.form["action"] == "Commit":
+            message = commit_to_firewall(connection_string, session)
+        file_list = list_user_files(session)
+
+        return render_template(
+            "configuration_push.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            firewall_hostname=session["hostname"],
+            firewall_port=session["port"],
+            firewall_reachable=True,
+            message=message,
+            username=session["username"],
+        )
+
+    else:
+        if session["hostname"] == "None":
+            flash("Need to set firewall hostname and SSH port.", "warning")
+            return redirect(url_for("configuration_hostname_add"))
+
+        file_list = list_user_files(session)
+        message, config = generate_config(session)
+        write_user_command_conf_file(session, config)
+        firewall_reachable = test_connection(session)
+
+        return render_template(
+            "configuration_push.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            firewall_hostname=session["hostname"],
+            firewall_port=session["port"],
+            firewall_reachable=firewall_reachable,
+            message=message,
+            username=session["username"],
+        )
+
+
 @app.route("/display_config")
 @login_required
 def display_config():
     file_list = list_user_files(session)
 
     if "firewall_name" not in session:
-        message = "No firewall selected.<br><br>Please select a firewall from the list on the left."
+        message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
 
         return render_template(
-            "firewall_results.html",
+            "configuration_display.html",
             file_list=file_list,
             message=message,
             username=session["username"],
         )
 
     else:
-        message = generate_config(session)
+        message, config = generate_config(session)
 
         return render_template(
-            "firewall_results.html",
+            "configuration_display.html",
             file_list=file_list,
             firewall_name=session["firewall_name"],
             message=message,
@@ -399,8 +479,6 @@ def display_config():
         )
 
 
-#
-# Create Config
 @app.route("/create_config", methods=["POST"])
 @login_required
 def create_config():
@@ -418,8 +496,6 @@ def create_config():
     return redirect(url_for("display_config"))
 
 
-#
-# Delete Config
 @app.route("/delete_config", methods=["POST"])
 @login_required
 def delete_config():
@@ -439,12 +515,10 @@ def delete_config():
     return redirect(url_for("display_config"))
 
 
-#
-# Download Config
 @app.route("/download_config")
 @login_required
 def download_config():
-    message = generate_config(session)
+    message, config = generate_config(session)
 
     return message.replace("<br>", "\n")
 
@@ -461,6 +535,10 @@ def download_json():
 @login_required
 def select_firewall_config():
     session["firewall_name"] = request.form["file"]
+
+    session["hostname"], session["port"] = get_system_name(session)
+
+    print(session)
 
     return redirect(url_for("display_config"))
 

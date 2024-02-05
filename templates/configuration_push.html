@@ -1,0 +1,115 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table class="table">
+    <tr>
+        <td align="center" colspan="2" style="padding:0%;">
+            <h2 class="page_heading">Push Firewall Configuration</h2>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            Below you can provide credentials to connet to your firewall via SSH. The credentials are <b><u>not
+                    saved</u></b>
+            and you will have to provide them each time you wish to connect.
+            <br><br>
+            When you connect, you can choose to View Diffs, which will highlight the difference in the configuration
+            built here and displayed below and the running configuration of the firewall.
+            <br><br>
+            Additionally, you can choose to commit the changes to the firewall which will apply the configuration
+            and save it as the boot configuration.
+        </td>
+    </tr>
+
+    <tr>
+        <th colspan="2" align="left">
+            <h2>Firewall Connection</h2>
+        </th>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <table class="groups_table" border="1" width="100%">
+                <th width="75%" style="padding: 0px;">
+                    Firewall Hostname
+                </th>
+                <th style="padding: 0px;">
+                    SSH Port
+                </th>
+                <th style="padding: 0px;">
+                    Change
+                </th>
+                <tr>
+                    <td>
+                        {% if firewall_reachable %}
+                        &#9989;&nbsp{{firewall_hostname}}
+                        {% else %}
+                        &#10060;&nbsp{{firewall_hostname}}
+                        {% endif %}
+                    </td>
+                    <td align="center">
+                        {{firewall_port}}
+                    </td>
+                    <td>
+                        <a href="{{url_for('configuration_hostname_add')}}">
+                            <input class="button" type="submit" name="action" value="Change">
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    <form action="/configuration_push" , method="post">
+        <tr>
+            <td colspan="2" style="vertical-align: top;">
+                <p class="section_heading">
+                    Credentials
+                </p>
+                <table class="groups_table">
+                    <tr>
+                        <td style="padding: 5px;">
+                            <label for="username">Username</label>
+                        </td>
+                        <td style="padding: 5px;">
+                            <input type="text" id="username" name="username" size=30 value=""><br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px;">
+                            <label for="password">Password</label>
+                        </td>
+                        <td style="padding: 5px;">
+                            <input type="password" id="password" name="password" size=30 value=""><br>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" colspan="2" style="padding:0%">
+                Click button only once. May take 30 seconds to complete connection and show results.
+            </td>
+        </tr>
+        <tr>
+            <td align="center" width="50%">
+                <input class="button" type="submit" name="action" value="View Diffs">
+            </td>
+            <td align="center">
+                <input class="button" type="submit" name="action" value="Commit">
+            </td>
+        </tr>
+    </form>
+    <tr>
+        <td class="configuration" colspan="2">
+            <pre>
+                <code>
+            {% autoescape false %}
+{{message}}
+            {% endautoescape %}
+                </code>
+            </pre>
+        </td>
+    </tr>
+</table>
+<br><br>
+{% endblock body %}

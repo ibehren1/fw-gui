@@ -10,12 +10,18 @@ Working demo:  [https://vyos-fw-gui.com](https://vyos-fw-gui.com)
 
 Close to 1.0.0 release.
 
+NEW in version v0.10.2 is the ability to push the configuration to firewalls via SSH.
+
+- Uses napalm python library.
+- More refinements to come - basic functionality available.
+
 ## Interface
 
 ![image](./images/vyos-fw-gui_interface_1.png)
 ![image](./images/vyos-fw-gui_interface_2.png)
 ![image](./images/vyos-fw-gui_interface_3.png)
 ![image](./images/vyos-fw-gui_interface_4.png)
+![image](./images/vyos-fw-gui_interface_5.png)
 
 ## Sample Output
 
@@ -226,7 +232,7 @@ docker run \
   --name   vyos-fw-gui \
   --expose 8080 \
   --mount  source=vyos-fw-gui_data,target=/opt/vyos-fw-gui/data \
-  ibehren1/vyos-fw-gui:v0.9.0
+  ibehren1/vyos-fw-gui:v0.10.2
 ```
 
 ## Docker Compose
@@ -235,7 +241,7 @@ docker run \
 version: '3.7'
 services:
   vyos-fw-gui:
-    image: ibehren1/vyos-fw-gui:v0.9.0
+    image: ibehren1/vyos-fw-gui:v0.10.2
     container_name: vyos-fw-gui
     ports:
       - 8080:8080/tcp

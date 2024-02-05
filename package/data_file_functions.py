@@ -1,15 +1,42 @@
 """
     Data File Support Functions
 """
+
 from flask import app, flash, redirect
 import json
 import os
 
 
 #
+# Add hostname
+def add_hostname(session, reqest):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Add hostname and port to user_data
+    user_data["system"]["hostname"] = reqest.form["hostname"]
+    user_data["system"]["port"] = reqest.form["port"]
+
+    # Write user_data to file
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+
+#
 # Determine if a file is a JSON file
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in {"json"}
+
+
+#
+# Get system info from data file
+def get_system_name(session):
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    if "system" in user_data:
+        return user_data["system"]["hostname"], user_data["system"]["port"]
+
+    else:
+        return None, None
 
 
 #
@@ -52,7 +79,8 @@ def list_user_files(session):
     files = os.listdir(f"{session['data_dir']}")
 
     for file in files:
-        file_list.append(file.replace(".json", ""))
+        if ".json" in file:
+            file_list.append(file.replace(".json", ""))
 
     file_list.sort()
 
@@ -99,6 +127,12 @@ def read_user_data_file(filename):
                 user_data["version"] = "0"
                 user_data = update_schema(user_data)
                 write_user_data_file(filename, user_data)
+            if "system" not in user_data:
+                user_data["system"] = {
+                    "hostname": "None",
+                    "port": "None",
+                }
+                write_user_data_file(filename, user_data)
             return user_data
     except:
         return {}
@@ -141,6 +175,15 @@ def update_schema(user_data):
     user_data["version"] = "1"
 
     return user_data
+
+
+#
+# Write User commands.conf file
+def write_user_command_conf_file(session, command_list):
+    with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
+        for line in command_list:
+            f.write(f"{line}\n")
+    return
 
 
 #

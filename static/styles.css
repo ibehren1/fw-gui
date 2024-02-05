@@ -211,11 +211,37 @@ h4 {
 
 /* --Tables-- */
 
-.groups_table {
+.table {
     color: aliceblue;
     border: 1;
     border-color: "#000000";
 
+    padding: 10px;
+    border-spacing: 0;
+    border-collapse: collapse;
+
+    table-layout: fixed;
+    vertical-align: top;
+}
+
+.table td,
+.table th {
+    padding: .75rem;
+    vertical-align: top;
+    border-top: 0px solid #dee2e6;
+    table-layout: fixed;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 0px solid #dee2e6;
+    table-layout: fixed;
+}
+
+.groups_table {
+    color: aliceblue;
+    border: 1;
+    border-color: "#000000";
 
     padding: 10px;
     border-spacing: 0;
@@ -241,34 +267,6 @@ h4 {
 }
 
 .groups_table thead th {
-    vertical-align: bottom;
-    border-bottom: 0px solid #dee2e6;
-    table-layout: fixed;
-}
-
-.table {
-    color: aliceblue;
-    border: 1;
-    border-color: "#000000";
-
-
-    padding: 10px;
-    border-spacing: 0;
-    border-collapse: collapse;
-
-    table-layout: fixed;
-    vertical-align: top;
-}
-
-.table td,
-.table th {
-    padding: .75rem;
-    vertical-align: top;
-    border-top: 0px solid #dee2e6;
-    table-layout: fixed;
-}
-
-.table thead th {
     vertical-align: bottom;
     border-bottom: 0px solid #dee2e6;
     table-layout: fixed;

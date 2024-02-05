@@ -4,5 +4,7 @@ flask_bcrypt
 flask_login
 flask_sqlalchemy
 Jinja2
+napalm
+napalm-vyos
 waitress
 werkzeug

@@ -53,3 +53,10 @@
 - [ ] Look at options for working with official GUI project.
 
       Other than that this perhaps should/could be merged (or parts of it) with the ongoing VyOS GUI project as described at:
+
+## Run Config on Firewall
+
+- [x] Test running config command via Napalm
+  - <https://docs.vyos.io/en/latest/automation/vyos-napalm.html>
+  - [ ] Additional updates around occasional timeouts.
+  - [ ] Ability to use SSH keys? without saving?

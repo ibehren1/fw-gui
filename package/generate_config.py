@@ -1,6 +1,7 @@
 """
     Generate Configuration
 """
+
 from package.data_file_functions import read_user_data_file
 import json
 
@@ -19,14 +20,14 @@ def generate_config(session):
     # Create firewall configuration
     config = []
 
-    if "ipv4" not in user_data or "ipv6" not in user_data:
+    if "ipv4" not in user_data and "ipv6" not in user_data:
         config.append(
             "Empty rule set.  Start by adding a Chain using the button on the right."
         )
 
     # Work through each IP Version, Chain and Rule adding to config
     for ip_version in user_data:
-        if ip_version != "version":
+        if ip_version != "version" and ip_version != "system":
             config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
 
             if "groups" in user_data[ip_version]:
@@ -95,10 +96,10 @@ def generate_config(session):
                     # Write Config Statements
                     config.append(f"#\n# Filter: {filter_name}\n#")
                     config.append(
-                        f"set firewall {ip_version} {filter_name} filter descriptionn '{filter_desc}'"
+                        f"set firewall {ip_version} {filter_name} filter description '{filter_desc}'"
                     )
                     config.append(
-                        f"set firewall {ip_version} {filter_name} filter default-action '{filter_action}'"
+                        f"set firewall {ip_version} {filter_name} filter default-action {filter_action}"
                     )
                     if filter_log:
                         config.append(
@@ -162,11 +163,11 @@ def generate_config(session):
                         # Interface / Directions
                         if direction == "inbound":
                             config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface '{interface}'"
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface name '{interface}'"
                             )
                         if direction == "outbound":
                             config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface '{interface}'"
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface name '{interface}'"
                             )
                         config.append(
                             f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target '{jump_target}'"
@@ -400,4 +401,4 @@ def generate_config(session):
         message = message + line.replace("\n", "<br>") + "<br>"
 
     # Return message of config commands
-    return message
+    return message, config
