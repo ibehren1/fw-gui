@@ -56,5 +56,7 @@
 
 ## Run Config on Firewall
 
-- [ ] Test running config command via Napalm
+- [x] Test running config command via Napalm
   - <https://docs.vyos.io/en/latest/automation/vyos-napalm.html>
+  - [ ] Additional updates around occasional timeouts.
+  - [ ] Ability to use SSH keys? without saving?
