@@ -96,10 +96,10 @@ def generate_config(session):
                     # Write Config Statements
                     config.append(f"#\n# Filter: {filter_name}\n#")
                     config.append(
-                        f"set firewall {ip_version} {filter_name} filter descriptionn '{filter_desc}'"
+                        f"set firewall {ip_version} {filter_name} filter description '{filter_desc}'"
                     )
                     config.append(
-                        f"set firewall {ip_version} {filter_name} filter default-action '{filter_action}'"
+                        f"set firewall {ip_version} {filter_name} filter default-action {filter_action}"
                     )
                     if filter_log:
                         config.append(
@@ -163,11 +163,11 @@ def generate_config(session):
                         # Interface / Directions
                         if direction == "inbound":
                             config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface '{interface}'"
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface name '{interface}'"
                             )
                         if direction == "outbound":
                             config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface '{interface}'"
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface name '{interface}'"
                             )
                         config.append(
                             f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target '{jump_target}'"
