@@ -92,11 +92,16 @@
         </tr>
         <tr>
             <td align="center" width="50%">
-                <input class="button" type="submit" name="action" value="View Diffs">
+                <input class="button" type="submit" name="action" value="View Diffs" onclick="$('#loading').show();">
             </td>
             <td align="center">
-                <input class="button" type="submit" name="action" value="Commit">
+                <input class="button" type="submit" name="action" value="Commit" onclick="$('#loading').show();">
             </td>
+            <div class="popup" id="loading" style="display:none;">
+                <img src="static/loading.gif" width="100" height="100">
+                <br>
+                Loading
+            </div>
         </tr>
     </form>
     <tr>

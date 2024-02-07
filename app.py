@@ -538,8 +538,6 @@ def select_firewall_config():
 
     session["hostname"], session["port"] = get_system_name(session)
 
-    print(session)
-
     return redirect(url_for("display_config"))
 
 
@@ -561,6 +559,7 @@ if __name__ == "__main__":
     # If environment is set, run debug, else assume PROD
     if env:
         app.run(debug=True, host="0.0.0.0", port="8080")
+
     # Else, run app in production mode on port 8080.
     else:
-        serve(app, host="0.0.0.0", port=8080)
+        serve(app, host="0.0.0.0", port=8080, channel_timeout=120)
