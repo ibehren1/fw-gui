@@ -5,9 +5,43 @@
 
 /* --Alerts-- */
 
+.alert {
+    position: relative;
+    padding: .75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: .25rem
+}
+
+.alert-heading {
+    color: inherit
+}
+
+.alert-link {
+    font-weight: 700
+}
+
+.alert-dismissible {
+    padding-right: 4rem
+}
+
+.alert-dismissible .close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: .75rem 1.25rem;
+    color: inherit
+}
+
 .alert-danger {
     color: aliceblue;
     background-color: #dc2232;
+    border-color: #f5c6cb
+}
+
+.alert-key {
+    color: aliceblue;
+    background-color: #0800ff;
     border-color: #f5c6cb
 }
 

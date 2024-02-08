@@ -10,7 +10,7 @@ Working demo:  [https://vyos-fw-gui.com](https://vyos-fw-gui.com)
 
 Close to 1.0.0 release.
 
-NEW in version v0.10.3 is the ability to push the configuration to firewalls via SSH.
+NEW in version v0.10.2 is the ability to push the configuration to firewalls via SSH.
 
 - Uses napalm python library.
 - More refinements to come - basic functionality available.

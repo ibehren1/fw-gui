@@ -29,6 +29,7 @@ from package.data_file_functions import (
     get_system_name,
     initialize_data_dir,
     list_user_files,
+    list_user_keys,
     process_upload,
     write_user_command_conf_file,
     write_user_data_file,
@@ -412,12 +413,15 @@ def configuration_push():
             "password": request.form["password"],
             "port": session["port"],
         }
+        if "ssh_key_name" in request.form:
+            connection_string["ssh_key_name"] = request.form["ssh_key_name"]
 
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":
             message = commit_to_firewall(connection_string, session)
         file_list = list_user_files(session)
+        key_list = list_user_keys(session)
 
         return render_template(
             "configuration_push.html",
@@ -426,6 +430,7 @@ def configuration_push():
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
             firewall_reachable=True,
+            key_list=key_list,
             message=message,
             username=session["username"],
         )
@@ -436,6 +441,7 @@ def configuration_push():
             return redirect(url_for("configuration_hostname_add"))
 
         file_list = list_user_files(session)
+        key_list = list_user_keys(session)
         message, config = generate_config(session)
         write_user_command_conf_file(session, config)
         firewall_reachable = test_connection(session)
@@ -447,6 +453,7 @@ def configuration_push():
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
             firewall_reachable=firewall_reachable,
+            key_list=key_list,
             message=message,
             username=session["username"],
         )
