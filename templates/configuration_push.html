@@ -62,16 +62,39 @@
     <form action="/configuration_push" , method="post">
         <tr>
             <td colspan="2" style="vertical-align: top;">
-                <p class="section_heading">
-                    Credentials
-                </p>
                 <table class="groups_table">
+                    <tr>
+                        <td colspan="3">
+                            Use of SSH keys is supported. To upload an SSH key, ensure the keyfile ends in .key. Use the
+                            Import Configuration Datafile upload option on the left and to upload the .key file. When
+                            you upload a key, it is encrypted and the encryption key is returned to you. You must keep
+                            the encryption key and provide it as the password when selecting the SSH key for use.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <p class="section_heading">
+                                Credentials
+                            </p>
+                        </td>
+                        <td>
+                            <p class="section_heading">
+                                SSH Keys
+                            </p>
+                        </td>
+                    </tr>
                     <tr>
                         <td style="padding: 5px;">
                             <label for="username">Username</label>
                         </td>
                         <td style="padding: 5px;">
                             <input type="text" id="username" name="username" size=30 value=""><br>
+                        </td>
+                        <td rowspan="2">
+                            {% for key in key_list%}
+                            <input type="checkbox" id="ssh_key_name" name="ssh_key_name" value="{{key}}.key">
+                            <label for="ssh_key_name">&nbsp;{{key}}</label><br>
+                            {% endfor %}
                         </td>
                     </tr>
                     <tr>
@@ -82,12 +105,12 @@
                             <input type="password" id="password" name="password" size=30 value=""><br>
                         </td>
                     </tr>
+                    <tr>
+                        <td align="left" colspan="3">
+                            When selecting an SSH key, the password is the encryption key for the SSH key.
+                        </td>
+                    </tr>
                 </table>
-            </td>
-        </tr>
-        <tr>
-            <td align="center" colspan="2" style="padding:0%">
-                Click button only once. May take 30 seconds to complete connection and show results.
             </td>
         </tr>
         <tr>

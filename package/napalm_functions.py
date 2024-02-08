@@ -4,22 +4,57 @@
 
 from flask import flash
 from napalm import get_network_driver
+from package.data_file_functions import decrypt_file
 import socket
+import os
+
+
+def assemble_driver_string(connection_string, session):
+
+    driver = get_network_driver("vyos")
+    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
+
+    if "ssh_key_name" in connection_string:
+        key = connection_string["password"].encode("utf-8")
+        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+        tmp_key_name = decrypt_file(key_name, key)
+        optional_args["key_file"] = tmp_key_name
+
+        return (
+            driver(
+                hostname=connection_string["hostname"],
+                username=connection_string["username"],
+                password="",
+                optional_args=optional_args,
+            ),
+            tmp_key_name,
+        )
+
+    else:
+        return (
+            driver(
+                hostname=connection_string["hostname"],
+                username=connection_string["username"],
+                password=connection_string["password"],
+                optional_args=optional_args,
+            ),
+            None,
+        )
 
 
 def get_diffs_from_firewall(connection_string, session):
-    driver = get_network_driver("vyos")
-    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
+
+    try:
+        driver, tmpfile = assemble_driver_string(connection_string, session)
+    except Exception as e:
+        tmpfile = None
+        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
+        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
 
     print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
     print(" |--> Configuring driver")
 
-    vyos_router = driver(
-        hostname=connection_string["hostname"],
-        username=connection_string["username"],
-        password=connection_string["password"],
-        optional_args=optional_args,
-    )
+    vyos_router = driver
 
     print(" |--> Opening connection")
 
@@ -51,20 +86,19 @@ def get_diffs_from_firewall(connection_string, session):
         print(" |")
         return e
 
+    finally:
+        # Delete key
+        if tmpfile != None:
+            os.remove(tmpfile)
+
 
 def commit_to_firewall(connection_string, session):
-    driver = get_network_driver("vyos")
-    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
+    driver, tmpfile = assemble_driver_string(connection_string, session)
 
     print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
     print(" |--> Configuring driver")
 
-    vyos_router = driver(
-        hostname=connection_string["hostname"],
-        username=connection_string["username"],
-        password=connection_string["password"],
-        optional_args=optional_args,
-    )
+    vyos_router = driver
 
     print(" |--> Opening connection")
 
@@ -100,6 +134,11 @@ def commit_to_firewall(connection_string, session):
         flash("Authentication error.", "danger")
         print(" |")
         return e
+
+    finally:
+        # Delete key
+        if tmpfile != None:
+            os.remove(tmpfile)
 
 
 def test_connection(session):
