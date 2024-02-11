@@ -1,6 +1,7 @@
 """
     Chain Support functions.
 """
+
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from flask import flash
 
@@ -32,14 +33,99 @@ def add_rule_to_data(session, request):
     if "logging" in request.form:
         rule_dict["logging"] = True
     rule_dict["action"] = request.form["action"]
-    rule_dict["dest_address"] = request.form["dest_address"].strip()
-    rule_dict["dest_address_type"] = request.form["dest_address_type"]
-    rule_dict["dest_port"] = request.form["dest_port"].strip()
-    rule_dict["dest_port_type"] = request.form["dest_port_type"]
-    rule_dict["source_address"] = request.form["source_address"].strip()
-    rule_dict["source_address_type"] = request.form["source_address_type"]
-    rule_dict["source_port"] = request.form["source_port"].strip()
-    rule_dict["source_port_type"] = request.form["source_port_type"]
+
+    # Process destination
+    if request.form["dest_address_type"] == "address":
+        rule_dict["dest_address_type"] = "address"
+        rule_dict["dest_address"] = request.form["dest_address"].strip()
+    if request.form["dest_address_type"] == "address_group":
+        rule_dict["dest_address_type"] = "address_group"
+        if request.form["dest_address_group"].split(",")[0] == ip_version:
+            rule_dict["dest_address"] = request.form["dest_address_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["dest_address_type"] == "domain_group":
+        rule_dict["dest_address_type"] = "domain_group"
+        if request.form["dest_domain_group"].split(",")[0] == ip_version:
+            rule_dict["dest_address"] = request.form["dest_domain_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["dest_address_type"] == "mac_group":
+        rule_dict["dest_address_type"] = "mac_group"
+        if request.form["dest_mac_group"].split(",")[0] == ip_version:
+            rule_dict["dest_address"] = request.form["dest_mac_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["dest_address_type"] == "network_group":
+        rule_dict["dest_address_type"] = "network_group"
+        if request.form["dest_network_group"].split(",")[0] == ip_version:
+            rule_dict["dest_address"] = request.form["dest_network_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["dest_port_type"] == "port":
+        rule_dict["dest_port_type"] = "port"
+        rule_dict["dest_port"] = request.form["dest_port"].strip()
+    if request.form["dest_port_type"] == "port_group":
+        rule_dict["dest_port_type"] = "port_group"
+        if request.form["dest_port_group"].split(",")[0] == ip_version:
+            rule_dict["dest_port"] = request.form["dest_port_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+
+    # Process source
+    if request.form["source_address_type"] == "address":
+        rule_dict["source_address_type"] = "address"
+        rule_dict["source_address"] = request.form["source_address"].strip()
+    if request.form["source_address_type"] == "address_group":
+        rule_dict["source_address_type"] = "address_group"
+        if request.form["source_address_group"].split(",")[0] == ip_version:
+            rule_dict["source_address"] = request.form["source_address_group"].split(
+                ","
+            )[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["source_address_type"] == "domain_group":
+        rule_dict["source_address_type"] = "domain_group"
+        if request.form["source_domain_group"].split(",")[0] == ip_version:
+            rule_dict["source_address"] = request.form["source_domain_group"].split(
+                ","
+            )[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["source_address_type"] == "mac_group":
+        rule_dict["source_address_type"] = "mac_group"
+        if request.form["source_mac_group"].split(",")[0] == ip_version:
+            rule_dict["source_address"] = request.form["source_mac_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["source_address_type"] == "network_group":
+        rule_dict["source_address_type"] = "network_group"
+        if request.form["source_network_group"].split(",")[0] == ip_version:
+            rule_dict["source_address"] = request.form["source_network_group"].split(
+                ","
+            )[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+    if request.form["source_port_type"] == "port":
+        rule_dict["source_port_type"] = "port"
+        rule_dict["source_port"] = request.form["source_port"].strip()
+    if request.form["source_port_type"] == "port_group":
+        rule_dict["source_port_type"] = "port_group"
+        if request.form["source_port_group"].split(",")[0] == ip_version:
+            rule_dict["source_port"] = request.form["source_port_group"].split(",")[1]
+        else:
+            flash_ip_version_mismatch()
+            return
+
     rule_dict["protocol"] = (
         request.form["protocol"] if "protocol" in request.form else ""
     )
@@ -223,4 +309,9 @@ def delete_rule_from_data(session, request):
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
+    return
+
+
+def flash_ip_version_mismatch():
+    flash(f"IP version of rule must match IP version of group object.", "danger")
     return

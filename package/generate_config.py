@@ -327,7 +327,7 @@ def generate_config(session):
                                 )
                             elif dest_port_type == "port_group":
                                 config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group port-group {dest_port}"
+                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group port-group '{dest_port}'"
                                 )
 
                         # Source
