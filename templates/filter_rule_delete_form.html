@@ -11,6 +11,7 @@
         <tr>
             <td colspan="2">
                 Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
+                Filters exist primarily just to jump to a chain of interface and direction specific rules.
                 <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
                     class="docs_link">
                     Docs&#x2197
@@ -25,6 +26,7 @@
                 Choose rule to delete.&nbsp;
                 <label for="filter"></label>
                 <select name="rule" id="rule">
+                    <option value=""></option>
                     {% for rule in rule_list %}
                     <option value='{{rule[0]}},{{rule[1]}},{{rule[2]}}'>
                         {{rule[0]}}, {{rule[1]}}, rule {{rule[2]}} ({{rule[3]}})
