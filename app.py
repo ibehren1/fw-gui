@@ -167,7 +167,7 @@ def group_delete():
 
     else:
         file_list = list_user_files(session)
-        group_list = assemble_list_of_groups(session)
+        group_list = assemble_detail_list_of_groups(session)
 
         # If there are no groups, just display the config
         if group_list == []:
@@ -229,6 +229,7 @@ def chain_rule_add():
     else:
         file_list = list_user_files(session)
         chain_list = assemble_list_of_chains(session)
+        group_list = assemble_detail_list_of_groups(session)
         if chain_list == []:
             return redirect(url_for("chain_add"))
 
@@ -236,6 +237,7 @@ def chain_rule_add():
             "chain_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )

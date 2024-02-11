@@ -40,23 +40,17 @@
 
 ## Firewall functions
 
-- [ ] Flowtables?
+- [ ] Flowtables? --> Post 1.0.0 release.
 - [x] Firewall group domain-group
 - [x] Don't include empty fields like descriptions
 - [x] Update all references of tables to chains.
-- [ ] Text editor for config
+- [ ] ~~Text editor for config?~~ --> Config is dynamicaly generated from JSON, no config to manually edit.
 
-      Another handy thing would be if the generated config would exist in a textarea with a “Update” button at bottom (or top).
-
-      This way one could use the GUI to make a skeleton, click on “Display config” and then copy paste within the textarea (which probably goes way faster) and once done clicking on “Update”. This would be same as if you would first export the generated config, edit the config in notepad/gedit, import it back to the GUI.
-
-- [ ] Look at options for working with official GUI project.
-
-      Other than that this perhaps should/could be merged (or parts of it) with the ongoing VyOS GUI project as described at:
+- [ ] ~~Look at options for working with official GUI project.~~ --> Not a goal at this time.  Using existing Napalm integration to push to firewall.
 
 ## Run Config on Firewall
 
 - [x] Test running config command via Napalm
   - <https://docs.vyos.io/en/latest/automation/vyos-napalm.html>
-  - [ ] Additional updates around occasional timeouts.
-  - [ ] Ability to use SSH keys? without saving?
+  - [x] Additional updates around occasional timeouts.
+  - [x] Ability to use SSH keys? encrypted

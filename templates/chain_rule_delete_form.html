@@ -28,6 +28,7 @@
                 Choose rule to delete.&nbsp;
                 <label for="fw_chain"></label>
                 <select name="rule" id="rule">
+                    <option value=""></option>
                     {% for rule in rule_list %}
                     <option value='{{rule[0]}},{{rule[1]}},{{rule[2]}}'>
                         {{rule[0]}}, {{rule[1]}}, rule {{rule[2]}} ({{rule[3]}})
