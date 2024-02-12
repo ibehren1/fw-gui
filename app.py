@@ -294,7 +294,7 @@ def filter_add():
     if request.method == "POST":
         add_filter_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("filter_view"))
 
     else:
         file_list = list_user_files(session)
@@ -313,7 +313,7 @@ def filter_rule_add():
     if request.method == "POST":
         add_filter_rule_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("filter_view"))
 
     else:
         file_list = list_user_files(session)
@@ -344,7 +344,7 @@ def filter_rule_delete():
     if request.method == "POST":
         delete_filter_rule_from_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("filter_view"))
 
     else:
         file_list = list_user_files(session)

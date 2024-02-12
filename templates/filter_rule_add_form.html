@@ -76,6 +76,7 @@
                 </p>
                 <label for="jump_target">Jump Target&nbsp;</label>
                 <select name="jump_target" id="jump_target">
+                    <option value=""></option>
                     {% for chain in chain_list %}
                     <option value='{{chain[0]}},{{chain[1]}}'>
                         {{chain[0]}}: {{chain[1]}}
