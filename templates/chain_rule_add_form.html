@@ -101,7 +101,6 @@
                                     {% for group in group_list %}
                                     {% if group["group_type"] == "domain-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
-                                    {{group["ip_version"]}}:
                                     {{group["group_name"]}}:
                                     {{group["group_value"]}}
                                 </option>
@@ -114,7 +113,6 @@
                                     {% for group in group_list %}
                                     {% if group["group_type"] == "mac-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
-                                    {{group["ip_version"]}}:
                                     {{group["group_name"]}}:
                                     {{group["group_value"]}}
                                 </option>
@@ -148,7 +146,6 @@
                                     {% for group in group_list %}
                                     {% if group["group_type"] == "port-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
-                                    {{group["ip_version"]}}:
                                     {{group["group_name"]}}:
                                     {{group["group_value"]}}
                                 </option>
@@ -223,7 +220,6 @@
                                     {% for group in group_list %}
                                     {% if group["group_type"] == "domain-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
-                                    {{group["ip_version"]}}:
                                     {{group["group_name"]}}:
                                     {{group["group_value"]}}
                                 </option>
@@ -236,7 +232,6 @@
                                     {% for group in group_list %}
                                     {% if group["group_type"] == "mac-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
-                                    {{group["ip_version"]}}:
                                     {{group["group_name"]}}:
                                     {{group["group_value"]}}
                                 </option>
@@ -270,7 +265,6 @@
                                     {% for group in group_list %}
                                     {% if group["group_type"] == "port-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
-                                    {{group["ip_version"]}}:
                                     {{group["group_name"]}}:
                                     {{group["group_value"]}}
                                 </option>
