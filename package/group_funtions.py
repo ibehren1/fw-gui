@@ -1,6 +1,7 @@
 """
     Group Support functions.
 """
+
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from flask import flash
 
@@ -10,7 +11,11 @@ def add_group_to_data(session, request):
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     # Set local vars from posted form data
-    ip_version = request.form["ip_version"]
+    group_type = request.form["group_type"]
+    if group_type == "address-group" or group_type == "network-group":
+        ip_version = request.form["ip_version"]
+    else:
+        ip_version = "ipv4"
     group_desc = request.form["group_desc"]
     group_name = request.form["group_name"].replace(" ", "")
     group_type = request.form["group_type"]
