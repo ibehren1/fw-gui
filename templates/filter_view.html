@@ -9,19 +9,19 @@
 
 <p class="filter_heading">Filter: {{key}}</p>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th colspan="2">
+    <th>
         Rule
     </th>
 
-    <th colspan="2">
+    <th>
         Description
     </th>
 
-    <th colspan="2">
+    <th>
         Target Chain
     </th>
 
-    <th colspan="1">
+    <th>
         Interface
     </th>
 
@@ -30,20 +30,20 @@
     </th>
 
     {% for rule in filter_list %}
-    <tr align="center" colspan="2" style="vertical-align: middle;">
-        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+    <tr align="center" style="vertical-align: middle;">
+        <td align="center" style="vertical-align: middle;">
             <font style="font-size:60;">{{rule.number}}</font>
             <br>
             <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
         </td>
 
-        <td colspan="2" style="vertical-align: middle;">
+        <td style="vertical-align: middle;">
             <font style="font-size:16;">
                 {{rule.description}}
             </font>
         </td>
 
-        <td colspan="2" style="vertical-align: middle;">
+        <td style="vertical-align: middle;">
             <font style="font-size:16;">
                 {{rule.fw_chain}}
             </font>
@@ -76,19 +76,19 @@
 
 <p class="filter_heading">Filter: {{key}}</p>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th colspan="2">
+    <th>
         Rule
     </th>
 
-    <th colspan="2">
+    <th>
         Description
     </th>
 
-    <th colspan="2">
+    <th>
         Target Chain
     </th>
 
-    <th colspan="1">
+    <th>
         Interface
     </th>
 
@@ -97,20 +97,20 @@
     </th>
 
     {% for rule in filter_list %}
-    <tr align="center" colspan="2" style="vertical-align: middle;">
-        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+    <tr align="center" style="vertical-align: middle;">
+        <td align="center" style="vertical-align: middle;">
             <font style="font-size:60;">{{rule.number}}</font>
             <br>
             <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
         </td>
 
-        <td colspan="2" style="vertical-align: middle;">
+        <td style="vertical-align: middle;">
             <font style="font-size:16;">
                 {{rule.description}}
             </font>
         </td>
 
-        <td colspan="2" style="vertical-align: middle;">
+        <td style="vertical-align: middle;">
             <font style="font-size:16;">
                 {{rule.fw_chain}}
             </font>
@@ -129,6 +129,7 @@
         </td>
     </tr>
     {% endfor %}
+
 </table>
 {% endfor %}
 {% endif %}
