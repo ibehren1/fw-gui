@@ -1,6 +1,7 @@
 """
     Filter Support Functions
 """
+
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from flask import flash
 
@@ -128,16 +129,17 @@ def assemble_list_of_filters(session):
 
     # Create list of defined filters
     filter_list = []
-    try:
-        for ip_version in ["ipv4", "ipv6"]:
+    for ip_version in ["ipv4", "ipv6"]:
+        try:
             if ip_version in user_data:
                 for type in user_data[ip_version]["filters"]:
                     filter_list.append([ip_version, type])
-    except:
-        pass
+        except:
+            pass
 
     # If there are no filters, flash message
     if filter_list == []:
+        print("is this it?")
         flash(f"There are no filters defined.", "danger")
 
     return filter_list
