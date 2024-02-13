@@ -194,9 +194,15 @@ def generate_config(session):
                         description = user_data[ip_version]["chains"][fw_chain][
                             "default"
                         ]["description"]
-                        default_logging = user_data[ip_version]["chains"][fw_chain][
-                            "default"
-                        ]["default_logging"]
+                        if (
+                            "default_logging"
+                            in user_data[ip_version]["chains"][fw_chain]["default"]
+                        ):
+                            default_logging = user_data[ip_version]["chains"][fw_chain][
+                                "default"
+                            ]["default_logging"]
+                        else:
+                            default_logging = False
                         default_action = user_data[ip_version]["chains"][fw_chain][
                             "default"
                         ]["default_action"]
