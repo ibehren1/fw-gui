@@ -13,11 +13,11 @@ def add_filter_rule_to_data(session, request):
     # Set local vars from posted form data
     rule = request.form["rule"]
     rule_dict = {}
-    filter = request.form["filter"].split(",")
-    ip_version = filter[0]
-    rule_dict["ip_version"] = filter[0]
-    rule_dict["filter"] = filter[1]
-    filter = filter[1]
+    filter_info = request.form["filter"].split(",")
+    ip_version = filter_info[0]
+    filter = filter_info[1]
+    rule_dict["ip_version"] = ip_version
+    rule_dict["filter"] = filter
     jump_target = request.form["jump_target"].split(",")
     rule_dict["fw_chain"] = jump_target[1]
     rule_dict["description"] = request.form["description"]
@@ -30,7 +30,8 @@ def add_filter_rule_to_data(session, request):
     rule_dict["direction"] = request.form["direction"]
 
     # Check and create higher level data structure if it does not exist
-    user_data[ip_version]["filters"][filter]["rules"] = {}
+    if "rules" not in user_data[ip_version]["filters"][filter]:
+        user_data[ip_version]["filters"][filter]["rules"] = {}
 
     # Add rule to data structure
     user_data[ip_version]["filters"][filter]["rules"][rule] = rule_dict
@@ -97,8 +98,8 @@ def assemble_detail_list_of_filters(session):
 
     # Create list of defined filters
     filter_dict = {}
-    try:
-        for ip_version in ["ipv4", "ipv6"]:
+    for ip_version in ["ipv4", "ipv6"]:
+        try:
             if ip_version in user_data:
                 filter_dict[ip_version] = {}
                 if "filters" in user_data[ip_version]:
@@ -112,9 +113,9 @@ def assemble_detail_list_of_filters(session):
                             ][rule]
                             rule_detail["number"] = rule
                             filter_dict[ip_version][filter_name].append(rule_detail)
-    except:
-        print("Error in assemble_detail_list_of_rules")
-        pass
+        except:
+            print("Error in assemble_detail_list_of_rules")
+            pass
 
     # If there are no filters, flash message
     if filter_dict == {}:
@@ -139,7 +140,6 @@ def assemble_list_of_filters(session):
 
     # If there are no filters, flash message
     if filter_list == []:
-        print("is this it?")
         flash(f"There are no filters defined.", "danger")
 
     return filter_list
