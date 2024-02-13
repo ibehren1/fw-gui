@@ -9,7 +9,7 @@
             </th>
         </tr>
         <tr>
-            <td colspan="3">
+            <td colspan="4">
                 For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
                 apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
                 through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
@@ -21,14 +21,14 @@
             </td>
         </tr>
         <tr>
-            <td style="vertical-align: top;">
+            <td style="vertical-align: top;" width="20%">
                 <p class="section_heading">
                     IP Version
                 </p>
                 <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
                 <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
             </td>
-            <td style="vertical-align: top;">
+            <td style="vertical-align: top;" width="40%">
                 <p class="section_heading">
                     Firewall Chain
                 </p>
@@ -51,9 +51,16 @@
                     </tr>
                 </table>
             </td>
-            <td style="vertical-align: top;">
+            <td width="20%">
                 <p class="section_heading">
-                    Default Rule Action
+                    Logging
+                </p>
+                <input type="checkbox" id="logging" name="logging" value="True">
+                <label for="logging">&nbsp;Enable</label>
+            </td>
+            <td style="vertical-align: top;" width="20%">
+                <p class="section_heading">
+                    Default Action
                 </p>
                 <input type="radio" name="default_action" value="accept">&nbsp;accept<br>
                 <input type="radio" name="default_action" value="continue">&nbsp;continue<br>
@@ -64,7 +71,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right" colspan="3">
+            <td align="right" colspan="4">
                 <input type="submit" value="Add Chain">
             </td>
         </tr>

@@ -167,6 +167,10 @@ def add_chain_to_data(session, request):
     fw_chain = request.form["fw_chain"]
     description = request.form["description"]
     default_action = request.form["default_action"]
+    if "logging" in request.form:
+        default_logging = True
+    else:
+        default_logging = False
 
     # Check and create higher level data structure if it does not exist
     if ip_version not in user_data:
@@ -179,6 +183,9 @@ def add_chain_to_data(session, request):
     if "default" not in user_data[ip_version]["chains"][fw_chain]:
         user_data[ip_version]["chains"][fw_chain]["default"] = {}
     user_data[ip_version]["chains"][fw_chain]["default"]["description"] = description
+    user_data[ip_version]["chains"][fw_chain]["default"][
+        "default_logging"
+    ] = default_logging
     user_data[ip_version]["chains"][fw_chain]["default"][
         "default_action"
     ] = default_action

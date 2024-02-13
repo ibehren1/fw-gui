@@ -194,15 +194,22 @@ def generate_config(session):
                         description = user_data[ip_version]["chains"][fw_chain][
                             "default"
                         ]["description"]
+                        default_logging = user_data[ip_version]["chains"][fw_chain][
+                            "default"
+                        ]["default_logging"]
                         default_action = user_data[ip_version]["chains"][fw_chain][
                             "default"
                         ]["default_action"]
                         config.append(
-                            f"set firewall {ip_version} name {fw_chain} default-action '{default_action}'"
-                        )
-                        config.append(
                             f"set firewall {ip_version} name {fw_chain} description '{description}'"
                         )
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} default-action '{default_action}'"
+                        )
+                        if default_logging:
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} default-log"
+                            )
                         config.append("\n")
 
                     for rule in user_data[ip_version]["chains"][fw_chain]["rule-order"]:
