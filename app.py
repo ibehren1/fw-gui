@@ -25,7 +25,9 @@ from package.chain_functions import (
 )
 from package.database_functions import process_login, query_user_by_id, register_user
 from package.data_file_functions import (
+    add_extra_items,
     add_hostname,
+    get_extra_items,
     get_system_name,
     initialize_data_dir,
     list_user_files,
@@ -294,7 +296,7 @@ def filter_add():
     if request.method == "POST":
         add_filter_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("filter_view"))
 
     else:
         file_list = list_user_files(session)
@@ -313,7 +315,7 @@ def filter_rule_add():
     if request.method == "POST":
         add_filter_rule_to_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("filter_view"))
 
     else:
         file_list = list_user_files(session)
@@ -344,7 +346,7 @@ def filter_rule_delete():
     if request.method == "POST":
         delete_filter_rule_from_data(session, request)
 
-        return redirect(url_for("display_config"))
+        return redirect(url_for("filter_view"))
 
     else:
         file_list = list_user_files(session)
@@ -383,6 +385,29 @@ def filter_view():
 
 #
 # Configuration
+@app.route("/configuration_extra_items", methods=["Get", "POST"])
+@login_required
+def configuration_extra_items():
+    if request.method == "POST":
+        print(request.form["extra_items"])
+
+        add_extra_items(session, request)
+
+        return redirect(url_for("display_config"))
+
+    else:
+        file_list = list_user_files(session)
+        extra_items = get_extra_items(session)
+
+        return render_template(
+            "configuration_extra_items.html",
+            extra_items=extra_items,
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
 @app.route("/configuration_hostname_add", methods=["GET", "POST"])
 @login_required
 def configuration_hostname_add():
@@ -418,6 +443,13 @@ def configuration_push():
         if "ssh_key_name" in request.form:
             connection_string["ssh_key_name"] = request.form["ssh_key_name"]
 
+        # Include 'delete firewall' before set commands
+        message, config = generate_config(session)
+        if "delete_before_set" in request.form:
+            write_user_command_conf_file(session, config, delete=True)
+        else:
+            write_user_command_conf_file(session, config, delete=False)
+
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":
@@ -445,7 +477,6 @@ def configuration_push():
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
         message, config = generate_config(session)
-        write_user_command_conf_file(session, config)
         firewall_reachable = test_connection(session)
 
         return render_template(
@@ -459,6 +490,23 @@ def configuration_push():
             message=message,
             username=session["username"],
         )
+
+
+@app.route("/create_config", methods=["POST"])
+@login_required
+def create_config():
+    if request.form["config_name"] == "":
+        flash("Config name cannot be empty", "danger")
+        return redirect(url_for("index"))
+    else:
+        user_data = {}
+
+        session["firewall_name"] = request.form["config_name"]
+        write_user_data_file(
+            f'{session["data_dir"]}/{request.form["config_name"]}', user_data
+        )
+
+    return redirect(url_for("display_config"))
 
 
 @app.route("/display_config")
@@ -486,23 +534,6 @@ def display_config():
             message=message,
             username=session["username"],
         )
-
-
-@app.route("/create_config", methods=["POST"])
-@login_required
-def create_config():
-    if request.form["config_name"] == "":
-        flash("Config name cannot be empty", "danger")
-        return redirect(url_for("index"))
-    else:
-        user_data = {}
-
-        session["firewall_name"] = request.form["config_name"]
-        write_user_data_file(
-            f'{session["data_dir"]}/{request.form["config_name"]}', user_data
-        )
-
-    return redirect(url_for("display_config"))
 
 
 @app.route("/delete_config", methods=["POST"])

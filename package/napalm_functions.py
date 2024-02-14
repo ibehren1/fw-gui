@@ -72,12 +72,8 @@ def get_diffs_from_firewall(connection_string, session):
         print(" |--> Connection closed.\n |")
 
         if bool(diffs) == True:
-            print(diffs)
-
             return diffs
-
         else:
-
             return "No configuration changes to commit."
 
     except Exception as e:
@@ -112,14 +108,16 @@ def commit_to_firewall(connection_string, session):
         diffs = vyos_router.compare_config()
 
         if bool(diffs) == True:
-            print(diffs)
             print(" |--> Committing configuration")
             commit = vyos_router.commit_config()
 
             print(" |--> Connection closed.\n |")
             vyos_router.close()
 
-            return commit
+            if commit == None:
+                return str(diffs + "Commit successful.")
+            else:
+                return str(diffs + commit)
 
         else:
             print(" |--> No configuration changes to commit")

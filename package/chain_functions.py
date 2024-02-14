@@ -47,18 +47,10 @@ def add_rule_to_data(session, request):
             return
     if request.form["dest_address_type"] == "domain_group":
         rule_dict["dest_address_type"] = "domain_group"
-        if request.form["dest_domain_group"].split(",")[0] == ip_version:
-            rule_dict["dest_address"] = request.form["dest_domain_group"].split(",")[1]
-        else:
-            flash_ip_version_mismatch()
-            return
+        rule_dict["dest_address"] = request.form["dest_domain_group"].split(",")[1]
     if request.form["dest_address_type"] == "mac_group":
         rule_dict["dest_address_type"] = "mac_group"
-        if request.form["dest_mac_group"].split(",")[0] == ip_version:
-            rule_dict["dest_address"] = request.form["dest_mac_group"].split(",")[1]
-        else:
-            flash_ip_version_mismatch()
-            return
+        rule_dict["dest_address"] = request.form["dest_mac_group"].split(",")[1]
     if request.form["dest_address_type"] == "network_group":
         rule_dict["dest_address_type"] = "network_group"
         if request.form["dest_network_group"].split(",")[0] == ip_version:
@@ -71,11 +63,7 @@ def add_rule_to_data(session, request):
         rule_dict["dest_port"] = request.form["dest_port"].strip()
     if request.form["dest_port_type"] == "port_group":
         rule_dict["dest_port_type"] = "port_group"
-        if request.form["dest_port_group"].split(",")[0] == ip_version:
-            rule_dict["dest_port"] = request.form["dest_port_group"].split(",")[1]
-        else:
-            flash_ip_version_mismatch()
-            return
+        rule_dict["dest_port"] = request.form["dest_port_group"].split(",")[1]
 
     # Process source
     if request.form["source_address_type"] == "address":
@@ -92,20 +80,10 @@ def add_rule_to_data(session, request):
             return
     if request.form["source_address_type"] == "domain_group":
         rule_dict["source_address_type"] = "domain_group"
-        if request.form["source_domain_group"].split(",")[0] == ip_version:
-            rule_dict["source_address"] = request.form["source_domain_group"].split(
-                ","
-            )[1]
-        else:
-            flash_ip_version_mismatch()
-            return
+        rule_dict["source_address"] = request.form["source_domain_group"].split(",")[1]
     if request.form["source_address_type"] == "mac_group":
         rule_dict["source_address_type"] = "mac_group"
-        if request.form["source_mac_group"].split(",")[0] == ip_version:
-            rule_dict["source_address"] = request.form["source_mac_group"].split(",")[1]
-        else:
-            flash_ip_version_mismatch()
-            return
+        rule_dict["source_address"] = request.form["source_mac_group"].split(",")[1]
     if request.form["source_address_type"] == "network_group":
         rule_dict["source_address_type"] = "network_group"
         if request.form["source_network_group"].split(",")[0] == ip_version:
@@ -120,11 +98,7 @@ def add_rule_to_data(session, request):
         rule_dict["source_port"] = request.form["source_port"].strip()
     if request.form["source_port_type"] == "port_group":
         rule_dict["source_port_type"] = "port_group"
-        if request.form["source_port_group"].split(",")[0] == ip_version:
-            rule_dict["source_port"] = request.form["source_port_group"].split(",")[1]
-        else:
-            flash_ip_version_mismatch()
-            return
+        rule_dict["source_port"] = request.form["source_port_group"].split(",")[1]
 
     rule_dict["protocol"] = (
         request.form["protocol"] if "protocol" in request.form else ""
@@ -167,6 +141,10 @@ def add_chain_to_data(session, request):
     fw_chain = request.form["fw_chain"]
     description = request.form["description"]
     default_action = request.form["default_action"]
+    if "logging" in request.form:
+        default_logging = True
+    else:
+        default_logging = False
 
     # Check and create higher level data structure if it does not exist
     if ip_version not in user_data:
@@ -179,6 +157,9 @@ def add_chain_to_data(session, request):
     if "default" not in user_data[ip_version]["chains"][fw_chain]:
         user_data[ip_version]["chains"][fw_chain]["default"] = {}
     user_data[ip_version]["chains"][fw_chain]["default"]["description"] = description
+    user_data[ip_version]["chains"][fw_chain]["default"][
+        "default_logging"
+    ] = default_logging
     user_data[ip_version]["chains"][fw_chain]["default"][
         "default_action"
     ] = default_action

@@ -11,6 +11,39 @@ import string
 
 
 #
+# Add extra items
+def add_extra_items(session, request):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    default_extra_items = [
+        "# Enter set commands here, one per line.",
+        "# set firewall global-options all-ping 'enable'",
+        "# set firewall global-options log-martians 'disable'",
+    ]
+
+    extra_items = []
+
+    for item in request.form["extra_items"].split("\r"):
+        item = item.strip("\n")
+        if item != "":
+            extra_items.append(item)
+
+    print(extra_items)
+
+    if extra_items == default_extra_items:
+        print("MATCH")
+        flash(f"There are no extra configuration items to add.", "warning")
+        return
+    else:
+        user_data["extra-items"] = extra_items
+        write_user_data_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}', user_data
+        )
+        flash(f"Extra items added to configuration.", "success")
+        return
+
+
+#
 # Add hostname
 def add_hostname(session, reqest):
     # Get user's data
@@ -60,6 +93,30 @@ def decrypt_file(filename, key):
     #     flash("Authentication error.", "danger")
     #     print(" |")
     #     return "Auth Error"
+
+
+#
+# Get extra items
+def get_extra_items(session):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Create list of defined filters
+    extra_items = []
+    if "extra-items" in user_data:
+        for item in user_data["extra-items"]:
+            extra_items.append(item)
+
+    # If there are no filters, flash message
+    if extra_items == []:
+        flash(f"There are no extra configuration items defined.", "warning")
+        extra_items = [
+            "# Enter set commands here, one per line.",
+            "# set firewall global-options all-ping 'enable'",
+            "# set firewall global-options log-martians 'disable'",
+        ]
+
+    return extra_items
 
 
 #
@@ -272,10 +329,18 @@ def update_schema(user_data):
 
 #
 # Write User commands.conf file
-def write_user_command_conf_file(session, command_list):
+def write_user_command_conf_file(session, command_list, delete=False):
+    print(f"Delete_before_set: {delete}")
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
-        for line in command_list:
-            f.write(f"{line}\n")
+        if delete == True:
+            f.write(
+                f"#\n# Delete all firewall before setting new values\ndelete firewall\n"
+            )
+            for line in command_list:
+                f.write(f"{line}\n")
+        if delete == False:
+            for line in command_list:
+                f.write(f"{line}\n")
     return
 
 
@@ -283,5 +348,5 @@ def write_user_command_conf_file(session, command_list):
 # Write User Data File
 def write_user_data_file(filename, data):
     with open(f"{filename}.json", "w") as f:
-        f.write(json.dumps(data, indent=4))
+        f.write(json.dumps(data, indent=4, sort_keys=True))
     return
