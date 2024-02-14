@@ -17,6 +17,7 @@
     </th>
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.ip_version == 'ipv4' %}
+    {% if item.group_type == 'address-group' %}
     <tr>
         <td>
             {{item.group_name}}
@@ -24,18 +25,60 @@
         <td>
             {{item.group_desc}}
         </td>
-        <td>
+        <td align="center">
             {{item.group_type}}
         </td>
-        <td>
+        <td align="center">
             {% for value in item.group_value %}
             {{value}}<br>
             {% endfor %}
         </td>
     </tr>
     {% endif %}
+    {% endif %}
     {% endfor %}
 </table>
+
+<br>
+
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list|sort(attribute='group_name') %}
+    {% if item.ip_version == 'ipv4' %}
+    {% if item.group_type == 'network-group' %}
+    <tr>
+        <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td align="center">
+            {{item.group_type}}
+        </td>
+        <td align="center">
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+</table>
+
+
 
 <p class="section_heading">IPv6 Groups</p>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
@@ -53,6 +96,7 @@
     </th>
     {% for item in group_list %}
     {% if item.ip_version == 'ipv6' %}
+    {% if item.group_type == 'address-group' %}
     <tr>
         <td>
             {{item.group_name}}
@@ -60,10 +104,87 @@
         <td>
             {{item.group_desc}}
         </td>
-        <td>
+        <td align="center">
             {{item.group_type}}
         </td>
+        <td align="center">
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+</table>
+
+<br>
+
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list %}
+    {% if item.ip_version == 'ipv6' %}
+    {% if item.group_type == 'network-group' %}
+    <tr>
         <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td align="center">
+            {{item.group_type}}
+        </td>
+        <td align="center">
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+</table>
+
+
+<p class="section_heading">Domain Groups</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list|sort(attribute='group_name') %}
+    {% if item.group_type == 'domain-group' %}
+    <tr>
+        <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td align="center">
+            {{item.group_type}}
+        </td>
+        <td align="center">
             {% for value in item.group_value %}
             {{value}}<br>
             {% endfor %}
@@ -72,4 +193,77 @@
     {% endif %}
     {% endfor %}
 </table>
+
+<p class="section_heading">MAC Groups</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list|sort(attribute='group_name') %}
+    {% if item.group_type == 'mac-group' %}
+    <tr>
+        <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td align="center">
+            {{item.group_type}}
+        </td>
+        <td align="center">
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+
+<p class="section_heading">Port Groups</p>
+<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Name
+    </th>
+    <th>
+        Description
+    </th>
+    <th>
+        Type
+    </th>
+    <th>
+        Value(s)
+    </th>
+    {% for item in group_list|sort(attribute='group_name') %}
+    {% if item.group_type == 'port-group' %}
+    <tr>
+        <td>
+            {{item.group_name}}
+        </td>
+        <td>
+            {{item.group_desc}}
+        </td>
+        <td align="center">
+            {{item.group_type}}
+        </td>
+        <td align="center">
+            {% for value in item.group_value %}
+            {{value}}<br>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+<br><br>
 {% endblock body %}
