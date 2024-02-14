@@ -119,7 +119,10 @@ def commit_to_firewall(connection_string, session):
             print(" |--> Connection closed.\n |")
             vyos_router.close()
 
-            return commit
+            if commit == None:
+                return str(diffs + "Commit successful.")
+            else:
+                return str(diffs + commit)
 
         else:
             print(" |--> No configuration changes to commit")
