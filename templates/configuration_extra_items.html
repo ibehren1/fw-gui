@@ -1,0 +1,42 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<form action="/configuration_extra_items" , method="post">
+    <table class="table">
+        <tr>
+            <td align="center">
+                <h2 class="page_heading">Extra Configuration Items</h2>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                You can add extra configuration statements to configure items that have not yet been implemented in the
+                GUI.
+                This section is only intended to be used for configurations that fall under firewall.<br>
+                <br>
+                Configuration items must be syntactically correct CLI set statements.
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="freeform">Extra Configuration Items:</label>
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <textarea id="extra_items" name="extra_items" rows="20" cols="80">
+{% for item in extra_items %}
+{%- if item -%}{{-item-}}{% endif %}
+{% endfor%}
+</textarea>
+            </td>
+        </tr>
+        <tr>
+            <td align="right">
+                <input type="submit" value="Add Configuration Items">
+            </td>
+        </tr>
+    </table>
+</form>
+<br><br>
+{% endblock body %}
