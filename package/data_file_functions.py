@@ -291,5 +291,5 @@ def write_user_command_conf_file(session, command_list, delete=False):
 # Write User Data File
 def write_user_data_file(filename, data):
     with open(f"{filename}.json", "w") as f:
-        f.write(json.dumps(data, indent=4))
+        f.write(json.dumps(data, indent=4, sort_keys=True))
     return
