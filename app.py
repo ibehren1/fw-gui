@@ -418,6 +418,13 @@ def configuration_push():
         if "ssh_key_name" in request.form:
             connection_string["ssh_key_name"] = request.form["ssh_key_name"]
 
+        # Include 'delete firewall' before set commands
+        message, config = generate_config(session)
+        if "delete_before_set" in request.form:
+            write_user_command_conf_file(session, config, delete=True)
+        else:
+            write_user_command_conf_file(session, config, delete=False)
+
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":
@@ -445,7 +452,6 @@ def configuration_push():
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
         message, config = generate_config(session)
-        write_user_command_conf_file(session, config)
         firewall_reachable = test_connection(session)
 
         return render_template(

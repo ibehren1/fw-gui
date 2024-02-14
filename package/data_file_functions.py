@@ -272,10 +272,18 @@ def update_schema(user_data):
 
 #
 # Write User commands.conf file
-def write_user_command_conf_file(session, command_list):
+def write_user_command_conf_file(session, command_list, delete=False):
+    print(f"Delete_before_set: {delete}")
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
-        for line in command_list:
-            f.write(f"{line}\n")
+        if delete == True:
+            f.write(
+                f"#\n# Delete all firewall before setting new values\ndelete firewall\n"
+            )
+            for line in command_list:
+                f.write(f"{line}\n")
+        if delete == False:
+            for line in command_list:
+                f.write(f"{line}\n")
     return
 
 
