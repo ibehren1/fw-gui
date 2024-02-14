@@ -20,14 +20,29 @@ def generate_config(session):
     # Create firewall configuration
     config = []
 
-    if "ipv4" not in user_data and "ipv6" not in user_data:
+    if (
+        "ipv4" not in user_data
+        and "ipv6" not in user_data
+        and "extra-items" not in user_data
+    ):
         config.append(
             "Empty rule set.  Start by adding a Chain using the button on the right."
         )
 
+    # Add Extra Items
+    if "extra-items" in user_data:
+        config.append(f"#\n#\n# Extra Configuration Items\n#\n#")
+        for item in user_data["extra-items"]:
+            config.append(f"{item}")
+        config.append("")
+
     # Work through each IP Version, Chain and Rule adding to config
     for ip_version in user_data:
-        if ip_version != "version" and ip_version != "system":
+        if (
+            ip_version != "extra-items"
+            and ip_version != "system"
+            and ip_version != "version"
+        ):
             config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
 
             if "groups" in user_data[ip_version]:
