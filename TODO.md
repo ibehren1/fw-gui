@@ -18,8 +18,9 @@
 - [x] Display chains visually.
 - [x] Display filters visually.
   - [ ] Make visual display of filters prettier.
-- [ ] Add section of commands for options not yet implemented.
+- [x] Add section of commands for options not yet implemented.
 - [x] Show groups in sections by group type.
+- [ ] Add option to disable user registration.
 
 ## Design
 

@@ -12,6 +12,16 @@ The web GUI allows the user to visually create and manage group objects, firewal
 
 Recommended deployment is via Docker but also inculded in the repo is a systemd service file for use with local install.
 
+## Known Issue
+
+When deployed behind HAProxy (VyOS load-balancing reverse-proxy) timeouts can prevent diffs and commits for firewalls with large configurations.  Issue is not obeserved connecting directly to app when hosted in Docker or behind Nginx proxy.
+
+## Container on VyOS
+
+```bash
+
+```
+
 ## Docker Run
 
 ```bash
