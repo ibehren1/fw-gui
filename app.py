@@ -131,9 +131,9 @@ def user_logout():
 def user_registration():
     if request.method == "POST":
         if register_user(bcrypt, db, request, User):
-            return redirect(url_for("login"))
+            return redirect(url_for("user_login"))
         else:
-            return redirect(url_for("user_registration_form"))
+            return redirect(url_for("user_registration"))
     else:
         return render_template("user_registration_form.html")
 
