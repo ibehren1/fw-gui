@@ -12,14 +12,33 @@ The web GUI allows the user to visually create and manage group objects, firewal
 
 Recommended deployment is via Docker but also inculded in the repo is a systemd service file for use with local install.
 
-## Known Issue
+### Known Issue
 
 When deployed behind HAProxy (VyOS load-balancing reverse-proxy) timeouts can prevent diffs and commits for firewalls with large configurations.  Issue is not obeserved connecting directly to app when hosted in Docker or behind Nginx proxy.
 
 ## Container on VyOS
 
-```bash
+Run these commands to create the volume for the container and pull the image.
 
+```bash
+mkdir -p /config/vyos-fw-gui/data
+sudo chown -R www-data:www-data /config/vyos-fw-gui
+add container image ibehren1/vyos-fw-gui:v0.12.1
+```
+
+Run these commands to add the container to the VyOS configuration.
+
+```bash
+set container name vyos-fw-gui allow-host-networks
+set container name vyos-fw-gui cap-add 'net-bind-service'
+set container name vyos-fw-gui description 'VyOS FW GUI'
+set container name vyos-fw-gui image 'ibehren1/vyos-fw-gui:v0.12.1'
+set container name vyos-fw-gui port http destination '8080'
+set container name vyos-fw-gui port http protocol 'tcp'
+set container name vyos-fw-gui port http source '80'
+set container name vyos-fw-gui restart 'always'
+set container name vyos-fw-gui volume vyosfwgui_data destination '/opt/vyos-fw-gui/data'
+set container name vyos-fw-gui volume vyosfwgui_data source '/config/vyos-fw-gui/data'
 ```
 
 ## Docker Run
