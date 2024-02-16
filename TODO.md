@@ -20,7 +20,7 @@
   - [ ] Make visual display of filters prettier.
 - [x] Add section of commands for options not yet implemented.
 - [x] Show groups in sections by group type.
-- [ ] Add option to disable user registration.
+- [x] Add option to disable user registration. -- environment variable DISABLE_REGISTRATION=True
 
 ## Design
 

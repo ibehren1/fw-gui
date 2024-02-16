@@ -38,11 +38,13 @@
                 <p><input type=submit value=Login>
             </td>
         </tr>
+        {% if registration %}
         <tr>
             <td align="center" colspan="2">
                 <a href="{{url_for('user_registration')}}" class="link">Register</a> as a new user.
             </td>
         </tr>
+        {% endif %}
     </table>
 </form>
 <br><br>

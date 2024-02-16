@@ -33,6 +33,7 @@ set container name vyos-fw-gui allow-host-networks
 set container name vyos-fw-gui cap-add 'net-bind-service'
 set container name vyos-fw-gui description 'VyOS FW GUI'
 set container name vyos-fw-gui image 'ibehren1/vyos-fw-gui:v0.12.1'
+set container name vyos-fw-gui environment DISABLE_REGISTRATION value 'False'
 set container name vyos-fw-gui port http destination '8080'
 set container name vyos-fw-gui port http protocol 'tcp'
 set container name vyos-fw-gui port http source '80'
@@ -49,6 +50,7 @@ docker volume create vyos-fw-gui_data
 docker run \
   --name   vyos-fw-gui \
   --expose 8080 \
+  --env DISABLE_REGISTRATION=False \
   --mount  source=vyos-fw-gui_data,target=/opt/vyos-fw-gui/data \
   ibehren1/vyos-fw-gui:v0.12.1
 ```
@@ -61,6 +63,8 @@ services:
   vyos-fw-gui:
     image: ibehren1/vyos-fw-gui:v0.12.1
     container_name: vyos-fw-gui
+    environment:
+      - DISABLE_REGISTRATION=False
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
