@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   vyos-fw-gui:
-    image: ibehren1/vyos-fw-gui:v0.11.2
+    image: ibehren1/vyos-fw-gui:v1.0.0
     container_name: vyos-fw-gui
     ports:
       - 8080:8080/tcp

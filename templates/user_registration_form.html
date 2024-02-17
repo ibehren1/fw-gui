@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<form action="/user_register" , method="post">
+<form action="/user_registration" , method="post">
     <table class="table">
         {% with flashed_messages = get_flashed_messages(with_categories=true) %}
         {% if flashed_messages %}

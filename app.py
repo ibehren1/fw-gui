@@ -112,8 +112,13 @@ def user_login():
         if login:
             return redirect(url_for("index"))
     else:
-        render_template("user_login_form.html", session="None")
-    return render_template("user_login_form.html")
+        registration = False if "DISABLE_REGISTRATION" in os.environ else True
+
+        return render_template(
+            "user_login_form.html",
+            session="None",
+            registration=registration,
+        )
 
 
 @app.route("/user_logout")
@@ -130,12 +135,22 @@ def user_logout():
 @app.route("/user_registration", methods=["GET", "POST"])
 def user_registration():
     if request.method == "POST":
-        if register_user(bcrypt, db, request, User):
-            return redirect(url_for("login"))
+        registration = False if "DISABLE_REGISTRATION" in os.environ else True
+
+        if registration:
+            if register_user(bcrypt, db, request, User):
+                return redirect(url_for("user_login"))
+            else:
+                return redirect(url_for("user_registration"))
         else:
-            return redirect(url_for("user_registration_form"))
+            return redirect(url_for("user_login"))
     else:
-        return render_template("user_registration_form.html")
+        registration = False if "DISABLE_REGISTRATION" in os.environ else True
+
+        if registration:
+            return render_template("user_registration_form.html")
+        else:
+            return redirect(url_for("user_login"))
 
 
 #
