@@ -78,7 +78,7 @@ def get_diffs_from_firewall(connection_string, session):
 
     except Exception as e:
         print(f" |--X Error: {e}")
-        flash("Authentication error.", "danger")
+        flash("Error in diff.  Inspect output and correct errors.", "danger")
         print(" |")
         return e
 
@@ -129,7 +129,7 @@ def commit_to_firewall(connection_string, session):
 
     except Exception as e:
         print(f" |--X Error: {e}")
-        flash("Authentication error.", "danger")
+        flash("Error in diff.  Inspect output and correct errors.", "danger")
         print(" |")
         return e
 
