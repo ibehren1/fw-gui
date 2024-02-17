@@ -6,9 +6,9 @@ The web GUI allows the user to visually create and manage group objects, firewal
 
 | | |
 | - | - |
-| Source code | [https://github.com/ibehren1/vyos-fw-gui](https://github.com/ibehren1/vyos-fw-gui)  |
+| Source Code | [https://github.com/ibehren1/vyos-fw-gui](https://github.com/ibehren1/vyos-fw-gui)  |
 | Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general)  |
-| Working demo | [https://vyos-fw-gui.com](https://vyos-fw-gui.com)|
+| Working Demo | [https://vyos-fw-gui.com](https://vyos-fw-gui.com)|
 
 ### Recommended Usage
 
@@ -31,6 +31,12 @@ Resolution: TBD
 Connections to the firewall are made using the [Napalm-VyOS library](https://github.com/napalm-automation-community/napalm-vyos) via SSH.  Napalm for VyOS only allows merging configurations (changes with existing) and does not allow for replacing configuriations (new replacing existing).  As such, by default, if you remove an item from the config and push, it will not be removed from the firewall as the configs are merged.  To work around this, the View Diffs and Commit interface has the option to preface the firewall configuration with a 'delete firewall' command.  This causes the configuration to remove all firewall configuration and then add the specified configuration settings so that the net configuration is a replacement of the existing configuration.  You will __NOT__ want to use this feature unless you are managing __ALL__ firewall configuations via the GUI.
 
 ![images](./images/commit.png)
+
+## Initial Login
+
+There is no initial username and password.  After starting the application, use the "Register as a new user" link to create your username and password.  Once you have registered your user(s), you can disable user registration by updating the environment variable in Docker configuration to `DISABLE_REGISTRATION=True`. Doing this will remove the link to the registration page and stop any POSTS to the route /user_registration from being processed.  This can be reenabled anytime you need to setup users.
+
+Future releases *may* include administration and user management features.
 
 ## Deployment
 
