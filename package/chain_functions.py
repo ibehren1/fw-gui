@@ -121,7 +121,7 @@ def add_rule_to_data(session, request):
 
     # Sort rule-order in user data
     user_data[ip_version]["chains"][fw_chain]["rule-order"] = sorted(
-        user_data[ip_version]["chains"][fw_chain]["rule-order"]
+        user_data[ip_version]["chains"][fw_chain]["rule-order"], key=int
     )
 
     # Write user_data to file
