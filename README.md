@@ -1,8 +1,8 @@
-# vyos-fw-gui
+# VyOS-FW-GUI
 
-## GUI for creating VyOS firewall rule configurations
+## GUI for Managing VyOS Firewall Rule Configurations
 
-The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the vyos-fw-gui configuration to move between instances of the GUI.
+The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the vyos-fw-gui configuration to move between instances of the GUI.
 
 | | |
 | - | - |
@@ -10,13 +10,31 @@ The web GUI allows the user to visually create and manage group objects, firewal
 | Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general)  |
 | Working demo | [https://vyos-fw-gui.com](https://vyos-fw-gui.com)|
 
-Recommended deployment is via Docker but also inculded in the repo is a systemd service file for use with local install.
+### Recommended Usage
+
+Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and VyOS-FW-GUI.
+
+You can also host the VyOS-FW-GUI as a container on the VyOS device you wish to manage.  Setting up TLS in this case can be provided using [ACME on VyOS](https://docs.vyos.io/en/sagitta/configuration/pki/index.html#acme).
+
+While recommended deployment is via Docker, also inculded in the repo is a systemd service file for use with local install.  
+
+See [Deployment](#deployment) section below for configuration commands.
 
 ### Known Issue
 
 When deployed behind HAProxy (VyOS load-balancing reverse-proxy) timeouts can prevent diffs and commits for firewalls with large configurations.  Issue is not obeserved connecting directly to app when hosted in Docker or behind Nginx proxy.
 
-## Container on VyOS
+Resolution: TBD
+
+## Commiting to the Firewall
+
+Connections to the firewall are made using the [Napalm-VyOS library](https://github.com/napalm-automation-community/napalm-vyos) via SSH.  Napalm for VyOS only allows merging configurations (changes with existing) and does not allow for replacing configuriations (new replacing existing).  As such, by default, if you remove an item from the config and push, it will not be removed from the firewall as the configs are merged.  To work around this, the View Diffs and Commit interface has the option to preface the firewall configuration with a 'delete firewall' command.  This causes the configuration to remove all firewall configuration and then add the specified configuration settings so that the net configuration is a replacement of the existing configuration.  You will __NOT__ want to use this feature unless you are managing __ALL__ firewall configuations via the GUI.
+
+![images](./images/commit.png)
+
+## Deployment
+
+### Container on VyOS
 
 Run these commands to create the volume for the container and pull the image.
 
@@ -42,7 +60,7 @@ set container name vyos-fw-gui volume vyosfwgui_data destination '/opt/vyos-fw-g
 set container name vyos-fw-gui volume vyosfwgui_data source '/config/vyos-fw-gui/data'
 ```
 
-## Docker Run
+### Docker Run
 
 ```bash
 docker volume create vyos-fw-gui_data
@@ -55,7 +73,7 @@ docker run \
   ibehren1/vyos-fw-gui:v0.12.1
 ```
 
-## Docker Compose
+### Docker Compose
 
 ```yaml
 version: '3.7'

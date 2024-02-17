@@ -21,6 +21,9 @@
 - [x] Add section of commands for options not yet implemented.
 - [x] Show groups in sections by group type.
 - [x] Add option to disable user registration. -- environment variable DISABLE_REGISTRATION=True
+- [ ] User profile management
+  - [ ] Change password / email address
+- [ ] Make admin user that can delete other users.
 
 ## Design
 
