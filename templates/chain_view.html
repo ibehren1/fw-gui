@@ -1,13 +1,51 @@
 {% extends "basic_page.html" %}
 {% block body %}
 
+<hr>
+<table class="groups_table" width="100%">
+    <tr>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="chain_heading">IPv4 Chains</p>
+                <hr>
+                <ul class="toc_list">
+                    {% if chain_dict.ipv4 %}
+                    {% for key, chain_list in chain_dict.ipv4.items() %}
+                    <li>
+                        <a class="link" href="#ipv4{{key}}">{{key}}</a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+        </td>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="chain_heading">IPv6 Chains</p>
+                <hr>
+                <ul class="toc_list">
+                    {% if chain_dict.ipv6 %}
+                    {% for key, chain_list in chain_dict.ipv6.items() %}
+                    <li>
+                        <a class="link" href="#ipv6{{key}}">{{key}}</a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+        </td>
+    </tr>
+</table>
+<hr>
+<br>
+
 <p class="section_heading">IPv4 Chains</p>
 <hr>
 
 {% if chain_dict.ipv4 %}
 {% for key, chain_list in chain_dict.ipv4.items() %}
 
-<p class="chain_heading">Chain: {{key}}</p>
+<p class="chain_heading" id="ipv4{{key}}">Chain: {{key}}</p>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
     <th colspan="2">
         Rule
@@ -132,7 +170,7 @@
 {% if chain_dict.ipv6 %}
 {% for key, chain_list in chain_dict.ipv6.items() %}
 
-<p class="chain_heading">Chain: {{key}}</p>
+<p class="chain_heading" id="ipv6{{key}}">Chain: {{key}}</p>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
     <th colspan="2">
         Rule

@@ -316,3 +316,40 @@ h4 {
     border-bottom: 0px solid #dee2e6;
     table-layout: fixed;
 }
+
+
+/* Table of Contents */
+
+#toc_container {
+    background: #606263 none repeat scroll 0 0;
+    /* border: 1px solid #aaa; */
+    display: table;
+    /* font-size: 95%; */
+    /* margin-bottom: 1em; */
+    /* padding: 20px; */
+    /* width: auto; */
+}
+
+.toc_title {
+    font-weight: bolder;
+    font-variant: small-caps;
+    font-size: xx-large;
+    color: #ffbf12;
+    /* font-weight: 700; */
+    /* text-align: center; */
+}
+
+#toc_container .link,
+#toc_container .link:hover {
+    color: #FFbf12;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+#toc_container li {
+    font-variant: small-caps;
+    font-size: large;
+    color: #ffbf12;
+    color: #ffbf12;
+    list-style: outside none none !important;
+}
