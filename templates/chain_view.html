@@ -2,7 +2,7 @@
 {% block body %}
 
 <hr>
-<table class="groups_table" width="100%">
+<table class="groups_table" id="toc" width="100%">
     <tr>
         <td style="width:50%; vertical-align: top;">
             <div id="toc_container">
@@ -45,7 +45,16 @@
 {% if chain_dict.ipv4 %}
 {% for key, chain_list in chain_dict.ipv4.items() %}
 
-<p class="chain_heading" id="ipv4{{key}}">{{key}}</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading" id="ipv4{{key}}">{{key}}</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
     <th colspan="2">
         Rule
@@ -170,7 +179,16 @@
 {% if chain_dict.ipv6 %}
 {% for key, chain_list in chain_dict.ipv6.items() %}
 
-<p class="chain_heading" id="ipv6{{key}}">{{key}}</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading" id="ipv6{{key}}">{{key}}</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
     <th colspan="2">
         Rule

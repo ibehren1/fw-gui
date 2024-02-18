@@ -2,7 +2,7 @@
 {% block body %}
 
 <hr>
-<table class="groups_table" width="100%">
+<table class="groups_table" id="toc" width="100%">
     <tr>
         <td style="width:50%; vertical-align: top;">
             <div id="toc_container">
@@ -55,7 +55,16 @@
 <br>
 
 <p class="section_heading">IPv4 Groups</p>
-<p class="chain_heading">Address Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Address Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -95,7 +104,16 @@
 
 <br>
 
-<p class="chain_heading">Network Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Network Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="ipv4networkgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -136,7 +154,16 @@
 
 
 <p class="section_heading">IPv6 Groups</p>
-<p class="chain_heading">Address Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Address Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="ipv6addressgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -175,7 +202,16 @@
 </table>
 
 <br>
-<p class="chain_heading">Network Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Network Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="ipv6networkgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -214,7 +250,16 @@
 </table>
 
 
-<p class="section_heading">Domain Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="section_heading">Domain Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="domaingroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -250,7 +295,16 @@
     {% endfor %}
 </table>
 
-<p class="section_heading">MAC Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="section_heading">MAC Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="macgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -286,7 +340,16 @@
     {% endfor %}
 </table>
 
-<p class="section_heading">Port Groups</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="section_heading">Port Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top</a></p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" id="portgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name

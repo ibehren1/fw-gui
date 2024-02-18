@@ -242,6 +242,15 @@ h4 {
     font-weight: bolder;
 }
 
+.link_yellow {
+    color: #FFbf12;
+    text-decoration: none;
+}
+
+.link_yellow:hover {
+    color: #FFbf12;
+}
+
 
 /* --PopUp-- */
 
