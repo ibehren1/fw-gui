@@ -24,6 +24,7 @@
 - [ ] User profile management
   - [ ] Change password / email address
 - [ ] Make admin user that can delete other users.
+- [x] Add ToCs to Group/Chain/Filter views.
 
 ## Design
 
