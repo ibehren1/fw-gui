@@ -1,5 +1,7 @@
 # FW-GUI for use with VyOS
 
+The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specfic configuations on VyOS firewalls.
+
 ## GUI for Managing VyOS Firewall Rule Configurations
 
 The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the fw-gui configuration to move between instances of the GUI.
