@@ -19,4 +19,4 @@ docker buildx build \
     --platform=linux/arm64,linux/amd64 \
     --push \
     --no-cache \
-    --tag ${DOCKER_USER}/vyos-fw-gui:${VERSION} .
+    --tag ${DOCKER_USER}/fw-gui:${VERSION} .
