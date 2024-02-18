@@ -1,8 +1,8 @@
 # FW-GUI for use with VyOS
 
-The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specfic configuations on VyOS firewalls.
+The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specfic configuations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
 
-## GUI for Managing VyOS Firewall Rule Configurations
+## GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
 The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the fw-gui configuration to move between instances of the GUI.
 
@@ -57,15 +57,15 @@ Run these commands to add the container to the VyOS configuration.
 ```bash
 set container name fw-gui allow-host-networks
 set container name fw-gui cap-add 'net-bind-service'
-set container name fw-gui description 'VyOS FW GUI'
+set container name fw-gui description 'FW GUI'
 set container name fw-gui image 'ibehren1/fw-gui:v1.1.0'
 set container name fw-gui environment DISABLE_REGISTRATION value 'False'
 set container name fw-gui port http destination '8080'
 set container name fw-gui port http protocol 'tcp'
 set container name fw-gui port http source '80'
 set container name fw-gui restart 'always'
-set container name fw-gui volume vyosfwgui_data destination '/opt/fw-gui/data'
-set container name fw-gui volume vyosfwgui_data source '/config/fw-gui/data'
+set container name fw-gui volume fwgui_data destination '/opt/fw-gui/data'
+set container name fw-gui volume fwgui_data source '/config/fw-gui/data'
 ```
 
 ### Docker Run
