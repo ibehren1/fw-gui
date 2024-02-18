@@ -117,14 +117,6 @@ footer {
 }
 
 
-/* --Links to VyOS docs-- */
-
-.docs_link {
-    color: #FF9000;
-    font-weight: bold;
-}
-
-
 /* --Headings-- */
 
 .chain_heading {
@@ -211,8 +203,15 @@ h4 {
 
 /* --Links-- */
 
+.docs_link {
+    color: #FF9000;
+    font-weight: bold;
+    text-decoration: none;
+}
+
 .link {
     color: #FF9000;
+    text-decoration: none;
 }
 
 .link:hover {
