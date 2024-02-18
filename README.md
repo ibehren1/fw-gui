@@ -1,20 +1,22 @@
-# VyOS-FW-GUI
+# FW-GUI for use with VyOS
 
-## GUI for Managing VyOS Firewall Rule Configurations
+The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specific configurations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
 
-The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the vyos-fw-gui configuration to move between instances of the GUI.
+## GUI for Managing Firewall Rule Configurations on VyOS Firewalls
+
+The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the fw-gui configuration to move between instances of the GUI.
 
 | | |
 | - | - |
-| Source Code | [https://github.com/ibehren1/vyos-fw-gui](https://github.com/ibehren1/vyos-fw-gui)  |
-| Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/vyos-fw-gui/general)  |
-| Working Demo | [https://vyos-fw-gui.com](https://vyos-fw-gui.com)|
+| Source Code | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  |
+| Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
+| Working Demo | [https://fw-gui.com](https://fw-gui.com)|
 
 ### Recommended Usage
 
-Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and VyOS-FW-GUI.
+Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and FW-GUI.
 
-You can also host the VyOS-FW-GUI as a container on the VyOS device you wish to manage.  Setting up TLS in this case can be provided using [ACME on VyOS](https://docs.vyos.io/en/sagitta/configuration/pki/index.html#acme).
+You can also host the FW-GUI as a container on the VyOS device you wish to manage.  Setting up TLS in this case can be provided using [ACME on VyOS](https://docs.vyos.io/en/sagitta/configuration/pki/index.html#acme).
 
 While recommended deployment is via Docker, also inculded in the repo is a systemd service file for use with local install.  
 
@@ -45,38 +47,38 @@ Future releases *may* include administration and user management features.
 Run these commands to create the volume for the container and pull the image.
 
 ```bash
-mkdir -p /config/vyos-fw-gui/data
-sudo chown -R www-data:www-data /config/vyos-fw-gui
-add container image ibehren1/vyos-fw-gui:v1.0.0
+mkdir -p /config/fw-gui/data
+sudo chown -R www-data:www-data /config/fw-gui
+add container image ibehren1/fw-gui:v1.1.0
 ```
 
 Run these commands to add the container to the VyOS configuration.
 
 ```bash
-set container name vyos-fw-gui allow-host-networks
-set container name vyos-fw-gui cap-add 'net-bind-service'
-set container name vyos-fw-gui description 'VyOS FW GUI'
-set container name vyos-fw-gui image 'ibehren1/vyos-fw-gui:v1.0.0'
-set container name vyos-fw-gui environment DISABLE_REGISTRATION value 'False'
-set container name vyos-fw-gui port http destination '8080'
-set container name vyos-fw-gui port http protocol 'tcp'
-set container name vyos-fw-gui port http source '80'
-set container name vyos-fw-gui restart 'always'
-set container name vyos-fw-gui volume vyosfwgui_data destination '/opt/vyos-fw-gui/data'
-set container name vyos-fw-gui volume vyosfwgui_data source '/config/vyos-fw-gui/data'
+set container name fw-gui allow-host-networks
+set container name fw-gui cap-add 'net-bind-service'
+set container name fw-gui description 'FW GUI'
+set container name fw-gui image 'ibehren1/fw-gui:v1.1.0'
+set container name fw-gui environment DISABLE_REGISTRATION value 'False'
+set container name fw-gui port http destination '8080'
+set container name fw-gui port http protocol 'tcp'
+set container name fw-gui port http source '80'
+set container name fw-gui restart 'always'
+set container name fw-gui volume fwgui_data destination '/opt/fw-gui/data'
+set container name fw-gui volume fwgui_data source '/config/fw-gui/data'
 ```
 
 ### Docker Run
 
 ```bash
-docker volume create vyos-fw-gui_data
+docker volume create fw-gui_data
 
 docker run \
-  --name   vyos-fw-gui \
+  --name   fw-gui \
   --expose 8080 \
   --env DISABLE_REGISTRATION=False \
-  --mount  source=vyos-fw-gui_data,target=/opt/vyos-fw-gui/data \
-  ibehren1/vyos-fw-gui:v1.0.0
+  --mount  source=fw-gui_data,target=/opt/fw-gui/data \
+  ibehren1/fw-gui:v1.1.0
 ```
 
 ### Docker Compose
@@ -84,24 +86,24 @@ docker run \
 ```yaml
 version: '3.7'
 services:
-  vyos-fw-gui:
-    image: ibehren1/vyos-fw-gui:v1.0.0
-    container_name: vyos-fw-gui
+  fw-gui:
+    image: ibehren1/fw-gui:v1.1.0
+    container_name: fw-gui
     environment:
       - DISABLE_REGISTRATION=False
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
     volumes:
-      - data:/opt/vyos-fw-gui/data
+      - data:/opt/fw-gui/data
 volumes:
   data:
 ```
 
 ## Interface
 
-![image](./images/vyos-fw-gui_interface_1.png)
-![image](./images/vyos-fw-gui_interface_2.png)
-![image](./images/vyos-fw-gui_interface_3.png)
-![image](./images/vyos-fw-gui_interface_4.png)
-![image](./images/vyos-fw-gui_interface_5.png)
+![image](./images/fw-gui_interface_1.png)
+![image](./images/fw-gui_interface_2.png)
+![image](./images/fw-gui_interface_3.png)
+![image](./images/fw-gui_interface_4.png)
+![image](./images/fw-gui_interface_5.png)

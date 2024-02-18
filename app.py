@@ -1,5 +1,5 @@
 """
-    VyOS Firewall GUI
+    Firewall GUI for use with VyOS
 
     Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create

@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=www-data
-WorkingDirectory=/opt/vyos-fw-gui
+WorkingDirectory=/opt/fw-gui
 ExecStart=/usr/bin/env python3 app.py
 Restart=always
 

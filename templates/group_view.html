@@ -1,8 +1,72 @@
 {% extends "basic_page.html" %}
 {% block body %}
 
+<hr>
+<table class="groups_table" id="toc" width="100%">
+    <tr>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="chain_heading">IPv4 Groups</p>
+                <hr>
+                <ul class="toc_list">
+                    <li>
+                        <a class="link" href="#ipv4addressgroup">address groups</a>
+                    </li>
+                    <li>
+                        <a class="link" href="#ipv4networkgroup">network groups</a>
+                    </li>
+                </ul>
+            </div>
+        </td>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="chain_heading">IPv6 Groups</p>
+                <hr>
+                <ul class="toc_list">
+                    <li>
+                        <a class="link" href="#ipv6addressgroup">address groups</a>
+                    </li>
+                    <li>
+                        <a class="link" href="#ipv6networkgroup">network groups</a>
+                    </li>
+                </ul>
+            </div>
+        </td>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="chain_heading">Other Groups</p>
+                <hr>
+                <ul class="toc_list">
+                    <li>
+                        <a class="link" href="#domaingroup">domain groups</a>
+                    </li>
+                    <li>
+                        <a class="link" href="#macgroup">mac groups</a>
+                    </li>
+                    <li>
+                        <a class="link" href="#portgroup">port groups</a>
+                    </li>
+                </ul>
+            </div>
+        </td>
+    </tr>
+</table>
+<hr>
+<br>
+
 <p class="section_heading">IPv4 Groups</p>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Address Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>
@@ -41,7 +105,18 @@
 
 <br>
 
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Network Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="ipv4networkgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>
@@ -81,7 +156,18 @@
 
 
 <p class="section_heading">IPv6 Groups</p>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Address Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="ipv6addressgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>
@@ -119,8 +205,18 @@
 </table>
 
 <br>
-
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="chain_heading">Network Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="ipv6networkgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>
@@ -156,10 +252,20 @@
     {% endif %}
     {% endfor %}
 </table>
+<br>
 
-
-<p class="section_heading">Domain Groups</p>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="section_heading">Domain Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="domaingroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>
@@ -193,9 +299,20 @@
     {% endif %}
     {% endfor %}
 </table>
+<br>
 
-<p class="section_heading">MAC Groups</p>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="section_heading">MAC Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="macgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>
@@ -229,9 +346,20 @@
     {% endif %}
     {% endfor %}
 </table>
+<br>
 
-<p class="section_heading">Port Groups</p>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="section_heading">Port Groups</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
+<table class="groups_table" id="portgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
     </th>

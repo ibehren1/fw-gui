@@ -1,13 +1,60 @@
 {% extends "basic_page.html" %}
 {% block body %}
 
+<hr>
+<table class="groups_table" id="toc" width="100%">
+    <tr>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="filter_heading">IPv4 Filters</p>
+                <hr>
+                <ul class="toc_list">
+                    {% if filter_dict.ipv4 %}
+                    {% for key, filter_list in filter_dict.ipv4.items() %}
+                    <li>
+                        <a class="link" href="#ipv4{{key}}">{{key}}</a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+        </td>
+        <td style="width:50%; vertical-align: top;">
+            <div id="toc_container">
+                <p class="filter_heading">IPv6 Filters</p>
+                <hr>
+                <ul class="toc_list">
+                    {% if filter_dict.ipv6 %}
+                    {% for key, filter_list in filter_dict.ipv6.items() %}
+                    <li>
+                        <a class="link" href="#ipv6{{key}}">{{key}}</a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+        </td>
+    </tr>
+</table>
+<hr>
+<br>
+
 <p class="section_heading">IPv4 Filters</p>
 <hr>
 
 {% if filter_dict.ipv4 %}
 {% for key, filter_list in filter_dict.ipv4.items() %}
-
-<p class="filter_heading">Filter: {{key}}</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="filter_heading" id="ipv4{{key}}">{{key}}</p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
     <th>
         Rule
@@ -74,7 +121,17 @@
 {% if filter_dict.ipv6 %}
 {% for key, filter_list in filter_dict.ipv6.items() %}
 
-<p class="filter_heading">Filter: {{key}}</p>
+<table class="groups_table" width="100%">
+    <tr>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}">{{key}} </p>
+        </td>
+        <td>
+            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
+            </p>
+        </td>
+    </tr>
+</table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
     <th>
         Rule
