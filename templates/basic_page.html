@@ -10,7 +10,7 @@
 
 <header>
     <h1>Firewall GUI</h1>
-    <p class="h4_dark">For use with VyOS</p>
+    <p class="h4_dark">for use with VyOS</p>
 </header>
 
 <body class="page_background">
@@ -37,7 +37,10 @@
                 </p>
                 {% endif %}
             </td>
-            <td align="right" colspan="3">
+            <td align="right">
+                <a href="{{ url_for('user_change_password')}}">
+                    <input class="button" type="submit" value="Change Password" style="width: 130px">
+                </a>
                 <a href="{{ url_for('user_logout')}}">
                     <input class="button" type="submit" value="Logout" style="width: 80px">
                 </a>

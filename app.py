@@ -23,7 +23,12 @@ from package.chain_functions import (
     assemble_detail_list_of_chains,
     delete_rule_from_data,
 )
-from package.database_functions import process_login, query_user_by_id, register_user
+from package.database_functions import (
+    change_password,
+    process_login,
+    query_user_by_id,
+    register_user,
+)
 from package.data_file_functions import (
     add_extra_items,
     add_hostname,
@@ -103,6 +108,28 @@ def index():
 
 #
 # Sessions
+@app.route("/user_change_password", methods=["GET", "POST"])
+@login_required
+def user_change_password():
+    if request.method == "POST":
+
+        result = change_password(bcrypt, db, User, session["username"], request)
+
+        if result:
+            return redirect(url_for("index"))
+        else:
+            return redirect(url_for("user_change_password"))
+
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "user_change_password_form.html",
+            file_list=file_list,
+            username=session["username"],
+        )
+
+
 @app.route("/user_login", methods=["GET", "POST"])
 def user_login():
     if request.method == "POST":
@@ -111,6 +138,8 @@ def user_login():
         )
         if login:
             return redirect(url_for("index"))
+        else:
+            return redirect(url_for("user_login"))
     else:
         registration = False if "DISABLE_REGISTRATION" in os.environ else True
 

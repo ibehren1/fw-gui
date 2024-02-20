@@ -1,10 +1,53 @@
 """
     Database support functions.
 """
+
 from datetime import datetime
 from flask import flash
 from flask_login import login_user
 import os
+
+
+#
+# Change Password
+def change_password(bcrypt, db, User, username, request):
+    # Get Inputs
+    cur_password = request.form["current_password"]
+    new_password = request.form["new_password"]
+    confirm_password = request.form["confirm_password"]
+
+    # Basic Validations
+    if new_password == "":
+        flash("New password cannot be empty.", "danger")
+        return False
+    if new_password == username:
+        flash("New password cannot be your username.", "danger")
+        return False
+    if new_password == cur_password:
+        flash("New password cannot be the same as your current password.", "danger")
+        return False
+    if new_password != confirm_password:
+        flash("Passwords do not match.", "warning")
+        return False
+
+    # Query User table
+    result = query_user_by_username(db, User, username)
+
+    # Check if old password matches
+    if bcrypt.check_password_hash(result.password, cur_password):
+        # Hash new password
+        hashed_password = bcrypt.generate_password_hash(new_password)
+
+        # Update User table
+        result.password = hashed_password
+        db.session.commit()
+        print(f"{datetime.now()} User <{result.username}> changed password.")
+        flash("Password changed.", "success")
+        return True
+
+    else:
+        flash("Current password was incorrect.", "warning")
+        return False
 
 
 #
