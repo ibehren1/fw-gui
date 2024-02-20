@@ -49,7 +49,7 @@ Run these commands to create the volume for the container and pull the image.
 ```bash
 mkdir -p /config/fw-gui/data
 sudo chown -R www-data:www-data /config/fw-gui
-add container image ibehren1/fw-gui:v1.1.0
+add container image ibehren1/fw-gui:latest
 ```
 
 Run these commands to add the container to the VyOS configuration.
@@ -58,7 +58,7 @@ Run these commands to add the container to the VyOS configuration.
 set container name fw-gui allow-host-networks
 set container name fw-gui cap-add 'net-bind-service'
 set container name fw-gui description 'FW GUI'
-set container name fw-gui image 'ibehren1/fw-gui:v1.1.0'
+set container name fw-gui image 'ibehren1/fw-gui:latest'
 set container name fw-gui environment DISABLE_REGISTRATION value 'False'
 set container name fw-gui port http destination '8080'
 set container name fw-gui port http protocol 'tcp'
@@ -78,7 +78,7 @@ docker run \
   --expose 8080 \
   --env DISABLE_REGISTRATION=False \
   --mount  source=fw-gui_data,target=/opt/fw-gui/data \
-  ibehren1/fw-gui:v1.1.0
+  ibehren1/fw-gui:latest
 ```
 
 ### Docker Compose
@@ -87,7 +87,7 @@ docker run \
 version: '3.7'
 services:
   fw-gui:
-    image: ibehren1/fw-gui:v1.1.0
+    image: ibehren1/fw-gui:latest
     container_name: fw-gui
     environment:
       - DISABLE_REGISTRATION=False
