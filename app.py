@@ -639,6 +639,9 @@ if __name__ == "__main__":
     with open(".version", "r") as f:
         # version = f.read()
         os.environ["FWGUI_VERSION"] = f.read()
+        print(
+            f"\n**************************\n* FW-GUI version: {os.environ['FWGUI_VERSION']} *\n**************************\n"
+        )
 
     # Initialize Data Directory
     initialize_data_dir()
