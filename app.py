@@ -71,6 +71,7 @@ db_location = os.path.join(os.getcwd(), "data/database")
 
 app = Flask(__name__)
 app.secret_key = "this is the secret key"
+app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -634,6 +635,11 @@ def upload_json():
 
 
 if __name__ == "__main__":
+    # Read version from .version and set env var
+    with open(".version", "r") as f:
+        # version = f.read()
+        os.environ["FWGUI_VERSION"] = f.read()
+
     # Initialize Data Directory
     initialize_data_dir()
 
