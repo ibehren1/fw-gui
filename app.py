@@ -269,9 +269,13 @@ def chain_add():
 @login_required
 def chain_rule_add():
     if request.method == "POST":
-        add_rule_to_data(session, request)
-
-        return redirect(url_for("chain_view"))
+        if request.form["fw_chain"] == "":
+            return redirect(url_for("chain_view"))
+        else:
+            add_rule_to_data(session, request)
+            return redirect(
+                url_for("chain_view") + "#" + request.form["fw_chain"].replace(",", "")
+            )
 
     else:
         file_list = list_user_files(session)
@@ -280,10 +284,16 @@ def chain_rule_add():
         if chain_list == []:
             return redirect(url_for("chain_add"))
 
+        if request.args.get("fw_chain"):
+            fw_chain = request.args.get("fw_chain")
+        else:
+            fw_chain = ""
+
         return render_template(
             "chain_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            chain_name=fw_chain,
             group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],

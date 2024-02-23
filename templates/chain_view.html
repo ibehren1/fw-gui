@@ -75,10 +75,14 @@
         Source
     </th>
 
-    <th>
+    <th colspan="2">
         Protocols
         <br>
         States
+    </th>
+
+    <th colspan="2" width="90px">
+        Action
     </th>
 
     {% for rule in chain_list %}
@@ -106,12 +110,26 @@
             Type: {{rule.source_address_type}}
         </td>
 
-        <td align="center" style="vertical-align: middle;">
+        <td colspan="2" align="center" style="vertical-align: middle;">
             {% if rule.protocol == '' %}
             ANY
             {% else %}
             {{rule.protocol}}
             {% endif %}
+        </td>
+
+        <td align="center" rowspan="2">
+            <form action="/chain_rule_add" , method="get">
+                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Rule" style="height: 150; width: 20;">
+            </form>
+        </td>
+
+        <td align="center" rowspan="2">
+            <form action="/chain_rule_delete" , method="post">
+                <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;">
+            </form>
         </td>
     </tr>
     <tr>
@@ -141,7 +159,7 @@
             Type: {{rule.source_port_type}}
         </td>
 
-        <td>
+        <td colspan="2">
             {% if rule.state_est %}
             &#9989;&nbspEst
             {% else %}
@@ -210,10 +228,14 @@
         Source
     </th>
 
-    <th>
+    <th colspan="2">
         Protocols
         <br>
         States
+    </th>
+
+    <th colspan="2" width="90px">
+        Action
     </th>
 
     {% for rule in chain_list %}
@@ -241,12 +263,26 @@
             Type: {{rule.source_address_type}}
         </td>
 
-        <td align="center" style="vertical-align: middle;">
+        <td colspan="2" align="center" style="vertical-align: middle;">
             {% if rule.protocol == '' %}
             ANY
             {% else %}
             {{rule.protocol}}
             {% endif %}
+        </td>
+
+        <td align="center" rowspan="2">
+            <form action="/chain_rule_add" , method="get">
+                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Rule" style="height: 150; width: 20;">
+            </form>
+        </td>
+
+        <td align="center" rowspan="2">
+            <form action="/chain_rule_delete" , method="post">
+                <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;">
+            </form>
         </td>
     </tr>
     <tr>
@@ -276,7 +312,7 @@
             Type: {{rule.source_port_type}}
         </td>
 
-        <td>
+        <td colspan="2">
             {% if rule.state_est %}
             &#9989;&nbspEst
             {% else %}
