@@ -23,7 +23,12 @@ from package.chain_functions import (
     assemble_detail_list_of_chains,
     delete_rule_from_data,
 )
-from package.database_functions import process_login, query_user_by_id, register_user
+from package.database_functions import (
+    change_password,
+    process_login,
+    query_user_by_id,
+    register_user,
+)
 from package.data_file_functions import (
     add_extra_items,
     add_hostname,
@@ -64,8 +69,12 @@ import os
 # App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
+with open(".version", "r") as f:
+    os.environ["FWGUI_VERSION"] = f.read()
+
 app = Flask(__name__)
 app.secret_key = "this is the secret key"
+app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -103,6 +112,28 @@ def index():
 
 #
 # Sessions
+@app.route("/user_change_password", methods=["GET", "POST"])
+@login_required
+def user_change_password():
+    if request.method == "POST":
+
+        result = change_password(bcrypt, db, User, session["username"], request)
+
+        if result:
+            return redirect(url_for("index"))
+        else:
+            return redirect(url_for("user_change_password"))
+
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "user_change_password_form.html",
+            file_list=file_list,
+            username=session["username"],
+        )
+
+
 @app.route("/user_login", methods=["GET", "POST"])
 def user_login():
     if request.method == "POST":
@@ -111,6 +142,8 @@ def user_login():
         )
         if login:
             return redirect(url_for("index"))
+        else:
+            return redirect(url_for("user_login"))
     else:
         registration = False if "DISABLE_REGISTRATION" in os.environ else True
 
@@ -239,9 +272,13 @@ def chain_add():
 @login_required
 def chain_rule_add():
     if request.method == "POST":
-        add_rule_to_data(session, request)
-
-        return redirect(url_for("chain_view"))
+        if request.form["fw_chain"] == "":
+            return redirect(url_for("chain_view"))
+        else:
+            add_rule_to_data(session, request)
+            return redirect(
+                url_for("chain_view") + "#" + request.form["fw_chain"].replace(",", "")
+            )
 
     else:
         file_list = list_user_files(session)
@@ -250,10 +287,16 @@ def chain_rule_add():
         if chain_list == []:
             return redirect(url_for("chain_add"))
 
+        if request.args.get("fw_chain"):
+            fw_chain = request.args.get("fw_chain")
+        else:
+            fw_chain = ""
+
         return render_template(
             "chain_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            chain_name=fw_chain,
             group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
@@ -336,6 +379,12 @@ def filter_rule_add():
         file_list = list_user_files(session)
         filter_list = assemble_list_of_filters(session)
         chain_list = assemble_list_of_chains(session)
+
+        if request.args.get("filter"):
+            filter = request.args.get("filter")
+        else:
+            filter = ""
+
         if filter_list == []:
             return redirect(url_for("filter_add"))
         if chain_list == []:
@@ -349,6 +398,7 @@ def filter_rule_add():
             "filter_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            filter_name=filter,
             filter_list=filter_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
@@ -605,6 +655,13 @@ def upload_json():
 
 
 if __name__ == "__main__":
+    # Read version from .version and set env var
+    with open(".version", "r") as f:
+        os.environ["FWGUI_VERSION"] = f.read()
+        print(
+            f"\n**************************\n* FW-GUI version: {os.environ.get('FWGUI_VERSION')} *\n**************************\n"
+        )
+
     # Initialize Data Directory
     initialize_data_dir()
 

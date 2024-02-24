@@ -1,29 +1,33 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table class="table">
+<table class="table" width="100%">
+    <tr>
+        <th align="left">
+            <h2> Delete Firewall Group </h2>
+        </th>
+    </tr>
+    <tr>
+        <td>
+            Firewall groups represent collections of IP addresses, networks, ports, mac addresses, domains or
+            interfaces. Once created, a group can be referenced by firewall, nat and policy route rules as either a
+            source or destination matcher, and/or as inbound/outbound in the case of interface group.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target=”_blank”
+                class="docs_link">Docs&#x2197</a>
+        </td>
+    </tr>
+</table>
+<br>
+<table class="table" width="100%" border="1">
     <form action="/group_delete" , method="post">
         <tr>
-            <th colspan="5" align="left">
-                <h2> Delete Firewall Group </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="2">
-                Firewall groups represent collections of IP addresses, networks, ports, mac addresses, domains or
-                interfaces. Once created, a group can be referenced by firewall, nat and policy route rules as either a
-                source or destination matcher, and/or as inbound/outbound in the case of interface group.
-                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target=”_blank”
-                    class="docs_link">Docs&#x2197</a>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3">
+            <td>
                 <p class="section_heading">
                     Group
                 </p>
                 Choose group to delete.&nbsp;
-                <select name="group" id="group">
+                <br>
+                <select name="group" id="group" style="width: 100%;">
                     <option value=''></option>
                     {% for group in group_list %}
                     <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -38,7 +42,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right" colspan="5">
+            <td align="right">
                 <input type="submit" value="Delete Group">
             </td>
         </tr>

@@ -102,6 +102,22 @@ footer {
 
 /* --Buttons-- */
 
+.add_rule_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 15px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+    /* writing-mode: vertical-lr; */
+}
+
+.add_rule_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #4bb964);
+    /* writing-mode: vertical-lr; */
+}
+
 .button {
     color: #323231;
     font-weight: bold;
@@ -113,7 +129,23 @@ footer {
 
 .button:hover {
     color: #323231;
-    background: linear-gradient(135deg, #ffdc7e, #ffbe12)
+    background: linear-gradient(135deg, #ffdc7e, #ffbe12);
+}
+
+.delete_rule_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 20px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+    writing-mode: vertical-lr;
+}
+
+.delete_rule_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #cd4d4d);
+    writing-mode: vertical-lr;
 }
 
 

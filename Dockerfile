@@ -9,6 +9,7 @@ RUN apt-get install -y python3 python3-pip
 RUN pip3 install --upgrade pip
 
 # Add application files
+ADD .version           /opt/fw-gui/.version
 ADD app.py             /opt/fw-gui/app.py
 ADD package/*          /opt/fw-gui/package/
 ADD examples/*         /opt/fw-gui/examples/

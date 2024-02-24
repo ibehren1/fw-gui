@@ -76,6 +76,10 @@
         Direction
     </th>
 
+    <th width="45px">
+        Action
+    </th>
+
     {% for rule in filter_list %}
     <tr align="center" style="vertical-align: middle;">
         <td align="center" style="vertical-align: middle;">
@@ -107,8 +111,23 @@
                 {{rule.direction}}
             </font>
         </td>
+
+        <td align="center">
+            <form action="/filter_rule_delete" , method="post">
+                <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;">
+            </form>
+        </td>
     </tr>
     {% endfor %}
+    <tr>
+        <td colspan="6">
+            <form action="/filter_rule_add" , method="get">
+                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Rule">
+            </form>
+        </td>
+    </tr>
 </table>
 {% endfor %}
 {% endif %}
@@ -153,6 +172,10 @@
         Direction
     </th>
 
+    <th width="45px">
+        Action
+    </th>
+
     {% for rule in filter_list %}
     <tr align="center" style="vertical-align: middle;">
         <td align="center" style="vertical-align: middle;">
@@ -184,9 +207,23 @@
                 {{rule.direction}}
             </font>
         </td>
+
+        <td align="center">
+            <form action="/filter_rule_delete" , method="post">
+                <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;">
+            </form>
+        </td>
     </tr>
     {% endfor %}
-
+    <tr>
+        <td colspan="6">
+            <form action="/filter_rule_add" , method="get">
+                <input type="hidden" id="filter" name="filter" value="ipv6,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Rule">
+            </form>
+        </td>
+    </tr>
 </table>
 {% endfor %}
 {% endif %}

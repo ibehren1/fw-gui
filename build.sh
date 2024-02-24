@@ -3,6 +3,8 @@
 # Source the .env to set the version number
 . .env
 
+echo "Building version: ${VERSION}"
+
 # Set the Docker Hub username and password
 docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
 
@@ -17,6 +19,8 @@ docker buildx inspect \
 
 docker buildx build \
     --platform=linux/arm64,linux/amd64 \
-    --push \
-    --no-cache \
-    --tag ${DOCKER_USER}/fw-gui:${VERSION} .
+    --no-cache --push \
+    --tag ${DOCKER_USER}/fw-gui:latest \
+    --tag ${DOCKER_USER}/fw-gui:${VERSION} . 
+
+echo "Build complete"

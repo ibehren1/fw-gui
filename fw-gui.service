@@ -1,0 +1,12 @@
+[Unit]
+Description=VyOS Firewall GUI
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/opt/fw-gui
+ExecStart=/usr/bin/env python3 app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

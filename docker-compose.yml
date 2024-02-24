@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   fw-gui:
-    image: ibehren1/fw-gui:v1.1.0
+    image: ibehren1/fw-gui:latest
     container_name: fw-gui
     ports:
       - 8080:8080/tcp

@@ -2,24 +2,27 @@
 {% block body %}
 <br><br>
 <table class="table">
-    <form action="/chain_rule_add" , method="post">
-        <tr>
-            <th colspan="5" align="left">
-                <h2> Add Firewall Rule </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="4">
-                For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
-                apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
-                through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
-                be executed.
-                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
-                    class="docs_link">
-                    Docs&#x2197
-                </a>
-            </td>
-        </tr>
+    <tr>
+        <th colspan="5" align="left">
+            <h2> Add Firewall Rule </h2>
+        </th>
+    </tr>
+    <tr>
+        <td colspan="4">
+            For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
+            apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
+            through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
+            be executed.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
+                class="docs_link">
+                Docs&#x2197
+            </a>
+        </td>
+    </tr>
+</table>
+<br>
+<table class="table" border="1">
+    <form action=" /chain_rule_add" , method="post">
         <tr>
             <td colspan="4">
                 <p class="section_heading">
@@ -27,8 +30,8 @@
                 </p>
                 <label for="fw_chain">Chain Name&nbsp;</label>
                 <select name="fw_chain" id="fw_chain">
-                    <option value=''>
-                        {% for chain in chain_list %}
+                    <option value="{{chain_name}}">{{chain_name | replace(",", ": ")}}</option>
+                    {% for chain in chain_list %}
                     <option value='{{chain[0]}},{{chain[1]}}'>
                         {{chain[0]}}: {{chain[1]}}
                     </option>
@@ -37,23 +40,23 @@
             </td>
         </tr>
         <tr>
-            <td>
+            <td width="20%">
                 <p class="section_heading">
                     Rule
                 </p>
                 <label for="rule">Number</label>
                 <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
             </td>
-            <td colspan="3">
+            <td colspan="3" width="80%">
                 <p class="section_heading">
                     Description
                 </p>
                 <label for="rule">Description</label>
-                <input type="text" id="description" name="description" size="50" value=""><br>
+                <input type="text" id="description" name="description" size="60%" value=""><br>
             </td>
         </tr>
         <tr>
-            <td rowspan="1" style="vertical-align: top;">
+            <td style="vertical-align: top;" width="20%">
                 <p class="section_heading">
                     Action
                 </p>
@@ -63,12 +66,12 @@
                 <input type="radio" name="action" value="drop">&nbsp;drop
             </td>
 
-            <td colspan="2" rowspan="2" style="vertical-align: top;">
+            <td colspan="2" rowspan="2" style="vertical-align: top;" width="60%">
                 <p class="section_heading">
                     Destination
                 </p>
 
-                <table class="groups_table">
+                <table class="groups_table" width="100%">
                     <tr>
                         <td>
                             <input type="radio" name="dest_address_type" value="address"
@@ -155,7 +158,7 @@
                         </td>
                 </table>
             </td>
-            <td rowspan="2">
+            <td rowspan="2" width="20%">
                 <p class="section_heading">
                     Protocol
                 </p>
@@ -168,7 +171,7 @@
         </tr>
         <tr>
             <td>
-                <p class="section_heading">
+                <p class="section_heading" width="20%">
                     Logging
                 </p>
                 <input type="checkbox" id="logging" name="logging" value="True">
@@ -176,7 +179,7 @@
             </td>
         </tr>
         <tr>
-            <td>
+            <td width="10%">
                 <p class="section_heading">
                     Disable
                 </p>
@@ -188,7 +191,7 @@
                     Source
                 </p>
 
-                <table class="groups_table">
+                <table class="groups_table" width="100%">
                     <tr>
                         <td>
                             <input type="radio" name="source_address_type" value="address"
@@ -274,7 +277,7 @@
                         </td>
                     </tr>
                 </table>
-            <td rowspan="1">
+            <td>
                 <p class="section_heading">
                     State
                 </p>
@@ -292,8 +295,7 @@
 
         </tr>
         <tr>
-
-            <td align="right" colspan="5">
+            <td align="right" colspan="4">
                 <input type="submit" value="Generate Rule Configuration">
             </td>
         </tr>

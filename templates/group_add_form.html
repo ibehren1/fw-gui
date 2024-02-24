@@ -2,23 +2,26 @@
 {% block body %}
 <br><br>
 <table class="table">
+    <tr>
+        <th colspan="5" align="left">
+            <h2> Add Firewall Group </h2>
+        </th>
+    </tr>
+    <tr>
+        <td colspan="2">
+            Firewall groups represent collections of IP addresses, networks, ports, mac addresses, domains or
+            interfaces. Once created, a group can be referenced by firewall, nat and policy route rules as either a
+            source or destination matcher, and/or as inbound/outbound in the case of interface group.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target=”_blank”
+                class="docs_link">Docs&#x2197</a>
+        </td>
+    </tr>
+</table>
+<br>
+<table class="table" border="1" width="100%">
     <form action="/group_add" , method="post">
         <tr>
-            <th colspan="5" align="left">
-                <h2> Add Firewall Group </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="2">
-                Firewall groups represent collections of IP addresses, networks, ports, mac addresses, domains or
-                interfaces. Once created, a group can be referenced by firewall, nat and policy route rules as either a
-                source or destination matcher, and/or as inbound/outbound in the case of interface group.
-                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target=”_blank”
-                    class="docs_link">Docs&#x2197</a>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;">
+            <td style="vertical-align: top;" width="20%">
                 <p class="section_heading">
                     IP Version
                 </p>
@@ -28,43 +31,39 @@
                 <font style="font-size: small;">Only applies to address<br>and network groups.</font>
 
             </td>
-            <td style="vertical-align: top;">
+            <td rowspan="2" style="vertical-align: top;" width="80%">
                 <p class="section_heading">
                     Group Description
                 </p>
-                <input type="text" id="group_desc" name="group_desc" size=40 value=""><br>
+                <input type="text" id="group_desc" name="group_desc" size="80%" value=""><br>
+                <p class="section_heading">
+                    Group Name
+                </p>
+                <input type="text" id="group_name" name="group_name" size="80%" value=""><br>
+                No spaces. Spaces will be removed.
+                <p class="section_heading">
+                    Group Value
+                </p>
+                <input type="text" id="group_value" name="group_value" size="80%" value=""><br>
+                Multiple values should be comma separated.
             </td>
         </tr>
         <tr>
-            <td rowspan="2" style="vertical-align: top;">
+            <td rowspan="1" style="vertical-align: top;">
                 <p class="section_heading">
                     Group Type
                 </p>
-                <input type="radio" name="group_type" value="address-group" checked="checked">&nbsp;Address Group<br>
+                <input type="radio" name="group_type" value="address-group" checked="checked">&nbsp;Address
+                Group<br>
                 <input type="radio" name="group_type" value="domain-group">&nbsp;Domain Group<br>
                 <input type="radio" name="group_type" value="interface-group">&nbsp;Interface Group<br>
                 <input type="radio" name="group_type" value="mac-group">&nbsp;Mac Group<br>
                 <input type="radio" name="group_type" value="network-group">&nbsp;Network Group<br>
                 <input type="radio" name="group_type" value="port-group">&nbsp;Port Group<br>
             </td>
-            <td style="vertical-align: top;">
-                <p class="section_heading">
-                    Group Name
-                </p>
-                <input type="text" id="group_name" name="group_name" size=40 value=""><br>
-                No spaces. Spaces will be removed.
-            </td>
-        <tr>
-            <td style="vertical-align: top;">
-                <p class="section_heading">
-                    Group Value
-                </p>
-                <input type="text" id="group_value" name="group_value" size=40 value=""><br>
-                Multiple values should be comma separated.
-            </td>
         </tr>
         <tr>
-            <td align="right" colspan="5">
+            <td align="right" colspan="2">
                 <input type="submit" value="Add Group">
             </td>
         </tr>
