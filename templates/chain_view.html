@@ -81,7 +81,7 @@
         States
     </th>
 
-    <th colspan="2" width="90px">
+    <th width="45px">
         Action
     </th>
 
@@ -116,13 +116,6 @@
             {% else %}
             {{rule.protocol}}
             {% endif %}
-        </td>
-
-        <td align="center" rowspan="2">
-            <form action="/chain_rule_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" style="height: 150; width: 20;">
-            </form>
         </td>
 
         <td align="center" rowspan="2">
@@ -186,6 +179,14 @@
         </td>
     </tr>
     {% endfor %}
+    <tr>
+        <td colspan="11">
+            <form action="/chain_rule_add" , method="get">
+                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Rule">
+            </form>
+        </td>
+    </tr>
 </table>
 {% endfor %}
 {% endif %}
@@ -234,7 +235,7 @@
         States
     </th>
 
-    <th colspan="2" width="90px">
+    <th width="45px">
         Action
     </th>
 
@@ -269,13 +270,6 @@
             {% else %}
             {{rule.protocol}}
             {% endif %}
-        </td>
-
-        <td align="center" rowspan="2">
-            <form action="/chain_rule_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" style="height: 150; width: 20;">
-            </form>
         </td>
 
         <td align="center" rowspan="2">
@@ -339,6 +333,14 @@
         </td>
     </tr>
     {% endfor %}
+    <tr>
+        <td colspan="11" align="center" rowspan="2">
+            <form action="/chain_rule_add" , method="get">
+                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Rule">
+            </form>
+        </td>
+    </tr>
 </table>
 {% endfor %}
 {% endif %}
