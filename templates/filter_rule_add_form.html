@@ -25,6 +25,7 @@
                 </p>
                 <label for="filter">Filter&nbsp;</label>
                 <select name="filter" id="filter">
+                    <option value="{{filter_name}}">{{filter_name | replace(",", ": ")}}</option>
                     {% for filter in filter_list %}
                     <option value='{{filter[0]}},{{filter[1]}}'>
                         {{filter[0]}}: {{filter[1]}}

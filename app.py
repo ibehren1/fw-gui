@@ -376,6 +376,12 @@ def filter_rule_add():
         file_list = list_user_files(session)
         filter_list = assemble_list_of_filters(session)
         chain_list = assemble_list_of_chains(session)
+
+        if request.args.get("filter"):
+            filter = request.args.get("filter")
+        else:
+            filter = ""
+
         if filter_list == []:
             return redirect(url_for("filter_add"))
         if chain_list == []:
@@ -389,6 +395,7 @@ def filter_rule_add():
             "filter_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            filter_name=filter,
             filter_list=filter_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
