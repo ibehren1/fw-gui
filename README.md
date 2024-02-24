@@ -106,4 +106,3 @@ volumes:
 ![image](./images/fw-gui_interface_2.png)
 ![image](./images/fw-gui_interface_3.png)
 ![image](./images/fw-gui_interface_4.png)
-![image](./images/fw-gui_interface_5.png)
