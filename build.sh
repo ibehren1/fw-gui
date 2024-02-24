@@ -22,3 +22,5 @@ docker buildx build \
     --no-cache --push \
     --tag ${DOCKER_USER}/fw-gui:latest \
     --tag ${DOCKER_USER}/fw-gui:${VERSION} . 
+
+echo "Build complete"
