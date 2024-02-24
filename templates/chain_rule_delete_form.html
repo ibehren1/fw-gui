@@ -2,32 +2,34 @@
 {% block body %}
 <br><br>
 <table class="table">
+    <tr>
+        <th colspan="5" align="left">
+            <h2> Delete Firewall Rule </h2>
+        </th>
+    </tr>
+    <tr>
+        <td colspan="2">
+            For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
+            apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
+            through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
+            be executed.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
+                class="docs_link">
+                Docs&#x2197
+            </a>
+        </td>
+    </tr>
+</table>
+<br>
+<table class="table" border="1" width="100%">
     <form action="/chain_rule_delete" , method="post">
-        <tr>
-            <th colspan="5" align="left">
-                <h2> Delete Firewall Rule </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="2">
-                For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
-                apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
-                through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
-                be executed.
-                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/ipv4.html" target=”_blank”
-                    class="docs_link">
-                    Docs&#x2197
-                </a>
-            </td>
-        </tr>
         <tr>
             <td>
                 <p class="section_heading">
                     Rule
                 </p>
-                Choose rule to delete.&nbsp;
-                <label for="fw_chain"></label>
-                <select name="rule" id="rule">
+                Choose rule to delete.<br>
+                <select name="rule" id="rule" width="100%">
                     <option value=""></option>
                     {% for rule in rule_list %}
                     <option value='{{rule[0]}},{{rule[1]}},{{rule[2]}}'>

@@ -2,29 +2,32 @@
 {% block body %}
 <br><br>
 <table class="table">
+    <tr>
+        <th align="left">
+            <h2> Add Filter Rule </h2>
+        </th>
+    </tr>
+    <tr>
+        <td>
+            Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
+            Filters exist primarily just to jump to a chain of interface and direction specific rules.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
+                class="docs_link">
+                Docs&#x2197
+            </a>
+        </td>
+    </tr>
+</table>
+<br>
+<table class="table" border="1">
     <form action="/filter_rule_add" , method="post">
         <tr>
-            <th colspan="5" align="left">
-                <h2> Add Filter Rule </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="4">
-                Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
-                Filters exist primarily just to jump to a chain of interface and direction specific rules.
-                <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                    class="docs_link">
-                    Docs&#x2197
-                </a>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="4">
+            <td colspan="4" width="100%">
                 <p class="section_heading">
                     Filter
                 </p>
                 <label for="filter">Filter&nbsp;</label>
-                <select name="filter" id="filter">
+                <select name="filter" id="filter" width="50%">
                     <option value="{{filter_name}}">{{filter_name | replace(",", ": ")}}</option>
                     {% for filter in filter_list %}
                     <option value='{{filter[0]}},{{filter[1]}}'>
@@ -35,28 +38,27 @@
             </td>
         </tr>
         <tr>
-            <td>
+            <td width="20%">
                 <p class="section_heading">
                     Rule Number
                 </p>
                 <label for="rule">Number&nbsp;</label>
-                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
+                <input type="text" id="rule" name="rule" maxlength="6" size="6" value=""><br>
             </td>
-            <td>
+            <td width="40%">
                 <p class="section_heading">
                     Description
                 </p>
-                <label for="rule">Description&nbsp;</label>
-                <input type="text" id="description" name="description" size="25" value=""><br>
+                <input type="text" id="description" name="description" size="40" value=""><br>
             </td>
-            <td>
+            <td width="15%">
                 <p class="section_heading">
                     Disable
                 </p>
                 <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
                 <label for="rule_disable">&nbsp;Disable</label>
             </td>
-            <td>
+            <td width="15%">
                 <p class="section_heading">
                     Logging
                 </p>
@@ -65,17 +67,17 @@
             </td>
         </tr>
         <tr>
-            <td style="vertical-align: top;">
+            <td style="vertical-align: top;" width="20%">
                 <p class="section_heading">
                     Action
                 </p>
                 <input type="radio" name="action" value="jump" checked="checked">&nbsp;jump<br>
             </td>
-            <td style="vertical-align: top;">
+            <td style="vertical-align: top;" width="40%">
                 <p class="section_heading">
                     Jump Target
                 </p>
-                <label for="jump_target">Jump Target&nbsp;</label>
+                <label for="jump_target">Chain&nbsp;</label>
                 <select name="jump_target" id="jump_target">
                     <option value=""></option>
                     {% for chain in chain_list %}
@@ -89,7 +91,7 @@
                 <p class="section_heading">
                     Interface
                 </p>
-                <table>
+                <table width="100%">
                     <tr>
                         <td>
                             <label for="rule">Interface&nbsp;</label>
@@ -112,7 +114,7 @@
             </td>
         </tr>
         <tr>
-            <td align="right" colspan="5">
+            <td align="right" colspan="4">
                 <input type="submit" value="Add Filter Rule">
             </td>
         </tr>
