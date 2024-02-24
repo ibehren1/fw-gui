@@ -135,8 +135,8 @@ def assemble_list_of_filters(session):
             if ip_version in user_data:
                 for type in user_data[ip_version]["filters"]:
                     filter_list.append([ip_version, type])
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
     # If there are no filters, flash message
     if filter_list == []:
@@ -166,8 +166,8 @@ def assemble_list_of_filter_rules(session):
                                 ],
                             ]
                         )
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     # If there are no rules, flash message
     if rule_list == []:
@@ -200,14 +200,14 @@ def delete_filter_rule_from_data(session, request):
 
     # Clean-up data
     try:
-        if len(user_data[ip_version]["filters"][filter]["rule-order"]) == 0:
+        if not user_data[ip_version]["filters"][filter]["rule-order"]:
             del user_data[ip_version]["filters"][filter]
-        if len(user_data[ip_version]["filters"]) == 0:
+        if not user_data[ip_version]["filters"]:
             del user_data[ip_version]["filters"]
-        if len(user_data[ip_version]) == 0:
+        if not user_data[ip_version]:
             del user_data[ip_version]
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)

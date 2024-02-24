@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import flash
 from flask_login import login_user
 import os
+import subprocess
 
 
 #
@@ -70,7 +71,9 @@ def process_login(bcrypt, db, request, User):
             data_dir = f"data/{username}"
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
-                os.system(f"cp examples/example.json {data_dir}/example.json")
+                subprocess.run(
+                    ["cp", "examples/example.json", f"{data_dir}/example.json"]
+                )
         else:
             print(
                 f'{datetime.now()} User <{request.form["username"]}> attempted login with incorrect password.'

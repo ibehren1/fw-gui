@@ -70,8 +70,8 @@ def assemble_detail_list_of_groups(session):
                                 "group_value": item["group_value"],
                             }
                         )
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     # If there are no groups, flash message
     if group_list_detail == []:
@@ -92,8 +92,8 @@ def assemble_list_of_groups(session):
                 if "groups" in user_data[ip_version]:
                     for group in user_data[ip_version]["groups"]:
                         group_list.append([ip_version, group])
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     # If there are no groups, flash message
     if group_list == []:
@@ -121,12 +121,12 @@ def delete_group_from_data(session, request):
 
     # Clean-up data
     try:
-        if len(user_data[ip_version]["groups"]) == 0:
+        if not user_data[ip_version]["groups"]:
             del user_data[ip_version]["groups"]
-        if len(user_data[ip_version]) == 0:
+        if not user_data[ip_version]:
             del user_data[ip_version]
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)

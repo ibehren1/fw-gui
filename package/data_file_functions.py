@@ -8,6 +8,7 @@ import json
 import os
 import random
 import string
+import subprocess
 
 
 #
@@ -154,7 +155,7 @@ def initialize_data_dir():
 
     if not os.path.exists("data/example.json"):
         print(" |\n |--> Example data file not found, copying...")
-        os.system("cp examples/example.json data/example.json")
+        subprocess.run(["cp", "examples/example.json", "data/example.json"])
 
     if not os.path.exists("./data/database/auth.db"):
         print(" |\n |--> Auth database not found, creating...")
@@ -332,13 +333,13 @@ def update_schema(user_data):
 def write_user_command_conf_file(session, command_list, delete=False):
     print(f"Delete_before_set: {delete}")
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
-        if delete == True:
+        if delete is True:
             f.write(
                 f"#\n# Delete all firewall before setting new values\ndelete firewall\n"
             )
             for line in command_list:
                 f.write(f"{line}\n")
-        if delete == False:
+        if delete is False:
             for line in command_list:
                 f.write(f"{line}\n")
     return

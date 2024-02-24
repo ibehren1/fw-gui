@@ -71,7 +71,7 @@ def get_diffs_from_firewall(connection_string, session):
         vyos_router.close()
         print(" |--> Connection closed.\n |")
 
-        if bool(diffs) == True:
+        if bool(diffs) is True:
             return diffs
         else:
             return "No configuration changes to commit."
@@ -84,7 +84,7 @@ def get_diffs_from_firewall(connection_string, session):
 
     finally:
         # Delete key
-        if tmpfile != None:
+        if tmpfile is None:
             os.remove(tmpfile)
 
 
@@ -107,14 +107,14 @@ def commit_to_firewall(connection_string, session):
         print(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
 
-        if bool(diffs) == True:
+        if bool(diffs) is True:
             print(" |--> Committing configuration")
             commit = vyos_router.commit_config()
 
             print(" |--> Connection closed.\n |")
             vyos_router.close()
 
-            if commit == None:
+            if commit is None:
                 return str(diffs + "Commit successful.")
             else:
                 return str(diffs + commit)
@@ -142,6 +142,7 @@ def commit_to_firewall(connection_string, session):
 def test_connection(session):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        s.settimeout(20)
         s.connect((session["hostname"], int(session["port"])))
         s.shutdown(2)
         flash(
