@@ -19,7 +19,6 @@ docker buildx inspect \
 
 docker buildx build \
     --platform=linux/arm64,linux/amd64 \
-    --no-cache \
+    --no-cache --push \
     --tag ${DOCKER_USER}/fw-gui:latest \
-    --tag ${DOCKER_USER}/fw-gui:${VERSION} . \
-    # --push
+    --tag ${DOCKER_USER}/fw-gui:${VERSION} . 

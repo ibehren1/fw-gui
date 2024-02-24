@@ -69,6 +69,9 @@ import os
 # App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
+with open(".version", "r") as f:
+    os.environ["FWGUI_VERSION"] = f.read()
+
 app = Flask(__name__)
 app.secret_key = "this is the secret key"
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
@@ -654,10 +657,9 @@ def upload_json():
 if __name__ == "__main__":
     # Read version from .version and set env var
     with open(".version", "r") as f:
-        # version = f.read()
         os.environ["FWGUI_VERSION"] = f.read()
         print(
-            f"\n**************************\n* FW-GUI version: {os.environ['FWGUI_VERSION']} *\n**************************\n"
+            f"\n**************************\n* FW-GUI version: {os.environ.get('FWGUI_VERSION')} *\n**************************\n"
         )
 
     # Initialize Data Directory
