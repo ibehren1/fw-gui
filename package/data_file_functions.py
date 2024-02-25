@@ -8,7 +8,9 @@ import json
 import os
 import random
 import string
-import subprocess
+
+# B404 -- security implications considered.
+import subprocess  # nosec
 
 
 #
@@ -78,8 +80,9 @@ def decrypt_file(filename, key):
     # decrypting the file
     decrypted = fernet.decrypt(encrypted)
 
+    # B311 -- Use of pseudo-random generator is not for security purposes.
     tmp_file_name = "data/tmp/" + "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=6)
+        random.choices(string.ascii_uppercase + string.digits, k=6)  # nosec
     )
 
     # opening the file in write mode and
@@ -89,11 +92,6 @@ def decrypt_file(filename, key):
         dec_file.close()
 
     return f"{tmp_file_name}"
-    # except Exception as e:
-    #     print(f" |--X Error: {e}")
-    #     flash("Authentication error.", "danger")
-    #     print(" |")
-    #     return "Auth Error"
 
 
 #
@@ -155,7 +153,9 @@ def initialize_data_dir():
 
     if not os.path.exists("data/example.json"):
         print(" |\n |--> Example data file not found, copying...")
-        subprocess.run(["cp", "examples/example.json", "data/example.json"])
+        # B603 -- No untrusted input
+        # B607 -- Cmd is partial executable path for compatibility between OSes.
+        subprocess.run(["cp", "examples/example.json", "data/example.json"])  # nosec
 
     if not os.path.exists("./data/database/auth.db"):
         print(" |\n |--> Auth database not found, creating...")

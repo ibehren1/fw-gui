@@ -21,12 +21,13 @@ def assemble_driver_string(connection_string, session):
         optional_args["key_file"] = tmp_key_name
 
         return (
+            # B106 -- Not a hardcoded password.
             driver(
                 hostname=connection_string["hostname"],
                 username=connection_string["username"],
                 password="",
                 optional_args=optional_args,
-            ),
+            ),  # nosec
             tmp_key_name,
         )
 

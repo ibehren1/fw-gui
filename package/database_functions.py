@@ -6,7 +6,9 @@ from datetime import datetime
 from flask import flash
 from flask_login import login_user
 import os
-import subprocess
+
+# B404 -- security implications considered.
+import subprocess  # nosec
 
 
 #
@@ -18,7 +20,8 @@ def change_password(bcrypt, db, User, username, request):
     confirm_password = request.form["confirm_password"]
 
     # Basic Validations
-    if new_password == "":
+    # B105 -- Not a hardcoded password.
+    if new_password == "":  # nosec
         flash("New password cannot be empty.", "danger")
         return False
     if new_password == username:
@@ -71,9 +74,10 @@ def process_login(bcrypt, db, request, User):
             data_dir = f"data/{username}"
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
+                # B607 -- Cmd is partial executable path for compatibility between OSes.
                 subprocess.run(
                     ["cp", "examples/example.json", f"{data_dir}/example.json"]
-                )
+                )  # nosec
         else:
             print(
                 f'{datetime.now()} User <{request.form["username"]}> attempted login with incorrect password.'
@@ -124,7 +128,8 @@ def register_user(bcrypt, db, request, User):
         flash("Email cannot be empty.", "danger")
         return False
 
-    if password == "":
+    # B105 -- Not a hardcoded password.
+    if password == "":  # nosec
         flash("Password cannot be empty", "danger")
         return False
     else:
