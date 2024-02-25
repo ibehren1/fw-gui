@@ -7,5 +7,6 @@ flask_sqlalchemy
 Jinja2
 napalm
 napalm-vyos
+python-dotenv
 waitress
 werkzeug
