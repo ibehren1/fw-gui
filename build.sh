@@ -1,14 +1,30 @@
 #!/bin/bash
+# Script to run Docker build.
 
-# Source the .env to set the version number
-. .env
+# Determine which tag to apply to image.
+if [ "${1}" == "Prod" ]; then
+   BUILD_TYPE="Prod" 
+else
+   BUILD_TYPE="Dev" 
+fi
 
-echo "Building version: ${VERSION}"
+# Read the version number.
+VERSION=$(<.version)
+echo -e "\nBuilding version: ${VERSION}:${BUILD_TYPE}\n"
+
+# Run the bandit security scan on the codebase.
+echo -e "\nRunning Bandit security scan on codebase.\n"
+bandit -r .
+if [ $? -ne 0 ]; then
+    echo -e "\n***\n*\n*   Error - Bandit security scan failed. Exiting.\n*\n***"
+    exit 1
+fi
+echo -e "\nBandit security scan completed.\n"
 
 # Set the Docker Hub username and password
 docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
 
-# Build images for ARM64 and AMD64
+# Build images for ARM64 and AMD64.
 docker buildx create \
     --use \
     --platform=linux/arm64,linux/amd64 \
@@ -17,10 +33,17 @@ docker buildx create \
 docker buildx inspect \
     --bootstrap
 
-docker buildx build \
-    --platform=linux/arm64,linux/amd64 \
-    --no-cache --push \
-    --tag ${DOCKER_USER}/fw-gui:latest \
-    --tag ${DOCKER_USER}/fw-gui:${VERSION} . 
+if [ "${BUILD_TYPE}" == "Prod" ]; then
+    docker buildx build \
+        --platform=linux/arm64,linux/amd64 \
+        --no-cache --push \
+        --tag ${DOCKER_USER}/fw-gui:latest \
+        --tag ${DOCKER_USER}/fw-gui:${VERSION} . 
+else
+    docker buildx build \
+        --platform=linux/arm64,linux/amd64 \
+        --no-cache --push \
+        --tag ${DOCKER_USER}/fw-gui:dev .
+fi
 
-echo "Build complete"
+echo -e "\nBuild of ${VERSION} completed."
