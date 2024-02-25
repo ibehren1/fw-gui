@@ -11,6 +11,7 @@
 #
 # Library Imports
 from datetime import datetime
+from dotenv import load_dotenv
 from flask import flash, Flask, redirect, render_template, request, session, url_for
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
@@ -69,11 +70,13 @@ import os
 # App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
+# Load env vars from .env and .version
+load_dotenv()
 with open(".version", "r") as f:
     os.environ["FWGUI_VERSION"] = f.read()
 
 app = Flask(__name__)
-app.secret_key = "this is the secret key"
+app.secret_key = os.environ.get("APP_SECRET_KEY")
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
@@ -655,23 +658,25 @@ def upload_json():
 
 
 if __name__ == "__main__":
-    # Read version from .version and set env var
+    # Read version from .version and display
     with open(".version", "r") as f:
-        os.environ["FWGUI_VERSION"] = f.read()
         print(
-            f"\n**************************\n* FW-GUI version: {os.environ.get('FWGUI_VERSION')} *\n**************************\n"
+            f"\n**************************\n* FW-GUI version: {f.read()} *\n**************************\n"
         )
+
+    # Load Environment Vars
+    load_dotenv()
 
     # Initialize Data Directory
     initialize_data_dir()
 
-    # Look for FLASK_ENV environment variable.
-    env = os.environ.get("FLASK_ENV") or False
-
     # If environment is set, run debug, else assume PROD
-    if env:
-        app.run(debug=True, host="0.0.0.0", port="8080")
+    if os.environ.get("FLASK_ENV") == "Development":
+        # B201:A -- Intentional execution with Debug when env var set.
+        # B104 -- Intentional binding to all IPs.
+        app.run(debug=True, host="0.0.0.0", port="8080")  # nosec
 
     # Else, run app in production mode on port 8080.
     else:
-        serve(app, host="0.0.0.0", port=8080, channel_timeout=120)
+        # B104 -- Intentional binding to all IPs.
+        serve(app, host="0.0.0.0", port=8080, channel_timeout=120)  # nosec
