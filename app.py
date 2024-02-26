@@ -12,10 +12,20 @@
 # Library Imports
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import flash, Flask, redirect, render_template, request, session, url_for
+from flask import (
+    flash,
+    Flask,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
+)
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
+from io import BytesIO
 from package.chain_functions import (
     add_rule_to_data,
     add_chain_to_data,
@@ -33,9 +43,12 @@ from package.database_functions import (
 from package.data_file_functions import (
     add_extra_items,
     add_hostname,
+    create_backup,
     get_extra_items,
     get_system_name,
     initialize_data_dir,
+    list_full_backups,
+    list_user_backups,
     list_user_files,
     list_user_keys,
     process_upload,
@@ -111,6 +124,56 @@ def load_user(user_id):
 @login_required
 def index():
     return redirect(url_for("display_config"))
+
+
+#
+# Administration Settings
+@app.route("/admin_settings", methods=["GET", "POST"])
+@login_required
+def admin_settings():
+    if request.method == "POST":
+        if "backup" in request.form:
+            if request.form["backup"] == "full_backup":
+                create_backup()
+
+            if request.form["backup"] == "user_backup":
+                create_backup(session["username"])
+
+            backup_list = list_user_backups(session)
+            file_list = list_user_files(session)
+            full_backup_list = list_full_backups(session)
+
+        return render_template(
+            "admin_settings_form.html",
+            backup_list=backup_list,
+            file_list=file_list,
+            full_backup_list=full_backup_list,
+            username=session["username"],
+        )
+
+    else:
+        backup_list = list_user_backups(session)
+        file_list = list_user_files(session)
+        full_backup_list = list_full_backups(session)
+
+        return render_template(
+            "admin_settings_form.html",
+            backup_list=backup_list,
+            file_list=file_list,
+            full_backup_list=full_backup_list,
+            username=session["username"],
+        )
+
+
+@app.route("/download", methods=["POST"])
+@login_required
+def download():
+    path = request.form["path"]
+    filename = request.form["filename"]
+
+    with open(path + filename, "rb") as f:
+        data = f.read()
+    return send_file(BytesIO(data), download_name=filename, as_attachment=True)
 
 
 #

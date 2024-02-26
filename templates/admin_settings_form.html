@@ -1,0 +1,64 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<br><br>
+<table class="table" border="0">
+    <tr>
+        <td colspan="2" align="left">
+            <p class="section_heading">Create Full Backup</p>
+        </td>
+    </tr>
+    <tr>
+        <td width="75%">
+            Press button to create a full backup of the data directory.<br><br>
+            The backup will be created in the data/backups directory and must be accessed via operating system level
+            access to the filesystem.
+        </td>
+        <td align="center" width="25%">
+            <form action="/admin_settings" method=post enctype=multipart/form-data>
+                <input type="hidden" id="backup" name="backup" value="full_backup">
+                <input class="button" type="submit" value="Create Full Backup" style="width: 100%;">
+            </form>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <li class="li"><b>Existing Full Backups</b></li>
+            {% for file in full_backup_list%}
+            <ul class="ul">
+                {{file}}
+            </ul>
+            {% endfor %}
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" align="left">
+            <p class="section_heading">Create User Backup</p>
+        </td>
+    </tr>
+    <tr>
+        <td width="75%">
+            Press button to create a backup of the users data directory.<br><br>
+            The backup will be created in the users directory and can be downloaded by clicking the link below.
+        </td>
+        <td width="25%">
+            <form action="/admin_settings" method=post enctype=multipart/form-data>
+                <input type="hidden" id="backup" name="backup" value="user_backup">
+                <input class="button" type="submit" value="Create User Backup" size="25%">
+            </form>
+        </td>
+    </tr>
+    <td colspan="2">
+        <li class="li"><b>Existing User Backups</b></li>
+        {% for file in backup_list%}
+        <ul class="ul">
+            <form action="/download" method=post>
+                <input type="hidden" id="path" name="path" value="data/{{username}}/">
+                <input type="hidden" id="filename" name="filename" value="{{file}}">
+                <a class="link_yellow" href="#" onclick="this.parentNode.submit()">{{file}}</a>
+            </form>
+        </ul>
+        {% endfor %}
+    </td>
+</table>
+<br><br>
+{% endblock body %}

@@ -3,6 +3,7 @@
 """
 
 from cryptography.fernet import Fernet
+from datetime import datetime
 from flask import app, flash, redirect, url_for
 import json
 import os
@@ -64,6 +65,60 @@ def add_hostname(session, reqest):
 # Determine if a file is a JSON file
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ["json", "key"]
+
+
+#
+# Create backup of data dir or user dir
+def create_backup(user=None):
+    timestamp = str(datetime.now()).replace(" ", "-")
+    if user is None:
+        try:
+            # B607 -- Cmd is partial executable path for compatibility between OSes.
+            subprocess.run(
+                [
+                    "zip",
+                    "-r",
+                    f"data/backups/full-backup-{timestamp}.zip",
+                    "data/",
+                    "-x",
+                    "data/backups/*",
+                    "-x",
+                    "data/tmp/*",
+                    "-x",
+                    "data/uploads/*",
+                ]
+            )  # nosec
+            flash(
+                f"Backup created: data/backups/full-backup-{timestamp}.zip", "success"
+            )
+
+        except Exception as e:
+            print(e)
+            flash(f"Backup failed.", "critical")
+
+    else:
+        try:
+            # B607 -- Cmd is partial executable path for compatibility between OSes.
+            subprocess.run(
+                [
+                    "zip",
+                    "-r",
+                    f"data/{user}/user-{user}-backup-{timestamp}.zip",
+                    f"data/{user}",
+                    "-x",
+                    f"data/{user}/*.zip",
+                ]
+            )  # nosec
+            flash(
+                f"Backup created: data/{user}/user-{user}-backup-{timestamp}.zip",
+                "success",
+            )
+
+        except Exception as e:
+            print(e)
+            flash(f"Backup failed.", "critical")
+
+    return
 
 
 #
@@ -139,6 +194,10 @@ def initialize_data_dir():
         print(" |\n |--> Data directory not found, creating...")
         os.makedirs("data")
 
+    if not os.path.exists("data/backups"):
+        print(" |\n |--> Backups directory not found, creating...")
+        os.makedirs("data/backups")
+
     if not os.path.exists("data/database"):
         print(" |\n |--> Database directory not found, creating...")
         os.makedirs("data/database")
@@ -166,6 +225,38 @@ def initialize_data_dir():
 
     print(" |\n |--> Data directory initialized.\n |")
     return
+
+
+#
+# Return a list of backups in the user's data directory
+def list_full_backups(session):
+    full_backup_list = []
+
+    files = os.listdir(f"data/backups")
+
+    for file in files:
+        if ".zip" in file:
+            full_backup_list.append(file)
+
+    full_backup_list.sort()
+
+    return full_backup_list
+
+
+#
+# Return a list of backups in the user's data directory
+def list_user_backups(session):
+    backup_list = []
+
+    files = os.listdir(f"{session['data_dir']}")
+
+    for file in files:
+        if ".zip" in file:
+            backup_list.append(file)
+
+    backup_list.sort()
+
+    return backup_list
 
 
 #

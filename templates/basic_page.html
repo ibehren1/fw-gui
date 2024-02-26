@@ -38,9 +38,14 @@
                 {% endif %}
             </td>
             <td align="right">
+                <a href="{{ url_for('admin_settings')}}">
+                    <input class="button" type="submit" value="Admin Settings" style="width: 130px">
+                </a>
+
                 <a href="{{ url_for('user_change_password')}}">
                     <input class="button" type="submit" value="Change Password" style="width: 130px">
                 </a>
+
                 <a href="{{ url_for('user_logout')}}">
                     <input class="button" type="submit" value="Logout" style="width: 80px">
                 </a>
