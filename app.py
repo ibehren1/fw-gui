@@ -134,10 +134,10 @@ def admin_settings():
     if request.method == "POST":
         if "backup" in request.form:
             if request.form["backup"] == "full_backup":
-                create_backup()
+                create_backup(session)
 
             if request.form["backup"] == "user_backup":
-                create_backup(session["username"])
+                create_backup(session, True)
 
             backup_list = list_user_backups(session)
             file_list = list_user_files(session)

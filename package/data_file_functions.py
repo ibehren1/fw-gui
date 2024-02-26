@@ -69,9 +69,9 @@ def allowed_file(filename):
 
 #
 # Create backup of data dir or user dir
-def create_backup(user=None):
+def create_backup(session, user=False):
     timestamp = str(datetime.now()).replace(" ", "-")
-    if user is None:
+    if user is False:
         try:
             # B607 -- Cmd is partial executable path for compatibility between OSes.
             subprocess.run(
@@ -88,6 +88,9 @@ def create_backup(user=None):
                     "data/uploads/*",
                 ]
             )  # nosec
+            print(
+                f'{datetime.now()} User <{session["username"]}> created a full backup.'
+            )
             flash(
                 f"Backup created: data/backups/full-backup-{timestamp}.zip", "success"
             )
@@ -97,6 +100,7 @@ def create_backup(user=None):
             flash(f"Backup failed.", "critical")
 
     else:
+        user = session["username"]
         try:
             # B607 -- Cmd is partial executable path for compatibility between OSes.
             subprocess.run(
@@ -109,6 +113,9 @@ def create_backup(user=None):
                     f"data/{user}/*.zip",
                 ]
             )  # nosec
+            print(
+                f'{datetime.now()} User <{session["username"]}> created a user backup.'
+            )
             flash(
                 f"Backup created: data/{user}/user-{user}-backup-{timestamp}.zip",
                 "success",
