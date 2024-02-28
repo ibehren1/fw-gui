@@ -78,11 +78,23 @@ from package.napalm_functions import (
 from waitress import serve
 import logging
 import os
+import sys
 
+#
+# Create handlers for logfile and stdout
+handlers = []
+if os.path.exists("data/log"):
+    file_handler = logging.FileHandler(filename="data/log/app.log")
+    handlers.append(file_handler)
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+handlers.append(stdout_handler)
+
+#
+# Setup logging and direct to both handlers
 logging.basicConfig(
     encoding="utf-8",
-    filename="app.log",
-    format="%(asctime)s:%(levelname)s: %(message)s",
+    format="%(asctime)s:%(levelname)s:\t%(message)s",
+    handlers=handlers,
     level=logging.INFO,
 )
 
@@ -731,9 +743,6 @@ if __name__ == "__main__":
     # Read version from .version and display
     with open(".version", "r") as f:
         logging.info(f"----------------- FW-GUI version: {f.read()} -----------------")
-        print(
-            f"\n\n**************************\n* FW-GUI version: {f.read()} *\n**************************\n"
-        )
 
     # Load Environment Vars
     load_dotenv()

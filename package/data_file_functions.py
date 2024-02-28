@@ -33,8 +33,6 @@ def add_extra_items(session, request):
         if item != "":
             extra_items.append(item)
 
-    logging.info(extra_items)
-
     if extra_items == default_extra_items:
         logging.info("MATCH")
         flash(f"There are no extra configuration items to add.", "warning")
@@ -89,9 +87,7 @@ def create_backup(session, user=False):
                     "data/uploads/*",
                 ]
             )  # nosec
-            logging.info(
-                f'{datetime.now()} User <{session["username"]}> created a full backup.'
-            )
+            logging.info(f'User <{session["username"]}> created a full backup.')
             flash(
                 f"Backup created: data/backups/full-backup-{timestamp}.zip", "success"
             )
@@ -114,9 +110,7 @@ def create_backup(session, user=False):
                     f"data/{user}/*.zip",
                 ]
             )  # nosec
-            logging.info(
-                f'{datetime.now()} User <{session["username"]}> created a user backup.'
-            )
+            logging.info(f'User <{session["username"]}> created a user backup.')
             flash(
                 f"Backup created: data/{user}/user-{user}-backup-{timestamp}.zip",
                 "success",
@@ -205,6 +199,10 @@ def initialize_data_dir():
     if not os.path.exists("data/backups"):
         logging.info(" |--> Backups directory not found, creating...")
         os.makedirs("data/backups")
+
+    if not os.path.exists("data/log"):
+        logging.info(" |--> Log directory not found, creating...")
+        os.makedirs("data/log")
 
     if not os.path.exists("data/database"):
         logging.info(" |--> Database directory not found, creating...")
@@ -430,7 +428,6 @@ def update_schema(user_data):
 #
 # Write User commands.conf file
 def write_user_command_conf_file(session, command_list, delete=False):
-    logging.info(f"Delete_before_set: {delete}")
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
         if delete is True:
             f.write(

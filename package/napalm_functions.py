@@ -53,7 +53,8 @@ def get_diffs_from_firewall(connection_string, session):
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
         return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
 
-    logging.info(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.info(" |------------")
+    logging.info(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
     logging.info(" |--> Configuring driver")
 
     vyos_router = driver
@@ -71,7 +72,8 @@ def get_diffs_from_firewall(connection_string, session):
 
         vyos_router.discard_config()
         vyos_router.close()
-        logging.info(" |--> Connection closed.\n |")
+        logging.info(" |--> Connection closed.")
+        logging.info(" |------------")
 
         if bool(diffs) is True:
             return diffs
@@ -81,7 +83,7 @@ def get_diffs_from_firewall(connection_string, session):
     except Exception as e:
         logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        logging.info(" |")
+        logging.info(" |------------")
         return e
 
     finally:
@@ -93,7 +95,8 @@ def get_diffs_from_firewall(connection_string, session):
 def commit_to_firewall(connection_string, session):
     driver, tmpfile = assemble_driver_string(connection_string, session)
 
-    logging.info(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.info(" |------------")
+    logging.info(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
     logging.info(" |--> Configuring driver")
 
     vyos_router = driver
@@ -125,14 +128,15 @@ def commit_to_firewall(connection_string, session):
             logging.info(" |--> No configuration changes to commit")
             vyos_router.discard_config()
 
-            logging.info(" |--> Connection closed.\n |")
+            logging.info(" |--> Connection closed.")
+            logging.info(" |------------")
             vyos_router.close()
             return "No configuration changes to commit."
 
     except Exception as e:
         logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        logging.info(" |")
+        logging.info(" |------------")
         return e
 
     finally:
