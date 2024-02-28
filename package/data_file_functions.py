@@ -6,6 +6,7 @@ from cryptography.fernet import Fernet
 from datetime import datetime
 from flask import app, flash, redirect, url_for
 import json
+import logging
 import os
 import random
 import string
@@ -32,10 +33,10 @@ def add_extra_items(session, request):
         if item != "":
             extra_items.append(item)
 
-    print(extra_items)
+    logging.info(extra_items)
 
     if extra_items == default_extra_items:
-        print("MATCH")
+        logging.info("MATCH")
         flash(f"There are no extra configuration items to add.", "warning")
         return
     else:
@@ -88,7 +89,7 @@ def create_backup(session, user=False):
                     "data/uploads/*",
                 ]
             )  # nosec
-            print(
+            logging.info(
                 f'{datetime.now()} User <{session["username"]}> created a full backup.'
             )
             flash(
@@ -96,7 +97,7 @@ def create_backup(session, user=False):
             )
 
         except Exception as e:
-            print(e)
+            logging.info(e)
             flash(f"Backup failed.", "critical")
 
     else:
@@ -113,7 +114,7 @@ def create_backup(session, user=False):
                     f"data/{user}/*.zip",
                 ]
             )  # nosec
-            print(
+            logging.info(
                 f'{datetime.now()} User <{session["username"]}> created a user backup.'
             )
             flash(
@@ -122,7 +123,7 @@ def create_backup(session, user=False):
             )
 
         except Exception as e:
-            print(e)
+            logging.info(e)
             flash(f"Backup failed.", "critical")
 
     return
@@ -195,42 +196,42 @@ def get_system_name(session):
 #
 # Initialize the data directory at App start
 def initialize_data_dir():
-    print("Initializing Data Directory...")
+    logging.info("Initializing Data Directory...")
 
     if not os.path.exists("data"):
-        print(" |\n |--> Data directory not found, creating...")
+        logging.info(" |--> Data directory not found, creating...")
         os.makedirs("data")
 
     if not os.path.exists("data/backups"):
-        print(" |\n |--> Backups directory not found, creating...")
+        logging.info(" |--> Backups directory not found, creating...")
         os.makedirs("data/backups")
 
     if not os.path.exists("data/database"):
-        print(" |\n |--> Database directory not found, creating...")
+        logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
 
     if not os.path.exists("data/tmp"):
-        print(" |\n |--> Tmp directory not found, creating...")
+        logging.info(" |--> Tmp directory not found, creating...")
         os.makedirs("data/tmp")
 
     if not os.path.exists("data/uploads"):
-        print(" |\n |--> Uploads directory not found, creating...")
+        logging.info(" |--> Uploads directory not found, creating...")
         os.makedirs("data/uploads")
 
     if not os.path.exists("data/example.json"):
-        print(" |\n |--> Example data file not found, copying...")
+        logging.info(" |--> Example data file not found, copying...")
         # B603 -- No untrusted input
         # B607 -- Cmd is partial executable path for compatibility between OSes.
         subprocess.run(["cp", "examples/example.json", "data/example.json"])  # nosec
 
     if not os.path.exists("./data/database/auth.db"):
-        print(" |\n |--> Auth database not found, creating...")
+        logging.info(" |--> Auth database not found, creating...")
         from app import app, db
 
         with app.app_context():
             db.create_all()
 
-    print(" |\n |--> Data directory initialized.\n |")
+    logging.info(" |--> Data directory initialized.")
     return
 
 
@@ -429,7 +430,7 @@ def update_schema(user_data):
 #
 # Write User commands.conf file
 def write_user_command_conf_file(session, command_list, delete=False):
-    print(f"Delete_before_set: {delete}")
+    logging.info(f"Delete_before_set: {delete}")
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
         if delete is True:
             f.write(

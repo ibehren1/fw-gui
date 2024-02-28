@@ -4,6 +4,7 @@
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from flask import flash
+import logging
 
 
 def add_group_to_data(session, request):
@@ -39,7 +40,7 @@ def add_group_to_data(session, request):
     user_data[ip_version]["groups"][group_name]["group_type"] = group_type
     user_data[ip_version]["groups"][group_name]["group_value"] = group_value_list
 
-    # print(json.dumps(user_data, indent=4))
+    # logging.info(json.dumps(user_data, indent=4))
 
     # Write user_data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
@@ -71,7 +72,7 @@ def assemble_detail_list_of_groups(session):
                             }
                         )
     except Exception as e:
-        print(e)
+        logging.info(e)
 
     # If there are no groups, flash message
     if group_list_detail == []:
@@ -93,7 +94,7 @@ def assemble_list_of_groups(session):
                     for group in user_data[ip_version]["groups"]:
                         group_list.append([ip_version, group])
     except Exception as e:
-        print(e)
+        logging.info(e)
 
     # If there are no groups, flash message
     if group_list == []:
@@ -126,7 +127,7 @@ def delete_group_from_data(session, request):
         if not user_data[ip_version]:
             del user_data[ip_version]
     except Exception as e:
-        print(e)
+        logging.info(e)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)

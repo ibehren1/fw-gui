@@ -4,6 +4,7 @@
 
 from package.data_file_functions import read_user_data_file
 import json
+import logging
 
 
 def download_json_data(session):

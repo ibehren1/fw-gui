@@ -5,6 +5,7 @@
 from flask import flash
 from napalm import get_network_driver
 from package.data_file_functions import decrypt_file
+import logging
 import socket
 import os
 
@@ -52,12 +53,12 @@ def get_diffs_from_firewall(connection_string, session):
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
         return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
 
-    print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
-    print(" |--> Configuring driver")
+    logging.info(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.info(" |--> Configuring driver")
 
     vyos_router = driver
 
-    print(" |--> Opening connection")
+    logging.info(" |--> Opening connection")
 
     try:
         vyos_router.open()
@@ -65,12 +66,12 @@ def get_diffs_from_firewall(connection_string, session):
             filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
         )
 
-        print(" |--> Comparing configuration")
+        logging.info(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
 
         vyos_router.discard_config()
         vyos_router.close()
-        print(" |--> Connection closed.\n |")
+        logging.info(" |--> Connection closed.\n |")
 
         if bool(diffs) is True:
             return diffs
@@ -78,9 +79,9 @@ def get_diffs_from_firewall(connection_string, session):
             return "No configuration changes to commit."
 
     except Exception as e:
-        print(f" |--X Error: {e}")
+        logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        print(" |")
+        logging.info(" |")
         return e
 
     finally:
@@ -92,12 +93,12 @@ def get_diffs_from_firewall(connection_string, session):
 def commit_to_firewall(connection_string, session):
     driver, tmpfile = assemble_driver_string(connection_string, session)
 
-    print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
-    print(" |--> Configuring driver")
+    logging.info(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.info(" |--> Configuring driver")
 
     vyos_router = driver
 
-    print(" |--> Opening connection")
+    logging.info(" |--> Opening connection")
 
     try:
         vyos_router.open()
@@ -105,14 +106,14 @@ def commit_to_firewall(connection_string, session):
             filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
         )
 
-        print(" |--> Comparing configuration")
+        logging.info(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
 
         if bool(diffs) is True:
-            print(" |--> Committing configuration")
+            logging.info(" |--> Committing configuration")
             commit = vyos_router.commit_config()
 
-            print(" |--> Connection closed.\n |")
+            logging.info(" |--> Connection closed.\n |")
             vyos_router.close()
 
             if commit is None:
@@ -121,17 +122,17 @@ def commit_to_firewall(connection_string, session):
                 return str(diffs + commit)
 
         else:
-            print(" |--> No configuration changes to commit")
+            logging.info(" |--> No configuration changes to commit")
             vyos_router.discard_config()
 
-            print(" |--> Connection closed.\n |")
+            logging.info(" |--> Connection closed.\n |")
             vyos_router.close()
             return "No configuration changes to commit."
 
     except Exception as e:
-        print(f" |--X Error: {e}")
+        logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        print(" |")
+        logging.info(" |")
         return e
 
     finally:

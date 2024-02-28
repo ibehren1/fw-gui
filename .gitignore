@@ -2,3 +2,4 @@
 data/*
 !data/sample.json
 reference/*
+app.log*

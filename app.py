@@ -76,8 +76,15 @@ from package.napalm_functions import (
     test_connection,
 )
 from waitress import serve
+import logging
 import os
 
+logging.basicConfig(
+    encoding="utf-8",
+    filename="app.log",
+    format="%(asctime)s:%(levelname)s: %(message)s",
+    level=logging.INFO,
+)
 
 #
 # App Initialization
@@ -223,7 +230,7 @@ def user_login():
 @app.route("/user_logout")
 @login_required
 def user_logout():
-    print(
+    logging.info(
         f"{datetime.now()} User <{query_user_by_id(db, User, session['_user_id']).username}> logged out."
     )
     logout_user()
@@ -520,7 +527,7 @@ def filter_view():
 @login_required
 def configuration_extra_items():
     if request.method == "POST":
-        print(request.form["extra_items"])
+        logging.info(request.form["extra_items"])
 
         add_extra_items(session, request)
 
@@ -723,8 +730,9 @@ def upload_json():
 if __name__ == "__main__":
     # Read version from .version and display
     with open(".version", "r") as f:
+        logging.info(f"----------------- FW-GUI version: {f.read()} -----------------")
         print(
-            f"\n**************************\n* FW-GUI version: {f.read()} *\n**************************\n"
+            f"\n\n**************************\n* FW-GUI version: {f.read()} *\n**************************\n"
         )
 
     # Load Environment Vars

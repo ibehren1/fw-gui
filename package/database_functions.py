@@ -5,6 +5,7 @@
 from datetime import datetime
 from flask import flash
 from flask_login import login_user
+import logging
 import os
 
 # B404 -- security implications considered.
@@ -45,7 +46,7 @@ def change_password(bcrypt, db, User, username, request):
         # Update User table
         result.password = hashed_password
         db.session.commit()
-        print(f"{datetime.now()} User <{result.username}> changed password.")
+        logging.info(f"{datetime.now()} User <{result.username}> changed password.")
         flash("Password changed.", "success")
         return True
 
@@ -68,7 +69,9 @@ def process_login(bcrypt, db, request, User):
 
     else:
         if bcrypt.check_password_hash(result.password, request.form["password"]):
-            print(f'{datetime.now()} User <{request.form["username"]}> logged in.')
+            logging.info(
+                f'{datetime.now()} User <{request.form["username"]}> logged in.'
+            )
             login_user(result)
             username = f"{result.username}"
             data_dir = f"data/{username}"
@@ -79,7 +82,7 @@ def process_login(bcrypt, db, request, User):
                     ["cp", "examples/example.json", f"{data_dir}/example.json"]
                 )  # nosec
         else:
-            print(
+            logging.info(
                 f'{datetime.now()} User <{request.form["username"]}> attempted login with incorrect password.'
             )
             flash("Login incorrect.", "warning")
