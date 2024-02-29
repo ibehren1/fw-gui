@@ -5,6 +5,7 @@
 from flask import flash
 from napalm import get_network_driver
 from package.data_file_functions import decrypt_file
+import logging
 import socket
 import os
 
@@ -21,12 +22,13 @@ def assemble_driver_string(connection_string, session):
         optional_args["key_file"] = tmp_key_name
 
         return (
+            # B106 -- Not a hardcoded password.
             driver(
                 hostname=connection_string["hostname"],
                 username=connection_string["username"],
                 password="",
                 optional_args=optional_args,
-            ),
+            ),  # nosec
             tmp_key_name,
         )
 
@@ -51,12 +53,13 @@ def get_diffs_from_firewall(connection_string, session):
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
         return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
 
-    print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
-    print(" |--> Configuring driver")
+    logging.info(" |------------")
+    logging.info(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.info(" |--> Configuring driver")
 
     vyos_router = driver
 
-    print(" |--> Opening connection")
+    logging.info(" |--> Opening connection")
 
     try:
         vyos_router.open()
@@ -64,39 +67,41 @@ def get_diffs_from_firewall(connection_string, session):
             filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
         )
 
-        print(" |--> Comparing configuration")
+        logging.info(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
 
         vyos_router.discard_config()
         vyos_router.close()
-        print(" |--> Connection closed.\n |")
+        logging.info(" |--> Connection closed.")
+        logging.info(" |------------")
 
-        if bool(diffs) == True:
+        if bool(diffs) is True:
             return diffs
         else:
             return "No configuration changes to commit."
 
     except Exception as e:
-        print(f" |--X Error: {e}")
+        logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        print(" |")
+        logging.info(" |------------")
         return e
 
     finally:
         # Delete key
-        if tmpfile != None:
+        if tmpfile is None:
             os.remove(tmpfile)
 
 
 def commit_to_firewall(connection_string, session):
     driver, tmpfile = assemble_driver_string(connection_string, session)
 
-    print(f' |\n |--> Connecting to: {session["hostname"]}:{session["port"]}')
-    print(" |--> Configuring driver")
+    logging.info(" |------------")
+    logging.info(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.info(" |--> Configuring driver")
 
     vyos_router = driver
 
-    print(" |--> Opening connection")
+    logging.info(" |--> Opening connection")
 
     try:
         vyos_router.open()
@@ -104,33 +109,34 @@ def commit_to_firewall(connection_string, session):
             filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
         )
 
-        print(" |--> Comparing configuration")
+        logging.info(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
 
-        if bool(diffs) == True:
-            print(" |--> Committing configuration")
+        if bool(diffs) is True:
+            logging.info(" |--> Committing configuration")
             commit = vyos_router.commit_config()
 
-            print(" |--> Connection closed.\n |")
+            logging.info(" |--> Connection closed.\n |")
             vyos_router.close()
 
-            if commit == None:
+            if commit is None:
                 return str(diffs + "Commit successful.")
             else:
                 return str(diffs + commit)
 
         else:
-            print(" |--> No configuration changes to commit")
+            logging.info(" |--> No configuration changes to commit")
             vyos_router.discard_config()
 
-            print(" |--> Connection closed.\n |")
+            logging.info(" |--> Connection closed.")
+            logging.info(" |------------")
             vyos_router.close()
             return "No configuration changes to commit."
 
     except Exception as e:
-        print(f" |--X Error: {e}")
+        logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        print(" |")
+        logging.info(" |------------")
         return e
 
     finally:
@@ -142,6 +148,7 @@ def commit_to_firewall(connection_string, session):
 def test_connection(session):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        s.settimeout(20)
         s.connect((session["hostname"], int(session["port"])))
         s.shutdown(2)
         flash(

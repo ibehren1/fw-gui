@@ -3,11 +3,16 @@
 """
 
 from cryptography.fernet import Fernet
+from datetime import datetime
 from flask import app, flash, redirect, url_for
 import json
+import logging
 import os
 import random
 import string
+
+# B404 -- security implications considered.
+import subprocess  # nosec
 
 
 #
@@ -28,10 +33,8 @@ def add_extra_items(session, request):
         if item != "":
             extra_items.append(item)
 
-    print(extra_items)
-
     if extra_items == default_extra_items:
-        print("MATCH")
+        logging.info("MATCH")
         flash(f"There are no extra configuration items to add.", "warning")
         return
     else:
@@ -64,6 +67,63 @@ def allowed_file(filename):
 
 
 #
+# Create backup of data dir or user dir
+def create_backup(session, user=False):
+    timestamp = str(datetime.now()).replace(" ", "-")
+    if user is False:
+        try:
+            # B607 -- Cmd is partial executable path for compatibility between OSes.
+            subprocess.run(
+                [
+                    "zip",
+                    "-r",
+                    f"data/backups/full-backup-{timestamp}.zip",
+                    "data/",
+                    "-x",
+                    "data/backups/*",
+                    "-x",
+                    "data/tmp/*",
+                    "-x",
+                    "data/uploads/*",
+                ]
+            )  # nosec
+            logging.info(f'User <{session["username"]}> created a full backup.')
+            flash(
+                f"Backup created: data/backups/full-backup-{timestamp}.zip", "success"
+            )
+
+        except Exception as e:
+            logging.info(e)
+            flash(f"Backup failed.", "critical")
+
+    else:
+        user = session["username"]
+        try:
+            # B607 -- Cmd is partial executable path for compatibility between OSes.
+            subprocess.run(
+                [
+                    "zip",
+                    "-r",
+                    f"data/{user}/user-{user}-backup-{timestamp}.zip",
+                    f"data/{user}",
+                    "-x",
+                    f"data/{user}/*.zip",
+                ]
+            )  # nosec
+            logging.info(f'User <{session["username"]}> created a user backup.')
+            flash(
+                f"Backup created: data/{user}/user-{user}-backup-{timestamp}.zip",
+                "success",
+            )
+
+        except Exception as e:
+            logging.info(e)
+            flash(f"Backup failed.", "critical")
+
+    return
+
+
+#
 # Decrypt key file and stage for use
 def decrypt_file(filename, key):
     # try:
@@ -77,8 +137,9 @@ def decrypt_file(filename, key):
     # decrypting the file
     decrypted = fernet.decrypt(encrypted)
 
+    # B311 -- Use of pseudo-random generator is not for security purposes.
     tmp_file_name = "data/tmp/" + "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=6)
+        random.choices(string.ascii_uppercase + string.digits, k=6)  # nosec
     )
 
     # opening the file in write mode and
@@ -88,11 +149,6 @@ def decrypt_file(filename, key):
         dec_file.close()
 
     return f"{tmp_file_name}"
-    # except Exception as e:
-    #     print(f" |--X Error: {e}")
-    #     flash("Authentication error.", "danger")
-    #     print(" |")
-    #     return "Auth Error"
 
 
 #
@@ -134,37 +190,79 @@ def get_system_name(session):
 #
 # Initialize the data directory at App start
 def initialize_data_dir():
-    print("Initializing Data Directory...")
+    logging.info("Initializing Data Directory...")
 
     if not os.path.exists("data"):
-        print(" |\n |--> Data directory not found, creating...")
+        logging.info(" |--> Data directory not found, creating...")
         os.makedirs("data")
 
+    if not os.path.exists("data/backups"):
+        logging.info(" |--> Backups directory not found, creating...")
+        os.makedirs("data/backups")
+
+    if not os.path.exists("data/log"):
+        logging.info(" |--> Log directory not found, creating...")
+        os.makedirs("data/log")
+
     if not os.path.exists("data/database"):
-        print(" |\n |--> Database directory not found, creating...")
+        logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
 
     if not os.path.exists("data/tmp"):
-        print(" |\n |--> Tmp directory not found, creating...")
+        logging.info(" |--> Tmp directory not found, creating...")
         os.makedirs("data/tmp")
 
     if not os.path.exists("data/uploads"):
-        print(" |\n |--> Uploads directory not found, creating...")
+        logging.info(" |--> Uploads directory not found, creating...")
         os.makedirs("data/uploads")
 
     if not os.path.exists("data/example.json"):
-        print(" |\n |--> Example data file not found, copying...")
-        os.system("cp examples/example.json data/example.json")
+        logging.info(" |--> Example data file not found, copying...")
+        # B603 -- No untrusted input
+        # B607 -- Cmd is partial executable path for compatibility between OSes.
+        subprocess.run(["cp", "examples/example.json", "data/example.json"])  # nosec
 
     if not os.path.exists("./data/database/auth.db"):
-        print(" |\n |--> Auth database not found, creating...")
+        logging.info(" |--> Auth database not found, creating...")
         from app import app, db
 
         with app.app_context():
             db.create_all()
 
-    print(" |\n |--> Data directory initialized.\n |")
+    logging.info(" |--> Data directory initialized.")
     return
+
+
+#
+# Return a list of backups in the user's data directory
+def list_full_backups(session):
+    full_backup_list = []
+
+    files = os.listdir(f"data/backups")
+
+    for file in files:
+        if ".zip" in file:
+            full_backup_list.append(file)
+
+    full_backup_list.sort()
+
+    return full_backup_list
+
+
+#
+# Return a list of backups in the user's data directory
+def list_user_backups(session):
+    backup_list = []
+
+    files = os.listdir(f"{session['data_dir']}")
+
+    for file in files:
+        if ".zip" in file:
+            backup_list.append(file)
+
+    backup_list.sort()
+
+    return backup_list
 
 
 #
@@ -330,15 +428,14 @@ def update_schema(user_data):
 #
 # Write User commands.conf file
 def write_user_command_conf_file(session, command_list, delete=False):
-    print(f"Delete_before_set: {delete}")
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
-        if delete == True:
+        if delete is True:
             f.write(
                 f"#\n# Delete all firewall before setting new values\ndelete firewall\n"
             )
             for line in command_list:
                 f.write(f"{line}\n")
-        if delete == False:
+        if delete is False:
             for line in command_list:
                 f.write(f"{line}\n")
     return

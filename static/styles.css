@@ -393,3 +393,12 @@ h4 {
     color: #ffbf12;
     list-style: outside none none !important;
 }
+
+.li,
+ul {
+    font-variant: small-caps;
+    font-size: large;
+    color: #ffbf12;
+    color: #ffbf12;
+    list-style: outside none none !important;
+}

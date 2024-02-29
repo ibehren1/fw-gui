@@ -59,6 +59,7 @@ set container name fw-gui allow-host-networks
 set container name fw-gui cap-add 'net-bind-service'
 set container name fw-gui description 'FW GUI'
 set container name fw-gui image 'ibehren1/fw-gui:latest'
+set container name fw-gui environment APP_SECRET_KEY value 'This is the secret key.'
 set container name fw-gui environment DISABLE_REGISTRATION value 'False'
 set container name fw-gui port http destination '8080'
 set container name fw-gui port http protocol 'tcp'
@@ -76,6 +77,7 @@ docker volume create fw-gui_data
 docker run \
   --name   fw-gui \
   --expose 8080 \
+  --env APP_SECRET_KEY='This is the secret key.' \
   --env DISABLE_REGISTRATION=False \
   --mount  source=fw-gui_data,target=/opt/fw-gui/data \
   ibehren1/fw-gui:latest
@@ -90,6 +92,7 @@ services:
     image: ibehren1/fw-gui:latest
     container_name: fw-gui
     environment:
+      - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
     ports:
       - 8080:8080/tcp
@@ -106,4 +109,3 @@ volumes:
 ![image](./images/fw-gui_interface_2.png)
 ![image](./images/fw-gui_interface_3.png)
 ![image](./images/fw-gui_interface_4.png)
-![image](./images/fw-gui_interface_5.png)

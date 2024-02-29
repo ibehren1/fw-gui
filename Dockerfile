@@ -5,7 +5,7 @@ RUN apt-get update
 RUN apt-get dist-upgrade -y
 
 # Install app requirements
-RUN apt-get install -y python3 python3-pip
+RUN apt-get install -y python3 python3-pip zip
 RUN pip3 install --upgrade pip
 
 # Add application files

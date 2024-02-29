@@ -11,10 +11,21 @@
 #
 # Library Imports
 from datetime import datetime
-from flask import flash, Flask, redirect, render_template, request, session, url_for
+from dotenv import load_dotenv
+from flask import (
+    flash,
+    Flask,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
+)
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
+from io import BytesIO
 from package.chain_functions import (
     add_rule_to_data,
     add_chain_to_data,
@@ -32,9 +43,12 @@ from package.database_functions import (
 from package.data_file_functions import (
     add_extra_items,
     add_hostname,
+    create_backup,
     get_extra_items,
     get_system_name,
     initialize_data_dir,
+    list_full_backups,
+    list_user_backups,
     list_user_files,
     list_user_keys,
     process_upload,
@@ -62,18 +76,39 @@ from package.napalm_functions import (
     test_connection,
 )
 from waitress import serve
+import logging
 import os
+import sys
 
+#
+# Create handlers for logfile and stdout
+handlers = []
+if os.path.exists("data/log"):
+    file_handler = logging.FileHandler(filename="data/log/app.log")
+    handlers.append(file_handler)
+stdout_handler = logging.StreamHandler(stream=sys.stdout)
+handlers.append(stdout_handler)
+
+#
+# Setup logging and direct to both handlers
+logging.basicConfig(
+    encoding="utf-8",
+    format="%(asctime)s:%(levelname)s:\t%(message)s",
+    handlers=handlers,
+    level=logging.INFO,
+)
 
 #
 # App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
+# Load env vars from .env and .version
+load_dotenv()
 with open(".version", "r") as f:
     os.environ["FWGUI_VERSION"] = f.read()
 
 app = Flask(__name__)
-app.secret_key = "this is the secret key"
+app.secret_key = os.environ.get("APP_SECRET_KEY")
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
@@ -108,6 +143,56 @@ def load_user(user_id):
 @login_required
 def index():
     return redirect(url_for("display_config"))
+
+
+#
+# Administration Settings
+@app.route("/admin_settings", methods=["GET", "POST"])
+@login_required
+def admin_settings():
+    if request.method == "POST":
+        if "backup" in request.form:
+            if request.form["backup"] == "full_backup":
+                create_backup(session)
+
+            if request.form["backup"] == "user_backup":
+                create_backup(session, True)
+
+            backup_list = list_user_backups(session)
+            file_list = list_user_files(session)
+            full_backup_list = list_full_backups(session)
+
+        return render_template(
+            "admin_settings_form.html",
+            backup_list=backup_list,
+            file_list=file_list,
+            full_backup_list=full_backup_list,
+            username=session["username"],
+        )
+
+    else:
+        backup_list = list_user_backups(session)
+        file_list = list_user_files(session)
+        full_backup_list = list_full_backups(session)
+
+        return render_template(
+            "admin_settings_form.html",
+            backup_list=backup_list,
+            file_list=file_list,
+            full_backup_list=full_backup_list,
+            username=session["username"],
+        )
+
+
+@app.route("/download", methods=["POST"])
+@login_required
+def download():
+    path = request.form["path"]
+    filename = request.form["filename"]
+
+    with open(path + filename, "rb") as f:
+        data = f.read()
+    return send_file(BytesIO(data), download_name=filename, as_attachment=True)
 
 
 #
@@ -157,7 +242,7 @@ def user_login():
 @app.route("/user_logout")
 @login_required
 def user_logout():
-    print(
+    logging.info(
         f"{datetime.now()} User <{query_user_by_id(db, User, session['_user_id']).username}> logged out."
     )
     logout_user()
@@ -454,7 +539,7 @@ def filter_view():
 @login_required
 def configuration_extra_items():
     if request.method == "POST":
-        print(request.form["extra_items"])
+        logging.info(request.form["extra_items"])
 
         add_extra_items(session, request)
 
@@ -655,23 +740,23 @@ def upload_json():
 
 
 if __name__ == "__main__":
-    # Read version from .version and set env var
+    # Read version from .version and display
     with open(".version", "r") as f:
-        os.environ["FWGUI_VERSION"] = f.read()
-        print(
-            f"\n**************************\n* FW-GUI version: {os.environ.get('FWGUI_VERSION')} *\n**************************\n"
-        )
+        logging.info(f"----------------- FW-GUI version: {f.read()} -----------------")
+
+    # Load Environment Vars
+    load_dotenv()
 
     # Initialize Data Directory
     initialize_data_dir()
 
-    # Look for FLASK_ENV environment variable.
-    env = os.environ.get("FLASK_ENV") or False
-
     # If environment is set, run debug, else assume PROD
-    if env:
-        app.run(debug=True, host="0.0.0.0", port="8080")
+    if os.environ.get("FLASK_ENV") == "Development":
+        # B201:A -- Intentional execution with Debug when env var set.
+        # B104 -- Intentional binding to all IPs.
+        app.run(debug=True, host="0.0.0.0", port="8080")  # nosec
 
     # Else, run app in production mode on port 8080.
     else:
-        serve(app, host="0.0.0.0", port=8080, channel_timeout=120)
+        # B104 -- Intentional binding to all IPs.
+        serve(app, host="0.0.0.0", port=8080, channel_timeout=120)  # nosec

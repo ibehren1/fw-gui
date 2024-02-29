@@ -4,6 +4,7 @@
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from flask import flash
+import logging
 
 
 def add_rule_to_data(session, request):
@@ -194,7 +195,7 @@ def assemble_detail_list_of_chains(session):
                             rule_detail["number"] = rule
                             chain_dict[ip_version][chain_name].append(rule_detail)
     except:
-        print("Error in assemble_detail_list_of_rules")
+        logging.info("Error in assemble_detail_list_of_rules")
         pass
 
     # If there are no groups, flash message
@@ -225,8 +226,8 @@ def assemble_list_of_rules(session):
                                 ],
                             ]
                         )
-    except:
-        pass
+    except Exception as e:
+        logging.info(e)
 
     # If there are no rules, flash message
     if rule_list == []:
@@ -246,8 +247,8 @@ def assemble_list_of_chains(session):
             if ip_version in user_data:
                 for fw_chain in user_data[ip_version]["chains"]:
                     chain_list.append([ip_version, fw_chain])
-    except:
-        pass
+    except Exception as e:
+        logging.info(e)
 
     # If there are no chains, flash message
     if chain_list == []:
@@ -280,12 +281,12 @@ def delete_rule_from_data(session, request):
 
     # Clean-up data
     try:
-        if len(user_data[ip_version]["chains"][fw_chain]["rule-order"]) == 0:
+        if not user_data[ip_version]["chains"][fw_chain]["rule-order"]:
             del user_data[ip_version]["chains"][fw_chain]
-        if len(user_data[ip_version]) == 0:
+        if not user_data[ip_version]:
             del user_data[ip_version]
-    except:
-        pass
+    except Exception as e:
+        logging.info(e)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)

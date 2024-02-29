@@ -4,6 +4,7 @@
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from flask import flash
+import logging
 
 
 def add_filter_rule_to_data(session, request):
@@ -45,7 +46,7 @@ def add_filter_rule_to_data(session, request):
         user_data[ip_version]["filters"][filter]["rule-order"]
     )
 
-    # print(json.dumps(user_data, indent=4))
+    # logging.info(json.dumps(user_data, indent=4))
 
     # Write user_data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
@@ -59,7 +60,7 @@ def add_filter_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
-    print(request.form)
+    logging.info(request.form)
     # Set local vars from posted form data
     ip_version = request.form["ip_version"]
     type = request.form["type"]
@@ -114,7 +115,7 @@ def assemble_detail_list_of_filters(session):
                             rule_detail["number"] = rule
                             filter_dict[ip_version][filter_name].append(rule_detail)
         except:
-            print("Error in assemble_detail_list_of_rules")
+            logging.info("Error in assemble_detail_list_of_rules")
             pass
 
     # If there are no filters, flash message
@@ -135,8 +136,8 @@ def assemble_list_of_filters(session):
             if ip_version in user_data:
                 for type in user_data[ip_version]["filters"]:
                     filter_list.append([ip_version, type])
-        except:
-            pass
+        except Exception as e:
+            logging.info(e)
 
     # If there are no filters, flash message
     if filter_list == []:
@@ -166,8 +167,8 @@ def assemble_list_of_filter_rules(session):
                                 ],
                             ]
                         )
-    except:
-        pass
+    except Exception as e:
+        logging.info(e)
 
     # If there are no rules, flash message
     if rule_list == []:
@@ -200,14 +201,14 @@ def delete_filter_rule_from_data(session, request):
 
     # Clean-up data
     try:
-        if len(user_data[ip_version]["filters"][filter]["rule-order"]) == 0:
+        if not user_data[ip_version]["filters"][filter]["rule-order"]:
             del user_data[ip_version]["filters"][filter]
-        if len(user_data[ip_version]["filters"]) == 0:
+        if not user_data[ip_version]["filters"]:
             del user_data[ip_version]["filters"]
-        if len(user_data[ip_version]) == 0:
+        if not user_data[ip_version]:
             del user_data[ip_version]
-    except:
-        pass
+    except Exception as e:
+        logging.info(e)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
