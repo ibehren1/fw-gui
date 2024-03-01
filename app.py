@@ -80,6 +80,9 @@ import logging
 import os
 import sys
 
+# Load env vars from .env and .version
+load_dotenv()
+
 #
 # Create handlers for logfile and stdout
 handlers = []
@@ -89,21 +92,29 @@ if os.path.exists("data/log"):
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 handlers.append(stdout_handler)
 
+# if os.environ("log_level") exists:
+if "LOG_LEVEL" in os.environ:
+    if os.environ.get("LOG_LEVEL") in logging._nameToLevel:
+        # set log_level to os.environ("log_level")
+        log_level = os.environ.get("LOG_LEVEL")
+else:
+    # set log_level to logging.INFO
+    log_level = logging.INFO
+
 #
 # Setup logging and direct to both handlers
 logging.basicConfig(
     encoding="utf-8",
-    format="%(asctime)s:%(levelname)s:\t%(message)s",
+    format="%(asctime)s:%(levelname)s:%(funcName)s\t%(message)s",
     handlers=handlers,
-    level=logging.INFO,
+    level=log_level,
 )
+logging.info(f"Logging Level: {log_level}")
 
 #
 # App Initialization
 db_location = os.path.join(os.getcwd(), "data/database")
 
-# Load env vars from .env and .version
-load_dotenv()
 with open(".version", "r") as f:
     os.environ["FWGUI_VERSION"] = f.read()
 
