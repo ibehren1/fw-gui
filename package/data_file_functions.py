@@ -5,6 +5,7 @@
 from cryptography.fernet import Fernet
 from datetime import datetime
 from flask import app, flash, redirect, url_for
+import glob
 import json
 import logging
 import os
@@ -146,6 +147,7 @@ def decrypt_file(filename, key):
     # writing the decrypted data
     with open(f"{tmp_file_name}", "wb") as dec_file:
         dec_file.write(decrypted)
+        logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
         dec_file.close()
 
     return f"{tmp_file_name}"
@@ -211,6 +213,12 @@ def initialize_data_dir():
     if not os.path.exists("data/tmp"):
         logging.info(" |--> Tmp directory not found, creating...")
         os.makedirs("data/tmp")
+
+    if os.path.exists("data/tmp"):
+        logging.info(" |--> Tmp directory found, clearing contents...")
+        for file in glob.glob("data/tmp/*"):
+            logging.debug(f" |--> Removing file: {file}")
+            os.remove(file)
 
     if not os.path.exists("data/uploads"):
         logging.info(" |--> Uploads directory not found, creating...")
