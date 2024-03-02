@@ -469,7 +469,9 @@ def filter_rule_add():
     if request.method == "POST":
         add_filter_rule_to_data(session, request)
 
-        return redirect(url_for("filter_view"))
+        return redirect(
+            url_for("filter_view") + "#" + request.form["filter"].replace(",", "")
+        )
 
     else:
         file_list = list_user_files(session)
