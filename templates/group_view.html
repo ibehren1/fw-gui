@@ -67,16 +67,12 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -91,22 +87,22 @@
     {% if item.ip_version == 'ipv4' %}
     {% if item.group_type == 'address-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
         </td>
 
         <td align="center">
-            {{item.group_type}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
-            {% endfor %}
+            <font style="font-variant: small-caps;">
+                {% for value in item.group_value %}
+                {{value}}<br>
+                {% endfor %}
+            </font>
         </td>
 
         <td align="center">
@@ -135,16 +131,12 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv4networkgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -159,22 +151,22 @@
     {% if item.ip_version == 'ipv4' %}
     {% if item.group_type == 'network-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
         </td>
 
         <td align="center">
-            {{item.group_type}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
-            {% endfor %}
+            <font style="font-variant: small-caps;">
+                {% for value in item.group_value %}
+                {{value}}<br>
+                {% endfor %}
+            </font>
         </td>
 
         <td align="center">
@@ -204,16 +196,12 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv6addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -228,16 +216,14 @@
     {% if item.ip_version == 'ipv6' %}
     {% if item.group_type == 'address-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {{item.group_type}}
         </td>
 
         <td align="center">
@@ -271,16 +257,12 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv6networkgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -295,16 +277,14 @@
     {% if item.ip_version == 'ipv6' %}
     {% if item.group_type == 'network-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {{item.group_type}}
         </td>
 
         <td align="center">
@@ -338,16 +318,12 @@
     </tr>
 </table>
 <table class="groups_table" id="domaingroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -361,22 +337,22 @@
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.group_type == 'domain-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
         </td>
 
         <td align="center">
-            {{item.group_type}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
-            {% endfor %}
+            <font style="font-variant: small-caps;">
+                {% for value in item.group_value %}
+                {{value}}<br>
+                {% endfor %}
+            </font>
         </td>
 
         <td align="center">
@@ -403,16 +379,12 @@
     </tr>
 </table>
 <table class="groups_table" id="macgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -426,16 +398,14 @@
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.group_type == 'mac-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
         <td>
             {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {{item.group_type}}
         </td>
 
         <td align="center">
@@ -468,16 +438,12 @@
     </tr>
 </table>
 <table class="groups_table" id="portgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
+    <th colspan="2">
         Name
     </th>
 
-    <th>
+    <th colspan="2">
         Description
-    </th>
-
-    <th>
-        Type
     </th>
 
     <th>
@@ -491,16 +457,14 @@
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.group_type == 'port-group' %}
     <tr>
-        <td>
-            {{item.group_name}}
+        <td colspan="2">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.group_name}}
+            </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {{item.group_type}}
         </td>
 
         <td align="center">
