@@ -43,7 +43,7 @@ def add_filter_rule_to_data(session, request):
 
     # Sort rule-order in user data
     user_data[ip_version]["filters"][filter]["rule-order"] = sorted(
-        user_data[ip_version]["filters"][filter]["rule-order"]
+        user_data[ip_version]["filters"][filter]["rule-order"], key=int
     )
 
     # logging.info(json.dumps(user_data, indent=4))
