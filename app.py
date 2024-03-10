@@ -70,6 +70,11 @@ from package.group_funtions import (
     assemble_detail_list_of_groups,
     delete_group_from_data,
 )
+from package.interface_functions import (
+    add_interface_to_data,
+    delete_interface_from_data,
+    list_interfaces,
+)
 from package.napalm_functions import (
     commit_to_firewall,
     get_diffs_from_firewall,
@@ -344,6 +349,55 @@ def group_view():
 
 
 #
+# Interfaces
+@app.route("/interface_add", methods=["GET", "POST"])
+@login_required
+def interface_add():
+    if request.method == "POST":
+        add_interface_to_data(session, request)
+
+        return redirect(url_for("interface_view"))
+
+    else:
+        file_list = list_user_files(session)
+
+        return render_template(
+            "interface_add_form.html",
+            file_list=file_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+
+@app.route("/interface_delete", methods=["GET", "POST"])
+@login_required
+def interface_delete():
+    if request.method == "POST":
+        delete_interface_from_data(session, request)
+
+        return redirect(url_for("interface_view"))
+
+    else:
+        return redirect(url_for("display_config"))
+
+
+@app.route("/interface_view")
+@login_required
+def interface_view():
+    file_list = list_user_files(session)
+    group_list = assemble_detail_list_of_groups(session)
+    interface_list = list_interfaces(session)
+
+    return render_template(
+        "interface_view.html",
+        file_list=file_list,
+        firewall_name=session["firewall_name"],
+        interface_list=interface_list,
+        username=session["username"],
+    )
+
+
+#
 # Chains
 @app.route("/chain_add", methods=["GET", "POST"])
 @login_required
@@ -474,9 +528,10 @@ def filter_rule_add():
         )
 
     else:
+        chain_list = assemble_list_of_chains(session)
         file_list = list_user_files(session)
         filter_list = assemble_list_of_filters(session)
-        chain_list = assemble_list_of_chains(session)
+        interface_list = list_interfaces(session)
 
         if request.args.get("filter"):
             filter = request.args.get("filter")
@@ -485,12 +540,20 @@ def filter_rule_add():
 
         if filter_list == []:
             return redirect(url_for("filter_add"))
+
         if chain_list == []:
             flash(
                 f"Cannot add a filter rule if there are not chains to target.",
                 "warning",
             )
             return redirect(url_for("filter_add"))
+
+        if interface_list == []:
+            flash(
+                f"Cannot add a filter rule if there are no interfaces to target.",
+                "warning",
+            )
+            return redirect(url_for("interface_add"))
 
         return render_template(
             "filter_rule_add_form.html",
@@ -499,6 +562,7 @@ def filter_rule_add():
             filter_name=filter,
             filter_list=filter_list,
             firewall_name=session["firewall_name"],
+            interface_list=interface_list,
             username=session["username"],
         )
 
