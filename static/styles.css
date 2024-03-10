@@ -167,6 +167,14 @@ footer {
     color: #ffbf12;
 }
 
+header,
+h1 {
+    padding: .1px;
+    align-content: center;
+    color: #323231;
+    font-variant: small-caps;
+}
+
 h1 {
     font-variant: small-caps;
 }

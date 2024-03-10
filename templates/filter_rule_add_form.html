@@ -97,15 +97,21 @@
                             <label for="rule">Interface&nbsp;</label>
                         </td>
                         <td>
-                            <input type="text" id="interface" name="interface" maxlength="10" size="10"
-                                value="ethX"><br>
+                            <select name="interface" id="interface" style="width: 90;">
+                                <option value=""></option>
+                                {% for interface in interface_list %}
+                                <option value='{{interface.name}}'>
+                                    {{interface.name}}: {{interface.description}}
+                                </option>
+                                {% endfor %}
+                            </select><br>
                         </td>
                     <tr>
                         <td>
                             <label for="direction">Direction&nbsp;</label>
                         </td>
                         <td>
-                            <select name="direction" id="direction">
+                            <select name="direction" id="direction" style="width: 90;">
                                 <option value='inbound'>&nbsp;Inbound</option>
                                 <option value='outbound'>&nbsp;Outbound</option>
                         </td>

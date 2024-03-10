@@ -9,8 +9,19 @@
 </head>
 
 <header>
-    <h1>Firewall GUI</h1>
-    <p class="h4_dark">for use with VyOS</p>
+    <table width="100%">
+        <tr>
+            <td align="center" style="width: 25%;">
+                <img src="static/fw-gui.png">
+            </td>
+            <td align="center" style="width: 50%;">
+                <h1>Firewall GUI</h1>
+                <p class="h4_dark">for use with VyOS</p>
+            </td>
+            <td style="width: 25%;">
+            </td>
+        </tr>
+    </table>
 </header>
 
 <body class="page_background">
@@ -184,6 +195,26 @@
                     {% if firewall_name %}
                     <tr>
                         <td align="center" colspan="2">
+                            <p class="section_heading">
+                                Interfaces
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">
+                            <a href="{{ url_for('interface_view')}}">
+                                <input class="button" type="submit" value="View Interfaces" style="width: 75%">
+                            </a>
+                        </td>
+                        <td align="left">
+                            <a href="{{ url_for('interface_add')}}">
+                                <input class="button" type="submit" value="Add Interface" style="width: 75%">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" colspan="2">
+                            <br> <br>
                             <p class="section_heading">
                                 Groups
                             </p>

@@ -4,6 +4,18 @@
 <table class="table" border="0">
     <tr>
         <td colspan="2" align="left">
+            <p class="section_heading">Backups</p>
+        </td>
+    </tr>
+    <tr>
+        <td width="75%">
+            While encrypted, any SSH keys which have been uploaded are excluded from backups.<br><br>
+            If an S3 bucket name and proper credentials are provided as environment variables to the application, the
+            backup file is uploaded to the bucket for offsite storage.
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" align="left">
             <p class="section_heading">Create Full Backup</p>
         </td>
     </tr>
@@ -37,7 +49,7 @@
     </tr>
     <tr>
         <td width="75%">
-            Press button to create a backup of the users data directory.<br><br>
+            Press button to create a backup of the user's data directory.<br><br>
             The backup will be created in the users directory and can be downloaded by clicking the link below.
         </td>
         <td width="25%">

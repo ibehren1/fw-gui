@@ -5,6 +5,7 @@
 from cryptography.fernet import Fernet
 from datetime import datetime
 from flask import app, flash, redirect, url_for
+import boto3
 import glob
 import json
 import logging
@@ -86,12 +87,16 @@ def create_backup(session, user=False):
                     "data/tmp/*",
                     "-x",
                     "data/uploads/*",
+                    "-x",
+                    "data/users/*.key",
                 ]
             )  # nosec
             logging.info(f'User <{session["username"]}> created a full backup.')
             flash(
                 f"Backup created: data/backups/full-backup-{timestamp}.zip", "success"
             )
+
+            upload_backup_file(f"data/backups/full-backup-{timestamp}.zip")
 
         except Exception as e:
             logging.info(e)
@@ -109,6 +114,8 @@ def create_backup(session, user=False):
                     f"data/{user}",
                     "-x",
                     f"data/{user}/*.zip",
+                    "-x",
+                    f"data/{user}/*.key",
                 ]
             )  # nosec
             logging.info(f'User <{session["username"]}> created a user backup.')
@@ -116,6 +123,8 @@ def create_backup(session, user=False):
                 f"Backup created: data/{user}/user-{user}-backup-{timestamp}.zip",
                 "success",
             )
+
+            upload_backup_file(f"data/{user}/user-{user}-backup-{timestamp}.zip")
 
         except Exception as e:
             logging.info(e)
@@ -431,6 +440,47 @@ def update_schema(user_data):
     user_data["version"] = "1"
 
     return user_data
+
+
+#
+# Upload backup file to S3 storage
+def upload_backup_file(backup_file):
+
+    logging.debug(f"Retrieving bucket name and credentials from environment variables")
+
+    bucket_name = os.environ.get("BUCKET_NAME")
+
+    if bucket_name is not None:
+        logging.debug(f"Bucket name: {bucket_name}")
+        aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
+        aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+
+        try:
+            # Remove prefixes and create key
+            remote_file = backup_file.replace("data/backups/", "")
+            remote_file = remote_file.replace("data/", "")
+            key = f"fw-gui/backups/{remote_file}"
+            logging.debug(f"Key: {key}")
+
+            # Upload file to S3
+            s3 = boto3.client(
+                "s3",
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+            )
+            s3.upload_file(backup_file, bucket_name, key)
+
+            flash(f"Backup file uploaded to S3.", "success")
+            logging.info(f"Backup file uploaded to S3.")
+
+            return
+
+        except Exception as e:
+            logging.error(f"Error uploading backup file to S3: {e}")
+            return
+
+    else:
+        logging.info("Variables for bucket and credentials not provided.")
 
 
 #
