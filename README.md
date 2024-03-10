@@ -40,6 +40,10 @@ There is no initial username and password.  After starting the application, use 
 
 Future releases *may* include administration and user management features.
 
+## Backups
+
+You can provide an Amazon S3 bucket name and user credentials as environment variables to enable offsite storage of backups in the S3 bucket.  Backups are created in the Admin Settings page.  Backups are always kept locally and uploaded if the S3 settings are provided.  **Only Amazon S3 is supported.**
+
 ## Deployment
 
 ### Container on VyOS
@@ -82,9 +86,9 @@ docker run \
   --expose 8080 \
   --env APP_SECRET_KEY='This is the secret key.' \
   --env DISABLE_REGISTRATION=False \
-  --env BUCKET_NAME = "" \
-  --env AWS_ACCESS_KEY_ID = "" \
-  --env AWS_SECRET_ACCESS_KEY = "" \
+  --env BUCKET_NAME="" \
+  --env AWS_ACCESS_KEY_ID="" \
+  --env AWS_SECRET_ACCESS_KEY="" \
   --mount  source=fw-gui_data,target=/opt/fw-gui/data \
   ibehren1/fw-gui:latest
 ```
@@ -100,9 +104,9 @@ services:
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
-      - BUCKET_NAME = ""
-      - AWS_ACCESS_KEY_ID = ""
-      - AWS_SECRET_ACCESS_KEY = ""
+      - BUCKET_NAME=
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
     ports:
       - 8080:8080/tcp
     restart: unless-stopped

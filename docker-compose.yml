@@ -6,9 +6,9 @@ services:
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
-      - BUCKET_NAME = ""
-      - AWS_ACCESS_KEY_ID = ""
-      - AWS_SECRET_ACCESS_KEY = ""
+      - BUCKET_NAME=
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
