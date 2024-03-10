@@ -61,6 +61,9 @@ set container name fw-gui description 'FW GUI'
 set container name fw-gui image 'ibehren1/fw-gui:latest'
 set container name fw-gui environment APP_SECRET_KEY value 'This is the secret key.'
 set container name fw-gui environment DISABLE_REGISTRATION value 'False'
+set container name fw-gui environment BUCKET_NAME value ''
+set container name fw-gui environment AWS_ACCESS_KEY_ID value ''
+set container name fw-gui environment AWS_SECRET_ACCESS_KEY value ''
 set container name fw-gui port http destination '8080'
 set container name fw-gui port http protocol 'tcp'
 set container name fw-gui port http source '80'
@@ -79,6 +82,9 @@ docker run \
   --expose 8080 \
   --env APP_SECRET_KEY='This is the secret key.' \
   --env DISABLE_REGISTRATION=False \
+  --env BUCKET_NAME = "" \
+  --env AWS_ACCESS_KEY_ID = "" \
+  --env AWS_SECRET_ACCESS_KEY = "" \
   --mount  source=fw-gui_data,target=/opt/fw-gui/data \
   ibehren1/fw-gui:latest
 ```
@@ -94,6 +100,9 @@ services:
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
+      - BUCKET_NAME = ""
+      - AWS_ACCESS_KEY_ID = ""
+      - AWS_SECRET_ACCESS_KEY = ""
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
