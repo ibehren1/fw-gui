@@ -246,11 +246,9 @@ def user_login():
         else:
             return redirect(url_for("user_login"))
     else:
-        # registration = False if "DISABLE_REGISTRATION" in os.environ else True
-        if os.environ["DISABLE_REGISTRATION"] == "False":
-            registration = True
-        else:
-            registration = False
+        registration = (
+            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
+        )
         logging.debug(f"Registration Enabled: {registration}")
 
         return render_template(
@@ -274,7 +272,9 @@ def user_logout():
 @app.route("/user_registration", methods=["GET", "POST"])
 def user_registration():
     if request.method == "POST":
-        registration = False if "DISABLE_REGISTRATION" in os.environ else True
+        registration = (
+            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
+        )
 
         if registration:
             if register_user(bcrypt, db, request, User):
@@ -284,7 +284,9 @@ def user_registration():
         else:
             return redirect(url_for("user_login"))
     else:
-        registration = False if "DISABLE_REGISTRATION" in os.environ else True
+        registration = (
+            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
+        )
 
         if registration:
             return render_template("user_registration_form.html")
