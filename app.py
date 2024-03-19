@@ -246,7 +246,12 @@ def user_login():
         else:
             return redirect(url_for("user_login"))
     else:
-        registration = False if "DISABLE_REGISTRATION" in os.environ else True
+        # registration = False if "DISABLE_REGISTRATION" in os.environ else True
+        if os.environ["DISABLE_REGISTRATION"] == "False":
+            registration = True
+        else:
+            registration = False
+        logging.debug(f"Registration Enabled: {registration}")
 
         return render_template(
             "user_login_form.html",
