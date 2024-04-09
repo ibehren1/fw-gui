@@ -80,7 +80,8 @@ header {
     padding: .1px;
     align-content: center;
     color: #323231;
-    background-image: linear-gradient(135deg, #ffbf12, #ff9000);
+    /* background-image: linear-gradient(135deg, #ffbf12, #ff9000); */
+    background: #ffbf12;
 }
 
 footer {
@@ -90,7 +91,8 @@ footer {
     text-align: center;
     padding: .1px;
     color: #323231;
-    background-image: linear-gradient(135deg, #ffbf12, #ff9000);
+    /* background-image: linear-gradient(135deg, #ffbf12, #ff9000); */
+    background: #ffbf12;
 }
 
 .configuration {
@@ -123,13 +125,16 @@ footer {
     font-weight: bold;
     min-height: 30px;
     width: 100%;
-    border: none;
-    background: linear-gradient(135deg, #ffbf12, #ff9000);
+    border: 20px;
+    /* background: linear-gradient(135deg, #ffbf12, #ff9000); */
+    background: #ffbf12;
 }
 
 .button:hover {
     color: #323231;
-    background: linear-gradient(135deg, #ffdc7e, #ffbe12);
+    /* background: linear-gradient(135deg, #ffdc7e, #ffbe12); */
+    /* background: #ff9900; */
+    background: #ffa812;
 }
 
 .delete_rule_button {
@@ -155,7 +160,7 @@ footer {
     font-weight: bold;
     font-variant: small-caps;
     font-size: large;
-    color: #ff9000;
+    /* color: #ff9000; */
     color: #ffbf12;
 }
 
@@ -163,7 +168,7 @@ footer {
     font-weight: bold;
     font-variant: small-caps;
     font-size: large;
-    color: #ff9000;
+    /* color: #ff9000; */
     color: #ffbf12;
 }
 
@@ -236,7 +241,7 @@ h4 {
     font-weight: bold;
     font-variant: small-caps;
     font-size: x-large;
-    color: #ff9000;
+    /* color: #ff9000; */
     color: #ffbf12;
 }
 
@@ -244,18 +249,26 @@ h4 {
 /* --Links-- */
 
 .docs_link {
-    color: #FF9000;
+    /* color: #ff9000; */
+    color: #ffbf12;
     font-weight: bold;
     text-decoration: none;
 }
 
+.docs_link:hover {
+    /* color: #ff9000; */
+    color: #ffa812;
+}
+
 .link {
-    color: #FF9000;
+    /* color: #ff9000; */
+    color: #ffbf12;
     text-decoration: none;
 }
 
 .link:hover {
-    color: #FF9000;
+    /* color: #ff9000; */
+    color: #ffa812;
 }
 
 .link_white {
@@ -282,12 +295,12 @@ h4 {
 }
 
 .link_yellow {
-    color: #FFbf12;
+    color: #ffbf12;
     text-decoration: none;
 }
 
 .link_yellow:hover {
-    color: #FFbf12;
+    color: #ffbf12;
 }
 
 
@@ -389,7 +402,7 @@ h4 {
 
 #toc_container .link,
 #toc_container .link:hover {
-    color: #FFbf12;
+    color: #ffbf12;
     font-weight: bold;
     text-decoration: none;
 }
