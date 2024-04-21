@@ -50,6 +50,58 @@ You can provide an Amazon S3 bucket name and user credentials as environment var
 
 ## Deployment
 
+### Recommended Deployment -- Docker Compose for combined FW-GUI and Nginx Proxy Manager
+
+```yaml
+version: '3.7'
+services:
+  fw-gui:
+    image: ibehren1/fw-gui:latest
+    container_name: fw-gui
+    environment:
+      - APP_SECRET_KEY='This is the secret key.'
+      - DISABLE_REGISTRATION=<True|False>
+      - BUCKET_NAME=<bucket-name>
+      - AWS_ACCESS_KEY_ID=<access-key>
+      - AWS_SECRET_ACCESS_KEY=<secret-access-key>
+    ports:
+      - 8080:8080/tcp
+    restart: unless-stopped
+    volumes:
+      - fwgui-data:/opt/fw-gui/data
+  nginx:
+    restart: always
+    image: 'jc21/nginx-proxy-manager:latest'
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    environment:
+      DB_MYSQL_HOST: "db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm"
+      DB_MYSQL_NAME: "npm"
+    volumes:
+      - nginx-data:/data
+      - letsencrypt:/etc/letsencrypt
+  db:
+    restart: always
+    image: 'jc21/mariadb-aria:latest'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'npm'
+      MYSQL_DATABASE: 'npm'
+      MYSQL_USER: 'npm'
+      MYSQL_PASSWORD: 'npm'
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  fwgui-data:
+  nginx-data:
+  mysql-data:
+  letsencrypt:
+```
+
 ### Container on VyOS
 
 Run these commands to create the volume for the container and pull the image.
