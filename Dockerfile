@@ -11,11 +11,11 @@ RUN pip3 install --upgrade pip
 # Add application files
 ADD .version           /opt/fw-gui/.version
 ADD app.py             /opt/fw-gui/app.py
-ADD package/*          /opt/fw-gui/package/
 ADD examples/*         /opt/fw-gui/examples/
+ADD package/*          /opt/fw-gui/package/
+ADD requirements.txt   /opt/fw-gui/requirements.txt
 ADD static/*           /opt/fw-gui/static/
 ADD templates/*        /opt/fw-gui/templates/
-ADD requirements.txt   /opt/fw-gui/requirements.txt
 RUN mkdir              /opt/fw-gui/data
 
 # Install pip modules

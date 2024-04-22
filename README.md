@@ -16,7 +16,9 @@ The web GUI allows the user to visually create and manage group objects, firewal
 
 ### Recommended Usage
 
-Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and FW-GUI.
+Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and FW-GUI. Recommend adding `proxy_read_timeout 30m;` as a custom Nginx configuration.
+
+![images](./images/nginx_custom_config.png)
 
 You can also host the FW-GUI as a container on the VyOS device you wish to manage.  Setting up TLS in this case can be provided using [ACME on VyOS](https://docs.vyos.io/en/sagitta/configuration/pki/index.html#acme).
 
@@ -44,9 +46,61 @@ Future releases *may* include administration and user management features.
 
 ## Backups
 
-You can provide an Amazon S3 bucket name and user credentials as environment variables to enable offsite storage of backups in the S3 bucket.  Backups are created in the Admin Settings page.  Backups are always kept locally and uploaded if the S3 settings are provided.  **Only Amazon S3 is supported.**
+You can provide an Amazon S3 bucket name and user credentials as environment variables to enable offsite storage of backups in the S3 bucket.  Backups are created in the Admin Settings page.  Backups are always kept locally and uploaded if the S3 settings are provided.  __Only Amazon S3 is supported.__
 
 ## Deployment
+
+### Recommended Deployment -- Docker Compose for combined FW-GUI and Nginx Proxy Manager
+
+```yaml
+version: '3.7'
+services:
+  fw-gui:
+    image: ibehren1/fw-gui:latest
+    container_name: fw-gui
+    environment:
+      - APP_SECRET_KEY='This is the secret key.'
+      - DISABLE_REGISTRATION=<True|False>
+      - BUCKET_NAME=<bucket-name>
+      - AWS_ACCESS_KEY_ID=<access-key>
+      - AWS_SECRET_ACCESS_KEY=<secret-access-key>
+    ports:
+      - 8080:8080/tcp
+    restart: unless-stopped
+    volumes:
+      - fwgui-data:/opt/fw-gui/data
+  nginx:
+    restart: always
+    image: 'jc21/nginx-proxy-manager:latest'
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    environment:
+      DB_MYSQL_HOST: "db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm"
+      DB_MYSQL_NAME: "npm"
+    volumes:
+      - nginx-data:/data
+      - letsencrypt:/etc/letsencrypt
+  db:
+    restart: always
+    image: 'jc21/mariadb-aria:latest'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'npm'
+      MYSQL_DATABASE: 'npm'
+      MYSQL_USER: 'npm'
+      MYSQL_PASSWORD: 'npm'
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  fwgui-data:
+  nginx-data:
+  mysql-data:
+  letsencrypt:
+```
 
 ### Container on VyOS
 
