@@ -299,7 +299,7 @@ def flash_ip_version_mismatch():
     return
 
 
-def reorder_rule_in_data(session, request):
+def reorder_chain_rule_in_data(session, request):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 

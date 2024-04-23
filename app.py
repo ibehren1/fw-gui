@@ -33,7 +33,7 @@ from package.chain_functions import (
     assemble_list_of_chains,
     assemble_detail_list_of_chains,
     delete_rule_from_data,
-    reorder_rule_in_data,
+    reorder_chain_rule_in_data,
 )
 from package.database_functions import (
     change_password,
@@ -63,6 +63,7 @@ from package.filter_functions import (
     assemble_list_of_filter_rules,
     assemble_detail_list_of_filters,
     delete_filter_rule_from_data,
+    # reorder_filter_rule_in_data,
 )
 from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
@@ -490,7 +491,7 @@ def chain_rule_delete():
 @login_required
 def chain_rule_reorder():
     if request.method == "POST":
-        ip_version, fw_chain = reorder_rule_in_data(session, request)
+        ip_version, fw_chain = reorder_chain_rule_in_data(session, request)
 
         return redirect(url_for("chain_view", _anchor=f"{ip_version}{fw_chain}"))
     else:
@@ -609,6 +610,17 @@ def filter_rule_delete():
             rule_list=rule_list,
             username=session["username"],
         )
+
+
+# @app.route("/filter_rule_reorder", methods=["GET", "POST"])
+# @login_required
+# def filter_rule_reorder():
+#     if request.method == "POST":
+#         ip_version, fw_chain = reorder_filter_rule_in_data(session, request)
+
+#         return redirect(url_for("filter_view", _anchor=f"{ip_version}{filter}"))
+#     else:
+#         return redirect(url_for("filter_view"))
 
 
 @app.route("/filter_view")
