@@ -297,3 +297,61 @@ def delete_rule_from_data(session, request):
 def flash_ip_version_mismatch():
     flash(f"IP version of rule must match IP version of group object.", "danger")
     return
+
+
+def reorder_chain_rule_in_data(session, request):
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Set local vars from posted form data
+    rule = request.form["reorder_rule"].split(",")
+
+    if len(rule) != 3:
+        return None
+    else:
+        ip_version = rule[0]
+        fw_chain = rule[1]
+        old_rule_number = rule[2]
+        new_rule_number = request.form["new_rule_number"].strip()
+
+    # Get list of existing rules in chain
+    existing_rule_list = user_data[ip_version]["chains"][fw_chain]["rule-order"]
+
+    # Validate new rule number
+    if old_rule_number == new_rule_number:
+        flash(f"Old and new rule numbers must be different.", "danger")
+        return None
+
+    try:
+        int(new_rule_number)
+    except:
+        flash(f"New rule number musht be an integer.", "danger")
+        return None
+
+    if new_rule_number in existing_rule_list:
+        flash(f"New rule number must not already exist in the chain.", "danger")
+        return None
+
+    # Add new rule to chain in user data
+    user_data[ip_version]["chains"][fw_chain][new_rule_number] = user_data[ip_version][
+        "chains"
+    ][fw_chain][old_rule_number]
+
+    # Add new rule to rule-order in user data
+    user_data[ip_version]["chains"][fw_chain]["rule-order"].append(new_rule_number)
+
+    # Remove Old Rule from user data
+    del user_data[ip_version]["chains"][fw_chain][old_rule_number]
+
+    # Remove Old Rule from rule-order in user data
+    user_data[ip_version]["chains"][fw_chain]["rule-order"].remove(old_rule_number)
+
+    # Sort rule-order in user data
+    user_data[ip_version]["chains"][fw_chain]["rule-order"] = sorted(
+        user_data[ip_version]["chains"][fw_chain]["rule-order"], key=int
+    )
+
+    # Write user's data to file
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    return f"{ip_version}{fw_chain}"
