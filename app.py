@@ -63,7 +63,7 @@ from package.filter_functions import (
     assemble_list_of_filter_rules,
     assemble_detail_list_of_filters,
     delete_filter_rule_from_data,
-    # reorder_filter_rule_in_data,
+    reorder_filter_rule_in_data,
 )
 from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
@@ -612,15 +612,15 @@ def filter_rule_delete():
         )
 
 
-# @app.route("/filter_rule_reorder", methods=["GET", "POST"])
-# @login_required
-# def filter_rule_reorder():
-#     if request.method == "POST":
-#         ip_version, fw_chain = reorder_filter_rule_in_data(session, request)
+@app.route("/filter_rule_reorder", methods=["GET", "POST"])
+@login_required
+def filter_rule_reorder():
+    if request.method == "POST":
+        anchor = reorder_filter_rule_in_data(session, request)
 
-#         return redirect(url_for("filter_view", _anchor=f"{ip_version}{filter}"))
-#     else:
-#         return redirect(url_for("filter_view"))
+        return redirect(url_for("filter_view", _anchor=anchor))
+    else:
+        return redirect(url_for("filter_view"))
 
 
 @app.route("/filter_view")

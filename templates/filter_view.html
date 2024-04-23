@@ -115,6 +115,29 @@
     </tr>
     {% endfor %}
     <tr>
+        <form action="/filter_rule_reorder" , method="post">
+            <td colspan="1" align="center">
+                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+            </td>
+            <td colspan="3">
+                <label for="reorder_rule">&nbsp;</label>
+                <select name="reorder_rule" id="reorder_rule">
+                    <option value=''></option>
+                    {% for rule in filter_list %}
+                    <option value='ipv4,{{key}},{{rule.number}}'>
+                        {{rule.number}}: {{rule.description}}
+                    </option>
+                    {% endfor %}
+                </select>
+                to
+                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+            </td>
+            <td colspan="2">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+            </td>
+        </form>
+    </tr>
+    <tr>
         <td colspan="6">
             <form action="/filter_rule_add" , method="get">
                 <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
@@ -204,6 +227,29 @@
         </td>
     </tr>
     {% endfor %}
+    <tr>
+        <form action="/filter_rule_reorder" , method="post">
+            <td colspan="1" align="center">
+                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+            </td>
+            <td colspan="3">
+                <label for="reorder_rule">&nbsp;</label>
+                <select name="reorder_rule" id="reorder_rule">
+                    <option value=''></option>
+                    {% for rule in filter_list %}
+                    <option value='ipv6,{{key}},{{rule.number}}'>
+                        {{rule.number}}: {{rule.description}}
+                    </option>
+                    {% endfor %}
+                </select>
+                to
+                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+            </td>
+            <td colspan="2">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+            </td>
+        </form>
+    </tr>
     <tr>
         <td colspan="6">
             <form action="/filter_rule_add" , method="get">
