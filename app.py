@@ -33,6 +33,7 @@ from package.chain_functions import (
     assemble_list_of_chains,
     assemble_detail_list_of_chains,
     delete_rule_from_data,
+    reorder_rule_in_data,
 )
 from package.database_functions import (
     change_password,
@@ -483,6 +484,17 @@ def chain_rule_delete():
             rule_list=rule_list,
             username=session["username"],
         )
+
+
+@app.route("/chain_rule_reorder", methods=["GET", "POST"])
+@login_required
+def chain_rule_reorder():
+    if request.method == "POST":
+        ip_version, fw_chain = reorder_rule_in_data(session, request)
+
+        return redirect(url_for("chain_view", _anchor=f"{ip_version}{fw_chain}"))
+    else:
+        return redirect(url_for("chain_view"))
 
 
 @app.route("/chain_view")

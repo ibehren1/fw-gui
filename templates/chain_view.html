@@ -180,6 +180,29 @@
     </tr>
     {% endfor %}
     <tr>
+        <form action="/chain_rule_reorder" , method="post">
+            <td colspan="2" align="center">
+                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+            </td>
+            <td colspan="6">
+                <label for="reorder_rule">&nbsp;</label>
+                <select name="reorder_rule" id="reorder_rule">
+                    <option value=''></option>
+                    {% for rule in chain_list %}
+                    <option value='ipv4,{{key}},{{rule.number}}'>
+                        {{rule.number}}: {{rule.description}}
+                    </option>
+                    {% endfor %}
+                </select>
+                to
+                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+            </td>
+            <td colspan="3">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+            </td>
+        </form>
+    </tr>
+    <tr>
         <td colspan="11">
             <form action="/chain_rule_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
@@ -333,6 +356,29 @@
         </td>
     </tr>
     {% endfor %}
+    <tr>
+        <form action="/chain_rule_reorder" , method="post">
+            <td colspan="2" align="center">
+                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+            </td>
+            <td colspan="6">
+                <label for="reorder_rule">&nbsp;</label>
+                <select name="reorder_rule" id="reorder_rule">
+                    <option value=''></option>
+                    {% for rule in chain_list %}
+                    <option value='ipv6,{{key}},{{rule.number}}'>
+                        {{rule.number}}: {{rule.description}}
+                    </option>
+                    {% endfor %}
+                </select>
+                to
+                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+            </td>
+            <td colspan="3">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+            </td>
+        </form>
+    </tr>
     <tr>
         <td colspan="11" align="center" rowspan="2">
             <form action="/chain_rule_add" , method="get">

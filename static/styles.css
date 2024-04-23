@@ -153,6 +153,20 @@ footer {
     writing-mode: vertical-lr;
 }
 
+.reorder_rule_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 15px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+}
+
+.reorder_rule_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #ffbf12);
+}
+
 
 /* --Headings-- */
 
