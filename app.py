@@ -491,9 +491,9 @@ def chain_rule_delete():
 @login_required
 def chain_rule_reorder():
     if request.method == "POST":
-        ip_version, fw_chain = reorder_chain_rule_in_data(session, request)
+        anchor = reorder_chain_rule_in_data(session, request)
 
-        return redirect(url_for("chain_view", _anchor=f"{ip_version}{fw_chain}"))
+        return redirect(url_for("chain_view", _anchor=anchor))
     else:
         return redirect(url_for("chain_view"))
 

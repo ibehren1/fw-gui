@@ -307,7 +307,7 @@ def reorder_chain_rule_in_data(session, request):
     rule = request.form["reorder_rule"].split(",")
 
     if len(rule) != 3:
-        return None, None
+        return None
     else:
         ip_version = rule[0]
         fw_chain = rule[1]
@@ -320,17 +320,17 @@ def reorder_chain_rule_in_data(session, request):
     # Validate new rule number
     if old_rule_number == new_rule_number:
         flash(f"Old and new rule numbers must be different.", "danger")
-        return None, None
+        return None
 
     try:
         int(new_rule_number)
     except:
         flash(f"New rule number musht be an integer.", "danger")
-        return None, None
+        return None
 
     if new_rule_number in existing_rule_list:
         flash(f"New rule number must not already exist in the chain.", "danger")
-        return None, None
+        return None
 
     # Add new rule to chain in user data
     user_data[ip_version]["chains"][fw_chain][new_rule_number] = user_data[ip_version][
@@ -354,4 +354,4 @@ def reorder_chain_rule_in_data(session, request):
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
-    return ip_version, fw_chain
+    return f"{ip_version}{fw_chain}"
