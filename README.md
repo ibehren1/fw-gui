@@ -8,11 +8,11 @@ The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separ
 
 The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the fw-gui configuration to move between instances of the GUI.
 
-| | |
-| - | - |
-| Source Code | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  |
-| Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
-| Working Demo | [https://fw-gui.com](https://fw-gui.com)|
+| | | |
+| - | - | - |
+| Source Code | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  | ![](https://status.behrenshome.com/api/badge/147/status?style=for-the-badge) |
+| Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  | ![](https://status.behrenshome.com/api/badge/148/status?style=for-the-badge) |
+| Working Demo | [https://fw-gui.com](https://fw-gui.com)| ![](https://status.behrenshome.com/api/badge/114/status?style=for-the-badge) |
 
 ### Recommended Usage
 
