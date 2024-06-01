@@ -10,9 +10,9 @@ The web GUI allows the user to visually create and manage group objects, firewal
 
 | | | |
 | - | - | - |
-| Source Code | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  | ![](https://status.behrenshome.com/api/badge/147/status?style=for-the-badge) |
-| Docker Hub | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  | ![](https://status.behrenshome.com/api/badge/148/status?style=for-the-badge) |
-| Working Demo | [https://fw-gui.com](https://fw-gui.com)| ![](https://status.behrenshome.com/api/badge/114/status?style=for-the-badge) |
+| Source Code | ![](https://status.behrenshome.com/api/badge/147/status?style=for-the-badge) | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  |
+| Docker Hub | ![](https://status.behrenshome.com/api/badge/148/status?style=for-the-badge) | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
+| Working Demo | ![](https://status.behrenshome.com/api/badge/114/status?style=for-the-badge) | [https://fw-gui.com](https://fw-gui.com) |
 
 ### Recommended Usage
 
