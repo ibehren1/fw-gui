@@ -4,6 +4,16 @@
 
 The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specific configurations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
 
+## VyOS Version Support
+
+FW-GUI code is created and tested with VyOS 1.4 LTS (Sagitta).
+
+Given the [situation](https://blog.vyos.io/community-contributors-userbase-and-lts-builds) with VyOS project removing the access to the packages repo required to build custom images of VyOS 1.4 in April of 2024, I recommend building custom images via Jenkins as documented here:  https://github.com/dd010101/vyos-jenkins
+
+Consideration of supporting [VyOS Stream](https://blog.vyos.io/introducing-vyos-stream) **_may_** be considered in the future.  
+Support of VyOS rolling (current) is unlikely due to the unstable nature of the command line syntax.
+
+
 ## GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
 The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the fw-gui configuration to move between instances of the GUI.
