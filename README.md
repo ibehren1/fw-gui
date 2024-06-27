@@ -10,7 +10,7 @@ FW-GUI code is created and tested with VyOS 1.4 LTS (Sagitta).
 
 Given the [situation](https://blog.vyos.io/community-contributors-userbase-and-lts-builds) with VyOS project removing the access to the packages repo required to build custom images of VyOS 1.4 in April of 2024, I recommend building custom images via Jenkins as documented here:  https://github.com/dd010101/vyos-jenkins
 
-Consideration of supporting [VyOS Stream](https://blog.vyos.io/introducing-vyos-stream) **_may_** be considered in the future.  
+Support for [VyOS Stream](https://blog.vyos.io/introducing-vyos-stream) **_may be_** considered in the future.  
 Support of VyOS rolling (current) is unlikely due to the unstable nature of the command line syntax.
 
 
