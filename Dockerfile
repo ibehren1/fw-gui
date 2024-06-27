@@ -1,12 +1,17 @@
 FROM ubuntu:22.04
 MAINTAINER isaac@behrenshome.com
 
-RUN apt-get update
-RUN apt-get dist-upgrade -y
+# Update OS packages
+RUN apt-get update && \ 
+    apt-get dist-upgrade -y
 
 # Install app requirements
-RUN apt-get install -y python3 python3-pip zip
-RUN pip3 install --upgrade pip
+RUN apt-get install -y python3 python3-pip zip && \
+    pip3 install --upgrade pip
+
+# Clean-up apt cache
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add application files
 ADD .version           /opt/fw-gui/.version
