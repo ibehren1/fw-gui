@@ -36,13 +36,15 @@ docker buildx inspect \
 if [ "${BUILD_TYPE}" == "Prod" ]; then
     docker buildx build \
         --platform=linux/arm64,linux/amd64 \
-        --no-cache --push \
+        --no-cache \
+        --push \
         --tag ${DOCKER_USER}/fw-gui:latest \
         --tag ${DOCKER_USER}/fw-gui:${VERSION} . 
 else
     docker buildx build \
         --platform=linux/arm64,linux/amd64 \
-        --no-cache --push \
+        --no-cache \
+        --push \
         --tag ${DOCKER_USER}/fw-gui:dev .
 fi
 
