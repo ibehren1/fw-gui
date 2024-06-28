@@ -10,7 +10,7 @@
 
 #
 # Library Imports
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask import (
     flash,
@@ -131,6 +131,9 @@ app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
+    minutes=int(os.environ.get("SESSION_TIMEOUT"))
+)
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
