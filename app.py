@@ -53,6 +53,7 @@ from package.data_file_functions import (
     list_user_files,
     list_user_keys,
     process_upload,
+    validate_mongodb_connection,
     write_user_command_conf_file,
     write_user_data_file,
 )
@@ -860,6 +861,7 @@ if __name__ == "__main__":
 
     # Initialize Data Directory
     initialize_data_dir()
+    validate_mongodb_connection(os.environ.get("MONGODB_URI"))
 
     # If environment is set, run debug, else assume PROD
     if os.environ.get("FLASK_ENV") == "Development":
