@@ -41,6 +41,7 @@ def generate_config(session):
     for ip_version in user_data:
         if (
             ip_version != "extra-items"
+            and ip_version != "_id"
             and ip_version != "interfaces"
             and ip_version != "system"
             and ip_version != "version"
