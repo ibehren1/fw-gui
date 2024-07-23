@@ -9,5 +9,6 @@ Jinja2
 napalm
 napalm-vyos
 python-dotenv
+pymongo
 waitress
 werkzeug
