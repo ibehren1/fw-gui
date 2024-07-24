@@ -45,6 +45,7 @@ from package.data_file_functions import (
     add_extra_items,
     add_hostname,
     create_backup,
+    delete_user_data_file,
     get_extra_items,
     get_system_name,
     initialize_data_dir,
@@ -52,6 +53,7 @@ from package.data_file_functions import (
     list_user_backups,
     list_user_files,
     list_user_keys,
+    mongo_dump,
     process_upload,
     validate_mongodb_connection,
     write_user_command_conf_file,
@@ -78,6 +80,7 @@ from package.interface_functions import (
     delete_interface_from_data,
     list_interfaces,
 )
+from package.mongo_converter import mongo_converter
 from package.napalm_functions import (
     commit_to_firewall,
     get_diffs_from_firewall,
@@ -809,7 +812,7 @@ def delete_config():
         if session["firewall_name"] == request.form["delete_config"]:
             session.pop("firewall_name")
 
-    os.remove(f'{session["data_dir"]}/{request.form["delete_config"]}.json')
+    delete_user_data_file(f'{session["data_dir"]}/{request.form["delete_config"]}')
     flash(
         f'Firewall config {request.form["delete_config"]} has been deleted.', "success"
     )
@@ -861,7 +864,13 @@ if __name__ == "__main__":
 
     # Initialize Data Directory
     initialize_data_dir()
-    validate_mongodb_connection(os.environ.get("MONGODB_URI"))
+
+    # Validate connection to MongoDB and create backup
+    if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
+        mongo_dump()
+        mongo_converter()
+
+    # Convert all .json files to MongoDB
 
     # If environment is set, run debug, else assume PROD
     if os.environ.get("FLASK_ENV") == "Development":
