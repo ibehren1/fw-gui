@@ -6,12 +6,15 @@ from cryptography.fernet import Fernet
 from datetime import datetime
 from flask import app, flash, redirect, url_for
 import boto3
+import bson
 import glob
 import json
 import logging
 import os
+import pymongo
 import random
 import string
+import sys
 
 # B404 -- security implications considered.
 import subprocess  # nosec
@@ -71,9 +74,12 @@ def allowed_file(filename):
 #
 # Create backup of data dir or user dir
 def create_backup(session, user=False):
+    # TODO -- Remove user backups.
     timestamp = str(datetime.now()).replace(" ", "-")
     if user is False:
         try:
+            # Get a fresh Mongo Dump
+            mongo_dump()
             # B607 -- Cmd is partial executable path for compatibility between OSes.
             subprocess.run(
                 [
@@ -163,6 +169,26 @@ def decrypt_file(filename, key):
 
 
 #
+# Delete User Data File
+def delete_user_data_file(filename):
+    collection_name = filename.split("/")[1]
+    firewall = filename.split("/")[2]
+
+    logging.debug(f"Prepping Mongo query.")
+    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    db = client[os.environ.get("MONGODB_DATABASE")]
+    collection = db[collection_name]
+    query = {"_id": firewall}
+
+    logging.debug(f"Deleting data from Mongo.")
+    logging.debug(query)
+    result = collection.delete_one(query)
+    logging.debug(result.deleted_count, " documents deleted")
+
+    return
+
+
+#
 # Get extra items
 def get_extra_items(session):
     # Get user's data
@@ -206,6 +232,10 @@ def initialize_data_dir():
     if not os.path.exists("data"):
         logging.info(" |--> Data directory not found, creating...")
         os.makedirs("data")
+
+    if not os.path.exists("data/mongodb"):
+        logging.info(" |--> MongoDB directory not found, creating...")
+        os.makedirs("data/mongodb")
 
     if not os.path.exists("data/backups"):
         logging.info(" |--> Backups directory not found, creating...")
@@ -269,6 +299,7 @@ def list_full_backups(session):
 #
 # Return a list of backups in the user's data directory
 def list_user_backups(session):
+    # TODO -- remove
     backup_list = []
 
     files = os.listdir(f"{session['data_dir']}")
@@ -283,18 +314,21 @@ def list_user_backups(session):
 
 
 #
-# Return a list of files in the user's data directory
+# Return a list of firewall configs from user collection in Mongo
 def list_user_files(session):
     file_list = []
+    collection_name = f"{session['username']}"
 
-    files = os.listdir(f"{session['data_dir']}")
+    logging.debug(f"Prepping Mongo query.")
+    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    db = client[os.environ.get("MONGODB_DATABASE")]
+    collection = db[collection_name]
 
-    for file in files:
-        if ".json" in file:
-            file_list.append(file.replace(".json", ""))
+    logging.debug(f"Reading data from Mongo.")
+    for doc in collection.find():
+        file_list.append(doc["_id"])
 
     file_list.sort()
-
     return file_list
 
 
@@ -312,6 +346,25 @@ def list_user_keys(session):
     key_list.sort()
 
     return key_list
+
+
+def mongo_dump():
+    logging.info(f"Dumping MongoDB Backup")
+
+    timestamp = str(datetime.now()).replace(" ", "-")
+    db_name = os.environ.get("MONGODB_DATABASE")
+    mongo_dump_path = f"data/mongo_dumps/{timestamp}/{db_name}"
+
+    if not os.path.exists(mongo_dump_path):
+        os.makedirs(mongo_dump_path)
+
+    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    db = client[db_name]
+    collist = db.list_collection_names()
+    for coll in collist:
+        with open(os.path.join(mongo_dump_path, f"{coll}.bson"), "wb+") as f:
+            for doc in db[coll].find():
+                f.write(bson.BSON.encode(doc))
 
 
 #
@@ -340,11 +393,16 @@ def process_upload(session, request, app):
         try:
             with open(f"data/uploads/{filename}", "r") as f:
                 data = f.read()
-                json.loads(data)
+                user_data = json.loads(data)
                 flash("File is valid JSON", "success")
-                os.rename(
-                    f"data/uploads/{filename}", f'{session["data_dir"]}/{filename}'
-                )
+                # os.rename(
+                #     f"data/uploads/{filename}", f'{session["data_dir"]}/{filename}'
+                # )
+                if "_id" in user_data:
+                    del user_data["_id"]
+                filename = filename.replace(".json", "")
+                write_user_data_file(f'{session["data_dir"]}/{filename}', user_data)
+                os.remove(f"data/uploads/{filename}.json")
         except:
             flash("File is not valid JSON", "danger")
 
@@ -385,9 +443,18 @@ def process_upload(session, request, app):
 # Read User Data File
 def read_user_data_file(filename):
     try:
-        with open(f"{filename}.json", "r") as f:
-            data = f.read()
-            user_data = json.loads(data)
+        collection_name = filename.split("/")[1]
+        firewall = filename.split("/")[2]
+
+        logging.debug(f"Prepping Mongo query.")
+        client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        db = client[os.environ.get("MONGODB_DATABASE")]
+        collection = db[collection_name]
+        query = {"_id": firewall}
+
+        logging.debug(f"Reading data from Mongo.")
+        for data in collection.find(query):
+            user_data = data
             if "version" not in user_data:
                 user_data["version"] = "0"
                 user_data = update_schema(user_data)
@@ -399,6 +466,7 @@ def read_user_data_file(filename):
                 }
                 write_user_data_file(filename, user_data)
             return user_data
+
     except:
         return {}
 
@@ -484,6 +552,20 @@ def upload_backup_file(backup_file):
 
 
 #
+# Validate Mongodb Connection
+def validate_mongodb_connection(mongodb_uri):
+    try:
+        client = pymongo.MongoClient(mongodb_uri, serverSelectionTimeoutMS=1)
+        client.server_info()
+        logging.info("  |--> MongoDB connection successful.")
+        client.close()
+        return True
+    except:
+        logging.error("  |--> MongoDB connection failed!")
+        sys.exit()
+
+
+#
 # Write User commands.conf file
 def write_user_command_conf_file(session, command_list, delete=False):
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
@@ -502,6 +584,19 @@ def write_user_command_conf_file(session, command_list, delete=False):
 #
 # Write User Data File
 def write_user_data_file(filename, data):
-    with open(f"{filename}.json", "w") as f:
-        f.write(json.dumps(data, indent=4, sort_keys=True))
+    collection_name = filename.split("/")[1]
+    firewall = filename.split("/")[2]
+
+    logging.debug(f"Prepping Mongo query.")
+    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    db = client[os.environ.get("MONGODB_DATABASE")]
+    collection = db[collection_name]
+    query = {"_id": firewall}
+    values = {"$set": data}
+
+    logging.debug(f"Writing data to Mongo.")
+    logging.debug(query)
+    result = collection.update_one(query, values, upsert=True)
+    logging.debug(result.modified_count, " documents updated")
+
     return
