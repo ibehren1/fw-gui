@@ -15,7 +15,7 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Add application files
-ADD .env               /opt/fw-gui/.env
+ADD .env.prod          /opt/fw-gui/.env
 ADD .version           /opt/fw-gui/.version
 ADD app.py             /opt/fw-gui/app.py
 ADD examples/*         /opt/fw-gui/examples/
