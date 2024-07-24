@@ -32,7 +32,10 @@ def mongo_converter():
     file_list = []
     for user in userlist:
 
-        files = os.listdir(f"data/{user}")
+        try:
+            files = os.listdir(f"data/{user}")
+        except:
+            logging.info(f"No data for {user}.")
 
         for file in files:
             if ".json" in file:
