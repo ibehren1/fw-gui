@@ -31,15 +31,13 @@ def mongo_converter():
     # Step through user directories finding json files
     file_list = []
     for user in userlist:
-
         try:
             files = os.listdir(f"data/{user}")
+            for file in files:
+                if ".json" in file:
+                    file_list.append(f"data/{user}/{file}")
         except:
             logging.info(f"No data for {user}.")
-
-        for file in files:
-            if ".json" in file:
-                file_list.append(f"data/{user}/{file}")
 
     file_list.sort()
 

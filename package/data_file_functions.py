@@ -233,9 +233,9 @@ def initialize_data_dir():
         logging.info(" |--> Data directory not found, creating...")
         os.makedirs("data")
 
-    if not os.path.exists("data/mongodb"):
-        logging.info(" |--> MongoDB directory not found, creating...")
-        os.makedirs("data/mongodb")
+    # if not os.path.exists("data/mongodb"):
+    #     logging.info(" |--> MongoDB directory not found, creating...")
+    #     os.makedirs("data/mongodb")
 
     if not os.path.exists("data/backups"):
         logging.info(" |--> Backups directory not found, creating...")
@@ -244,6 +244,10 @@ def initialize_data_dir():
     if not os.path.exists("data/log"):
         logging.info(" |--> Log directory not found, creating...")
         os.makedirs("data/log")
+
+    if not os.path.exists("data/mongo_dumps"):
+        logging.info(" |--> MongoDB directory not found, creating...")
+        os.makedirs("data/mongo_dumps")
 
     if not os.path.exists("data/database"):
         logging.info(" |--> Database directory not found, creating...")
