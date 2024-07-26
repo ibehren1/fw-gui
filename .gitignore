@@ -1,5 +1,7 @@
 **/__pycache__/**
+app.log*
 data/*
 !data/sample.json
+dump/*
+jupyter/*
 reference/*
-app.log*
