@@ -857,7 +857,20 @@ def upload_json():
 if __name__ == "__main__":
     # Read version from .version and display
     with open(".version", "r") as f:
-        logging.info(f"----------------- FW-GUI version: {f.read()} -----------------")
+        logging.info(f"|---------------- FW-GUI version: {f.read()} ----------------|")
+        logging.info(f"|                                                        |")
+        logging.info(f"|                                                        |")
+        logging.info(f"|            *** v1.4.0+ requires MongoDB ***            |")
+        logging.info(f"|                                                        |")
+        logging.info(f"|                                                        |")
+        logging.info(f"|         See https://github.com/ibehren1/fw-gui         |")
+        logging.info(f"|                            or                          |")
+        logging.info(f"|        https://hub.docker.com/r/ibehren1/fw-gui        |")
+        logging.info(f"|                                                        |")
+        logging.info(f"|       for recommended docker-compose.yml updates.      |")
+        logging.info(f"|                                                        |")
+        logging.info(f"|                                                        |")
+        logging.info(f"|--------------------------------------------------------|")
 
     # Load Environment Vars
     load_dotenv()
