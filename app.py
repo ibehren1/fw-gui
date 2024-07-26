@@ -880,7 +880,6 @@ if __name__ == "__main__":
 
     # Validate connection to MongoDB and create backup
     if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
-        mongo_dump()
         mongo_converter()
 
     # Convert all .json files to MongoDB
