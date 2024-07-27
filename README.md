@@ -72,7 +72,9 @@ You can provide an Amazon S3 bucket name and user credentials as environment var
 
 ### Recommended Deployment -- Docker Compose for combined FW-GUI, MongoDB and Nginx Proxy Manager
 
-`Lines highlighted in green are the additions for v1.4.0 to add MongoDB.`
+```diff
++ Lines highlighted in green are the additions for v1.4.0+ to add MongoDB.
+```
 
 ```diff
 version: '3.7'
@@ -139,11 +141,11 @@ volumes:
 
 ### Container on VyOS
 
-No longer recommended with need of additional MongoDB container
+No longer recommended with additional MongoDB container needed.
 
 ### Docker Run
 
-No longer recommended with need of additional MongoDB container
+No longer recommended with additional MongoDB container needed.
 
 ### Docker Compose Minimal (just FW-GUI and MongoDB)
 
