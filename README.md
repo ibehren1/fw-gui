@@ -72,18 +72,20 @@ You can provide an Amazon S3 bucket name and user credentials as environment var
 
 ### Recommended Deployment -- Docker Compose for combined FW-GUI, MongoDB and Nginx Proxy Manager
 
-```yaml
+`Lines highlighted in green are the additions for v1.4.0 to add MongoDB.`
+
+```diff
 version: '3.7'
 services:
   fw-gui:
     image: ibehren1/fw-gui:latest
     container_name: fw-gui
-    depends_on:
-      - mongodb
++    depends_on:
++     - mongodb
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
-      - MONGODB_URI=mongodb
++     - MONGODB_URI=mongodb
       - BUCKET_NAME=<bucket-name>
       - AWS_ACCESS_KEY_ID=<access-key>
       - AWS_SECRET_ACCESS_KEY=<secret-access-key>
@@ -119,20 +121,20 @@ services:
       MYSQL_PASSWORD: 'npm'
     volumes:
       - mysql-data:/var/lib/mysql
-  mongodb:
-    container_name: mongodb
-    image: mongo:latest
-    restart: always
-    volumes:
-      - mongo-data:/data/db
-      - mongo-config:/data/configdb
++ mongodb:
++   container_name: mongodb
++   image: mongo:latest
++   restart: always
++   volumes:
++     - mongo-data:/data/db
++     - mongo-config:/data/configdb
 volumes:
   fwgui-data:
   nginx-data:
   mysql-data:
   letsencrypt:
-  mongo-data:
-  mongo-config:
++ mongo-data:
++ mongo-config:
 ```
 
 ### Container on VyOS
