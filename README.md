@@ -1,8 +1,17 @@
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/ibehren1)
 
+
+
 # FW-GUI for use with VyOS
 
 The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specific configurations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
+
+
+# <span style="color:red">*** Breaking Upgrade v1.4.0+ ***</span>
+
+FW-GUI v1.4.0+ uses a separate MongoDB database to store configurations.  As such, you will need to update your deployment to connect to either an external MongoDB database or deploy a second container to host MongoDB.
+
+See [Deployment](#deployment) section below for Docker Compose configuration files.
 
 ## VyOS Version Support
 
@@ -61,17 +70,24 @@ You can provide an Amazon S3 bucket name and user credentials as environment var
 
 ## Deployment
 
-### Recommended Deployment -- Docker Compose for combined FW-GUI and Nginx Proxy Manager
+### Recommended Deployment -- Docker Compose for combined FW-GUI, MongoDB and Nginx Proxy Manager
 
-```yaml
+```diff
++ Lines highlighted in green are the additions for v1.4.0+ to add MongoDB.
+```
+
+```diff
 version: '3.7'
 services:
   fw-gui:
     image: ibehren1/fw-gui:latest
     container_name: fw-gui
++    depends_on:
++     - mongodb
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
++     - MONGODB_URI=mongodb
       - BUCKET_NAME=<bucket-name>
       - AWS_ACCESS_KEY_ID=<access-key>
       - AWS_SECRET_ACCESS_KEY=<secret-access-key>
@@ -107,63 +123,31 @@ services:
       MYSQL_PASSWORD: 'npm'
     volumes:
       - mysql-data:/var/lib/mysql
++ mongodb:
++   container_name: mongodb
++   image: mongo:latest
++   restart: always
++   volumes:
++     - mongo-data:/data/db
++     - mongo-config:/data/configdb
 volumes:
   fwgui-data:
   nginx-data:
   mysql-data:
   letsencrypt:
++ mongo-data:
++ mongo-config:
 ```
 
 ### Container on VyOS
 
-Run these commands to create the volume for the container and pull the image.
-
-```bash
-mkdir -p /config/fw-gui/data
-sudo chown -R www-data:www-data /config/fw-gui
-add container image ibehren1/fw-gui:latest
-```
-
-Run these commands to add the container to the VyOS configuration.
-
-```bash
-set container name fw-gui allow-host-networks
-set container name fw-gui cap-add 'net-bind-service'
-set container name fw-gui description 'FW GUI'
-set container name fw-gui image 'ibehren1/fw-gui:latest'
-set container name fw-gui environment APP_SECRET_KEY value 'This is the secret key.'
-set container name fw-gui environment DISABLE_REGISTRATION value 'False'
-set container name fw-gui environment BUCKET_NAME value ''
-set container name fw-gui environment AWS_ACCESS_KEY_ID value ''
-set container name fw-gui environment AWS_SECRET_ACCESS_KEY value ''
-set container name fw-gui environment SESSION_TIMEOUT value ''
-set container name fw-gui port http destination '8080'
-set container name fw-gui port http protocol 'tcp'
-set container name fw-gui port http source '80'
-set container name fw-gui restart 'always'
-set container name fw-gui volume fwgui_data destination '/opt/fw-gui/data'
-set container name fw-gui volume fwgui_data source '/config/fw-gui/data'
-```
+No longer recommended with additional MongoDB container needed.
 
 ### Docker Run
 
-```bash
-docker volume create fw-gui_data
+No longer recommended with additional MongoDB container needed.
 
-docker run \
-  --name   fw-gui \
-  --expose 8080 \
-  --env APP_SECRET_KEY='This is the secret key.' \
-  --env DISABLE_REGISTRATION=False \
-  --env BUCKET_NAME="" \
-  --env AWS_ACCESS_KEY_ID="" \
-  --env AWS_SECRET_ACCESS_KEY="" \
-  --env SESSION_TIMEOUT="" \
-  --mount  source=fw-gui_data,target=/opt/fw-gui/data \
-  ibehren1/fw-gui:latest
-```
-
-### Docker Compose
+### Docker Compose Minimal (just FW-GUI and MongoDB)
 
 ```yaml
 version: '3.7'
@@ -171,9 +155,12 @@ services:
   fw-gui:
     image: ibehren1/fw-gui:latest
     container_name: fw-gui
+    depends_on:
+      - mongodb
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
+      - MONGODB_URI=mongodb
       - BUCKET_NAME=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
@@ -183,8 +170,17 @@ services:
     restart: unless-stopped
     volumes:
       - data:/opt/fw-gui/data
+  mongodb:
+    container_name: mongodb
+    image: mongo:latest
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
 volumes:
   data:
+  mongo-data:
+  mongo-config:
 ```
 
 ## Interface

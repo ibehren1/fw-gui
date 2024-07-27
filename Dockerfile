@@ -14,7 +14,7 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Add application files
-ADD .env               /opt/fw-gui/.env
+ADD .env.prod          /opt/fw-gui/.env
 ADD .version           /opt/fw-gui/.version
 ADD app.py             /opt/fw-gui/app.py
 ADD examples/*         /opt/fw-gui/examples/
@@ -23,11 +23,12 @@ ADD requirements.txt   /opt/fw-gui/requirements.txt
 ADD static/*           /opt/fw-gui/static/
 ADD templates/*        /opt/fw-gui/templates/
 RUN mkdir              /opt/fw-gui/data
+RUN mkdir              /opt/fw-gui/data/mongo_dumps
 
 # Install pip modules
 RUN pip3 install -r /opt/fw-gui/requirements.txt
 
-# Set ownership of application files
+# Set ownership of application and data files
 RUN chown -R www-data:www-data /opt/fw-gui
 
 USER www-data:www-data

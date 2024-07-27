@@ -5,6 +5,8 @@
 from datetime import datetime
 from flask import flash
 from flask_login import login_user
+from package.data_file_functions import write_user_data_file
+import json
 import logging
 import os
 
@@ -77,10 +79,17 @@ def process_login(bcrypt, db, request, User):
             data_dir = f"data/{username}"
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
-                # B607 -- Cmd is partial executable path for compatibility between OSes.
-                subprocess.run(
-                    ["cp", "examples/example.json", f"{data_dir}/example.json"]
-                )  # nosec
+
+                file = "examples/example.json"
+                with open(file, "r") as f:
+                    data = f.read()
+                    user_data = json.loads(data)
+                    if "_id" in user_data:
+                        del user_data["_id"]
+                    filename = file.replace(".json", "")
+                    logging.info(f"Loading datafile {filename} into MongoDB.")
+                    write_user_data_file(f"{data_dir}/example", user_data)
+
         else:
             logging.info(
                 f'{datetime.now()} User <{request.form["username"]}> attempted login with incorrect password.'

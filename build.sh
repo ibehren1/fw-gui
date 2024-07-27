@@ -45,7 +45,7 @@ else
         --platform=linux/arm64,linux/amd64 \
         --no-cache \
         --push \
-        --tag ${DOCKER_USER}/fw-gui:dev .
+        --tag registry.internal.behrenshome.com/fw-gui:${VERSION}-dev .
 fi
 
 echo -e "\nBuild of ${VERSION} completed."
