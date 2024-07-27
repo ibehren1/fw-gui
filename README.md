@@ -78,6 +78,8 @@ services:
   fw-gui:
     image: ibehren1/fw-gui:latest
     container_name: fw-gui
+    depends_on:
+      - mongodb
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
@@ -122,13 +124,15 @@ services:
     image: mongo:latest
     restart: always
     volumes:
-      - mongo_data:/data
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
 volumes:
   fwgui-data:
   nginx-data:
   mysql-data:
   letsencrypt:
-  mongo_data:
+  mongo-data:
+  mongo-config:
 ```
 
 ### Container on VyOS
@@ -147,6 +151,8 @@ services:
   fw-gui:
     image: ibehren1/fw-gui:latest
     container_name: fw-gui
+    depends_on:
+      - mongodb
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
@@ -165,10 +171,12 @@ services:
     image: mongo:latest
     restart: always
     volumes:
-      - mongo_data:/data
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
 volumes:
   data:
-  mongo_data:
+  mongo-data:
+  mongo-config:
 ```
 
 ## Interface
