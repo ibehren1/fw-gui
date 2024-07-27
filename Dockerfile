@@ -22,7 +22,6 @@ ADD package/*          /opt/fw-gui/package/
 ADD requirements.txt   /opt/fw-gui/requirements.txt
 ADD static/*           /opt/fw-gui/static/
 ADD templates/*        /opt/fw-gui/templates/
-ADD supervisord.conf   /etc/supervisor/conf.d/supervisord.conf 
 RUN mkdir              /opt/fw-gui/data
 RUN mkdir              /opt/fw-gui/data/mongo_dumps
 
