@@ -38,14 +38,15 @@ if [ "${BUILD_TYPE}" == "Prod" ]; then
         --platform=linux/arm64,linux/amd64 \
         --no-cache \
         --push \
-        --tag ${DOCKER_USER}/fw-gui:latest \
-        --tag ${DOCKER_USER}/fw-gui:${VERSION} . 
+        --tag ${DOCKER_USER}/fw-gui:${VERSION} \
+        --tag ${DOCKER_USER}/fw-gui:latest .
 else
     docker buildx build \
         --platform=linux/arm64,linux/amd64 \
         --no-cache \
         --push \
-        --tag registry.internal.behrenshome.com/fw-gui:${VERSION}-dev .
+        --tag registry.internal.behrenshome.com/fw-gui:dev-${VERSION} \
+        --tag registry.internal.behrenshome.com/fw-gui:dev-latest .
 fi
 
-echo -e "\nBuild of ${VERSION} completed."
+echo -e "\n${BUILD_TYPE} Build of ${VERSION} completed."
