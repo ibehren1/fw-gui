@@ -41,8 +41,6 @@ def mongo_converter():
 
     file_list.sort()
 
-    print(file_list)
-
     # Step through file list and load into MongoDB
     for file in file_list:
         with open(file, "r") as f:
