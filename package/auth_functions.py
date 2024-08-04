@@ -64,6 +64,7 @@ def change_password(bcrypt, db, User, username, request):
 def check_version():
     with open(".version", "r") as f:
         local_version = f.read().replace("v", "")
+        logging.debug(f"Local version: {local_version}")
 
     try:
         # Get remote version from https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version
@@ -71,9 +72,10 @@ def check_version():
             "GET", "https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version"
         )
         remote_version = resp.data.decode("utf-8").replace("v", "")
-        print(f"Remote version: {remote_version}")
+        logging.debug(f"Remote version: {remote_version}")
+
     except:
-        print("Unable to check remote version.")
+        logging.info("Unable to check remote version.")
         remote_version = "0.0.0"
 
     if remote_version != "0.0.0":
@@ -82,6 +84,7 @@ def check_version():
 
         if Version(local_version) > Version(remote_version):
             flash("Running dev version.", "warning")
+
     return
 
 
