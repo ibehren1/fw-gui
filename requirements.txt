@@ -8,6 +8,7 @@ flask_sqlalchemy
 Jinja2
 napalm
 napalm-vyos
+packaging
 python-dotenv
 pymongo
 waitress
