@@ -6,9 +6,11 @@ from datetime import datetime
 from flask import flash
 from flask_login import login_user
 from package.data_file_functions import write_user_data_file
+from packaging.version import Version
 import json
 import logging
 import os
+import urllib3
 
 # B404 -- security implications considered.
 import subprocess  # nosec
@@ -58,6 +60,35 @@ def change_password(bcrypt, db, User, username, request):
 
 
 #
+# Check Verion
+def check_version():
+    with open(".version", "r") as f:
+        local_version = f.read().replace("v", "")
+        logging.debug(f"Local version: {local_version}")
+
+    try:
+        # Get remote version from https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version
+        resp = urllib3.request(
+            "GET", "https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version"
+        )
+        remote_version = resp.data.decode("utf-8").replace("v", "")
+        logging.debug(f"Remote version: {remote_version}")
+
+    except:
+        logging.info("Unable to check remote version.")
+        remote_version = "0.0.0"
+
+    if remote_version != "0.0.0":
+        if Version(local_version) < Version(remote_version):
+            flash(f"New version v{remote_version} available.", "warning")
+
+        if Version(local_version) > Version(remote_version):
+            flash("Running dev version.", "warning")
+
+    return
+
+
+#
 # Process login from user/password
 def process_login(bcrypt, db, request, User):
     if request.form["username"] == "":
@@ -75,6 +106,7 @@ def process_login(bcrypt, db, request, User):
                 f'{datetime.now()} User <{request.form["username"]}> logged in.'
             )
             login_user(result)
+            check_version()
             username = f"{result.username}"
             data_dir = f"data/{username}"
             if not os.path.exists(data_dir):

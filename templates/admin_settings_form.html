@@ -10,8 +10,10 @@
     </tr>
     <tr>
         <td width="75%">
-            While encrypted, any SSH keys which have been uploaded are excluded from backups.<br><br>
-            If an S3 bucket name and proper credentials are provided as environment variables to the application, the
+            While encrypted, any <font class="yellow_text">SSH keys</font> which have been uploaded <font
+                class="yellow_text">are excluded from backups</font>.<br><br>
+            If an S3 bucket name and proper credentials are provided as environment variables to the application,
+            the
             backup file is uploaded to the bucket for offsite storage.
         </td>
     </tr>
@@ -24,7 +26,7 @@
         <td width="75%">
             Press button to create a full backup of the data directory.<br><br>
             The backup will be created in the data/backups directory and must be accessed via operating system level
-            access to the filesystem.
+            access to the filesystem. The backup includes all user directories and a full MongoDB dump.
         </td>
         <td align="center" width="25%">
             <form action="/admin_settings" method=post enctype=multipart/form-data>
@@ -43,35 +45,6 @@
             {% endfor %}
         </td>
     </tr>
-    <tr>
-        <td colspan="2" align="left">
-            <p class="section_heading">Create User Backup</p>
-        </td>
-    </tr>
-    <tr>
-        <td width="75%">
-            Press button to create a backup of the user's data directory.<br><br>
-            The backup will be created in the users directory and can be downloaded by clicking the link below.
-        </td>
-        <td width="25%">
-            <form action="/admin_settings" method=post enctype=multipart/form-data>
-                <input type="hidden" id="backup" name="backup" value="user_backup">
-                <input class="button" type="submit" value="Create User Backup" size="25%">
-            </form>
-        </td>
-    </tr>
-    <td colspan="2">
-        <li class="li"><b>Existing User Backups</b></li>
-        {% for file in backup_list%}
-        <ul class="ul">
-            <form action="/download" method=post>
-                <input type="hidden" id="path" name="path" value="data/{{username}}/">
-                <input type="hidden" id="filename" name="filename" value="{{file}}">
-                <a class="link_yellow" href="#" onclick="this.parentNode.submit()">{{file}}</a>
-            </form>
-        </ul>
-        {% endfor %}
-    </td>
 </table>
 <br><br>
 {% endblock body %}

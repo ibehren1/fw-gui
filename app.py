@@ -26,6 +26,12 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from io import BytesIO
+from package.auth_functions import (
+    change_password,
+    process_login,
+    query_user_by_id,
+    register_user,
+)
 from package.chain_functions import (
     add_rule_to_data,
     add_chain_to_data,
@@ -34,12 +40,6 @@ from package.chain_functions import (
     assemble_detail_list_of_chains,
     delete_rule_from_data,
     reorder_chain_rule_in_data,
-)
-from package.database_functions import (
-    change_password,
-    process_login,
-    query_user_by_id,
-    register_user,
 )
 from package.data_file_functions import (
     add_extra_items,
