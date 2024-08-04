@@ -101,6 +101,11 @@ footer {
     color: #1A1C1A;
 }
 
+.yellow_text {
+    /* color: #ff9000; */
+    color: #ffbf12;
+    text-decoration: none;
+}
 
 /* --Buttons-- */
 
