@@ -889,6 +889,8 @@ def select_firewall_config():
     if request.form["file"].__contains__("/"):
         session["firewall_name"] = request.form["file"].split("/")[0]
         snapshot = request.form["file"].split("/")[1]
+        if snapshot == "delete":
+            snapshot_name = request.form["file"].split("/")[2]
     # Else selecting a firewall config
     else:
         session["firewall_name"] = request.form["file"]
@@ -899,7 +901,7 @@ def select_firewall_config():
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
     if snapshot == "create":
-        snapshot_name = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+        snapshot_name = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
 
         user_data = read_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}'
@@ -908,6 +910,12 @@ def select_firewall_config():
             f'{session["data_dir"]}/{session["firewall_name"]}',
             user_data,
             snapshot_name,
+        )
+
+    # If snapshot name is "delete" then delete a snapshot
+    if snapshot == "delete":
+        delete_user_data_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}/{snapshot_name}'
         )
 
     session["hostname"], session["port"] = get_system_name(session)

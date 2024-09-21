@@ -178,7 +178,12 @@ def delete_user_data_file(filename):
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
-    query = {"_id": firewall}
+
+    if len(filename.split("/")) > 3:
+        snapshot_name = filename.split("/")[3]
+        query = {"firewall": firewall, "snapshot": snapshot_name}
+    else:
+        query = {"_id": firewall}
 
     logging.debug(f"Deleting data from Mongo.")
     logging.debug(query)
@@ -304,19 +309,20 @@ def list_full_backups(session):
 # Return a list of snapshots for currently selected firewall
 def list_snapshots(session):
     snapshot_list = []
-    collection_name = f"{session['username']}"
 
-    logging.debug(f"Prepping Mongo query.")
-    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
-    db = client[os.environ.get("MONGODB_DATABASE")]
-    collection = db[collection_name]
-    query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
+    if "firewall_name" in session:
+        collection_name = f"{session['username']}"
 
-    logging.debug(f"Reading data from Mongo.")
-    for doc in collection.find(query).sort("snapshot", pymongo.DESCENDING):
-        snapshot_list.append({"name": doc["snapshot"], "id": doc["firewall"]})
+        logging.debug(f"Prepping Mongo query.")
+        client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        db = client[os.environ.get("MONGODB_DATABASE")]
+        collection = db[collection_name]
+        query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
 
-    # snapshot_list.sort()
+        logging.debug(f"Reading data from Mongo.")
+        for doc in collection.find(query).sort("snapshot", pymongo.DESCENDING):
+            snapshot_list.append({"name": doc["snapshot"], "id": doc["firewall"]})
+
     logging.debug("Snapshot List: " + str(snapshot_list))
 
     return snapshot_list
@@ -469,7 +475,6 @@ def process_upload(session, request, app):
 #
 # Read User Data File
 def read_user_data_file(filename, snapshot="current"):
-    logging.info(snapshot)
     try:
         collection_name = filename.split("/")[1]
         firewall = filename.split("/")[2]
