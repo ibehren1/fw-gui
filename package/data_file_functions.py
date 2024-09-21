@@ -178,7 +178,12 @@ def delete_user_data_file(filename):
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
-    query = {"_id": firewall}
+
+    if len(filename.split("/")) > 3:
+        snapshot_name = filename.split("/")[3]
+        query = {"firewall": firewall, "snapshot": snapshot_name}
+    else:
+        query = {"_id": firewall}
 
     logging.debug(f"Deleting data from Mongo.")
     logging.debug(query)
@@ -301,6 +306,29 @@ def list_full_backups(session):
 
 
 #
+# Return a list of snapshots for currently selected firewall
+def list_snapshots(session):
+    snapshot_list = []
+
+    if "firewall_name" in session:
+        collection_name = f"{session['username']}"
+
+        logging.debug(f"Prepping Mongo query.")
+        client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        db = client[os.environ.get("MONGODB_DATABASE")]
+        collection = db[collection_name]
+        query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
+
+        logging.debug(f"Reading data from Mongo.")
+        for doc in collection.find(query).sort("snapshot", pymongo.DESCENDING):
+            snapshot_list.append({"name": doc["snapshot"], "id": doc["firewall"]})
+
+    logging.debug("Snapshot List: " + str(snapshot_list))
+
+    return snapshot_list
+
+
+#
 # Return a list of backups in the user's data directory
 def list_user_backups(session):
     # TODO -- remove
@@ -318,7 +346,7 @@ def list_user_backups(session):
 
 
 #
-# Return a list of firewall configs from user collection in Mongo
+# Return a list of "named" firewall configs ({"_id": "<firewall_name>"}) from user collection in Mongo (ignore snapshots)
 def list_user_files(session):
     file_list = []
     collection_name = f"{session['username']}"
@@ -327,9 +355,10 @@ def list_user_files(session):
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
+    query = {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
 
     logging.debug(f"Reading data from Mongo.")
-    for doc in collection.find():
+    for doc in collection.find(query):
         file_list.append(doc["_id"])
 
     file_list.sort()
@@ -445,7 +474,7 @@ def process_upload(session, request, app):
 
 #
 # Read User Data File
-def read_user_data_file(filename):
+def read_user_data_file(filename, snapshot="current"):
     try:
         collection_name = filename.split("/")[1]
         firewall = filename.split("/")[2]
@@ -454,7 +483,11 @@ def read_user_data_file(filename):
         client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
         db = client[os.environ.get("MONGODB_DATABASE")]
         collection = db[collection_name]
-        query = {"_id": firewall}
+
+        if snapshot == "current":
+            query = {"_id": firewall}
+        else:
+            query = {"firewall": firewall, "snapshot": snapshot}
 
         logging.debug(f"Reading data from Mongo.")
         for data in collection.find(query):
@@ -468,6 +501,12 @@ def read_user_data_file(filename):
                     "hostname": "None",
                     "port": "None",
                 }
+                write_user_data_file(filename, user_data)
+
+            # If this was not a read of "current", then we want to immediately
+            #   write over current with the snapshot data.
+            if snapshot != "current":
+                delete_user_data_file(filename)
                 write_user_data_file(filename, user_data)
             return user_data
 
@@ -587,7 +626,7 @@ def write_user_command_conf_file(session, command_list, delete=False):
 
 #
 # Write User Data File
-def write_user_data_file(filename, data):
+def write_user_data_file(filename, data, snapshot="current"):
     collection_name = filename.split("/")[1]
     firewall = filename.split("/")[2]
 
@@ -595,7 +634,23 @@ def write_user_data_file(filename, data):
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
-    query = {"_id": firewall}
+
+    if snapshot == "current":
+        # Remove items that should not be in a "current" config.
+        if "_id" in data:
+            del data["_id"]
+        if "firewall" in data:
+            del data["firewall"]
+        if "snapshot" in data:
+            del data["snapshot"]
+        query = {"_id": firewall}
+    else:
+        if "_id" in data:
+            del data["_id"]
+        # Add snapshot and firewall to the data.
+        data["firewall"] = firewall
+        data["snapshot"] = snapshot
+        query = {"firewall": firewall, "snapshot": snapshot}
     values = {"$set": data}
 
     logging.debug(f"Writing data to Mongo.")

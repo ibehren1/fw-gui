@@ -69,6 +69,14 @@ body {
     overflow-x: hidden;
 }
 
+small {
+    font-family: Roboto, sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
 .page_background {
     background-color: #606263;
     color: aliceblue;
@@ -260,6 +268,14 @@ h4 {
     font-weight: bold;
     font-variant: small-caps;
     font-size: x-large;
+    /* color: #ff9000; */
+    color: #ffbf12;
+}
+
+.section_subheading {
+    font-weight: bold;
+    font-variant: small-caps;
+    font-size: large;
     /* color: #ff9000; */
     color: #ffbf12;
 }

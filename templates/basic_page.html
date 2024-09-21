@@ -103,6 +103,32 @@
                         <tr>
                             <td align="center" colspan="2">
                                 <input class="button" type="submit" name="file" value="{{file}}" style="width: 75%">
+                                {% if file == firewall_name %}
+                                <hr width="75%">
+                                <p class="section_subheading">Snapshots</p>
+                                <button class="button" type="submit" name="file" value="{{file}}/create"
+                                    style="width: 30%">Create</button>
+                                <br>
+                                <font style="font-size: 12">
+                                    Clicking a snapshot below will load it and overwrite your<br>
+                                    current "working copy" config. If you have unsaved<br>
+                                    changes, create a new snapshot first.<br>
+                                </font>
+                                <br>
+                                {% if snapshot_list%}
+                                {% for snapshot in snapshot_list %}
+                                <button class="button" type="submit" name="file"
+                                    value="{{snapshot.id}}/{{snapshot.name}}" style="width: 65%">{{snapshot.name}}
+                                </button>
+                                <button class="button" type="submit" name="file"
+                                    value="{{snapshot.id}}/delete/{{snapshot.name}}" style="width: 5%">
+                                    <font style="color: red;">X</font>
+                                </button>
+                                <ul></ul>
+                                {% endfor %}
+                                {% endif %}
+                                <hr width="75%">
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
