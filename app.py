@@ -50,11 +50,13 @@ from package.data_file_functions import (
     get_system_name,
     initialize_data_dir,
     list_full_backups,
+    list_snapshots,
     list_user_backups,
     list_user_files,
     list_user_keys,
     mongo_dump,
     process_upload,
+    read_user_data_file,
     validate_mongodb_connection,
     write_user_command_conf_file,
     write_user_data_file,
@@ -186,11 +188,13 @@ def admin_settings():
             backup_list = list_user_backups(session)
             file_list = list_user_files(session)
             full_backup_list = list_full_backups(session)
+            snapshot_list = list_snapshots(session)
 
         return render_template(
             "admin_settings_form.html",
             backup_list=backup_list,
             file_list=file_list,
+            snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
             username=session["username"],
         )
@@ -199,11 +203,13 @@ def admin_settings():
         backup_list = list_user_backups(session)
         file_list = list_user_files(session)
         full_backup_list = list_full_backups(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "admin_settings_form.html",
             backup_list=backup_list,
             file_list=file_list,
+            snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
             username=session["username"],
         )
@@ -236,10 +242,12 @@ def user_change_password():
 
     else:
         file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "user_change_password_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             username=session["username"],
         )
 
@@ -315,10 +323,12 @@ def group_add():
 
     else:
         file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "group_add_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -335,6 +345,7 @@ def group_delete():
     else:
         file_list = list_user_files(session)
         group_list = assemble_detail_list_of_groups(session)
+        snapshot_list = list_snapshots(session)
 
         # If there are no groups, just display the config
         if group_list == []:
@@ -343,6 +354,7 @@ def group_delete():
         return render_template(
             "group_delete_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             group_list=group_list,
             username=session["username"],
@@ -354,10 +366,12 @@ def group_delete():
 def group_view():
     file_list = list_user_files(session)
     group_list = assemble_detail_list_of_groups(session)
+    snapshot_list = list_snapshots(session)
 
     return render_template(
         "group_view.html",
         file_list=file_list,
+        snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         group_list=group_list,
         username=session["username"],
@@ -376,10 +390,12 @@ def interface_add():
 
     else:
         file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "interface_add_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -403,10 +419,12 @@ def interface_view():
     file_list = list_user_files(session)
     group_list = assemble_detail_list_of_groups(session)
     interface_list = list_interfaces(session)
+    snapshot_list = list_snapshots(session)
 
     return render_template(
         "interface_view.html",
         file_list=file_list,
+        snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         interface_list=interface_list,
         username=session["username"],
@@ -425,10 +443,12 @@ def chain_add():
 
     else:
         file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "chain_add_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -450,6 +470,7 @@ def chain_rule_add():
         file_list = list_user_files(session)
         chain_list = assemble_list_of_chains(session)
         group_list = assemble_detail_list_of_groups(session)
+        snapshot_list = list_snapshots(session)
         if chain_list == []:
             return redirect(url_for("chain_add"))
 
@@ -462,6 +483,7 @@ def chain_rule_add():
             "chain_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            snapshot_list=snapshot_list,
             chain_name=fw_chain,
             group_list=group_list,
             firewall_name=session["firewall_name"],
@@ -480,6 +502,7 @@ def chain_rule_delete():
     else:
         file_list = list_user_files(session)
         rule_list = assemble_list_of_rules(session)
+        snapshot_list = list_snapshots(session)
 
         # If there are no rules, just display the config
         if rule_list == []:
@@ -488,6 +511,7 @@ def chain_rule_delete():
         return render_template(
             "chain_rule_delete_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             rule_list=rule_list,
             username=session["username"],
@@ -510,6 +534,7 @@ def chain_rule_reorder():
 def chain_view():
     file_list = list_user_files(session)
     chain_dict = assemble_detail_list_of_chains(session)
+    snapshot_list = list_snapshots(session)
 
     if chain_dict == {}:
         return redirect(url_for("chain_add"))
@@ -518,6 +543,7 @@ def chain_view():
         "chain_view.html",
         chain_dict=chain_dict,
         file_list=file_list,
+        snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         username=session["username"],
     )
@@ -535,10 +561,12 @@ def filter_add():
 
     else:
         file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "filter_add_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -559,6 +587,7 @@ def filter_rule_add():
         file_list = list_user_files(session)
         filter_list = assemble_list_of_filters(session)
         interface_list = list_interfaces(session)
+        snapshot_list = list_snapshots(session)
 
         if request.args.get("filter"):
             filter = request.args.get("filter")
@@ -586,6 +615,7 @@ def filter_rule_add():
             "filter_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
+            snapshot_list=snapshot_list,
             filter_name=filter,
             filter_list=filter_list,
             firewall_name=session["firewall_name"],
@@ -605,6 +635,7 @@ def filter_rule_delete():
     else:
         file_list = list_user_files(session)
         rule_list = assemble_list_of_filter_rules(session)
+        snapshot_list = list_snapshots(session)
 
         # If there are no rules, just display the config
         if rule_list == []:
@@ -613,6 +644,7 @@ def filter_rule_delete():
         return render_template(
             "filter_rule_delete_form.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             rule_list=rule_list,
             username=session["username"],
@@ -635,6 +667,7 @@ def filter_rule_reorder():
 def filter_view():
     file_list = list_user_files(session)
     filter_dict = assemble_detail_list_of_filters(session)
+    snapshot_list = list_snapshots(session)
 
     if filter_dict == {}:
         return redirect(url_for("filter_add"))
@@ -642,6 +675,7 @@ def filter_view():
     return render_template(
         "filter_view.html",
         file_list=file_list,
+        snapshot_list=snapshot_list,
         filter_dict=filter_dict,
         firewall_name=session["firewall_name"],
         username=session["username"],
@@ -663,11 +697,13 @@ def configuration_extra_items():
     else:
         file_list = list_user_files(session)
         extra_items = get_extra_items(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "configuration_extra_items.html",
             extra_items=extra_items,
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -685,10 +721,12 @@ def configuration_hostname_add():
 
     else:
         file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "configuration_hostname_add.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -721,10 +759,12 @@ def configuration_push():
             message = commit_to_firewall(connection_string, session)
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "configuration_push.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
@@ -743,10 +783,12 @@ def configuration_push():
         key_list = list_user_keys(session)
         message, config = generate_config(session)
         firewall_reachable = test_connection(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "configuration_push.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
@@ -778,6 +820,7 @@ def create_config():
 @login_required
 def display_config():
     file_list = list_user_files(session)
+    snapshot_list = list_snapshots(session)
 
     if "firewall_name" not in session:
         message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
@@ -785,16 +828,19 @@ def display_config():
         return render_template(
             "configuration_display.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             message=message,
             username=session["username"],
         )
 
     else:
+        snapshot_list = list_snapshots(session)
         message, config = generate_config(session)
 
         return render_template(
             "configuration_display.html",
             file_list=file_list,
+            snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             message=message,
             username=session["username"],
@@ -839,7 +885,30 @@ def download_json():
 @app.route("/select_firewall_config", methods=["POST"])
 @login_required
 def select_firewall_config():
-    session["firewall_name"] = request.form["file"]
+    # If selecting a snapshot
+    if request.form["file"].__contains__("/"):
+        session["firewall_name"] = request.form["file"].split("/")[0]
+        snapshot = request.form["file"].split("/")[1]
+    # Else selecting a firewall config
+    else:
+        session["firewall_name"] = request.form["file"]
+        snapshot = "current"
+
+    # Execute a read to read the "snapshot" version into "current"
+    read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', snapshot)
+
+    # If snapshot name is "create", then create a snapshot with date/time stamp
+    if snapshot == "create":
+        snapshot_name = datetime.now().strftime("%m/%d/%Y %H:%M:%S")
+
+        user_data = read_user_data_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}'
+        )
+        write_user_data_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}',
+            user_data,
+            snapshot_name,
+        )
 
     session["hostname"], session["port"] = get_system_name(session)
 

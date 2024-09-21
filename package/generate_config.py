@@ -42,6 +42,8 @@ def generate_config(session):
         if (
             ip_version != "extra-items"
             and ip_version != "_id"
+            and ip_version != "firewall"
+            and ip_version != "snapshot"
             and ip_version != "interfaces"
             and ip_version != "system"
             and ip_version != "version"
