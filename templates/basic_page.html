@@ -51,15 +51,15 @@
             </td>
             <td align="right">
                 <a href="{{ url_for('admin_settings')}}">
-                    <input class="button" type="submit" value="Admin Settings" style="width: 130px">
+                    <input class="snapshot_button" type="submit" value="Admin Settings" style="width: 130px">
                 </a>
 
                 <a href="{{ url_for('user_change_password')}}">
-                    <input class="button" type="submit" value="Change Password" style="width: 130px">
+                    <input class="snapshot_button" type="submit" value="Change Password" style="width: 130px">
                 </a>
 
                 <a href="{{ url_for('user_logout')}}">
-                    <input class="button" type="submit" value="Logout" style="width: 80px">
+                    <input class="snapshot_button" type="submit" value="Logout" style="width: 80px">
                 </a>
             </td>
         </tr>
@@ -106,8 +106,10 @@
                                 {% if file == firewall_name %}
                                 <hr width="75%">
                                 <p class="section_subheading">Snapshots</p>
-                                <button class="button" type="submit" name="file" value="{{file}}/create"
-                                    style="width: 30%">Create</button>
+                                <button class="add_snapshot_button" type="submit" name="file" value="{{file}}/create"
+                                    style="width: 30%">
+                                    Create
+                                </button>
                                 <br>
                                 <font style="font-size: 12">
                                     Clicking a snapshot below will load it and overwrite your<br>
@@ -117,12 +119,12 @@
                                 <br>
                                 {% if snapshot_list%}
                                 {% for snapshot in snapshot_list %}
-                                <button class="button" type="submit" name="file"
+                                <button class="snapshot_button" type="submit" name="file"
                                     value="{{snapshot.id}}/{{snapshot.name}}" style="width: 65%">{{snapshot.name}}
                                 </button>
-                                <button class="button" type="submit" name="file"
+                                <button class="delete_snapshot_button" type="submit" name="file"
                                     value="{{snapshot.id}}/delete/{{snapshot.name}}" style="width: 5%">
-                                    <font style="color: red;">X</font>
+                                    X
                                 </button>
                                 <ul></ul>
                                 {% endfor %}
@@ -146,7 +148,7 @@
                         <td align="center" colspan="2">
                             <form action="/create_config" method=post enctype=multipart/form-data>
                                 <input type="text" id="config_name" name="config_name" maxlength="50" size="34"><br>
-                                <input class="button" type="submit" style="width: 75%;" value="Create Config">
+                                <input class="add_button" type="submit" style="width: 75%;" value="Create Config">
                             </form>
                         </td>
                     </tr>
@@ -169,7 +171,7 @@
                                     <option value="{{file}}">{{file}}</option>
                                     {% endfor %}
                                 </select>
-                                <input class="button" type="submit" style="width: 75%;" value="Delete Config">
+                                <input class="delete_button" type="submit" style="width: 75%;" value="Delete Config">
                             </form>
                         </td>
                     </tr>
@@ -186,7 +188,7 @@
                         <td align="center" colspan="2">
                             <form action="/upload_json" method=post enctype=multipart/form-data>
                                 <input type="file" name="file">
-                                <input class="button" type="submit" style="width: 75%;" value="Upload Datafile">
+                                <input class="grey_button" type="submit" style="width: 75%;" value="Upload Datafile">
                             </form>
                         </td>
                     </tr>
@@ -201,7 +203,7 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
-                                <input class="button" type="submit" value="Download Datafile" style="width: 75%;">
+                                <input class="grey_button" type="submit" value="Download Datafile" style="width: 75%;">
                             </a>
                         </td>
                     </tr>
@@ -240,16 +242,13 @@
                         </td>
                     </tr>
                     <tr>
-                        <td align="right">
+                        <td align="center" colspan="2">
                             <a href="{{ url_for('interface_view')}}">
-                                <input class="button" type="submit" value="View Interfaces" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Interfaces" style="width: 75%">
                             </a>
                         </td>
-                        <td align="left">
-                            <a href="{{ url_for('interface_add')}}">
-                                <input class="button" type="submit" value="Add Interface" style="width: 75%">
-                            </a>
-                        </td>
+                        <td></td>
+
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
@@ -262,19 +261,7 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('group_view')}}">
-                                <input class="button" type="submit" value="View Groups" style="width: 75%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="right">
-                            <a href="{{ url_for('group_add')}}">
-                                <input class="button" type="submit" value="Add Group" style="width: 75%">
-                            </a>
-                        </td>
-                        <td align="left">
-                            <a href="{{ url_for('group_delete')}}">
-                                <input class="button" type="submit" value="Delete Group" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Groups" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -289,26 +276,7 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('chain_view')}}">
-                                <input class="button" type="submit" value="View Chains" style="width: 75%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" colspan="2">
-                            <a href="{{ url_for('chain_add')}}">
-                                <input class="button" type="submit" value="Add Chain" style="width: 75%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="right">
-                            <a href="{{ url_for('chain_rule_add')}}">
-                                <input class="button" type="submit" value="Add Rule" style="width: 75%">
-                            </a>
-                        </td>
-                        <td align="left">
-                            <a href="{{ url_for('chain_rule_delete')}}">
-                                <input class="button" type="submit" value="Delete Rule" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Chains" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -323,26 +291,7 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('filter_view')}}">
-                                <input class="button" type="submit" value="View Filters" style="width: 75%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" colspan="2">
-                            <a href="{{ url_for('filter_add')}}">
-                                <input class="button" type="submit" value="Add Filter" style="width: 75%">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="right">
-                            <a href="{{ url_for('filter_rule_add')}}">
-                                <input class="button" type="submit" value="Add Rule" style="width: 75%">
-                            </a>
-                        </td>
-                        <td align="left">
-                            <a href="{{ url_for('filter_rule_delete')}}">
-                                <input class="button" type="submit" value="Delete Rule" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Filters" style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -357,7 +306,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('configuration_extra_items')}}">
-                                <input class="button" type="submit" value="Add Extra Configurations" style="width: 75%">
+                                <input class="grey_button" type="submit" value="Add Extra Configurations"
+                                    style="width: 75%">
                             </a>
                         </td>
                     </tr>
@@ -375,21 +325,23 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('display_config')}}">
-                                <input class="button" type="submit" value="Display Configuration" style="width: 75%">
+                                <input class="grey_button" type="submit" value="Display Configuration"
+                                    style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('configuration_push')}}">
-                                <input class="button" type="submit" value="Push to Firewall" style="width: 75%">
+                                <input class="grey_button" type="submit" value="Push to Firewall" style="width: 75%">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
-                                <input class="button" type="submit" style="width: 75%;" value="Download Configuration">
+                                <input class="grey_button" type="submit" style="width: 75%;"
+                                    value="Download Configuration">
                             </a>
                         </td>
                     </tr>
