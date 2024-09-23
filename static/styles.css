@@ -133,6 +133,36 @@ footer {
     /* writing-mode: vertical-lr; */
 }
 
+.add_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 30px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+    /* writing-mode: vertical-lr; */
+}
+
+.add_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #4bb964);
+    /* writing-mode: vertical-lr; */
+}
+
+.add_snapshot_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 20px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+}
+
+.add_snapshot_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #4bb964);
+}
+
 .button {
     color: #323231;
     font-weight: bold;
@@ -148,6 +178,20 @@ footer {
     /* background: linear-gradient(135deg, #ffdc7e, #ffbe12); */
     /* background: #ff9900; */
     background: #ffa812;
+}
+
+.grey_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 30px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+}
+
+.grey_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #ffbf12);
 }
 
 .delete_rule_button {
@@ -166,6 +210,52 @@ footer {
     writing-mode: vertical-lr;
 }
 
+.delete_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 30px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+    /* writing-mode: vertical-lr; */
+}
+
+.delete_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #cd4d4d);
+    /* writing-mode: vertical-lr; */
+}
+
+.delete_rule_button_hr {
+    color: #323231;
+    font-weight: bold;
+    min-height: 20px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+    /* writing-mode: vertical-lr; */
+}
+
+.delete_rule_button_hr:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #cd4d4d);
+    /* writing-mode: vertical-lr; */
+}
+
+.delete_snapshot_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 20px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+}
+
+.delete_snapshot_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #cd4d4d);
+}
+
 .reorder_rule_button {
     color: #323231;
     font-weight: bold;
@@ -180,6 +270,19 @@ footer {
     background: linear-gradient(135deg, #d4d2cd, #ffbf12);
 }
 
+.snapshot_button {
+    color: #323231;
+    font-weight: bold;
+    min-height: 20px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(135deg, #d4d2cd, #d4d2cd);
+}
+
+.snapshot_button:hover {
+    color: #323231;
+    background: linear-gradient(135deg, #d4d2cd, #ffbf12);
+}
 
 /* --Headings-- */
 
