@@ -475,6 +475,7 @@ def process_upload(session, request, app):
 #
 # Read User Data File
 def read_user_data_file(filename, snapshot="current"):
+    # filename format:  data/<user>/<firewall_name>
     try:
         collection_name = filename.split("/")[1]
         firewall = filename.split("/")[2]
@@ -627,6 +628,7 @@ def write_user_command_conf_file(session, command_list, delete=False):
 #
 # Write User Data File
 def write_user_data_file(filename, data, snapshot="current"):
+    # filename format:  data/<user>/<firewall_name>
     collection_name = filename.split("/")[1]
     firewall = filename.split("/")[2]
 
