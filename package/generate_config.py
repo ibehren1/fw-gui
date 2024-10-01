@@ -38,11 +38,23 @@ def generate_config(session):
         config.append("")
 
     # Work through each IP Version, Chain and Rule adding to config
+    if "flowtables" in user_data:
+        config.append(f"#\n#\n# FLOW TABLES\n#\n#\n")
+ 
+        for flowtable in user_data["flowtables"]:
+            config.append(f"# Flowtable: {flowtable["name"]}")
+            for interface in flowtable["interfaces"]:
+                config.append(f"set firewall flowtable {flowtable["name"]} interface '{interface}'")
+            config.append(f"set firewall flowtable {flowtable["name"]} description '{flowtable["description"]}'")
+            config.append(f"set firewall flowtable {flowtable["name"]} offload software")
+            config.append("")
+
     for ip_version in user_data:
         if (
             ip_version != "extra-items"
             and ip_version != "_id"
             and ip_version != "firewall"
+            and ip_version != "flowtables"
             and ip_version != "snapshot"
             and ip_version != "interfaces"
             and ip_version != "system"
