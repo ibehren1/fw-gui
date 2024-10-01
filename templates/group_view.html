@@ -523,7 +523,7 @@
 
         <td align="center">
             <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
+                <input type="hidden" id="group" name="group" value="{{item.ip_version}},{{item.group_name}}">
                 <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
             </form>
         </td>
