@@ -1,0 +1,60 @@
+{% extends "basic_page.html" %}
+{% block body %}
+
+
+<br>
+
+<p class="section_heading">Flowtables</p>
+<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Name
+    </th>
+
+    <th colspan="2">
+        Description
+    </th>
+
+    <th colspan="2">
+        Interfaces
+    </th>
+
+    <th width="45px">
+        Action
+    </th>
+
+    {% for item in flowtable_list|sort(attribute='name') %}
+    <tr>
+        <td align="center">
+            <font style="font-size: 20; font-variant: small-caps;">
+                {{item.name}}
+            </font>
+        </td>
+
+        <td colspan="2">
+            {{item.description}}
+        </td>
+        <td colspan="2">
+            {% for interface in item.interfaces %}
+            <li>{{interface}}</li>
+            {% endfor %}
+        </td>
+
+        <td align="center">
+            <form action="/flowtable_delete" , method="post">
+                <input type="hidden" id="flowtable" name="flowtable" value="{{item.name}}">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td colspan="6">
+            <form action="/flowtable_add" , method="get">
+                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
+                <input class="add_rule_button" type="submit" value="Add Flowtable">
+            </form>
+        </td>
+    </tr>
+</table>
+<br><br>
+{% endblock body %}
