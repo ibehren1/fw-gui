@@ -24,6 +24,7 @@ It <b>does not</b> define or configure the interface in VyOS.
     {% for item in interface_list|sort(attribute='name') %}
     <tr>
         <td align="center">
+            <image src="static/network-interface-32-yellow.svg" align="center" width="20" height="20"></image>
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.name}}
             </font>
