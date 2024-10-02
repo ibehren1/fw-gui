@@ -3,9 +3,11 @@
 
 # Determine which tag to apply to image.
 if [ "${1}" == "Prod" ]; then
-   BUILD_TYPE="Prod" 
+   BUILD_TYPE="Prod"
+elif [ "${1}" == "PubDev" ]; then
+   BUILD_TYPE="PubDev"
 else
-   BUILD_TYPE="Dev" 
+   BUILD_TYPE="Dev"
 fi
 
 # Read the version number.
@@ -40,7 +42,19 @@ if [ "${BUILD_TYPE}" == "Prod" ]; then
         --push \
         --tag ${DOCKER_USER}/fw-gui:${VERSION} \
         --tag ${DOCKER_USER}/fw-gui:latest .
-else
+fi
+
+if [ "${BUILD_TYPE}" == "PubDev" ]; then
+    docker buildx build \
+        --platform=linux/arm64,linux/amd64 \
+        --no-cache \
+        --push \
+        --tag ${DOCKER_USER}/fw-gui:dev-${VERSION} \
+        --tag registry.internal.behrenshome.com/fw-gui:dev-${VERSION} \
+        --tag registry.internal.behrenshome.com/fw-gui:dev-latest .
+fi
+
+if [ "${BUILD_TYPE}" == "Dev" ]; then
     docker buildx build \
         --platform=linux/arm64,linux/amd64 \
         --no-cache \

@@ -4,10 +4,7 @@
 
 <br>
 
-<p class="section_heading">Interfaces</p>
-This section defines interfaces to be referenced by Flow Tables and in Filters.<br>
-It <b>does not</b> define or configure the interface in VyOS.
-<br><br>
+<p class="section_heading">Flowtables</p>
 <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
     <th>
         Name
@@ -17,14 +14,17 @@ It <b>does not</b> define or configure the interface in VyOS.
         Description
     </th>
 
+    <th colspan="2">
+        Interfaces
+    </th>
+
     <th width="45px">
         Action
     </th>
 
-    {% for item in interface_list|sort(attribute='name') %}
+    {% for item in flowtable_list|sort(attribute='name') %}
     <tr>
         <td align="center">
-            <image src="static/network-interface-32-yellow.svg" align="center" width="20" height="20"></image>
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.name}}
             </font>
@@ -33,20 +33,25 @@ It <b>does not</b> define or configure the interface in VyOS.
         <td colspan="2">
             {{item.description}}
         </td>
+        <td colspan="2">
+            {% for interface in item.interfaces %}
+            <image src="static/network-interface-32-yellow.svg" align="center" width="16" height="16"></image>{{interface}}<br>
+            {% endfor %}
+        </td>
 
         <td align="center">
-            <form action="/interface_delete" , method="post">
-                <input type="hidden" id="interface" name="interface" value="{{item.name}}">
+            <form action="/flowtable_delete" , method="post">
+                <input type="hidden" id="flowtable" name="flowtable" value="{{item.name}}">
                 <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
             </form>
         </td>
     </tr>
     {% endfor %}
     <tr>
-        <td colspan="4">
-            <form action="/interface_add" , method="get">
+        <td colspan="6">
+            <form action="/flowtable_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Interface">
+                <input class="add_rule_button" type="submit" value="Add Flowtable">
             </form>
         </td>
     </tr>

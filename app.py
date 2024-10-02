@@ -70,6 +70,11 @@ from package.filter_functions import (
     delete_filter_rule_from_data,
     reorder_filter_rule_in_data,
 )
+from package.flowtable_functions import (
+    add_flowtable_to_data,
+    delete_flowtable_from_data,
+    list_flowtables,
+)
 from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
     add_group_to_data,
@@ -432,6 +437,61 @@ def interface_view():
 
 
 #
+# Flowtables
+@app.route("/flowtable_add", methods=["GET", "POST"])
+@login_required
+def flowtable_add():
+    if request.method == "POST":
+        logging.info(f"POST: {request.form}")
+        add_flowtable_to_data(session, request)
+
+        return redirect(url_for("flowtable_view"))
+
+    else:
+        file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
+        interface_list = list_interfaces(session)
+
+        return render_template(
+            "flowtable_add_form.html",
+            file_list=file_list,
+            interface_list=interface_list,
+            snapshot_list=snapshot_list,
+            firewall_name=session["firewall_name"],
+            username=session["username"],
+        )
+
+@app.route("/flowtable_delete", methods=["GET", "POST"])
+@login_required
+def flowtable_delete():
+    if request.method == "POST":
+        delete_flowtable_from_data(session, request)
+
+        return redirect(url_for("flowtable_view"))
+
+    else:
+        return redirect(url_for("display_config"))
+
+
+@app.route("/flowtable_view")
+@login_required
+def flowtable_view():
+    file_list = list_user_files(session)
+    group_list = assemble_detail_list_of_groups(session)
+    snapshot_list = list_snapshots(session)
+    flowtable_list = list_flowtables(session)
+
+    return render_template(
+        "flowtable_view.html",
+        file_list=file_list,
+        snapshot_list=snapshot_list,
+        firewall_name=session["firewall_name"],
+        flowtable_list=flowtable_list,
+        username=session["username"],
+    )
+
+
+#
 # Chains
 @app.route("/chain_add", methods=["GET", "POST"])
 @login_required
@@ -562,11 +622,13 @@ def filter_add():
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
+        flowtable_list = list_flowtables(session)
 
         return render_template(
             "filter_add_form.html",
             file_list=file_list,
             snapshot_list=snapshot_list,
+            flowtable_list=flowtable_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -588,6 +650,7 @@ def filter_rule_add():
         filter_list = assemble_list_of_filters(session)
         interface_list = list_interfaces(session)
         snapshot_list = list_snapshots(session)
+        flowtable_list = list_flowtables(session)
 
         if request.args.get("filter"):
             filter = request.args.get("filter")
@@ -618,6 +681,7 @@ def filter_rule_add():
             snapshot_list=snapshot_list,
             filter_name=filter,
             filter_list=filter_list,
+            flowtable_list=flowtable_list,
             firewall_name=session["firewall_name"],
             interface_list=interface_list,
             username=session["username"],

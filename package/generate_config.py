@@ -38,17 +38,32 @@ def generate_config(session):
         config.append("")
 
     # Work through each IP Version, Chain and Rule adding to config
+    if "flowtables" in user_data:
+        config.append(f"#\n#\n# FLOW TABLES\n#\n#\n")
+ 
+        for flowtable in user_data["flowtables"]:
+            config.append(f"# Flowtable: {flowtable["name"]}")
+            for interface in flowtable["interfaces"]:
+                config.append(f"set firewall flowtable {flowtable["name"]} interface '{interface}'")
+            config.append(f"set firewall flowtable {flowtable["name"]} description '{flowtable["description"]}'")
+            config.append(f"set firewall flowtable {flowtable["name"]} offload software")
+            config.append("")
+
     for ip_version in user_data:
         if (
             ip_version != "extra-items"
             and ip_version != "_id"
             and ip_version != "firewall"
+            and ip_version != "flowtables"
             and ip_version != "snapshot"
             and ip_version != "interfaces"
             and ip_version != "system"
             and ip_version != "version"
         ):
-            config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
+            if ip_version == "ipv4":
+                config.append(f"#\n#\n# IPv4\n#\n#\n")
+            if ip_version == "ipv6":
+                config.append(f"#\n#\n# IPv6\n#\n#\n")
 
             if "groups" in user_data[ip_version]:
                 config.append(f"#\n# Groups\n#")
@@ -156,15 +171,23 @@ def generate_config(session):
                             action = user_data[ip_version]["filters"][filter_name][
                                 "rules"
                             ][rule]["action"]
-                            interface = user_data[ip_version]["filters"][filter_name][
+                            if action == "jump":
+                                interface = user_data[ip_version]["filters"][filter_name][
                                 "rules"
-                            ][rule]["interface"]
-                            direction = user_data[ip_version]["filters"][filter_name][
+                                ][rule]["interface"]
+                                direction = user_data[ip_version]["filters"][filter_name][
                                 "rules"
-                            ][rule]["direction"]
-                            jump_target = user_data[ip_version]["filters"][filter_name][
+                                ][rule]["direction"]
+                                jump_target = user_data[ip_version]["filters"][filter_name][
                                 "rules"
-                            ][rule]["fw_chain"]
+                                ][rule]["fw_chain"]
+                            if action == "offload":
+                                offload_target = user_data[ip_version]["filters"][filter_name][
+                                "rules"
+                                ][rule]["fw_chain"]
+                                # set firewall [ipv4 | ipv6] forward filter rule <1-999999> action offload
+                                # set firewall [ipv4 | ipv6] forward filter rule <1-999999> offload-target <flowtable>
+
 
                         # Write Config Statements
                         config.append(f"# Rule {rule}")
@@ -179,19 +202,24 @@ def generate_config(session):
                         config.append(
                             f"set firewall {ip_version} {filter_name} filter rule {rule} action '{action}'"
                         )
+                        if action == "offload":
+                            config.append(
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} offload-target '{offload_target}'"
+                            )
 
                         # Interface / Directions
-                        if direction == "inbound":
+                        if action == "jump":
+                            if direction == "inbound":
+                                config.append(
+                                    f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface name '{interface}'"
+                                )
+                            if direction == "outbound":
+                                config.append(
+                                    f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface name '{interface}'"
+                                )
                             config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface name '{interface}'"
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target '{jump_target}'"
                             )
-                        if direction == "outbound":
-                            config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface name '{interface}'"
-                            )
-                        config.append(
-                            f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target '{jump_target}'"
-                        )
 
                         # Disable
                         if rule_disable:

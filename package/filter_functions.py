@@ -19,16 +19,21 @@ def add_filter_rule_to_data(session, request):
     filter = filter_info[1]
     rule_dict["ip_version"] = ip_version
     rule_dict["filter"] = filter
-    jump_target = request.form["jump_target"].split(",")
-    rule_dict["fw_chain"] = jump_target[1]
+    # rule_dict["fw_chain"] = jump_target[1]
     rule_dict["description"] = request.form["description"]
     if "rule_disable" in request.form:
         rule_dict["rule_disable"] = True
     if "logging" in request.form:
         rule_dict["log"] = True
     rule_dict["action"] = request.form["action"]
-    rule_dict["interface"] = request.form["interface"]
-    rule_dict["direction"] = request.form["direction"]
+    if request.form["action"] == "jump":
+        jump_target = request.form["jump_target"].split(",")
+        rule_dict["fw_chain"] = jump_target[1]
+        rule_dict["interface"] = request.form["interface"]
+        rule_dict["direction"] = request.form["direction"]
+    if request.form["action"] == "offload":
+        offload_target = request.form["offload_target"]
+        rule_dict["fw_chain"] = request.form["offload_target"]
 
     # Check and create higher level data structure if it does not exist
     if "rules" not in user_data[ip_version]["filters"][filter]:
