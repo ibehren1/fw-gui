@@ -60,7 +60,10 @@ def generate_config(session):
             and ip_version != "system"
             and ip_version != "version"
         ):
-            config.append(f"#\n#\n# {ip_version.upper()}\n#\n#\n")
+            if ip_version == "ipv4":
+                config.append(f"#\n#\n# IPv4\n#\n#\n")
+            if ip_version == "ipv6":
+                config.append(f"#\n#\n# IPv6\n#\n#\n")
 
             if "groups" in user_data[ip_version]:
                 config.append(f"#\n# Groups\n#")
