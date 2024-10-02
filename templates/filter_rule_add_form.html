@@ -71,12 +71,14 @@
                 <p class="section_heading">
                     Action
                 </p>
+                &nbsp &nbsp &nbsp
                 <input type="radio" name="action" value="jump" checked="checked">&nbsp;jump<br>
             </td>
             <td style="vertical-align: top;" width="40%">
                 <p class="section_heading">
                     Jump Target
                 </p>
+                &nbsp &nbsp &nbsp
                 <label for="jump_target">Chain&nbsp;</label>
                 <select name="jump_target" id="jump_target">
                     <option value=""></option>
@@ -120,9 +122,29 @@
             </td>
         </tr>
         <tr>
+            <td style="vertical-align: top;" width="20%">
+                <p class="section_heading">
+                    Action
+                </p>
+                &nbsp &nbsp &nbsp
+                <input type="radio" name="action" value="offload">&nbsp;offload<br>
+            </td>
+            <td style="vertical-align: top;" width="40%" colspan="3">
+                <p class="section_heading">
+                    Offload Target
+                </p>
+                &nbsp &nbsp &nbsp
+                <label for="offload_target">Flowtable&nbsp;</label>
+                <select name="offload_target" id="offload_target">
+                    <option value=""></option>
+                    {% for flowtable in flowtable_list %}
+                    <option value='{{flowtable.name}}'>{{flowtable.name}}</option>
+                    {% endfor %}
+                </select><br>
+            </td>
+        <tr>
             <td align="right" colspan="4">
-                <button class="add_rule_button" type="submit" value="Add Filter Rule" style="width: 15%">Add
-                    Filter</button>
+                <button class="add_rule_button" type="submit" value="Add Filter Rule" style="width: 15%">Add Filter</button>
             </td>
         </tr>
     </form>

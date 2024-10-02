@@ -622,11 +622,13 @@ def filter_add():
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
+        flowtable_list = list_flowtables(session)
 
         return render_template(
             "filter_add_form.html",
             file_list=file_list,
             snapshot_list=snapshot_list,
+            flowtable_list=flowtable_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
@@ -648,6 +650,7 @@ def filter_rule_add():
         filter_list = assemble_list_of_filters(session)
         interface_list = list_interfaces(session)
         snapshot_list = list_snapshots(session)
+        flowtable_list = list_flowtables(session)
 
         if request.args.get("filter"):
             filter = request.args.get("filter")
@@ -678,6 +681,7 @@ def filter_rule_add():
             snapshot_list=snapshot_list,
             filter_name=filter,
             filter_list=filter_list,
+            flowtable_list=flowtable_list,
             firewall_name=session["firewall_name"],
             interface_list=interface_list,
             username=session["username"],

@@ -63,7 +63,7 @@
     <th colspan="3">
         Description
         <br>
-        Target Chain
+        Target
     </th>
 
     <th>
@@ -92,7 +92,8 @@
             <font style="font-size: 20; font-variant: small-caps;">
                 {% if rule.direction == "outbound" %}
                 <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
-                {% else %}
+                {% endif %}
+                {% if rule.direction == "inbound" %}
                 <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
                 {% endif %}
                 <br><br>{{rule.interface}}
@@ -180,7 +181,7 @@
     <th colspan="3">
         Description
         <br>
-        Target Chain
+        Target
     </th>
 
     <th>
@@ -209,7 +210,8 @@
             <font style="font-size:20; font-variant: small-caps;">
                 {% if rule.direction == "outbound" %}
                 <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
-                {% else %}
+                {% endif %}
+                {% if rule.direction == "inbound" %}
                 <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
                 {% endif %}
                 <br><br>{{rule.interface}}
