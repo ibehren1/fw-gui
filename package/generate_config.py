@@ -14,9 +14,20 @@ def download_json_data(session):
     return json_data
 
 
-def generate_config(session):
-    # Get user data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+def generate_config(session, snapshot="current", diff="False"):
+
+    if diff == "False":
+        # Get user data
+        user_data = read_user_data_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}'
+        )
+    else:
+        # Get user data for specific snapshot
+        user_data = read_user_data_file(
+            f'{session["data_dir"]}/{session["firewall_name"]}',
+            snapshot=snapshot,
+            diff=diff,
+        )
 
     # Create firewall configuration
     config = []
@@ -40,13 +51,19 @@ def generate_config(session):
     # Work through each IP Version, Chain and Rule adding to config
     if "flowtables" in user_data:
         config.append(f"#\n#\n# FLOW TABLES\n#\n#\n")
- 
+
         for flowtable in user_data["flowtables"]:
             config.append(f"# Flowtable: {flowtable["name"]}")
             for interface in flowtable["interfaces"]:
-                config.append(f"set firewall flowtable {flowtable["name"]} interface '{interface}'")
-            config.append(f"set firewall flowtable {flowtable["name"]} description '{flowtable["description"]}'")
-            config.append(f"set firewall flowtable {flowtable["name"]} offload software")
+                config.append(
+                    f"set firewall flowtable {flowtable["name"]} interface '{interface}'"
+                )
+            config.append(
+                f"set firewall flowtable {flowtable["name"]} description '{flowtable["description"]}'"
+            )
+            config.append(
+                f"set firewall flowtable {flowtable["name"]} offload software"
+            )
             config.append("")
 
     for ip_version in user_data:
@@ -172,22 +189,21 @@ def generate_config(session):
                                 "rules"
                             ][rule]["action"]
                             if action == "jump":
-                                interface = user_data[ip_version]["filters"][filter_name][
-                                "rules"
-                                ][rule]["interface"]
-                                direction = user_data[ip_version]["filters"][filter_name][
-                                "rules"
-                                ][rule]["direction"]
-                                jump_target = user_data[ip_version]["filters"][filter_name][
-                                "rules"
-                                ][rule]["fw_chain"]
+                                interface = user_data[ip_version]["filters"][
+                                    filter_name
+                                ]["rules"][rule]["interface"]
+                                direction = user_data[ip_version]["filters"][
+                                    filter_name
+                                ]["rules"][rule]["direction"]
+                                jump_target = user_data[ip_version]["filters"][
+                                    filter_name
+                                ]["rules"][rule]["fw_chain"]
                             if action == "offload":
-                                offload_target = user_data[ip_version]["filters"][filter_name][
-                                "rules"
-                                ][rule]["fw_chain"]
+                                offload_target = user_data[ip_version]["filters"][
+                                    filter_name
+                                ]["rules"][rule]["fw_chain"]
                                 # set firewall [ipv4 | ipv6] forward filter rule <1-999999> action offload
                                 # set firewall [ipv4 | ipv6] forward filter rule <1-999999> offload-target <flowtable>
-
 
                         # Write Config Statements
                         config.append(f"# Rule {rule}")
@@ -455,6 +471,10 @@ def generate_config(session):
                                 f"set firewall {ip_version} name {fw_chain} rule {rule} state 'related'"
                             )
                         config.append("")
+
+    # If this is a Diff, just return the config
+    if diff == True:
+        return config
 
     # Convert list of lines to single string
     message = ""

@@ -94,6 +94,7 @@ from package.napalm_functions import (
     test_connection,
 )
 from waitress import serve
+import difflib
 import logging
 import os
 import sys
@@ -460,6 +461,7 @@ def flowtable_add():
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
+
 
 @app.route("/flowtable_delete", methods=["GET", "POST"])
 @login_required
@@ -911,6 +913,82 @@ def display_config():
         )
 
 
+@app.route("/snapshot_diff_choose")
+@login_required
+def snapshot_diff_choose():
+    file_list = list_user_files(session)
+    snapshot_list = list_snapshots(session)
+
+    if "firewall_name" not in session:
+        message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
+
+        return render_template(
+            "configuration_display.html",
+            file_list=file_list,
+            snapshot_list=snapshot_list,
+            message=message,
+            username=session["username"],
+        )
+
+    else:
+        snapshot_list = list_snapshots(session)
+        message, config = generate_config(session)
+
+        return render_template(
+            "snapshot_diff_choose.html",
+            file_list=file_list,
+            snapshot_list=snapshot_list,
+            firewall_name=session["firewall_name"],
+            message=message,
+            username=session["username"],
+        )
+
+
+@app.route("/snapshot_diff_display", methods=["GET", "POST"])
+@login_required
+def snapshot_diff_display():
+    if request.method == "POST":
+        if request.form["snapshot_1"] == request.form["snapshot_2"]:
+            flash("Snapshots cannot be the same.", "danger")
+            return redirect(url_for("snapshot_diff_choose"))
+        if request.form["snapshot_1"] == "" or request.form["snapshot_2"] == "":
+            flash("Select a snapshot from each list.", "danger")
+            return redirect(url_for("snapshot_diff_choose"))
+        snapshot_1 = request.form["snapshot_1"]
+        snapshot_2 = request.form["snapshot_2"]
+
+        snapshot_1_list = generate_config(session, snapshot=snapshot_1, diff=True)
+        snapshot_2_list = generate_config(session, snapshot=snapshot_2, diff=True)
+
+        diff = difflib.HtmlDiff()
+        html = diff.make_file(
+            snapshot_1_list,
+            snapshot_2_list,
+            fromdesc=f"Snapshot: {snapshot_1}",
+            todesc=f"Snapshot: {snapshot_2}",
+            context=False,
+        )
+
+        return render_template(
+            "snapshot_diff_display.html",
+            message=html,
+        )
+    else:
+        file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
+        snapshot_list = list_snapshots(session)
+        message, config = generate_config(session)
+
+        return render_template(
+            "snapshot_diff_choose.html",
+            file_list=file_list,
+            snapshot_list=snapshot_list,
+            firewall_name=session["firewall_name"],
+            message=message,
+            username=session["username"],
+        )
+
+
 @app.route("/delete_config", methods=["POST"])
 @login_required
 def delete_config():
@@ -949,6 +1027,9 @@ def download_json():
 @app.route("/select_firewall_config", methods=["POST"])
 @login_required
 def select_firewall_config():
+    # If choosing Snapshot Diff
+    if request.form["file"] == "Snapshot Diff":
+        return redirect(url_for("snapshot_diff_choose"))
     # If selecting a snapshot
     if request.form["file"].__contains__("/"):
         session["firewall_name"] = request.form["file"].split("/")[0]

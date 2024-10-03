@@ -1,0 +1,54 @@
+{% extends "basic_page.html" %}
+{% block body %}
+
+
+<br>
+
+<p class="section_heading">Snapshot Diff</p>
+Choose two snapshots to compare and select View Diff to see a side-by-side diff of the configuration from each snapshot.
+<br><br>
+<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+    <th>
+        Snapshot 1
+    </th>
+
+    <th>
+        Snapshot 2
+    </th>
+
+    <th>
+        Action
+    </th>
+
+    <tr>
+        <form action="/snapshot_diff_display" , method="post" , target="_blank">
+            <td align="center">
+                <select name="snapshot_1" id="snapshot_1" style="width: 100%;">
+                    <option value='current'>Current (working copy)</option>
+                    {% for snapshot in snapshot_list %}
+                    <option value='{{snapshot.name}}'>
+                        {{snapshot.name}}
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+
+            <td align="center">
+                <select name="snapshot_2" id="snapshot_2" style="width: 100%;">
+                    <option value='current'>Current (working copy)</option>
+                    {% for snapshot in snapshot_list %}
+                    <option value='{{snapshot.name}}'>
+                        {{snapshot.name}}
+                    </option>
+                    {% endfor %}
+                </select>
+            </td>
+
+            <td align="center">
+                <input class="grey_button" type="submit" value="View Diff">
+            </td>
+        </form>
+    </tr>
+</table>
+<br><br>
+{% endblock body %}
