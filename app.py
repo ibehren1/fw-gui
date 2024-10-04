@@ -61,6 +61,7 @@ from package.data_file_functions import (
     write_user_command_conf_file,
     write_user_data_file,
 )
+from package.diff_functions import process_diff
 from package.filter_functions import (
     add_filter_rule_to_data,
     add_filter_to_data,
@@ -954,20 +955,8 @@ def snapshot_diff_display():
         if request.form["snapshot_1"] == "" or request.form["snapshot_2"] == "":
             flash("Select a snapshot from each list.", "danger")
             return redirect(url_for("snapshot_diff_choose"))
-        snapshot_1 = request.form["snapshot_1"]
-        snapshot_2 = request.form["snapshot_2"]
 
-        snapshot_1_list = generate_config(session, snapshot=snapshot_1, diff=True)
-        snapshot_2_list = generate_config(session, snapshot=snapshot_2, diff=True)
-
-        diff = difflib.HtmlDiff()
-        html = diff.make_file(
-            snapshot_1_list,
-            snapshot_2_list,
-            fromdesc=f"Snapshot: {snapshot_1}",
-            todesc=f"Snapshot: {snapshot_2}",
-            context=False,
-        )
+        html = process_diff(session, request)
 
         return render_template(
             "snapshot_diff_display.html",
