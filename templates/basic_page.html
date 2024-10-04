@@ -128,6 +128,11 @@
                                 </button>
                                 <ul></ul>
                                 {% endfor %}
+                                <a href="{{url_for('snapshot_diff_choose')}}">
+                                    <button class="snapshot_button" style="width: 71%;" type="submit" name="file"
+                                        value="Snapshot Diff">View
+                                        Snapshot Diff</button>
+                                </a>
                                 {% endif %}
                                 <hr width="75%">
                                 {% endif %}

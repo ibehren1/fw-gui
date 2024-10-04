@@ -474,7 +474,7 @@ def process_upload(session, request, app):
 
 #
 # Read User Data File
-def read_user_data_file(filename, snapshot="current"):
+def read_user_data_file(filename, snapshot="current", diff=False):
     # filename format:  data/<user>/<firewall_name>
     try:
         collection_name = filename.split("/")[1]
@@ -506,7 +506,7 @@ def read_user_data_file(filename, snapshot="current"):
 
             # If this was not a read of "current", then we want to immediately
             #   write over current with the snapshot data.
-            if snapshot != "current":
+            if snapshot != "current" and diff == False:
                 delete_user_data_file(filename)
                 write_user_data_file(filename, user_data)
             return user_data
