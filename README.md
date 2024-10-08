@@ -24,9 +24,18 @@ Support for [VyOS Stream](https://blog.vyos.io/introducing-vyos-stream) **_may b
 Support of VyOS rolling (current) is unlikely due to the unstable nature of the command line syntax.
 
 
-## GUI for Managing Firewall Rule Configurations on VyOS Firewalls
+## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
-The web GUI allows the user to visually create and manage group objects, firewall chains/rules and filter chains/rules for multiple firewalls. Additionally, user can push the created policy to the firewalls via SSH connectivity via the Napalm-VyOS framework or download the configuation commands to apply via console. Additionally, user can import/export a JSON file of the fw-gui configuration to move between instances of the GUI.
+The web-based FW-GUI allows the user to visually:
+- Create and manage group objects
+- Create and manage firewall chains
+- Create and manage filters of chains
+- Support for managing multiple firewall configurations
+- Create and compare (diff) snapshots of firewall configurations
+- Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface
+- Import/export a JSON file of the fw-gui configuration for backup and to move between instances of the GUI
+
+(Only manages configurations under 'set firewall' in the command line syntax.)
 
 | | | |
 | - | - | - |
@@ -39,10 +48,6 @@ The web GUI allows the user to visually create and manage group objects, firewal
 Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and FW-GUI. Recommend adding `proxy_read_timeout 30m;` as a custom Nginx configuration.
 
 ![images](./images/nginx_custom_config.png)
-
-You can also host the FW-GUI as a container on the VyOS device you wish to manage.  Setting up TLS in this case can be provided using [ACME on VyOS](https://docs.vyos.io/en/sagitta/configuration/pki/index.html#acme).
-
-While recommended deployment is via Docker, also inculded in the repo is a systemd service file for use with local install.  
 
 See [Deployment](#deployment) section below for configuration commands.
 
@@ -67,6 +72,8 @@ Future releases *may* include administration and user management features.
 ## Backups
 
 You can provide an Amazon S3 bucket name and user credentials as environment variables to enable offsite storage of backups in the S3 bucket.  Backups are created in the Admin Settings page.  Backups are always kept locally and uploaded if the S3 settings are provided.  __Only Amazon S3 is supported.__
+
+Access to the backup files is not provided via the web interface as it contains configurations of all users.  Access to the backup is on the Docker host in the FW-GUI volume or via the S3 bucket (if configured).
 
 ## Deployment
 
@@ -139,15 +146,11 @@ volumes:
 + mongo-config:
 ```
 
-### Container on VyOS
-
-No longer recommended with additional MongoDB container needed.
-
 ### Docker Run
 
 No longer recommended with additional MongoDB container needed.
 
-### Docker Compose Minimal (just FW-GUI and MongoDB)
+### Docker Compose Minimal (just FW-GUI and MongoDB no TLS)
 
 ```yaml
 version: '3.7'
@@ -183,7 +186,7 @@ volumes:
   mongo-config:
 ```
 
-## Interface
+## Interface Screenshots
 
 ![image](./images/fw-gui_interface_1.png)
 ![image](./images/fw-gui_interface_2.png)
