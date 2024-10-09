@@ -35,14 +35,16 @@
         </td>
         <td colspan="2">
             {% for interface in item.interfaces %}
-            <image src="static/network-interface-32-yellow.svg" align="center" width="16" height="16"></image>{{interface}}<br>
+            <image src="static/network-interface-32-yellow.svg" align="center" width="16" height="16"></image>
+            {{interface}}<br>
             {% endfor %}
         </td>
 
         <td align="center">
             <form action="/flowtable_delete" , method="post">
                 <input type="hidden" id="flowtable" name="flowtable" value="{{item.name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete {{item.name}} Flowtable.">
             </form>
         </td>
     </tr>
@@ -51,7 +53,7 @@
         <td colspan="6">
             <form action="/flowtable_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Flowtable">
+                <input class="add_rule_button" type="submit" value="Add Flowtable" title="Add a new Flowtable.">
             </form>
         </td>
     </tr>

@@ -121,7 +121,8 @@
         <td align="center" rowspan="2">
             <form action="/chain_rule_delete" , method="post">
                 <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;"
+                    title="Delete rule {{rule.number}}.">
             </form>
         </td>
     </tr>
@@ -198,7 +199,7 @@
                 <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
             </td>
             <td colspan="3">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
             </td>
         </form>
     </tr>
@@ -206,7 +207,7 @@
         <td colspan="11">
             <form action="/chain_rule_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule">
+                <input class="add_rule_button" type="submit" value="Add Rule" title="Add rule.">
             </form>
         </td>
     </tr>
@@ -215,7 +216,7 @@
 {% endif %}
 <br>
 <a href="{{ url_for('chain_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Chain">
+    <input class="add_rule_button" type="submit" value="Add Chain" title="Add a new IPv4 Chain.">
 </a>
 
 
@@ -302,7 +303,8 @@
         <td align="center" rowspan="2">
             <form action="/chain_rule_delete" , method="post">
                 <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;"
+                    title="Delete rule {{rule.number}}.">
             </form>
         </td>
     </tr>
@@ -379,7 +381,7 @@
                 <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
             </td>
             <td colspan="3">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
             </td>
         </form>
     </tr>
@@ -387,7 +389,7 @@
         <td colspan="11" align="center" rowspan="2">
             <form action="/chain_rule_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule">
+                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new rule.">
             </form>
         </td>
     </tr>
@@ -396,7 +398,7 @@
 {% endif %}
 <br>
 <a href="{{ url_for('chain_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Chain">
+    <input class="add_rule_button" type="submit" value="Add Chain" title="Add a new IPv6 Chain.">
 </a>
 
 <br><br>

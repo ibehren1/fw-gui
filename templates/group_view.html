@@ -108,7 +108,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -119,7 +120,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv4 Address Group.">
             </form>
         </td>
     </tr>
@@ -180,7 +181,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -191,7 +193,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv4 Network Group.">
             </form>
         </td>
     </tr>
@@ -251,7 +253,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="ipv6,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -262,7 +265,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv6 Address Group.">
             </form>
         </td>
     </tr>
@@ -320,7 +323,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -331,7 +335,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv6 Network Group.">
             </form>
         </td>
     </tr>
@@ -390,7 +394,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -400,7 +405,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new Domain Group.">
             </form>
         </td>
     </tr>
@@ -457,7 +462,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -467,7 +473,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new MAC Group">
             </form>
         </td>
     </tr>
@@ -524,7 +530,8 @@
         <td align="center">
             <form action="/group_delete" , method="post">
                 <input type="hidden" id="group" name="group" value="{{item.ip_version}},{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete group {{item.group_name}}.">
             </form>
         </td>
     </tr>
@@ -534,7 +541,7 @@
         <td colspan="6">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group">
+                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new Port Group.">
             </form>
         </td>
     </tr>

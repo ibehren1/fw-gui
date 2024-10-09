@@ -51,15 +51,18 @@
             </td>
             <td align="right">
                 <a href="{{ url_for('admin_settings')}}">
-                    <input class="snapshot_button" type="submit" value="Admin Settings" style="width: 130px">
+                    <input class="snapshot_button" type="submit" value="Admin Settings" style="width: 130px"
+                        title="View administrative settings such as backups.">
                 </a>
 
                 <a href="{{ url_for('user_change_password')}}">
-                    <input class="snapshot_button" type="submit" value="Change Password" style="width: 130px">
+                    <input class="snapshot_button" type="submit" value="Change Password" style="width: 130px"
+                        title="Change the password for user {{username}}.">
                 </a>
 
                 <a href="{{ url_for('user_logout')}}">
-                    <input class="snapshot_button" type="submit" value="Logout" style="width: 80px">
+                    <input class="snapshot_button" type="submit" value="Logout" style="width: 80px"
+                        title="Logout user {{username}}.">
                 </a>
             </td>
         </tr>
@@ -102,12 +105,13 @@
                         {% for file in file_list %}
                         <tr>
                             <td align="center" colspan="2">
-                                <input class="button" type="submit" name="file" value="{{file}}" style="width: 75%">
+                                <input class="button" type="submit" name="file" value="{{file}}" style="width: 75%"
+                                    title="Load and work on firewall configuration {{file}}.">
                                 {% if file == firewall_name %}
                                 <hr width="75%">
                                 <p class="section_subheading">Snapshots</p>
                                 <button class="add_snapshot_button" type="submit" name="file" value="{{file}}/create"
-                                    style="width: 30%">
+                                    style="width: 30%" title="Create a new snapshot.">
                                     Create
                                 </button>
                                 <br>
@@ -120,17 +124,20 @@
                                 {% if snapshot_list%}
                                 {% for snapshot in snapshot_list %}
                                 <button class="snapshot_button" type="submit" name="file"
-                                    value="{{snapshot.id}}/{{snapshot.name}}" style="width: 65%">{{snapshot.name}}
+                                    value="{{snapshot.id}}/{{snapshot.name}}" style="width: 65%"
+                                    title="Load snapshot {{snapshot.name}} to current working configuration.">{{snapshot.name}}
                                 </button>
                                 <button class="delete_snapshot_button" type="submit" name="file"
-                                    value="{{snapshot.id}}/delete/{{snapshot.name}}" style="width: 5%">
+                                    value="{{snapshot.id}}/delete/{{snapshot.name}}" style="width: 5%"
+                                    title="Delete snapshot {{snapshot.name}}">
                                     X
                                 </button>
                                 <ul></ul>
                                 {% endfor %}
                                 <a href="{{url_for('snapshot_diff_choose')}}">
                                     <button class="snapshot_button" style="width: 71%;" type="submit" name="file"
-                                        value="Snapshot Diff">View
+                                        value="Snapshot Diff"
+                                        title="Select 2 snapshots and view a diff of the configurations in the snapshots.">View
                                         Snapshot Diff</button>
                                 </a>
                                 {% endif %}
@@ -153,7 +160,8 @@
                         <td align="center" colspan="2">
                             <form action="/create_config" method=post enctype=multipart/form-data>
                                 <input type="text" id="config_name" name="config_name" maxlength="50" size="34"><br>
-                                <input class="add_button" type="submit" style="width: 75%;" value="Create Config">
+                                <input class="add_button" type="submit" style="width: 75%;" value="Create Config"
+                                    title="Create a new, empty, firewall configuration by the name provided in the field above.">
                             </form>
                         </td>
                     </tr>
@@ -176,7 +184,8 @@
                                     <option value="{{file}}">{{file}}</option>
                                     {% endfor %}
                                 </select>
-                                <input class="delete_button" type="submit" style="width: 75%;" value="Delete Config">
+                                <input class="delete_button" type="submit" style="width: 75%;" value="Delete Config"
+                                    title="Delete the firewall configuration selected from the dropdown above.">
                             </form>
                         </td>
                     </tr>
@@ -193,7 +202,8 @@
                         <td align="center" colspan="2">
                             <form action="/upload_json" method=post enctype=multipart/form-data>
                                 <input type="file" name="file">
-                                <input class="grey_button" type="submit" style="width: 75%;" value="Upload Datafile">
+                                <input class="grey_button" type="submit" style="width: 75%;" value="Upload Datafile"
+                                    title="Upload a JSON based configuration which has been previously exported from FW-GUI.">
                             </form>
                         </td>
                     </tr>
@@ -208,7 +218,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{url_for('download_json')}}" download="{{firewall_name}}.json">
-                                <input class="grey_button" type="submit" value="Download Datafile" style="width: 75%;">
+                                <input class="grey_button" type="submit" value="Download Datafile" style="width: 75%;"
+                                    title="Upon clicking, the current configuration for {{firewall_name}} will be downloaded in JSON format.  You can then import this JSON into another instance of FW-GUI.">
                             </a>
                         </td>
                     </tr>
@@ -249,7 +260,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('interface_view')}}">
-                                <input class="grey_button" type="submit" value="View Interfaces" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Interfaces" style="width: 75%"
+                                    title="View and edit interfaces which are referenced in Flowtables and Filters.  This option does not allow editing interface configurations on the VyOS instance.">
                             </a>
                         </td>
                         <td></td>
@@ -266,7 +278,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('group_view')}}">
-                                <input class="grey_button" type="submit" value="View Groups" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Groups" style="width: 75%"
+                                    title="View and edit groups.">
                             </a>
                         </td>
                     </tr>
@@ -281,7 +294,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('flowtable_view')}}">
-                                <input class="grey_button" type="submit" value="View Flowtables" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Flowtables" style="width: 75%"
+                                    title="View and edit Flowtables.">
                             </a>
                         </td>
                     </tr>
@@ -296,7 +310,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('chain_view')}}">
-                                <input class="grey_button" type="submit" value="View Chains" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Chains" style="width: 75%"
+                                    title="View and edit chains and rules.">
                             </a>
                         </td>
                     </tr>
@@ -311,7 +326,8 @@
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('filter_view')}}">
-                                <input class="grey_button" type="submit" value="View Filters" style="width: 75%">
+                                <input class="grey_button" type="submit" value="View Filters" style="width: 75%"
+                                    title="View and edit filters and filter rules.">
                             </a>
                         </td>
                     </tr>
@@ -327,7 +343,8 @@
                         <td align="center" colspan="2">
                             <a href="{{ url_for('configuration_extra_items')}}">
                                 <input class="grey_button" type="submit" value="Add Extra Configurations"
-                                    style="width: 75%">
+                                    style="width: 75%"
+                                    title="Add extra configurations which are not supported directly by FW-GUI.  These items should be properly formated CLI commands.">
                             </a>
                         </td>
                     </tr>
@@ -346,14 +363,16 @@
                         <td align="center" colspan="2">
                             <a href="{{ url_for('display_config')}}">
                                 <input class="grey_button" type="submit" value="Display Configuration"
-                                    style="width: 75%">
+                                    style="width: 75%"
+                                    title="Display the generated command line syntax for the current configuration.">
                             </a>
                         </td>
                     </tr>
                     <tr>
                         <td align="center" colspan="2">
                             <a href="{{ url_for('configuration_push')}}">
-                                <input class="grey_button" type="submit" value="Push to Firewall" style="width: 75%">
+                                <input class="grey_button" type="submit" value="Push to Firewall" style="width: 75%"
+                                    title="Manage pushing the configuration to firewall via SSH from the web interface.  Also allows for viewing the diff of the firewalls running configuration vs this configuration.">
                             </a>
                         </td>
                     </tr>
@@ -361,7 +380,8 @@
                         <td align="center" colspan="2">
                             <a href="{{url_for('download_config')}}" download="{{firewall_name}}.cfg">
                                 <input class="grey_button" type="submit" style="width: 75%;"
-                                    value="Download Configuration">
+                                    value="Download Configuration"
+                                    title="Download the displayed configuration commands in text format to save or run on a remote firewall.">
                             </a>
                         </td>
                     </tr>
