@@ -83,7 +83,7 @@ def check_version():
             flash(f"New version v{remote_version} available.", "warning")
 
         if Version(local_version) > Version(remote_version):
-            flash("Running dev version.", "warning")
+            flash(f"Running development version v{local_version.strip()}.", "warning")
 
     return
 
