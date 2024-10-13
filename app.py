@@ -341,31 +341,11 @@ def group_add():
         )
 
 
-@app.route("/group_delete", methods=["GET", "POST"])
+@app.route("/group_delete", methods=["POST"])
 @login_required
 def group_delete():
-    if request.method == "POST":
-        delete_group_from_data(session, request)
-
-        return redirect(url_for("group_view"))
-
-    else:
-        file_list = list_user_files(session)
-        group_list = assemble_detail_list_of_groups(session)
-        snapshot_list = list_snapshots(session)
-
-        # If there are no groups, just display the config
-        if group_list == []:
-            return redirect(url_for("display_config"))
-
-        return render_template(
-            "group_delete_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            firewall_name=session["firewall_name"],
-            group_list=group_list,
-            username=session["username"],
-        )
+    delete_group_from_data(session, request)
+    return redirect(url_for("group_view"))
 
 
 @app.route("/group_view")
@@ -554,31 +534,11 @@ def chain_rule_add():
         )
 
 
-@app.route("/chain_rule_delete", methods=["GET", "POST"])
+@app.route("/chain_rule_delete", methods=["POST"])
 @login_required
 def chain_rule_delete():
-    if request.method == "POST":
-        delete_rule_from_data(session, request)
-
-        return redirect(url_for("chain_view"))
-
-    else:
-        file_list = list_user_files(session)
-        rule_list = assemble_list_of_rules(session)
-        snapshot_list = list_snapshots(session)
-
-        # If there are no rules, just display the config
-        if rule_list == []:
-            return redirect(url_for("display_config"))
-
-        return render_template(
-            "chain_rule_delete_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            firewall_name=session["firewall_name"],
-            rule_list=rule_list,
-            username=session["username"],
-        )
+    delete_rule_from_data(session, request)
+    return redirect(url_for("chain_view"))
 
 
 @app.route("/chain_rule_reorder", methods=["GET", "POST"])
@@ -691,31 +651,11 @@ def filter_rule_add():
         )
 
 
-@app.route("/filter_rule_delete", methods=["GET", "POST"])
+@app.route("/filter_rule_delete", methods=["POST"])
 @login_required
 def filter_rule_delete():
-    if request.method == "POST":
-        delete_filter_rule_from_data(session, request)
-
-        return redirect(url_for("filter_view"))
-
-    else:
-        file_list = list_user_files(session)
-        rule_list = assemble_list_of_filter_rules(session)
-        snapshot_list = list_snapshots(session)
-
-        # If there are no rules, just display the config
-        if rule_list == []:
-            return redirect(url_for("display_config"))
-
-        return render_template(
-            "filter_rule_delete_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            firewall_name=session["firewall_name"],
-            rule_list=rule_list,
-            username=session["username"],
-        )
+    delete_filter_rule_from_data(session, request)
+    return redirect(url_for("filter_view"))
 
 
 @app.route("/filter_rule_reorder", methods=["GET", "POST"])

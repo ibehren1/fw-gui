@@ -37,7 +37,8 @@ It <b>does not</b> define or configure the interface in VyOS.
         <td align="center">
             <form action="/interface_delete" , method="post">
                 <input type="hidden" id="interface" name="interface" value="{{item.name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                    title="Delete interface {{item.name}}.">
             </form>
         </td>
     </tr>
@@ -46,7 +47,7 @@ It <b>does not</b> define or configure the interface in VyOS.
         <td colspan="4">
             <form action="/interface_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Interface">
+                <input class="add_rule_button" type="submit" value="Add Interface" title="Add an interface.">
             </form>
         </td>
     </tr>

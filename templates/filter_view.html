@@ -103,7 +103,8 @@
         <td align="center" rowspan="2">
             <form action="/filter_rule_delete" , method="post">
                 <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
+                    title="Delete rule {{rule.number}}.">
             </form>
         </td>
     </tr>
@@ -134,7 +135,7 @@
                 <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
             </td>
             <td colspan="2">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
             </td>
         </form>
     </tr>
@@ -142,7 +143,7 @@
         <td colspan="6">
             <form action="/filter_rule_add" , method="get">
                 <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule">
+                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
             </form>
         </td>
     </tr>
@@ -151,7 +152,7 @@
 {% endif %}
 <br>
 <a href="{{ url_for('filter_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%">
+    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv4 filter.">
 </a>
 
 
@@ -221,7 +222,8 @@
         <td align="center" rowspan="2">
             <form action="/filter_rule_delete" , method="post">
                 <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;">
+                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
+                    title="Delete rule {{rule.number}}.">
             </form>
         </td>
     </tr>
@@ -252,7 +254,7 @@
                 <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
             </td>
             <td colspan="2">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule">
+                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
             </td>
         </form>
     </tr>
@@ -260,7 +262,7 @@
         <td colspan="6">
             <form action="/filter_rule_add" , method="get">
                 <input type="hidden" id="filter" name="filter" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule">
+                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
             </form>
         </td>
     </tr>
@@ -269,7 +271,7 @@
 {% endif %}
 <br>
 <a href="{{ url_for('filter_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%">
+    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv6 filter.">
 </a>
 
 <br><br>

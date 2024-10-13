@@ -88,7 +88,7 @@
 
                             <select name="dest_address_group" id="dest_address_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "address-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["ip_version"]}}:
@@ -101,7 +101,7 @@
 
                             <select name="dest_domain_group" id="dest_domain_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "domain-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["group_name"]}}:
@@ -113,7 +113,7 @@
 
                             <select name="dest_mac_group" id="dest_mac_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "mac-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["group_name"]}}:
@@ -125,7 +125,7 @@
 
                             <select name="dest_network_group" id="dest_network_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name')%}
                                     {% if group["group_type"] == "network-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["ip_version"]}}:
@@ -146,7 +146,7 @@
                             <input type="text" id="dest_port" name="dest_port" style="width: 200;"><br>
                             <select name="dest_port_group" id="dest_port_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "port-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["group_name"]}}:
@@ -207,7 +207,7 @@
 
                             <select name="source_address_group" id="source_address_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "address-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["ip_version"]}}:
@@ -220,7 +220,7 @@
 
                             <select name="source_domain_group" id="source_domain_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "domain-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["group_name"]}}:
@@ -232,7 +232,7 @@
 
                             <select name="source_mac_group" id="source_mac_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "mac-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["group_name"]}}:
@@ -244,7 +244,7 @@
 
                             <select name="source_network_group" id="source_network_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "network-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["ip_version"]}}:
@@ -265,7 +265,7 @@
                             <input type="text" id="source_port" name="source_port" style="width: 200;"><br>
                             <select name="source_port_group" id="source_port_group" style="width: 200;">
                                 <option value=''>
-                                    {% for group in group_list %}
+                                    {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "port-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
                                     {{group["group_name"]}}:
@@ -296,8 +296,8 @@
         </tr>
         <tr>
             <td align="right" colspan="4">
-                <button class="add_rule_button" type="submit" value="Generate Rule Configuration"
-                    style="width: 30%">Generate Rule Configuration</button>
+                <button class="add_rule_button" type="submit" value="Generate Rule Configuration" style="width: 30%"
+                    title="Add rule to the chain.">Generate Rule Configuration</button>
             </td>
         </tr>
     </form>

@@ -52,7 +52,8 @@
                     <td>
                         <a href="{{url_for('configuration_hostname_add')}}">
                             <button class="snapshot_button" class="button" type="submit" name="action" value="Change"
-                                style="width: 100%">Change</button>
+                                style="width: 100%"
+                                title="Change the hostname of the firewall to which this configuration will be applied.">Change</button>
                         </a>
                     </td>
                 </tr>
@@ -130,10 +131,12 @@
         </tr>
         <tr>
             <td align="center" width="50%">
-                <input class="button" type="submit" name="action" value="View Diffs" onclick="$('#loading').show();">
+                <input class="button" type="submit" name="action" value="View Diffs" onclick="$('#loading').show();"
+                    title="Connect to firewall via SSH and view diff between this configuration and the running configuration.">
             </td>
             <td align="center">
-                <input class="button" type="submit" name="action" value="Commit" onclick="$('#loading').show();">
+                <input class="button" type="submit" name="action" value="Commit" onclick="$('#loading').show();"
+                    title="Connect to the firewall via SSH and commit this configuration.">
             </td>
             <div class="popup" id="loading" style="display:none;">
                 <img src="static/loading.gif" width="100" height="100">

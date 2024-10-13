@@ -24,7 +24,6 @@ Choose two snapshots to compare and select View Diff to see a side-by-side diff 
         <form action="/snapshot_diff_display" , method="post" , target="_blank">
             <td align="center">
                 <select name="snapshot_1" id="snapshot_1" style="width: 100%;">
-                    <option value='current'>Current (working copy)</option>
                     {% for snapshot in snapshot_list %}
                     <option value='{{snapshot.name}}'>
                         {{snapshot.name}}
@@ -45,7 +44,8 @@ Choose two snapshots to compare and select View Diff to see a side-by-side diff 
             </td>
 
             <td align="center">
-                <input class="grey_button" type="submit" value="View Diff">
+                <input class="grey_button" type="submit" value="View Diff"
+                    title="View the diff between the two selected configuration snapshots.">
             </td>
         </form>
     </tr>
