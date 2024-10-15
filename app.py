@@ -89,7 +89,7 @@ from package.interface_functions import (
     list_interfaces,
 )
 from package.mongo_converter import mongo_converter
-from package.napalm_functions import (
+from package.napalm_ssh_functions import (
     commit_to_firewall,
     get_diffs_from_firewall,
     show_firewall_usage,
