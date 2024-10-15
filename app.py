@@ -92,6 +92,7 @@ from package.mongo_converter import mongo_converter
 from package.napalm_functions import (
     commit_to_firewall,
     get_diffs_from_firewall,
+    show_firewall_usage,
     test_connection,
 )
 from waitress import serve
@@ -760,6 +761,8 @@ def configuration_push():
         else:
             write_user_command_conf_file(session, config, delete=False)
 
+        if request.form["action"] == "Show Firewall Usage":
+            message = show_firewall_usage(connection_string, session)
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":

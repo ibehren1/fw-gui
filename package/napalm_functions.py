@@ -8,6 +8,65 @@ from package.data_file_functions import decrypt_file
 import logging
 import socket
 import os
+import paramiko
+
+
+def commit_to_firewall(connection_string, session):
+    logging.debug(" |------------------------------------------")
+    try:
+        driver, tmpfile = assemble_driver_string(connection_string, session)
+    except Exception as e:
+        tmpfile = None
+        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
+        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
+
+    logging.debug(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.debug(" |--> Configuring driver")
+
+    vyos_router = driver
+
+    logging.debug(" |--> Opening connection")
+
+    try:
+        vyos_router.open()
+        vyos_router.load_merge_candidate(
+            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
+        )
+
+        logging.debug(" |--> Comparing configuration")
+        diffs = vyos_router.compare_config()
+
+        if bool(diffs) is True:
+            logging.debug(" |--> Committing configuration")
+            commit = vyos_router.commit_config()
+
+            logging.debug(" |--> Connection closed.\n |")
+            vyos_router.close()
+
+            if commit is None:
+                return str(diffs + "Commit successful.")
+            else:
+                return str(diffs + commit)
+
+        else:
+            logging.debug(" |--> No configuration changes to commit")
+            vyos_router.discard_config()
+
+            logging.debug(" |--> Connection closed.")
+            vyos_router.close()
+            return "No configuration changes to commit."
+
+    except Exception as e:
+        logging.info(f" |--X Error: {e}")
+        flash("Error in diff.  Inspect output and correct errors.", "danger")
+        return e
+
+    finally:
+        # Delete key
+        if tmpfile is not None:
+            os.remove(tmpfile)
+            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
+            logging.debug(" |-----------------------------------------")
 
 
 def assemble_driver_string(connection_string, session):
@@ -92,62 +151,66 @@ def get_diffs_from_firewall(connection_string, session):
             logging.debug(" |------------------------------------------")
 
 
-def commit_to_firewall(connection_string, session):
+# Uses Paramiko rather than Napalm
+def show_firewall_usage(connection_string, session):
     logging.debug(" |------------------------------------------")
-    try:
-        driver, tmpfile = assemble_driver_string(connection_string, session)
-    except Exception as e:
-        tmpfile = None
-        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
-        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
-
-    logging.debug(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
-    logging.debug(" |--> Configuring driver")
-
-    vyos_router = driver
-
-    logging.debug(" |--> Opening connection")
 
     try:
-        vyos_router.open()
-        vyos_router.load_merge_candidate(
-            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
-        )
+        # B507 -- Purposely allowing trust of the unknown host key
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
 
-        logging.debug(" |--> Comparing configuration")
-        diffs = vyos_router.compare_config()
+        hostname = connection_string["hostname"]
+        port = connection_string["port"]
+        username = connection_string["username"]
+        password = connection_string["password"]
 
-        if bool(diffs) is True:
-            logging.debug(" |--> Committing configuration")
-            commit = vyos_router.commit_config()
+        logging.info(hostname)
 
-            logging.debug(" |--> Connection closed.\n |")
-            vyos_router.close()
-
-            if commit is None:
-                return str(diffs + "Commit successful.")
-            else:
-                return str(diffs + commit)
-
+        if "ssh_key_name" in connection_string:
+            key = connection_string["password"].encode("utf-8")
+            key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+            tmp_key_name = decrypt_file(key_name, key)
+            ssh.connect(
+                hostname, port=port, username=username, key_filename=tmp_key_name
+            )
         else:
-            logging.debug(" |--> No configuration changes to commit")
-            vyos_router.discard_config()
+            tmp_key_name = None
+            ssh.connect(hostname, port=port, username=username, password=password)
 
-            logging.debug(" |--> Connection closed.")
-            vyos_router.close()
-            return "No configuration changes to commit."
+        commands = [
+            "source /opt/vyatta/etc/functions/script-template",
+            "run show firewall",
+            "exit",
+        ]
+
+        command_string = "\n".join(commands) + "\n"
+
+        # B601 -- no shell injection
+        stdin, stdout, stderr = ssh.exec_command(f"vbash -s {command_string}")  # nosec
+        stdin.write(command_string)
+        stdin.flush()
+        stdin.channel.shutdown_write()
+
+        # Read the output
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+
+        ssh.close()
+
+        return output
 
     except Exception as e:
         logging.info(f" |--X Error: {e}")
-        flash("Error in diff.  Inspect output and correct errors.", "danger")
+        flash("Error connecting to host.  Inspect output and correct errors.", "danger")
         return e
 
     finally:
         # Delete key
-        if tmpfile is not None:
-            os.remove(tmpfile)
-            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
-            logging.debug(" |-----------------------------------------")
+        if tmp_key_name is not None:
+            os.remove(tmp_key_name)
+            logging.debug(f" |--> Deleted temporary key: {tmp_key_name}")
+            logging.debug(" |------------------------------------------")
 
 
 def test_connection(session):
