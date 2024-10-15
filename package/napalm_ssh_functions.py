@@ -1,5 +1,5 @@
 """
-    Napalm Functions to connect with VyOS Firewall
+    Napalm & Paramiko Functions to connect with VyOS Firewall
 """
 
 from flask import flash
@@ -11,10 +11,71 @@ import os
 import paramiko
 
 
+def assemble_napalm_driver_string(connection_string, session):
+
+    driver = get_network_driver("vyos")
+    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
+
+    if "ssh_key_name" in connection_string:
+        key = connection_string["password"].encode("utf-8")
+        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+        tmp_key_name = decrypt_file(key_name, key)
+        optional_args["key_file"] = tmp_key_name
+
+        return (
+            # B106 -- Not a hardcoded password.
+            driver(
+                hostname=connection_string["hostname"],
+                username=connection_string["username"],
+                password="",
+                optional_args=optional_args,
+            ),  # nosec
+            tmp_key_name,
+        )
+
+    else:
+        return (
+            driver(
+                hostname=connection_string["hostname"],
+                username=connection_string["username"],
+                password=connection_string["password"],
+                optional_args=optional_args,
+            ),
+            None,
+        )
+
+
+def assemble_paramiko_driver_string(connection_string, session):
+
+    # B507 -- Purposely allowing trust of the unknown host key
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
+
+    hostname = connection_string["hostname"]
+    port = connection_string["port"]
+    username = connection_string["username"]
+    password = connection_string["password"]
+
+    logging.info(connection_string)
+
+    if "ssh_key_name" in connection_string:
+        logging.info("key")
+        key = connection_string["password"].encode("utf-8")
+        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+        tmp_key_name = decrypt_file(key_name, key)
+        ssh.connect(hostname, port=port, username=username, key_filename=tmp_key_name)
+    else:
+        logging.info("no_key")
+        tmp_key_name = None
+        ssh.connect(hostname, port=port, username=username, password=password)
+
+    return ssh, tmp_key_name
+
+
 def commit_to_firewall(connection_string, session):
     logging.debug(" |------------------------------------------")
     try:
-        driver, tmpfile = assemble_driver_string(connection_string, session)
+        driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
     except Exception as e:
         tmpfile = None
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
@@ -69,45 +130,11 @@ def commit_to_firewall(connection_string, session):
             logging.debug(" |-----------------------------------------")
 
 
-def assemble_driver_string(connection_string, session):
-
-    driver = get_network_driver("vyos")
-    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
-
-    if "ssh_key_name" in connection_string:
-        key = connection_string["password"].encode("utf-8")
-        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
-        tmp_key_name = decrypt_file(key_name, key)
-        optional_args["key_file"] = tmp_key_name
-
-        return (
-            # B106 -- Not a hardcoded password.
-            driver(
-                hostname=connection_string["hostname"],
-                username=connection_string["username"],
-                password="",
-                optional_args=optional_args,
-            ),  # nosec
-            tmp_key_name,
-        )
-
-    else:
-        return (
-            driver(
-                hostname=connection_string["hostname"],
-                username=connection_string["username"],
-                password=connection_string["password"],
-                optional_args=optional_args,
-            ),
-            None,
-        )
-
-
 def get_diffs_from_firewall(connection_string, session):
     logging.debug(" |------------------------------------------")
 
     try:
-        driver, tmpfile = assemble_driver_string(connection_string, session)
+        driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
     except Exception as e:
         tmpfile = None
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
@@ -154,29 +181,9 @@ def get_diffs_from_firewall(connection_string, session):
 # Uses Paramiko rather than Napalm
 def show_firewall_usage(connection_string, session):
     logging.debug(" |------------------------------------------")
-
+    tmpfile = None
     try:
-        # B507 -- Purposely allowing trust of the unknown host key
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
-
-        hostname = connection_string["hostname"]
-        port = connection_string["port"]
-        username = connection_string["username"]
-        password = connection_string["password"]
-
-        logging.info(hostname)
-
-        if "ssh_key_name" in connection_string:
-            key = connection_string["password"].encode("utf-8")
-            key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
-            tmp_key_name = decrypt_file(key_name, key)
-            ssh.connect(
-                hostname, port=port, username=username, key_filename=tmp_key_name
-            )
-        else:
-            tmp_key_name = None
-            ssh.connect(hostname, port=port, username=username, password=password)
+        ssh, tmpfile = assemble_paramiko_driver_string(connection_string, session)
 
         commands = [
             "source /opt/vyatta/etc/functions/script-template",
@@ -207,9 +214,9 @@ def show_firewall_usage(connection_string, session):
 
     finally:
         # Delete key
-        if tmp_key_name is not None:
-            os.remove(tmp_key_name)
-            logging.debug(f" |--> Deleted temporary key: {tmp_key_name}")
+        if tmpfile is not None:
+            os.remove(tmpfile)
+            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
             logging.debug(" |------------------------------------------")
 
 
