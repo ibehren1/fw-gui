@@ -9,6 +9,7 @@ Jinja2
 napalm
 napalm-vyos
 packaging
+paramiko
 python-dotenv
 pymongo
 waitress

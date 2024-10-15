@@ -30,6 +30,7 @@ The web-based FW-GUI allows the user to visually:
 - Create and manage group objects
 - Create and manage firewall chains
 - Create and manage filters of chains
+- Create and manage flowtables
 - Support for managing multiple firewall configurations
 - Create and compare (diff) snapshots of firewall configurations
 - Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface

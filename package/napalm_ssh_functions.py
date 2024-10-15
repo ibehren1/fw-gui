@@ -1,5 +1,5 @@
 """
-    Napalm Functions to connect with VyOS Firewall
+    Napalm & Paramiko Functions to connect with VyOS Firewall
 """
 
 from flask import flash
@@ -8,9 +8,10 @@ from package.data_file_functions import decrypt_file
 import logging
 import socket
 import os
+import paramiko
 
 
-def assemble_driver_string(connection_string, session):
+def assemble_napalm_driver_string(connection_string, session):
 
     driver = get_network_driver("vyos")
     optional_args = {"port": connection_string["port"], "conn_timeout": 120}
@@ -44,58 +45,37 @@ def assemble_driver_string(connection_string, session):
         )
 
 
-def get_diffs_from_firewall(connection_string, session):
-    logging.debug(" |------------------------------------------")
+def assemble_paramiko_driver_string(connection_string, session):
 
-    try:
-        driver, tmpfile = assemble_driver_string(connection_string, session)
-    except Exception as e:
-        tmpfile = None
-        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
-        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
+    # B507 -- Purposely allowing trust of the unknown host key
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
 
-    logging.debug(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
-    logging.debug(" |--> Configuring driver")
+    hostname = connection_string["hostname"]
+    port = connection_string["port"]
+    username = connection_string["username"]
+    password = connection_string["password"]
 
-    vyos_router = driver
+    logging.info(connection_string)
 
-    logging.debug(" |--> Opening connection")
+    if "ssh_key_name" in connection_string:
+        logging.info("key")
+        key = connection_string["password"].encode("utf-8")
+        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+        tmp_key_name = decrypt_file(key_name, key)
+        ssh.connect(hostname, port=port, username=username, key_filename=tmp_key_name)
+    else:
+        logging.info("no_key")
+        tmp_key_name = None
+        ssh.connect(hostname, port=port, username=username, password=password)
 
-    try:
-        vyos_router.open()
-        vyos_router.load_merge_candidate(
-            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
-        )
-
-        logging.debug(" |--> Comparing configuration")
-        diffs = vyos_router.compare_config()
-
-        vyos_router.discard_config()
-        vyos_router.close()
-        logging.debug(" |--> Connection closed.")
-
-        if bool(diffs) is True:
-            return diffs
-        else:
-            return "No configuration changes to commit."
-
-    except Exception as e:
-        logging.info(f" |--X Error: {e}")
-        flash("Error in diff.  Inspect output and correct errors.", "danger")
-        return e
-
-    finally:
-        # Delete key
-        if tmpfile is not None:
-            os.remove(tmpfile)
-            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
-            logging.debug(" |------------------------------------------")
+    return ssh, tmp_key_name
 
 
 def commit_to_firewall(connection_string, session):
     logging.debug(" |------------------------------------------")
     try:
-        driver, tmpfile = assemble_driver_string(connection_string, session)
+        driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
     except Exception as e:
         tmpfile = None
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
@@ -148,6 +128,96 @@ def commit_to_firewall(connection_string, session):
             os.remove(tmpfile)
             logging.debug(f" |--> Deleted temporary key: {tmpfile}")
             logging.debug(" |-----------------------------------------")
+
+
+def get_diffs_from_firewall(connection_string, session):
+    logging.debug(" |------------------------------------------")
+
+    try:
+        driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
+    except Exception as e:
+        tmpfile = None
+        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
+        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
+
+    logging.debug(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.debug(" |--> Configuring driver")
+
+    vyos_router = driver
+
+    logging.debug(" |--> Opening connection")
+
+    try:
+        vyos_router.open()
+        vyos_router.load_merge_candidate(
+            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
+        )
+
+        logging.debug(" |--> Comparing configuration")
+        diffs = vyos_router.compare_config()
+
+        vyos_router.discard_config()
+        vyos_router.close()
+        logging.debug(" |--> Connection closed.")
+
+        if bool(diffs) is True:
+            return diffs
+        else:
+            return "No configuration changes to commit."
+
+    except Exception as e:
+        logging.info(f" |--X Error: {e}")
+        flash("Error in diff.  Inspect output and correct errors.", "danger")
+        return e
+
+    finally:
+        # Delete key
+        if tmpfile is not None:
+            os.remove(tmpfile)
+            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
+            logging.debug(" |------------------------------------------")
+
+
+# Uses Paramiko rather than Napalm
+def show_firewall_usage(connection_string, session):
+    logging.debug(" |------------------------------------------")
+    tmpfile = None
+    try:
+        ssh, tmpfile = assemble_paramiko_driver_string(connection_string, session)
+
+        commands = [
+            "source /opt/vyatta/etc/functions/script-template",
+            "run show firewall",
+            "exit",
+        ]
+
+        command_string = "\n".join(commands) + "\n"
+
+        # B601 -- no shell injection
+        stdin, stdout, stderr = ssh.exec_command(f"vbash -s {command_string}")  # nosec
+        stdin.write(command_string)
+        stdin.flush()
+        stdin.channel.shutdown_write()
+
+        # Read the output
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+
+        ssh.close()
+
+        return output
+
+    except Exception as e:
+        logging.info(f" |--X Error: {e}")
+        flash("Error connecting to host.  Inspect output and correct errors.", "danger")
+        return e
+
+    finally:
+        # Delete key
+        if tmpfile is not None:
+            os.remove(tmpfile)
+            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
+            logging.debug(" |------------------------------------------")
 
 
 def test_connection(session):

@@ -57,6 +57,7 @@ from package.data_file_functions import (
     mongo_dump,
     process_upload,
     read_user_data_file,
+    tag_snapshot,
     validate_mongodb_connection,
     write_user_command_conf_file,
     write_user_data_file,
@@ -89,9 +90,10 @@ from package.interface_functions import (
     list_interfaces,
 )
 from package.mongo_converter import mongo_converter
-from package.napalm_functions import (
+from package.napalm_ssh_functions import (
     commit_to_firewall,
     get_diffs_from_firewall,
+    show_firewall_usage,
     test_connection,
 )
 from waitress import serve
@@ -760,6 +762,8 @@ def configuration_push():
         else:
             write_user_command_conf_file(session, config, delete=False)
 
+        if request.form["action"] == "Show Firewall Usage":
+            message = show_firewall_usage(connection_string, session)
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":
@@ -905,11 +909,35 @@ def snapshot_diff_display():
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
-        snapshot_list = list_snapshots(session)
         message, config = generate_config(session)
 
         return render_template(
             "snapshot_diff_choose.html",
+            file_list=file_list,
+            snapshot_list=snapshot_list,
+            firewall_name=session["firewall_name"],
+            message=message,
+            username=session["username"],
+        )
+
+
+@app.route("/snapshot_tag_create", methods=["GET", "POST"])
+@login_required
+def snapshot_tag_create():
+    if request.method == "POST":
+        logging.info(request.form)
+
+        tag_snapshot(session, request)
+
+        return redirect(url_for("snapshot_tag_create"))
+
+    else:
+        file_list = list_user_files(session)
+        snapshot_list = list_snapshots(session)
+        message, config = generate_config(session)
+
+        return render_template(
+            "snapshot_tag_create.html",
             file_list=file_list,
             snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
@@ -980,6 +1008,7 @@ def select_firewall_config():
         user_data = read_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}'
         )
+        del user_data["tag"]
         write_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}',
             user_data,

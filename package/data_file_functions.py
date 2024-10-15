@@ -321,7 +321,13 @@ def list_snapshots(session):
 
         logging.debug(f"Reading data from Mongo.")
         for doc in collection.find(query).sort("snapshot", pymongo.DESCENDING):
-            snapshot_list.append({"name": doc["snapshot"], "id": doc["firewall"]})
+            if "tag" in doc:
+                tag = doc["tag"]
+            else:
+                tag = ""
+            snapshot_list.append(
+                {"name": doc["snapshot"], "id": doc["firewall"], "tag": tag}
+            )
 
     logging.debug("Snapshot List: " + str(snapshot_list))
 
@@ -513,6 +519,26 @@ def read_user_data_file(filename, snapshot="current", diff=False):
 
     except:
         return {}
+
+
+# Tag Snapshot
+def tag_snapshot(session, request):
+    firewall_name = request.form["firewall_name"]
+    snapshot_name = request.form["snapshot_name"]
+    snapshot_tag = request.form["snapshot_tag"]
+    user_data = read_user_data_file(
+        f"data/{session["username"]}/{firewall_name}",
+        snapshot=snapshot_name,
+    )
+
+    user_data["tag"] = snapshot_tag
+    write_user_data_file(
+        f"data/{session["username"]}/{firewall_name}", user_data, snapshot=snapshot_name
+    )
+
+    flash(f"Tag updated for snapshot {snapshot_name}.", "success")
+
+    return
 
 
 #

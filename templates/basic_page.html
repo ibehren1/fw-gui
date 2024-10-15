@@ -123,19 +123,25 @@
                                 <br>
                                 {% if snapshot_list%}
                                 {% for snapshot in snapshot_list %}
-                                <button class="snapshot_button" type="submit" name="file"
-                                    value="{{snapshot.id}}/{{snapshot.name}}" style="width: 65%"
-                                    title="Load snapshot {{snapshot.name}} to current working configuration.">{{snapshot.name}}
-                                </button>
                                 <button class="delete_snapshot_button" type="submit" name="file"
                                     value="{{snapshot.id}}/delete/{{snapshot.name}}" style="width: 5%"
                                     title="Delete snapshot {{snapshot.name}}">
                                     X
                                 </button>
+                                <button class="snapshot_button" type="submit" name="file"
+                                    value="{{snapshot.id}}/{{snapshot.name}}" style="width: 60%"
+                                    title="Load snapshot {{snapshot.name}} to current working configuration.">{{snapshot.name}}
+                                </button>
+                                <div class="tooltip">
+                                    <a href="{{url_for('snapshot_tag_create')}}">
+                                        <img src=static/tag-yellow.svg align="center" width="16" height="16"></a>
+                                    <span class="tooltiptext">Tag: {{snapshot.tag}}</span>
+                                </div>
+                                </div>
                                 <ul></ul>
                                 {% endfor %}
                                 <a href="{{url_for('snapshot_diff_choose')}}">
-                                    <button class="snapshot_button" style="width: 71%;" type="submit" name="file"
+                                    <button class="snapshot_button" style="width: 72%;" type="submit" name="file"
                                         value="Snapshot Diff"
                                         title="Select 2 snapshots and view a diff of the configurations in the snapshots.">View
                                         Snapshot Diff</button>

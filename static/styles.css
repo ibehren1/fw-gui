@@ -561,3 +561,44 @@ ul {
     color: #ffbf12;
     list-style: outside none none !important;
 }
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    /* border-bottom: 1px dotted black; */
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: fit-content;
+    background-color: #ffbf12;
+    color: #000000;
+    font-weight: bold;
+    font-size: small;
+    text-align: left;
+    border-radius: 10px;
+    padding: 3px 5;
+    position: fixed;
+    /* z-index: 1; */
+    /* bottom: 125%; */
+    /* left: 50%; */
+    /* margin-left: -60px; */
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
