@@ -140,15 +140,18 @@ db_location = os.path.join(os.getcwd(), "data/database")
 with open(".version", "r") as f:
     os.environ["FWGUI_VERSION"] = f.read()
 
+try:
+    session_lifetime = int(os.environ.get("SESSION_TIMEOUT"))
+except:
+    session_lifetime = 120
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("APP_SECRET_KEY")
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
-    minutes=int(os.environ.get("SESSION_TIMEOUT"))
-)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(session_lifetime)
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
