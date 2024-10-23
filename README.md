@@ -95,11 +95,11 @@ services:
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
+      - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
 +     - MONGODB_URI=mongodb
       - BUCKET_NAME=<bucket-name>
       - AWS_ACCESS_KEY_ID=<access-key>
       - AWS_SECRET_ACCESS_KEY=<secret-access-key>
-      - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
@@ -164,11 +164,11 @@ services:
     environment:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
+      - SESSION_TIMEOUT=120
       - MONGODB_URI=mongodb
       - BUCKET_NAME=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
-      - SESSION_TIMEOUT=
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
