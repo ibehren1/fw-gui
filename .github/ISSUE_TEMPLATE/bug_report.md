@@ -23,16 +23,16 @@ A clear and concise description of what you expected to happen.
 **Screenshots**  
 If applicable, add screenshots to help explain your problem.
 
-**FW-GUI version (please complete the following information)**
+**FW-GUI Version**
  - Version: [e.g. 1.4.x] (you can find this in the footer of every page of the interface)
  - Browser [e.g. Chrome, Safari, Firefox, etc]
 
-**VyOS Instance version (please complete the following information)**  
+**VyOS Instance Version**
  - [ ] Version 1.3.x Equuleus is not supported -- See README for details
  - [ ] Version 1.4.x Sagitta
  - [ ] Version 1.5.x (include rolling release date)
 
-Verion can be found by running `show version` on the VyOS command line.
+Version can be found by running `show version` on the VyOS command line.
 
 **Additional context**  
 Add any other context about the problem here.

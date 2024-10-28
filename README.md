@@ -13,8 +13,8 @@ The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separ
 | VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
 |----------------|----------------------------|----------------|
 | VyOS 1.3.x Equuleus | Untested | No support (do not open issues) |
-| VyOS 1.4.x Sagiitta | Designed for and heavily tested. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Functionality issues will be prioritized. |
-| VyOS 1.5.x Circinus <br>(current rolling release) | Minmal testing but no known issues. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Some issues may be deprioritized as feature requrests for future support.
+| **VyOS 1.4.x Sagiitta** | Designed for and heavily tested. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Functionality issues will be prioritized. |
+| **VyOS 1.5.x Circinus**<br>(rolling release) | Minimal testing but no known issues. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Some issues may be deprioritized as feature requests for future support.
 | VyOS Stream         | TBD ([waiting for release](https://blog.vyos.io/introducing-vyos-stream))
 
 ## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
