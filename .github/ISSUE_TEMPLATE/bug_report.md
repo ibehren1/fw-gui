@@ -7,29 +7,32 @@ assignees: ibehren1
 
 ---
 
-**Describe the bug**
+**Describe the bug**  
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+**To Reproduce**  
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
 
-**Expected behavior**
+**Expected behavior**  
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
+**Screenshots**  
 If applicable, add screenshots to help explain your problem.
 
-**FW-GUI version (please complete the following information):**
+**FW-GUI version (please complete the following information)**
  - Version: [e.g. 1.4.x] (you can find this in the footer of every page of the interface)
- - Browser [e.g. chrome, safari]
+ - Browser [e.g. Chrome, Safari, Firefox, etc]
 
-**VyOS Instance version (please complete the following information):**
- - Version: [e.g. 1.4.x] (only VyOS 1.4 Sagitta is supported -- See README for details)
- - Browser [e.g. chrome, safari]
+**VyOS Instance version (please complete the following information)**  
+ - [ ] Version 1.3.x Equuleus is not supported -- See README for details
+ - [ ] Version 1.4.x Sagitta
+ - [ ] Version 1.5.x (include rolling release date)
 
-**Additional context**
+Verion can be found by running `show version` on the VyOS command line.
+
+**Additional context**  
 Add any other context about the problem here.
