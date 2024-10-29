@@ -14,16 +14,16 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Add application files
-ADD .env.prod          /opt/fw-gui/.env
-ADD .version           /opt/fw-gui/.version
-ADD app.py             /opt/fw-gui/app.py
-ADD examples/*         /opt/fw-gui/examples/
-ADD package/*          /opt/fw-gui/package/
-ADD requirements.txt   /opt/fw-gui/requirements.txt
-ADD static/*           /opt/fw-gui/static/
-ADD templates/*        /opt/fw-gui/templates/
-RUN mkdir              /opt/fw-gui/data
-RUN mkdir              /opt/fw-gui/data/mongo_dumps
+ADD examples/.env.prod     /opt/fw-gui/.env
+ADD .version               /opt/fw-gui/.version
+ADD app.py                 /opt/fw-gui/app.py
+ADD examples/example.json  /opt/fw-gui/examples/
+ADD package/*              /opt/fw-gui/package/
+ADD requirements.txt       /opt/fw-gui/requirements.txt
+ADD static/*               /opt/fw-gui/static/
+ADD templates/*            /opt/fw-gui/templates/
+RUN mkdir                  /opt/fw-gui/data
+RUN mkdir                  /opt/fw-gui/data/mongo_dumps
 
 # Install pip modules
 RUN pip3 install --break-system-packages -r /opt/fw-gui/requirements.txt

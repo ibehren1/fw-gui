@@ -36,7 +36,7 @@ docker buildx inspect \
     --bootstrap
 
 if [ "${BUILD_TYPE}" == "Prod" ]; then
-    docker buildx build \
+    docker buildx build -f docker/Dockerfile \
         --platform=linux/arm64,linux/amd64 \
         --no-cache \
         --push \
@@ -45,7 +45,7 @@ if [ "${BUILD_TYPE}" == "Prod" ]; then
 fi
 
 if [ "${BUILD_TYPE}" == "PubDev" ]; then
-    docker buildx build \
+    docker buildx build -f docker/Dockerfile \
         --platform=linux/arm64,linux/amd64 \
         --no-cache \
         --push \
@@ -55,7 +55,7 @@ if [ "${BUILD_TYPE}" == "PubDev" ]; then
 fi
 
 if [ "${BUILD_TYPE}" == "Dev" ]; then
-    docker buildx build \
+    docker buildx build -f docker/Dockerfile \
         --platform=linux/arm64,linux/amd64 \
         --no-cache \
         --push \
