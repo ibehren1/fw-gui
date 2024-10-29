@@ -1,5 +1,5 @@
 [Unit]
-Description=VyOS Firewall GUI
+Description=FW-GUI
 After=network.target
 
 [Service]
