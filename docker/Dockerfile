@@ -17,7 +17,7 @@ RUN apt-get clean && \
 ADD examples/.env.prod     /opt/fw-gui/.env
 ADD .version               /opt/fw-gui/.version
 ADD app.py                 /opt/fw-gui/app.py
-ADD examples/examples.json /opt/fw-gui/examples/
+ADD examples/example.json  /opt/fw-gui/examples/
 ADD package/*              /opt/fw-gui/package/
 ADD requirements.txt       /opt/fw-gui/requirements.txt
 ADD static/*               /opt/fw-gui/static/
