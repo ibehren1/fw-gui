@@ -7,22 +7,15 @@ Tell me how you are using FW-GUI! [File a Usage Report](https://github.com/ibehr
 The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specific configurations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
 
 
-# <span style="color:red">*** Breaking Upgrade v1.4.0+ ***</span>
 
-FW-GUI v1.4.0+ uses a separate MongoDB database to store configurations.  As such, you will need to update your deployment to connect to either an external MongoDB database or deploy a second container to host MongoDB.
+## VyOS Release Support
 
-See [Deployment](#deployment) section below for Docker Compose configuration files.
-
-## VyOS Version Support
-
-FW-GUI code is created and tested with VyOS 1.4 LTS (Sagitta).
-
-Given the [situation](https://blog.vyos.io/community-contributors-userbase-and-lts-builds) with VyOS project removing the access to the packages repo required to build custom images of VyOS 1.4 in April 2024, I recommend building custom images via Jenkins as documented here:  https://github.com/dd010101/vyos-jenkins
-
-Support for [VyOS Stream](https://blog.vyos.io/introducing-vyos-stream) **_may be_** considered in the future.
-
-Support of VyOS rolling (current) is unlikely due to the unstable nature of the command line syntax.
-
+| VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
+|----------------|----------------------------|----------------|
+| VyOS 1.3.x Equuleus | Untested | No support (do not open issues) |
+| **VyOS 1.4.x Sagiitta** | Designed for and heavily tested. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Functionality issues will be prioritized. |
+| **VyOS 1.5.x Circinus**<br>(rolling release) | Minimal testing but no known issues. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Some issues may be deprioritized as feature requests for future support.
+| VyOS Stream         | TBD ([waiting for release](https://blog.vyos.io/introducing-vyos-stream))
 
 ## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
@@ -77,6 +70,13 @@ You can provide an Amazon S3 bucket name and user credentials as environment var
 Access to the backup files is not provided via the web interface as it contains configurations of all users.  Access to the backup is on the Docker host in the FW-GUI volume or via the S3 bucket (if configured).
 
 ## Deployment
+
+### Breaking Upgrade for version v1.4.0+
+
+FW-GUI v1.4.0+ uses a separate MongoDB database to store configurations.  If you first deployed with a version lower than 1.4.0, you will need to update your deployment to connect to either an external MongoDB database or deploy a second container to host MongoDB.
+
+See below for updated Docker Compose configuration settings.
+
 
 ### Recommended Deployment -- Docker Compose for combined FW-GUI, MongoDB and Nginx Proxy Manager
 
