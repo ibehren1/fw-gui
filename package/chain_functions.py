@@ -1,5 +1,18 @@
 """
     Chain Support functions.
+
+    This module provides functions for managing firewall chains and rules in a user's data structure.
+    It includes functions for:
+    - Adding new firewall rules to chains
+    - Adding new firewall chains
+    - Reading and writing user data files
+    - Processing form data for rules and chains
+    - Validating IP versions and configurations
+
+    Dependencies:
+    - package.data_file_functions: For reading/writing user data files
+    - flask: For flash messaging
+    - logging: For logging functionality
 """
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
@@ -8,6 +21,47 @@ import logging
 
 
 def add_rule_to_data(session, request):
+    """
+    Adds a new firewall rule to a chain in the user's data structure and saves it to file.
+
+    Args:
+        session: Session object containing data_dir and firewall_name
+        request: Request object containing form data with rule details
+
+    Form data expected:
+        fw_chain: Combined string of IP version and chain name (e.g. "ipv4,INPUT")
+        rule: Rule number/ID
+        description: Description of the rule
+        rule_disable: Optional, disables rule if present
+        logging: Optional, enables logging if present
+        action: Action to take (e.g. ACCEPT, DROP)
+        dest_address_type: Type of destination address (address, address_group, domain_group, etc)
+        dest_address: Destination address value
+        dest_port_type: Type of destination port (port or port_group)
+        dest_port: Destination port value
+        source_address_type: Type of source address (address, address_group, domain_group, etc)
+        source_address: Source address value
+        source_port_type: Type of source port (port or port_group)
+        source_port: Source port value
+        protocol: Protocol (optional)
+        state_est: Optional, enables established state matching
+        state_inv: Optional, enables invalid state matching
+        state_new: Optional, enables new state matching
+        state_rel: Optional, enables related state matching
+
+    The function:
+    1. Reads the existing user data file
+    2. Extracts rule details from the form
+    3. Creates necessary data structures if they don't exist
+    4. Processes destination and source address/port configurations
+    5. Adds the rule to the specified chain
+    6. Updates the rule order list
+    7. Saves updated data back to file
+    8. Displays success message
+
+    Returns:
+        None
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -134,6 +188,31 @@ def add_rule_to_data(session, request):
 
 
 def add_chain_to_data(session, request):
+    """
+    Adds a new firewall chain to the user's data structure and saves it to file.
+
+    Args:
+        session: Session object containing data_dir and firewall_name
+        request: Request object containing form data with chain details
+
+    Form data expected:
+        ip_version: IP version for the chain (ipv4/ipv6)
+        fw_chain: Name of the firewall chain
+        description: Description of the chain
+        default_action: Default action for the chain
+        logging: Optional, enables logging if present
+
+    The function:
+    1. Reads the existing user data file
+    2. Extracts chain details from the form
+    3. Creates necessary data structure if it doesn't exist
+    4. Adds the new chain with its configuration
+    5. Saves updated data back to file
+    6. Displays success message
+
+    Returns:
+        None
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -174,6 +253,40 @@ def add_chain_to_data(session, request):
 
 
 def assemble_detail_list_of_chains(session):
+    """
+    Assembles a detailed dictionary of all firewall chains and their rules from the user's data.
+
+    Args:
+        session: The current session containing data directory and firewall name
+
+    Returns:
+        dict: A nested dictionary structure containing chain and rule details:
+            {
+                'ipv4': {
+                    'chain_name': [
+                        {rule_details_dict1},
+                        {rule_details_dict2},
+                        ...
+                    ]
+                },
+                'ipv6': {
+                    'chain_name': [
+                        {rule_details_dict1},
+                        {rule_details_dict2},
+                        ...
+                    ]
+                }
+            }
+            Returns empty dict if no chains are defined.
+
+    The function:
+    1. Reads the user's data file
+    2. Creates a nested dictionary structure for IPv4 and IPv6 chains
+    3. For each chain, gets all rules and their details
+    4. Adds rule number to each rule's details
+    5. Flashes a warning message if no chains are found
+    6. Returns the assembled dictionary structure
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -206,6 +319,31 @@ def assemble_detail_list_of_chains(session):
 
 
 def assemble_list_of_rules(session):
+    """
+    Assembles a list of all firewall rules defined in the user's data.
+
+    Args:
+        session: The current session containing data directory and firewall name
+
+    Returns:
+        list: A list of [ip_version, chain_name, rule_number, description] for each rule.
+              Returns empty list if no rules are defined.
+
+    The function:
+    1. Reads the user's data file
+    2. Iterates through IPv4 and IPv6 sections
+    3. For each IP version, gets all chains and their rules
+    4. Creates a list entry with rule details for each rule found
+    5. Flashes a warning message if no rules are found
+    6. Returns the assembled list
+
+    Example return value:
+        [
+            ["ipv4", "INPUT", "1", "Allow SSH"],
+            ["ipv4", "OUTPUT", "10", "Allow HTTP"],
+            ["ipv6", "INPUT", "5", "Block telnet"]
+        ]
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -237,6 +375,31 @@ def assemble_list_of_rules(session):
 
 
 def assemble_list_of_chains(session):
+    """
+    Assembles a list of all firewall chains defined in the user's data.
+
+    Args:
+        session: The current session containing data directory and firewall name
+
+    Returns:
+        list: A list of [ip_version, chain_name] pairs for each defined chain.
+              Returns empty list if no chains are defined.
+
+    The function:
+    1. Reads the user's data file
+    2. Iterates through IPv4 and IPv6 sections
+    3. For each IP version, gets all defined chain names
+    4. Creates a list of [ip_version, chain_name] pairs
+    5. Flashes a warning message if no chains are found
+    6. Returns the assembled list
+
+    Example return value:
+        [
+            ["ipv4", "INPUT"],
+            ["ipv4", "OUTPUT"],
+            ["ipv6", "INPUT"]
+        ]
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -258,6 +421,33 @@ def assemble_list_of_chains(session):
 
 
 def delete_rule_from_data(session, request):
+    """
+    Deletes a firewall rule from the user's data and updates the data file.
+
+    Args:
+        session: The current session containing data directory and firewall name
+        request: The HTTP request containing form data with the rule to delete
+
+    Form Parameters:
+        rule: Comma-separated string containing "ip_version,chain,rule_number"
+
+    Returns:
+        None
+
+    The function:
+    1. Reads the user's data file
+    2. Extracts ip_version, chain and rule number from the form data
+    3. Deletes the rule from the chain and removes it from the rule order list
+    4. Cleans up by removing empty chains and ip versions
+    5. Writes the updated data back to file
+    6. Flashes success/failure messages to the user
+
+    Example:
+        For rule="ipv4,INPUT,10":
+        - Deletes rule 10 from the INPUT chain in the IPv4 firewall
+        - If INPUT chain becomes empty, removes the chain
+        - If IPv4 has no more chains, removes the IPv4 section
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -295,11 +485,41 @@ def delete_rule_from_data(session, request):
 
 
 def flash_ip_version_mismatch():
+    """
+    Displays an error message when there is a mismatch between IP versions.
+
+    This function flashes a danger-level message to notify the user that the IP version
+    of a rule does not match the IP version of the associated group object.
+
+    Returns:
+        None
+    """
     flash(f"IP version of rule must match IP version of group object.", "danger")
     return
 
 
 def reorder_chain_rule_in_data(session, request):
+    """
+    Reorders a rule within a firewall chain by assigning it a new rule number.
+
+    Args:
+        session: The current session containing data directory and firewall name
+        request: The HTTP request containing form data with the rule to reorder
+
+    Form Parameters:
+        reorder_rule: Comma-separated string containing "ip_version,chain,old_rule_number"
+        new_rule_number: The desired new rule number to assign
+
+    Returns:
+        str: Concatenated ip_version and chain name on success
+        None: If validation fails
+
+    Validation:
+    - Rule must have 3 components (ip_version, chain, old rule number)
+    - New rule number must be different from old rule number
+    - New rule number must be a valid integer
+    - New rule number must not already exist in the chain
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 

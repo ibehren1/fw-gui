@@ -1,5 +1,8 @@
 """
     Interface Support Functions
+
+    This module provides functions for managing network interface data in a firewall configuration system.
+    It handles adding, deleting and listing interface configurations using a JSON-based data store.
 """
 
 from flask import flash
@@ -8,6 +11,16 @@ import logging
 
 
 def add_interface_to_data(session, request):
+    """
+    Adds a new interface configuration to the user's data file.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing form data with interface name and description
+
+    Returns:
+        None. Updates data file and displays success message.
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -34,6 +47,16 @@ def add_interface_to_data(session, request):
 
 
 def delete_interface_from_data(session, request):
+    """
+    Deletes an interface configuration from the user's data file.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing form data with interface name to delete
+
+    Returns:
+        None. Updates data file and displays success message.
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -62,6 +85,16 @@ def delete_interface_from_data(session, request):
 
 
 def list_interfaces(session):
+    """
+    Retrieves sorted list of interface configurations from user's data file.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+
+    Returns:
+        list: Sorted list of interface dictionaries, each containing name and description.
+              Returns empty list if no interfaces exist.
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 

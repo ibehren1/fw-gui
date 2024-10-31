@@ -1,5 +1,12 @@
 """
     Database support functions.
+    
+    This module provides database operations for user management including:
+    - Password changes
+    - Version checking
+    - User authentication
+    - User registration
+    - Database queries
 """
 
 from datetime import datetime
@@ -16,9 +23,20 @@ import urllib3
 import subprocess  # nosec
 
 
-#
-# Change Password
 def change_password(bcrypt, db, User, username, request):
+    """
+    Changes a user's password after validating current and new passwords.
+
+    Args:
+        bcrypt: Password hashing utility
+        db: Database connection
+        User: User model class
+        username: Username of user changing password
+        request: HTTP request containing form data
+
+    Returns:
+        bool: True if password change successful, False otherwise
+    """
     # Get Inputs
     cur_password = request.form["current_password"]
     new_password = request.form["new_password"]
@@ -59,9 +77,13 @@ def change_password(bcrypt, db, User, username, request):
         return False
 
 
-#
-# Check Verion
 def check_version():
+    """
+    Checks local version against remote version and displays notification if newer version exists.
+
+    Reads local version from .version file and compares against version from GitHub.
+    Displays warning if running development version or if update is available.
+    """
     with open(".version", "r") as f:
         local_version = f.read().replace("v", "")
         logging.debug(f"Local version: {local_version}")
@@ -88,9 +110,22 @@ def check_version():
     return
 
 
-#
-# Process login from user/password
 def process_login(bcrypt, db, request, User):
+    """
+    Authenticates user login and sets up user environment.
+
+    Args:
+        bcrypt: Password hashing utility
+        db: Database connection
+        request: HTTP request containing login form data
+        User: User model class
+
+    Returns:
+        tuple: (success, data_dir, username)
+            success (bool): True if login successful
+            data_dir (str): User's data directory path
+            username (str): Authenticated username
+    """
     if request.form["username"] == "":
         return False, None, None
 
@@ -132,9 +167,18 @@ def process_login(bcrypt, db, request, User):
     return True, data_dir, username
 
 
-#
-# Query User table by id
 def query_user_by_id(db, User, id):
+    """
+    Queries user by ID.
+
+    Args:
+        db: Database connection
+        User: User model class
+        id: User ID to query
+
+    Returns:
+        User object if found, None otherwise
+    """
     try:
         result = db.session.execute(db.select(User).filter_by(id=id)).scalar_one()
     except:
@@ -142,9 +186,18 @@ def query_user_by_id(db, User, id):
     return result
 
 
-#
-# Query User table by username
 def query_user_by_username(db, User, username):
+    """
+    Queries user by username.
+
+    Args:
+        db: Database connection
+        User: User model class
+        username: Username to query
+
+    Returns:
+        User object if found, None otherwise
+    """
     try:
         result = db.session.execute(
             db.select(User).filter_by(username=username)
@@ -154,9 +207,19 @@ def query_user_by_username(db, User, username):
     return result
 
 
-#
-# Register a new user
 def register_user(bcrypt, db, request, User):
+    """
+    Registers a new user after validating inputs.
+
+    Args:
+        bcrypt: Password hashing utility
+        db: Database connection
+        request: HTTP request containing registration form data
+        User: User model class
+
+    Returns:
+        bool: True if registration successful, False otherwise
+    """
     # Get Inputs
     email = request.form["email"]
     username = request.form["username"]

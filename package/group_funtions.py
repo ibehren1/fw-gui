@@ -1,5 +1,8 @@
 """
     Group Support functions.
+    
+    This module provides functions for managing firewall groups in a user's data.
+    It includes functionality for adding, listing, and deleting groups.
 """
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
@@ -8,6 +11,20 @@ import logging
 
 
 def add_group_to_data(session, request):
+    """
+    Add a new group to the user's data.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing form data for the new group
+
+    The function:
+    - Reads existing user data
+    - Extracts group details from form (type, IP version, description, name, values)
+    - Creates necessary data structures if they don't exist
+    - Adds the new group data
+    - Writes updated data back to file
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -51,6 +68,16 @@ def add_group_to_data(session, request):
 
 
 def assemble_detail_list_of_groups(session):
+    """
+    Get a detailed list of all groups in the user's data.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+
+    Returns:
+        list: List of dictionaries containing detailed information about each group
+              including IP version, name, description, type and values
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -82,6 +109,15 @@ def assemble_detail_list_of_groups(session):
 
 
 def assemble_list_of_groups(session):
+    """
+    Get a simple list of all groups in the user's data.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+
+    Returns:
+        list: List of [ip_version, group_name] pairs for each group
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -104,6 +140,19 @@ def assemble_list_of_groups(session):
 
 
 def delete_group_from_data(session, request):
+    """
+    Delete a group from the user's data.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing form data with group to delete
+
+    The function:
+    - Extracts group details from form
+    - Removes the group from the data structure
+    - Cleans up empty data structures
+    - Writes updated data back to file
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
