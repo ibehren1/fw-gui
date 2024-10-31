@@ -151,7 +151,7 @@ app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(session_lifetime)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
