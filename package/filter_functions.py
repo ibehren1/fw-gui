@@ -1,5 +1,15 @@
 """
     Filter Support Functions
+
+    This module provides functions for managing firewall filters and rules.
+    Contains functions for:
+    - Adding filter rules to data
+    - Adding new filters
+    - Assembling lists of filters and rules
+    - Deleting filter rules
+    - Reordering filter rules
+
+    The functions interact with user data files that store firewall configurations.
 """
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
@@ -8,6 +18,20 @@ import logging
 
 
 def add_filter_rule_to_data(session, request):
+    """
+    Adds a new filter rule to the user's firewall configuration.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing form data for the new rule
+
+    The function:
+    - Extracts rule details from the request form
+    - Creates a rule dictionary with the configuration
+    - Adds the rule to the user's data structure
+    - Updates the rule ordering
+    - Writes changes back to the data file
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -62,6 +86,19 @@ def add_filter_rule_to_data(session, request):
 
 
 def add_filter_to_data(session, request):
+    """
+    Adds a new filter to the user's firewall configuration.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing form data for the new filter
+
+    The function:
+    - Extracts filter details from the request form
+    - Creates necessary data structures if they don't exist
+    - Adds the filter configuration
+    - Writes changes back to the data file
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -99,6 +136,15 @@ def add_filter_to_data(session, request):
 
 
 def assemble_detail_list_of_filters(session):
+    """
+    Creates a detailed dictionary of all filters and their rules.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+
+    Returns:
+        Dictionary containing filter details organized by IP version and filter name
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -131,6 +177,15 @@ def assemble_detail_list_of_filters(session):
 
 
 def assemble_list_of_filters(session):
+    """
+    Creates a simple list of all defined filters.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+
+    Returns:
+        List of [ip_version, filter_type] pairs for each defined filter
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -152,6 +207,15 @@ def assemble_list_of_filters(session):
 
 
 def assemble_list_of_filter_rules(session):
+    """
+    Creates a list of all filter rules.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+
+    Returns:
+        List of [ip_version, filter, rule_number, description] for each rule
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -183,6 +247,18 @@ def assemble_list_of_filter_rules(session):
 
 
 def delete_filter_rule_from_data(session, request):
+    """
+    Deletes a filter rule from the configuration.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing the rule to delete
+
+    The function:
+    - Removes the rule from the data structure
+    - Cleans up empty data structures
+    - Writes changes back to the data file
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
@@ -222,6 +298,18 @@ def delete_filter_rule_from_data(session, request):
 
 
 def reorder_filter_rule_in_data(session, request):
+    """
+    Changes the order number of a filter rule.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing the rule to reorder and new position
+
+    The function:
+    - Validates the new rule number
+    - Updates the rule ordering
+    - Writes changes back to the data file
+    """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 

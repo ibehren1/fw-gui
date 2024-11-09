@@ -1,5 +1,6 @@
 """
-    Diff related functions.
+    Diff related functions for comparing configuration snapshots and generating HTML diff views.
+    Contains functions for processing configuration lists and creating styled HTML diff output.
 """
 
 from package.generate_config import generate_config
@@ -7,7 +8,15 @@ import difflib
 
 
 def fix_list(list):
+    """
+    Processes a list of configuration lines to handle newlines.
 
+    Args:
+        list: List of configuration lines
+
+    Returns:
+        new_list: Processed list with newlines split into separate items
+    """
     new_list = []
 
     # Go line by line and split based on \n and add to list as separate list items
@@ -20,10 +29,21 @@ def fix_list(list):
 
 
 def process_diff(session, request):
+    """
+    Generates an HTML diff view comparing two configuration snapshots.
 
+    Args:
+        session: The current session object
+        request: The HTTP request containing snapshot IDs
+
+    Returns:
+        html: String containing styled HTML diff output
+    """
+    # Get snapshot IDs from the request
     snapshot_1 = request.form["snapshot_1"]
     snapshot_2 = request.form["snapshot_2"]
 
+    # Generate and process config lists for both snapshots
     snapshot_1_list = fix_list(generate_config(session, snapshot=snapshot_1, diff=True))
     snapshot_2_list = fix_list(generate_config(session, snapshot=snapshot_2, diff=True))
 
@@ -41,6 +61,7 @@ def process_diff(session, request):
     # Alter the html to make it fit FW-GUI style
     #
 
+    # Add custom CSS styles
     html = html.replace(
         'type="text/css">',
         """
@@ -74,6 +95,7 @@ def process_diff(session, request):
         """,
     )
 
+    # Add header with logo and title
     html = html.replace(
         "<body>",
         """
@@ -98,6 +120,7 @@ def process_diff(session, request):
         """,
     )
 
+    # Apply custom styling to diff elements
     html = html.replace("<body>", '<body class="page_background">')
 
     html = html.replace(
@@ -110,6 +133,7 @@ def process_diff(session, request):
         ".diff_header {background-color:#e0e0e0; color: #0800ff; font-weight: bold;}",
     )
 
+    # Style diff indicators (added, changed, removed)
     html = html.replace(
         ".diff_add {background-color:#aaffaa}",
         ".diff_add {background-color:#1dbd42; color: aliceblue}",

@@ -1,5 +1,9 @@
 """
     Napalm & Paramiko Functions to connect with VyOS Firewall
+    
+    This module provides functions for connecting to and managing VyOS firewalls using both
+    the NAPALM and Paramiko libraries. It handles SSH key and password authentication,
+    configuration management, and connection testing.
 """
 
 from flask import flash
@@ -12,7 +16,16 @@ import paramiko
 
 
 def assemble_napalm_driver_string(connection_string, session):
+    """
+    Creates a NAPALM driver instance for connecting to a VyOS device.
 
+    Args:
+        connection_string (dict): Connection parameters including hostname, port, credentials
+        session (dict): Session data including data directory path
+
+    Returns:
+        tuple: (NAPALM driver instance, temporary key file path if using SSH key auth)
+    """
     driver = get_network_driver("vyos")
     optional_args = {"port": connection_string["port"], "conn_timeout": 120}
 
@@ -46,7 +59,16 @@ def assemble_napalm_driver_string(connection_string, session):
 
 
 def assemble_paramiko_driver_string(connection_string, session):
+    """
+    Creates a Paramiko SSH client instance for connecting to a VyOS device.
 
+    Args:
+        connection_string (dict): Connection parameters including hostname, port, credentials
+        session (dict): Session data including data directory path
+
+    Returns:
+        tuple: (Paramiko SSH client instance, temporary key file path if using SSH key auth)
+    """
     # B507 -- Purposely allowing trust of the unknown host key
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
@@ -73,6 +95,16 @@ def assemble_paramiko_driver_string(connection_string, session):
 
 
 def commit_to_firewall(connection_string, session):
+    """
+    Commits configuration changes to the VyOS firewall.
+
+    Args:
+        connection_string (dict): Connection parameters
+        session (dict): Session data including firewall configuration file path
+
+    Returns:
+        str: Result message indicating success or failure
+    """
     logging.debug(" |------------------------------------------")
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
@@ -131,6 +163,16 @@ def commit_to_firewall(connection_string, session):
 
 
 def get_diffs_from_firewall(connection_string, session):
+    """
+    Gets configuration differences between local and remote firewall configurations.
+
+    Args:
+        connection_string (dict): Connection parameters
+        session (dict): Session data including firewall configuration file path
+
+    Returns:
+        str: Configuration differences or status message
+    """
     logging.debug(" |------------------------------------------")
 
     try:
@@ -180,6 +222,16 @@ def get_diffs_from_firewall(connection_string, session):
 
 # Uses Paramiko rather than Napalm
 def show_firewall_usage(connection_string, session):
+    """
+    Shows current firewall usage statistics using Paramiko SSH client.
+
+    Args:
+        connection_string (dict): Connection parameters
+        session (dict): Session data
+
+    Returns:
+        str: Firewall usage output or error message
+    """
     logging.debug(" |------------------------------------------")
     tmpfile = None
     try:
@@ -221,6 +273,15 @@ def show_firewall_usage(connection_string, session):
 
 
 def test_connection(session):
+    """
+    Tests TCP connection to the firewall.
+
+    Args:
+        session (dict): Session data including hostname and port
+
+    Returns:
+        bool: True if connection successful, False otherwise
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.settimeout(20)

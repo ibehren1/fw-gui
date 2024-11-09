@@ -1,11 +1,25 @@
 """
-    Firewall GUI for use with VyOS
+    FW-GUI for use with VyOS
+    Copyright 2024 Isaac Behrens
 
     Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create
     the corresponding firewall filters, chains and rules.
 
-    Copyright 2024 Isaac Behrens
+    Features:
+    - Web interface for managing VyOS firewall configurations
+    - User authentication and session management
+    - Firewall rule creation and management
+    - Chain and filter management
+    - Configuration backup and restore
+    - Direct VyOS device integration
+    - Diff comparison between configurations
+
+    Requirements:
+    - Python 3.x
+    - Flask web framework
+    - SQLAlchemy database
+    - VyOS compatible device
 """
 
 #
@@ -97,34 +111,35 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from waitress import serve
-import difflib
 import logging
 import os
 import sys
 
-# Load env vars from .env and .version
+# Load environment variables from .env file and version from .version file
 load_dotenv()
 
 #
-# Create handlers for logfile and stdout
+# Configure logging handlers for both file and console output
+# Create empty list to store handlers
 handlers = []
+# If log directory exists, create and add file handler
 if os.path.exists("data/log"):
     file_handler = logging.FileHandler(filename="data/log/app.log")
     handlers.append(file_handler)
+# Create and add stdout handler for console output
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 handlers.append(stdout_handler)
 
-# if os.environ("log_level") exists:
+# Set logging level from environment variable if it exists and is valid
+# Otherwise default to INFO level
 if "LOG_LEVEL" in os.environ:
     if os.environ.get("LOG_LEVEL") in logging._nameToLevel:
-        # set log_level to os.environ("log_level")
         log_level = os.environ.get("LOG_LEVEL")
 else:
-    # set log_level to logging.INFO
     log_level = logging.INFO
 
 #
-# Setup logging and direct to both handlers
+# Initialize logging with handlers and format
 logging.basicConfig(
     encoding="utf-8",
     format="%(asctime)s:%(levelname)s:%(funcName)s\t%(message)s",
@@ -134,28 +149,34 @@ logging.basicConfig(
 logging.info(f"Logging Level: {log_level}")
 
 #
-# App Initialization
+# Initialize Flask application and database
+# Set database location to data/database directory
 db_location = os.path.join(os.getcwd(), "data/database")
 
+# Load version from .version file into environment
 with open(".version", "r") as f:
     os.environ["FWGUI_VERSION"] = f.read()
 
+# Get session timeout from environment or default to 120 minutes
 try:
     session_lifetime = int(os.environ.get("SESSION_TIMEOUT"))
 except:
     session_lifetime = 120
 
+# Configure Flask application settings
 app = Flask(__name__)
 app.secret_key = os.environ.get("APP_SECRET_KEY")
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(session_lifetime)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
+# Initialize database and encryption
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
+# Configure login manager for user authentication
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "user_login"
@@ -164,6 +185,19 @@ login_manager.login_view = "user_login"
 #
 # Database User Table Model
 class User(db.Model, UserMixin):
+    """
+    User model for authentication database.
+
+    This class defines the database schema for storing user account information.
+    It inherits from SQLAlchemy's Model class and Flask-Login's UserMixin.
+
+    Attributes:
+        id (int): Primary key for uniquely identifying users
+        username (str): Unique username, max length 20 characters, required
+        email (str): User's email address, max length 40 characters, required
+        password (str): Hashed password, max length 80 characters, required
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(40), nullable=False)
@@ -172,7 +206,21 @@ class User(db.Model, UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    # return User.query.get(int(user_id))
+    """
+    Load a user from the database by their user ID.
+
+    This function is used by Flask-Login to load a user object from the database
+    given their user ID. It is required for the login manager to function.
+
+    Args:
+        user_id: The ID of the user to load from the database
+
+    Returns:
+        User: The User object if found, or None if not found
+
+    Raises:
+        NoResultFound: If no user with the given ID exists
+    """
     return db.session.execute(db.select(User).filter_by(id=user_id)).scalar_one()
 
 
@@ -181,6 +229,12 @@ def load_user(user_id):
 @app.route("/")
 @login_required
 def index():
+    """
+    Root endpoint that redirects to the display_config view.
+
+    Returns:
+        Response: Redirect to the display_config endpoint
+    """
     return redirect(url_for("display_config"))
 
 
@@ -189,6 +243,27 @@ def index():
 @app.route("/admin_settings", methods=["GET", "POST"])
 @login_required
 def admin_settings():
+    """
+    Handle administration settings page requests.
+
+    This endpoint allows users to manage backups and view system files.
+    Supports both GET and POST methods.
+
+    For POST requests:
+    - Handles backup creation (full or user-specific)
+    - Retrieves lists of backups, files and snapshots
+
+    For GET requests:
+    - Retrieves lists of backups, files and snapshots
+
+    Returns:
+        Response: Rendered admin_settings_form.html template with:
+            - backup_list: List of user backups
+            - file_list: List of user files
+            - snapshot_list: List of system snapshots
+            - full_backup_list: List of full system backups
+            - username: Current user's username
+    """
     if request.method == "POST":
         if "backup" in request.form:
             if request.form["backup"] == "full_backup":
@@ -230,6 +305,21 @@ def admin_settings():
 @app.route("/download", methods=["POST"])
 @login_required
 def download():
+    """
+    Handle file download requests.
+
+    Endpoint that allows authenticated users to download files. The file path and name
+    are provided in the POST request form data.
+
+    Args:
+        None
+
+    Returns:
+        Response: File download response with the requested file data
+
+    Raises:
+        None
+    """
     path = request.form["path"]
     filename = request.form["filename"]
 
@@ -243,6 +333,29 @@ def download():
 @app.route("/user_change_password", methods=["GET", "POST"])
 @login_required
 def user_change_password():
+    """
+    Handle password change requests.
+
+    Endpoint that allows authenticated users to change their password. Supports both
+    GET and POST methods.
+
+    For POST requests:
+    - Processes the password change request
+    - Redirects to index on success, back to change password form on failure
+
+    For GET requests:
+    - Displays the password change form with user context
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to index or password change form
+                 On GET - Rendered password change form template
+
+    Raises:
+        None
+    """
     if request.method == "POST":
 
         result = change_password(bcrypt, db, User, session["username"], request)
@@ -266,6 +379,30 @@ def user_change_password():
 
 @app.route("/user_login", methods=["GET", "POST"])
 def user_login():
+    """
+    Handle user login requests.
+
+    Endpoint that processes user login attempts. Supports both GET and POST methods.
+
+    For POST requests:
+    - Validates login credentials
+    - Sets session data on successful login
+    - Redirects to index page on success, back to login form on failure
+
+    For GET requests:
+    - Displays the login form
+    - Shows registration option if enabled in environment settings
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to index or login form
+                 On GET - Rendered login form template with registration status
+
+    Raises:
+        None
+    """
     if request.method == "POST":
         login, session["data_dir"], session["username"] = process_login(
             bcrypt, db, request, User
@@ -290,6 +427,21 @@ def user_login():
 @app.route("/user_logout")
 @login_required
 def user_logout():
+    """
+    Handle user logout requests.
+
+    Endpoint that processes user logout. Requires user to be logged in.
+    Clears session data and logs the logout event.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to index page
+
+    Raises:
+        None
+    """
     logging.info(
         f"{datetime.now()} User <{query_user_by_id(db, User, session['_user_id']).username}> logged out."
     )
@@ -300,6 +452,31 @@ def user_logout():
 
 @app.route("/user_registration", methods=["GET", "POST"])
 def user_registration():
+    """
+    Handle user registration requests.
+
+    Endpoint that processes new user registration. Supports both GET and POST methods.
+    Registration can be disabled via environment settings.
+
+    For POST requests:
+    - Creates new user if registration is enabled
+    - Redirects to login page on success
+    - Redirects back to registration form on failure
+
+    For GET requests:
+    - Displays registration form if enabled
+    - Redirects to login if registration is disabled
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to login or registration form
+                 On GET - Registration form template or redirect to login
+
+    Raises:
+        None
+    """
     if request.method == "POST":
         registration = (
             True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
@@ -328,6 +505,26 @@ def user_registration():
 @app.route("/group_add", methods=["GET", "POST"])
 @login_required
 def group_add():
+    """
+    Handle group addition requests.
+
+    Endpoint that processes group creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Adds new group to the data using form input
+    - Redirects to group view page
+
+    For GET requests:
+    - Displays the group addition form with file and snapshot lists
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to group view page
+                 On GET - Rendered group add form template
+    """
     if request.method == "POST":
         add_group_to_data(session, request)
 
@@ -349,6 +546,18 @@ def group_add():
 @app.route("/group_delete", methods=["POST"])
 @login_required
 def group_delete():
+    """
+    Handle group deletion requests.
+
+    Endpoint that processes group deletion. Requires user to be logged in.
+    Only accepts POST method.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to group view page after deletion
+    """
     delete_group_from_data(session, request)
     return redirect(url_for("group_view"))
 
@@ -356,6 +565,18 @@ def group_delete():
 @app.route("/group_view")
 @login_required
 def group_view():
+    """
+    Handle group view requests.
+
+    Endpoint that displays list of groups. Requires user to be logged in.
+    Retrieves file list, group details and snapshots to display.
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered group view template with group details
+    """
     file_list = list_user_files(session)
     group_list = assemble_detail_list_of_groups(session)
     snapshot_list = list_snapshots(session)
@@ -375,6 +596,26 @@ def group_view():
 @app.route("/interface_add", methods=["GET", "POST"])
 @login_required
 def interface_add():
+    """
+    Handle interface addition requests.
+
+    Endpoint that processes interface creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Adds new interface to the data using form input
+    - Redirects to interface view page
+
+    For GET requests:
+    - Displays the interface addition form with file and snapshot lists
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to interface view page
+                 On GET - Rendered interface add form template
+    """
     if request.method == "POST":
         add_interface_to_data(session, request)
 
@@ -396,6 +637,26 @@ def interface_add():
 @app.route("/interface_delete", methods=["GET", "POST"])
 @login_required
 def interface_delete():
+    """
+    Handle interface deletion requests.
+
+    Endpoint that processes interface deletion. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Deletes interface from the data
+    - Redirects to interface view page
+
+    For GET requests:
+    - Redirects to config display page
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to interface view page
+                 On GET - Redirect to config display page
+    """
     if request.method == "POST":
         delete_interface_from_data(session, request)
 
@@ -408,6 +669,18 @@ def interface_delete():
 @app.route("/interface_view")
 @login_required
 def interface_view():
+    """
+    Handle interface view requests.
+
+    Endpoint that displays list of interfaces. Requires user to be logged in.
+    Retrieves file list, group details, interface list and snapshots to display.
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered interface view template with interface details
+    """
     file_list = list_user_files(session)
     group_list = assemble_detail_list_of_groups(session)
     interface_list = list_interfaces(session)
@@ -428,6 +701,27 @@ def interface_view():
 @app.route("/flowtable_add", methods=["GET", "POST"])
 @login_required
 def flowtable_add():
+    """
+    Handle flowtable addition requests.
+
+    Endpoint that processes flowtable creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Logs the form data
+    - Adds new flowtable to the data using form input
+    - Redirects to flowtable view page
+
+    For GET requests:
+    - Displays the flowtable addition form with file, snapshot and interface lists
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to flowtable view page
+                 On GET - Rendered flowtable add form template
+    """
     if request.method == "POST":
         logging.info(f"POST: {request.form}")
         add_flowtable_to_data(session, request)
@@ -452,6 +746,26 @@ def flowtable_add():
 @app.route("/flowtable_delete", methods=["GET", "POST"])
 @login_required
 def flowtable_delete():
+    """
+    Handle flowtable deletion requests.
+
+    Endpoint that processes flowtable deletion. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Deletes flowtable from the data
+    - Redirects to flowtable view page
+
+    For GET requests:
+    - Redirects to config display page
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to flowtable view page
+                 On GET - Redirect to config display page
+    """
     if request.method == "POST":
         delete_flowtable_from_data(session, request)
 
@@ -464,6 +778,18 @@ def flowtable_delete():
 @app.route("/flowtable_view")
 @login_required
 def flowtable_view():
+    """
+    Handle flowtable view requests.
+
+    Endpoint that displays list of flowtables. Requires user to be logged in.
+    Retrieves file list, group details, flowtable list and snapshots to display.
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered flowtable view template with flowtable details
+    """
     file_list = list_user_files(session)
     group_list = assemble_detail_list_of_groups(session)
     snapshot_list = list_snapshots(session)
@@ -484,6 +810,26 @@ def flowtable_view():
 @app.route("/chain_add", methods=["GET", "POST"])
 @login_required
 def chain_add():
+    """
+    Handle chain addition requests.
+
+    Endpoint that processes chain creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Adds new chain to the data using form input
+    - Redirects to chain view page
+
+    For GET requests:
+    - Displays the chain addition form with file and snapshot lists
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to chain view page
+                 On GET - Rendered chain add form template
+    """
     if request.method == "POST":
         add_chain_to_data(session, request)
 
@@ -505,6 +851,28 @@ def chain_add():
 @app.route("/chain_rule_add", methods=["GET", "POST"])
 @login_required
 def chain_rule_add():
+    """
+    Handle chain rule addition requests.
+
+    Endpoint that processes chain rule creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - If no chain specified, redirects to chain view
+    - Otherwise adds new rule to the chain and redirects to that chain's section
+
+    For GET requests:
+    - If no chains exist, redirects to chain creation
+    - Displays the rule addition form with chain, file, group and snapshot lists
+    - Pre-populates chain name if provided in URL args
+
+    Args:
+        None
+
+    Returns:
+        Response: On POST - Redirect to chain view page (with optional anchor)
+                 On GET - Rendered rule add form template or redirect
+    """
     if request.method == "POST":
         if request.form["fw_chain"] == "":
             return redirect(url_for("chain_view"))
@@ -542,6 +910,18 @@ def chain_rule_add():
 @app.route("/chain_rule_delete", methods=["POST"])
 @login_required
 def chain_rule_delete():
+    """
+    Handle chain rule deletion requests.
+
+    Endpoint that processes chain rule deletion. Supports POST method only.
+    Requires user to be logged in.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to chain view page
+    """
     delete_rule_from_data(session, request)
     return redirect(url_for("chain_view"))
 
@@ -549,6 +929,24 @@ def chain_rule_delete():
 @app.route("/chain_rule_reorder", methods=["GET", "POST"])
 @login_required
 def chain_rule_reorder():
+    """
+    Handle chain rule reordering requests.
+
+    Endpoint that processes chain rule reordering. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Reorders the rule and redirects to the chain's section
+
+    For GET requests:
+    - Redirects to chain view page
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to chain view page (with optional anchor)
+    """
     if request.method == "POST":
         anchor = reorder_chain_rule_in_data(session, request)
 
@@ -560,6 +958,19 @@ def chain_rule_reorder():
 @app.route("/chain_view")
 @login_required
 def chain_view():
+    """
+    Handle chain view requests.
+
+    Endpoint that displays list of chains and their rules. Requires user to be logged in.
+    If no chains exist, redirects to chain creation page.
+    Retrieves file list, chain details and snapshots to display.
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered chain view template with chain details or redirect to chain add
+    """
     file_list = list_user_files(session)
     chain_dict = assemble_detail_list_of_chains(session)
     snapshot_list = list_snapshots(session)
@@ -582,6 +993,24 @@ def chain_view():
 @app.route("/filter_add", methods=["GET", "POST"])
 @login_required
 def filter_add():
+    """
+    Handle filter addition requests.
+
+    Endpoint that processes filter creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Adds new filter and redirects to filter view page
+
+    For GET requests:
+    - Displays filter creation form with file list, snapshots and flowtables
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to filter view or rendered filter add form template
+    """
     if request.method == "POST":
         add_filter_to_data(session, request)
 
@@ -605,6 +1034,26 @@ def filter_add():
 @app.route("/filter_rule_add", methods=["GET", "POST"])
 @login_required
 def filter_rule_add():
+    """
+    Handle filter rule addition requests.
+
+    Endpoint that processes filter rule creation. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Adds new filter rule and redirects to filter view page with anchor
+
+    For GET requests:
+    - Displays filter rule creation form with chains, files, filters, interfaces etc.
+    - Redirects to filter add if no filters exist
+    - Shows warning and redirects if no chains or interfaces exist
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to filter view/add or rendered filter rule add form template
+    """
     if request.method == "POST":
         add_filter_rule_to_data(session, request)
 
@@ -659,6 +1108,18 @@ def filter_rule_add():
 @app.route("/filter_rule_delete", methods=["POST"])
 @login_required
 def filter_rule_delete():
+    """
+    Handle filter rule deletion requests.
+
+    Endpoint that processes filter rule deletion. Supports POST method only.
+    Requires user to be logged in.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to filter view page
+    """
     delete_filter_rule_from_data(session, request)
     return redirect(url_for("filter_view"))
 
@@ -666,6 +1127,24 @@ def filter_rule_delete():
 @app.route("/filter_rule_reorder", methods=["GET", "POST"])
 @login_required
 def filter_rule_reorder():
+    """
+    Handle filter rule reordering requests.
+
+    Endpoint that processes filter rule reordering. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Reorders the rule and redirects to the filter's section
+
+    For GET requests:
+    - Redirects to filter view page
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to filter view page (with optional anchor)
+    """
     if request.method == "POST":
         anchor = reorder_filter_rule_in_data(session, request)
 
@@ -677,6 +1156,19 @@ def filter_rule_reorder():
 @app.route("/filter_view")
 @login_required
 def filter_view():
+    """
+    Handle filter view requests.
+
+    Endpoint that displays list of filters and their rules. Requires user to be logged in.
+    If no filters exist, redirects to filter creation page.
+    Retrieves file list, filter details and snapshots to display.
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered filter view template with filter details or redirect to filter add
+    """
     file_list = list_user_files(session)
     filter_dict = assemble_detail_list_of_filters(session)
     snapshot_list = list_snapshots(session)
@@ -699,6 +1191,26 @@ def filter_view():
 @app.route("/configuration_extra_items", methods=["Get", "POST"])
 @login_required
 def configuration_extra_items():
+    """
+    Handle configuration extra items requests.
+
+    Endpoint that manages extra configuration items. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Logs and adds extra items to configuration
+    - Redirects to display config page
+
+    For GET requests:
+    - Retrieves file list, extra items and snapshots
+    - Renders configuration extra items template
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to display config or rendered extra items template
+    """
     if request.method == "POST":
         logging.info(request.form["extra_items"])
 
@@ -724,6 +1236,26 @@ def configuration_extra_items():
 @app.route("/configuration_hostname_add", methods=["GET", "POST"])
 @login_required
 def configuration_hostname_add():
+    """
+    Handle hostname configuration requests.
+
+    Endpoint that manages firewall hostname configuration. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Adds hostname and port to session
+    - Redirects to configuration push page
+
+    For GET requests:
+    - Retrieves file list and snapshots
+    - Renders hostname configuration template
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to config push or rendered hostname config template
+    """
     if request.method == "POST":
         add_hostname(session, request)
         session["hostname"] = request.form["hostname"]
@@ -747,6 +1279,29 @@ def configuration_hostname_add():
 @app.route("/configuration_push", methods=["GET", "POST"])
 @login_required
 def configuration_push():
+    """
+    Handle configuration push requests.
+
+    Endpoint that manages pushing configurations to firewall. Supports both GET and POST methods.
+    Requires user to be logged in.
+
+    For POST requests:
+    - Creates connection string with credentials
+    - Generates and writes config file
+    - Performs requested action (show usage, view diffs, commit)
+    - Renders push template with results
+
+    For GET requests:
+    - Checks if hostname is configured
+    - Retrieves files, keys and tests connection
+    - Renders push template with connection status
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered configuration push template or redirect to hostname config
+    """
     if request.method == "POST":
 
         connection_string = {
@@ -816,6 +1371,20 @@ def configuration_push():
 @app.route("/create_config", methods=["POST"])
 @login_required
 def create_config():
+    """
+    Handle configuration creation requests.
+
+    Endpoint that creates new firewall configurations. Supports POST method only.
+    Requires user to be logged in.
+
+    Validates config name is not empty, creates new user data file and updates session.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to index or display config page
+    """
     if request.form["config_name"] == "":
         flash("Config name cannot be empty", "danger")
         return redirect(url_for("index"))
@@ -833,6 +1402,20 @@ def create_config():
 @app.route("/display_config")
 @login_required
 def display_config():
+    """
+    Handle configuration display requests.
+
+    Endpoint that displays firewall configuration. Supports GET method only.
+    Requires user to be logged in.
+
+    Checks if firewall is selected and retrieves configuration details.
+
+    Args:
+        None
+
+    Returns:
+        Response: Rendered configuration display template with config details or selection message
+    """
     file_list = list_user_files(session)
     snapshot_list = list_snapshots(session)
 
@@ -864,6 +1447,15 @@ def display_config():
 @app.route("/snapshot_diff_choose")
 @login_required
 def snapshot_diff_choose():
+    """
+    Display page for selecting snapshots to compare.
+
+    Endpoint that shows interface for choosing two snapshots to diff.
+    Requires user to be logged in.
+
+    Returns:
+        Response: Rendered template for snapshot selection or message if no firewall selected
+    """
     file_list = list_user_files(session)
     snapshot_list = list_snapshots(session)
 
@@ -895,6 +1487,15 @@ def snapshot_diff_choose():
 @app.route("/snapshot_diff_display", methods=["GET", "POST"])
 @login_required
 def snapshot_diff_display():
+    """
+    Display diff between two snapshots.
+
+    Endpoint that shows differences between two selected snapshots.
+    Requires user to be logged in. Validates snapshots are different and selected.
+
+    Returns:
+        Response: Rendered template showing diff or redirect back to selection on error
+    """
     if request.method == "POST":
         if request.form["snapshot_1"] == request.form["snapshot_2"]:
             flash("Snapshots cannot be the same.", "danger")
@@ -927,6 +1528,15 @@ def snapshot_diff_display():
 @app.route("/snapshot_tag_create", methods=["GET", "POST"])
 @login_required
 def snapshot_tag_create():
+    """
+    Create tags for snapshots.
+
+    Endpoint that handles creating and applying tags to snapshots.
+    Requires user to be logged in.
+
+    Returns:
+        Response: Redirect to tag creation page or rendered template for tag creation
+    """
     if request.method == "POST":
         logging.info(request.form)
 
@@ -952,6 +1562,16 @@ def snapshot_tag_create():
 @app.route("/delete_config", methods=["POST"])
 @login_required
 def delete_config():
+    """
+    Delete a firewall configuration.
+
+    Endpoint that handles deletion of firewall configurations.
+    Requires user to be logged in. Validates config is selected.
+    Removes config from session if it was selected.
+
+    Returns:
+        Response: Redirect to config display page
+    """
     if request.form["delete_config"] == "":
         flash("You must select a config to delete.", "danger")
         return redirect(url_for("index"))
@@ -971,6 +1591,12 @@ def delete_config():
 @app.route("/download_config")
 @login_required
 def download_config():
+    """
+    Download the current firewall configuration as a text file.
+
+    Returns:
+        str: The configuration text with HTML line breaks converted to newlines
+    """
     message, config = generate_config(session)
 
     return message.replace("<br>", "\n")
@@ -979,6 +1605,12 @@ def download_config():
 @app.route("/download_json")
 @login_required
 def download_json():
+    """
+    Download the current firewall configuration as a JSON file.
+
+    Returns:
+        str: The configuration data in JSON format
+    """
     json_data = download_json_data(session)
 
     return json_data
@@ -987,6 +1619,21 @@ def download_json():
 @app.route("/select_firewall_config", methods=["POST"])
 @login_required
 def select_firewall_config():
+    """
+    Handle selection of firewall configurations and snapshots.
+
+    Processes form submissions for:
+    - Selecting a firewall configuration
+    - Creating snapshots of configurations
+    - Deleting snapshots
+    - Viewing snapshot diffs
+
+    The function updates the session with the selected firewall name and
+    handles reading/writing snapshot data as needed.
+
+    Returns:
+        Response: Redirects to either snapshot diff view or config display
+    """
     # If choosing Snapshot Diff
     if request.form["file"] == "Snapshot Diff":
         return redirect(url_for("snapshot_diff_choose"))
@@ -1032,6 +1679,14 @@ def select_firewall_config():
 @app.route("/upload_json", methods=["POST"])
 @login_required
 def upload_json():
+    """
+    Handle upload of JSON configuration files.
+
+    Processes the uploaded JSON file and stores it as a new firewall configuration.
+
+    Returns:
+        Response: Redirects to index page after processing upload
+    """
     process_upload(session, request, app)
 
     return redirect(url_for("index"))
@@ -1057,25 +1712,28 @@ if __name__ == "__main__":
         logging.info(f"|                                                        |")
         logging.info(f"|--------------------------------------------------------|")
 
-    # Load Environment Vars
+    # Load environment variables from .env file
     load_dotenv()
 
-    # Initialize Data Directory
+    # Create and initialize the data directory for storing firewall configurations
     initialize_data_dir()
 
-    # Validate connection to MongoDB and create backup
+    # Check if MongoDB connection is valid using URI from environment variables
+    # If connection is successful, run converter to migrate data
     if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
         mongo_converter()
 
-    # Convert all .json files to MongoDB
+    # Convert all existing JSON config files to MongoDB format
 
-    # If environment is set, run debug, else assume PROD
+    # Check if running in development environment
     if os.environ.get("FLASK_ENV") == "Development":
+        # Run Flask app in debug mode if in development
         # B201:A -- Intentional execution with Debug when env var set.
         # B104 -- Intentional binding to all IPs.
         app.run(debug=True, host="0.0.0.0", port="8080")  # nosec
 
-    # Else, run app in production mode on port 8080.
+    # Run in production mode if FLASK_ENV not set to Development
     else:
+        # Use waitress WSGI server for production
         # B104 -- Intentional binding to all IPs.
         serve(app, host="0.0.0.0", port=8080, channel_timeout=120)  # nosec

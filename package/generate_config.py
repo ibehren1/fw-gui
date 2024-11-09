@@ -1,5 +1,19 @@
 """
     Generate Configuration
+
+    This module handles firewall configuration generation and JSON data management.
+
+    Key functions:
+    - download_json_data: Retrieves and formats user data as JSON
+    - generate_config: Generates firewall configuration from user data
+
+    The configuration generation handles:
+    - Extra configuration items
+    - Flow tables configuration 
+    - IPv4 and IPv6 configurations including:
+    - Groups (address, domain, interface, MAC, network, port)
+    - Filters with rules and actions
+    - Rule descriptions, logging, and actions (jump, offload)
 """
 
 from package.data_file_functions import read_user_data_file
@@ -8,6 +22,15 @@ import logging
 
 
 def download_json_data(session):
+    """
+    Retrieves user data and converts it to formatted JSON
+
+    Args:
+        session: Dictionary containing data_dir and firewall_name
+
+    Returns:
+        str: Formatted JSON string of user data
+    """
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
     json_data = json.dumps(user_data, indent=4)
 
@@ -15,6 +38,17 @@ def download_json_data(session):
 
 
 def generate_config(session, snapshot="current", diff="False"):
+    """
+    Generates firewall configuration from user data
+
+    Args:
+        session: Dictionary containing data_dir and firewall_name
+        snapshot: Snapshot name to use, defaults to "current"
+        diff: Whether to generate diff configuration, defaults to "False"
+
+    Returns:
+        list: Configuration commands
+    """
 
     if diff == "False":
         # Get user data
