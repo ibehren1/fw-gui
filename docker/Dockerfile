@@ -26,7 +26,9 @@ RUN mkdir                  /opt/fw-gui/data
 RUN mkdir                  /opt/fw-gui/data/mongo_dumps
 
 # Install pip modules
-RUN pip3 install --break-system-packages -r /opt/fw-gui/requirements.txt
+RUN pip3 install --break-system-packages toml && \
+    python3 -c 'import toml; c = toml.load("pyproject.toml"); print("\n".join(c["project"]["dependencies"]))' \
+    | pip3 install --break-system-packages -r /dev/stdin
 
 # Set ownership of application and data files
 RUN chown -R www-data:www-data /opt/fw-gui
