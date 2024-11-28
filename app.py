@@ -1,6 +1,6 @@
 """
     FW-GUI for use with VyOS
-    Copyright 2024 Isaac Behrens
+    Copyright © 2023-2024 Isaac Behrens. All rights reserved.
 
     Basic Flask app to present web forms and process posts from them.
     Generates VyOS firewall CLI configuration commands to create
@@ -1658,7 +1658,8 @@ def select_firewall_config():
         user_data = read_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}'
         )
-        del user_data["tag"]
+        if "tag" in user_data:
+            del user_data["tag"]
         write_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}',
             user_data,
