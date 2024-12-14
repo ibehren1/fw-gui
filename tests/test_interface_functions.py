@@ -1,4 +1,3 @@
-import pytest
 from flask import Flask, session
 from werkzeug.datastructures import ImmutableMultiDict
 from package.interface_functions import (
@@ -6,6 +5,7 @@ from package.interface_functions import (
     delete_interface_from_data,
     list_interfaces,
 )
+import pytest
 
 
 @pytest.fixture

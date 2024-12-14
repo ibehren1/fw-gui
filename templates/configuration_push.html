@@ -90,12 +90,18 @@
                             <label for="username">Username</label>
                         </td>
                         <td style="padding: 5px;">
-                            <input type="text" id="username" name="username" size=30 value=""><br>
+                            <input type="text" id="username" name="username" size=30 value="{{ssh_user_name}}"><br>
                         </td>
                         <td rowspan="2">
                             {% for key in key_list%}
+                            {% if key == ssh_keyname %}
+                            <input type="checkbox" id="ssh_key_name" name="ssh_key_name" checked="checked"
+                                value="{{key}}.key">
+                            <label for="ssh_key_name">&nbsp;{{key}}</label><br>
+                            {% else %}
                             <input type="checkbox" id="ssh_key_name" name="ssh_key_name" value="{{key}}.key">
                             <label for="ssh_key_name">&nbsp;{{key}}</label><br>
+                            {% endif %}
                             {% endfor %}
                         </td>
                     </tr>
@@ -104,7 +110,7 @@
                             <label for="password">Password</label>
                         </td>
                         <td style="padding: 5px;">
-                            <input type="password" id="password" name="password" size=30 value=""><br>
+                            <input type="password" id="password" name="password" size=30 value="{{ssh_pass}}"><br>
                         </td>
                     </tr>
                     <tr>
