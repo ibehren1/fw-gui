@@ -1310,8 +1310,14 @@ def configuration_push():
             "password": request.form["password"],
             "port": session["port"],
         }
+
         if "ssh_key_name" in request.form:
             connection_string["ssh_key_name"] = request.form["ssh_key_name"]
+
+        # Cache SSH user/pass to session.
+        session["ssh_user"] = request.form["username"]
+        session["ssh_pass"] = request.form["password"]
+        session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
 
         # Include 'delete firewall' before set commands
         message, config = generate_config(session)
@@ -1338,6 +1344,9 @@ def configuration_push():
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
             firewall_reachable=True,
+            ssh_user_name=session["ssh_user"],
+            ssh_pass=session["ssh_pass"],
+            ssh_keyname=session["ssh_keyname"],
             key_list=key_list,
             message=message,
             username=session["username"],
@@ -1362,6 +1371,9 @@ def configuration_push():
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
             firewall_reachable=firewall_reachable,
+            ssh_user_name=session["ssh_user"],
+            ssh_pass=session["ssh_pass"],
+            ssh_keyname=session["ssh_keyname"],
             key_list=key_list,
             message=message,
             username=session["username"],
@@ -1672,7 +1684,14 @@ def select_firewall_config():
             f'{session["data_dir"]}/{session["firewall_name"]}/{snapshot_name}'
         )
 
+    # Load firewall values to session
     session["hostname"], session["port"] = get_system_name(session)
+
+    # Clear any previously cached values for SSH
+    # B105 -- Intentional hardcoding of password to ""
+    session["ssh_user"] = ""
+    session["ssh_pass"] = ""  # nosec
+    session["ssh_keyname"] = ""
 
     return redirect(url_for("display_config"))
 
