@@ -7,7 +7,7 @@ Tell me how you are using FW-GUI! [File a Usage Report](https://github.com/ibehr
 ### Disclaimer
 The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specific configurations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
 
-FW-GUI is developed and maintained by @ibehren1.
+FW-GUI is developed and maintained by [@ibehren1](https://www.github.com/ibehren1).  
 Copyright © 2023-2025 Isaac Behrens. All rights reserved.
 
 ## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
