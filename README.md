@@ -4,18 +4,11 @@ Tell me how you are using FW-GUI! [File a Usage Report](https://github.com/ibehr
 
 # FW-GUI for use with VyOS
 
+### Disclaimer
 The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separate project to build a community tool that helps to visually build and manage firewall specific configurations for VyOS firewalls.  This project is not owned by VyOS.io, or Sentrium S.L., nor does it seek to appear to be an official project, product or partner of the aforementioned.
 
-
-
-## VyOS Release Support
-
-| VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
-|----------------|----------------------------|----------------|
-| VyOS 1.3.x Equuleus | Untested | No support (do not open issues) |
-| **VyOS 1.4.x Sagiitta** | Designed for and heavily tested. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Functionality issues will be prioritized. |
-| **VyOS 1.5.x Circinus**<br>(rolling release) | Minimal testing but no known issues. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Some issues may be deprioritized as feature requests for future support.
-| VyOS Stream         | TBD ([waiting for release](https://blog.vyos.io/introducing-vyos-stream))
+FW-GUI is developed and maintained by Isaac Behrens.  
+Copyright © 2023-2025 Isaac Behrens. All rights reserved.
 
 ## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
@@ -29,9 +22,20 @@ The web-based FW-GUI allows the user to visually:
 - Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface
 - Import/export a JSON file of the fw-gui configuration for backup and to move between instances of the GUI
 
-(Only manages configurations under 'set firewall' in the command line syntax.)
+(FW-GUI only manages configurations under 'set firewall' in the command line syntax.)
 
-| | | |
+![](images/fw-gui-usage-diagram.png)
+
+## VyOS Release Support
+
+| VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
+|----------------|----------------------------|----------------|
+| VyOS 1.3.x Equuleus | Untested | No support (do not open issues) |
+| **VyOS 1.4.x Sagiitta** | Designed for and heavily tested. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Functionality issues will be prioritized. |
+| **VyOS 1.5.x Circinus**<br>(rolling release) | Minimal testing but no known issues. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Some issues may be deprioritized as feature requests for future support.
+| VyOS Stream         | TBD ([waiting for release](https://blog.vyos.io/introducing-vyos-stream))
+
+| Status | | |
 | - | - | - |
 | Source Code | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_github---https:--github-com-ibehren1-fw-gui/health/badge.svg) | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  |
 | Docker Hub | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_dockerhub---https:--hub-docker-com-repository-docker-ibehren1-fw-gui-general/health/badge.svg) | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
