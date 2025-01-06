@@ -110,11 +110,11 @@ def check_version():
         )
         resp = urllib3.request(
             "POST",
-            "https://usage.fw-gui.com/instance",
+            "https://telemetry.fw-gui.com/instance",
             headers={"Content-Type": "application/json"},
             body=body,
         )
-        logging.info("Posted instance ID and version to https://usage.fw-gui.com.")
+        logging.info("Posted instance ID and version to https://telemetry.fw-gui.com.")
 
     except:
         logging.info("Unable to post instance ID.")
