@@ -105,7 +105,9 @@ def check_version():
         remote_version = "0.0.0"
 
     try:
-        body = json.dumps({"instance_id": instance_id, "version": local_version})
+        body = json.dumps(
+            {"instance_id": instance_id, "version": local_version.replace("\n", "")}
+        )
         resp = urllib3.request(
             "POST",
             "https://usage.fw-gui.com/instance",
