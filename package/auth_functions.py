@@ -88,7 +88,7 @@ def check_version():
         local_version = f.read().replace("v", "")
         logging.debug(f"Local version: {local_version}")
 
-    with open("data/instance.id") as f:
+    with open("data/database/instance.id") as f:
         instance_id = f.read().strip()
         logging.debug(f"Instance ID: {instance_id}")
 
