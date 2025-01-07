@@ -25,6 +25,7 @@ import pymongo
 import random
 import string
 import sys
+import uuid
 
 # B404 -- security implications considered.
 import subprocess  # nosec
@@ -442,6 +443,11 @@ def initialize_data_dir():
 
         with app.app_context():
             db.create_all()
+
+    if not os.path.exists("data/database/instance.id"):
+        logging.info(" |--> Instance ID file not found, creating...")
+        with open("data/database/instance.id", "w") as f:
+            f.write(str(uuid.uuid4()))
 
     logging.info(" |--> Data directory initialized.")
     return

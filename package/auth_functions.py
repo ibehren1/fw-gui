@@ -88,6 +88,10 @@ def check_version():
         local_version = f.read().replace("v", "")
         logging.debug(f"Local version: {local_version}")
 
+    with open("data/database/instance.id") as f:
+        instance_id = f.read().strip()
+        logging.debug(f"Instance ID: {instance_id}")
+
     try:
         # Get remote version from https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version
         resp = urllib3.request(
@@ -99,6 +103,21 @@ def check_version():
     except:
         logging.info("Unable to check remote version.")
         remote_version = "0.0.0"
+
+    try:
+        body = json.dumps(
+            {"instance_id": instance_id, "version": local_version.replace("\n", "")}
+        )
+        resp = urllib3.request(
+            "POST",
+            "https://telemetry.fw-gui.com/instance",
+            headers={"Content-Type": "application/json"},
+            body=body,
+        )
+        logging.info("Posted instance ID and version to https://telemetry.fw-gui.com.")
+
+    except:
+        logging.info("Unable to post instance ID.")
 
     if remote_version != "0.0.0":
         if Version(local_version) < Version(remote_version):
