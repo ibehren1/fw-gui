@@ -24,13 +24,23 @@ def add_interface_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
+    logging.debug(user_data["interfaces"])
+
     # Set local vars from posted form data
     interface_name = request.form["interface_name"].replace(" ", "")
     interface_desc = request.form["interface_desc"]
 
-    # Check and create higher level data structure if it does not exist
+    # Capture list of interfaces and remove from user_data
+    interface_list = user_data["interfaces"]
+    del user_data["interfaces"]
+
+    # Create higher level data structure if it does not exist
     if "interfaces" not in user_data:
         user_data["interfaces"] = []
+
+    for interface in interface_list:
+        if interface["name"] != interface_name:
+            user_data["interfaces"].append(interface)
 
     # Assign values into data structure
     new_interface = {}

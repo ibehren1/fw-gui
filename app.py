@@ -526,7 +526,7 @@ def group_add():
                  On GET - Rendered group add form template
     """
     if request.method == "POST":
-        logging.info(request.form)
+        logging.debug(request.form)
         if request.form["type"] == "add":
             add_group_to_data(session, request)
 
@@ -634,13 +634,29 @@ def interface_add():
                  On GET - Rendered interface add form template
     """
     if request.method == "POST":
-        add_interface_to_data(session, request)
+        logging.info(request.form)
+        if request.form["type"] == "add":
+            add_interface_to_data(session, request)
+
+        if request.form["type"] == "edit":
+            file_list = list_user_files(session)
+            snapshot_list = list_snapshots(session)
+
+            return render_template(
+                "interface_add_form.html",
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                firewall_name=session["firewall_name"],
+                username=session["username"],
+                rule_detail=request.form,
+            )
 
         return redirect(url_for("interface_view"))
 
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
+        rule_detail_defaults = {"interface_name": "", "interface_desc": ""}
 
         return render_template(
             "interface_add_form.html",
@@ -648,6 +664,7 @@ def interface_add():
             snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            rule_detail=rule_detail_defaults,
         )
 
 

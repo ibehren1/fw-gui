@@ -9,6 +9,10 @@ This section defines interfaces to be referenced by Flow Tables and in Filters.<
 It <b>does not</b> define or configure the interface in VyOS.
 <br><br>
 <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th>
         Name
     </th>
@@ -18,11 +22,21 @@ It <b>does not</b> define or configure the interface in VyOS.
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in interface_list|sort(attribute='name') %}
     <tr>
+        <td align="center">
+            <form action="/interface_add" , method="post">
+                <input type="hidden" id="interface" name="type" value="edit">
+                <input type="hidden" id="interface" name="interface_name" value="{{item.name}}">
+                <input type="hidden" id="interface" name="interface_desc" value="{{item.description}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td align="center">
             <image src="static/network-interface-32-yellow.svg" align="center" width="20" height="20"></image>
             <font style="font-size: 20; font-variant: small-caps;">
@@ -44,9 +58,9 @@ It <b>does not</b> define or configure the interface in VyOS.
     </tr>
     {% endfor %}
     <tr>
-        <td colspan="4">
+        <td colspan="5">
             <form action="/interface_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
+                <input type="hidden" id="interface" name="type" value="edit">
                 <input class="add_rule_button" type="submit" value="Add Interface" title="Add an interface.">
             </form>
         </td>
