@@ -526,13 +526,29 @@ def group_add():
                  On GET - Rendered group add form template
     """
     if request.method == "POST":
-        add_group_to_data(session, request)
+        logging.info(request.form)
+        if request.form["type"] == "add":
+            add_group_to_data(session, request)
+
+        if request.form["type"] == "edit":
+            file_list = list_user_files(session)
+            snapshot_list = list_snapshots(session)
+
+            return render_template(
+                "group_add_form.html",
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                firewall_name=session["firewall_name"],
+                username=session["username"],
+                rule_detail=request.form,
+            )
 
         return redirect(url_for("group_view"))
 
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
+        rule_detail_defaults = {"ip_version": "ipv4", "group_type": "address-group"}
 
         return render_template(
             "group_add_form.html",
@@ -540,6 +556,7 @@ def group_add():
             snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            rule_detail=rule_detail_defaults,
         )
 
 
