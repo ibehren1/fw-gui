@@ -20,14 +20,20 @@
 <br>
 <table class="table" border="1" width="100%">
     <form action="/group_add" , method="post">
+        <input type="hidden" id="group" name="type" value="add">
         <tr>
             <td style="vertical-align: top;" width="20%">
                 <p class="section_heading">
                     IP Version
                 </p>
 
+                {% if rule_detail.ip_version == 'ipv4' %}
                 <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
                 <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
+                {% elif rule_detail.ip_version == 'ipv6' %}
+                <input type="radio" name="ip_version" value="ipv4">&nbsp;IPv4<br>
+                <input type="radio" name="ip_version" value="ipv6" checked="checked">&nbsp;IPv6<br><br>
+                {% endif%}
                 <font style="font-size: small;">Only applies to address<br>and network groups.</font>
 
             </td>
@@ -35,16 +41,29 @@
                 <p class="section_heading">
                     Group Description
                 </p>
+                {% if rule_detail.group_desc != '' %}
+                <input type="text" id="group_desc" name="group_desc" size="80%" value="{{rule_detail.group_desc}}"><br>
+                {% else %}
                 <input type="text" id="group_desc" name="group_desc" size="80%" value=""><br>
+                {% endif %}
                 <p class="section_heading">
                     Group Name
                 </p>
+                {% if rule_detail.group_name != '' %}
+                <input type="text" id="group_name" name="group_name" size="80%" value="{{rule_detail.group_name}}"><br>
+                {% else %}
                 <input type="text" id="group_name" name="group_name" size="80%" value=""><br>
+                {% endif %}
                 No spaces. Spaces will be removed.
                 <p class="section_heading">
                     Group Value
                 </p>
+                {% if rule_detail.group_value != '' %}
+                <input type="text" id="group_value" name="group_value" size="80%"
+                    value="{{rule_detail.group_value | replace('[', '') | replace(']', '') | replace(' ', '') | replace('\'', '') }}"><br>
+                {% else %}
                 <input type="text" id="group_value" name="group_value" size="80%" value=""><br>
+                {% endif %}
                 Multiple values should be comma separated.
             </td>
         </tr>
@@ -53,13 +72,37 @@
                 <p class="section_heading">
                     Group Type
                 </p>
-                <input type="radio" name="group_type" value="address-group" checked="checked">&nbsp;Address
-                Group<br>
+                {% if rule_detail.group_type == 'address-group' %}
+                <input type="radio" name="group_type" value="address-group" checked="checked">&nbsp;Address Group<br>
+                {% else %}
+                <input type="radio" name="group_type" value="address-group">&nbsp;Address Group<br>
+                {% endif %}
+                {% if rule_detail.group_type == 'domain-group' %}
+                <input type="radio" name="group_type" value="domain-group" checked="checked">&nbsp;Domain Group<br>
+                {% else %}
                 <input type="radio" name="group_type" value="domain-group">&nbsp;Domain Group<br>
+                {% endif %}
+                {% if rule_detail.group_type == 'interface-group' %}
+                <input type="radio" name="group_type" value="interface-group" checked="checked">&nbsp;Interface
+                Group<br>
+                {% else %}
                 <input type="radio" name="group_type" value="interface-group">&nbsp;Interface Group<br>
+                {% endif %}
+                {% if rule_detail.group_type == 'mac-group' %}
+                <input type="radio" name="group_type" value="mac-group" checked="checked">&nbsp;Mac Group<br>
+                {% else %}
                 <input type="radio" name="group_type" value="mac-group">&nbsp;Mac Group<br>
+                {% endif %}
+                {% if rule_detail.group_type == 'network-group' %}
+                <input type="radio" name="group_type" value="network-group" checked="checked">&nbsp;Network Group<br>
+                {% else %}
                 <input type="radio" name="group_type" value="network-group">&nbsp;Network Group<br>
+                {% endif %}
+                {% if rule_detail.group_type == 'port-group' %}
+                <input type="radio" name="group_type" value="port-group" checked="checked">&nbsp;Port Group<br>
+                {% else %}
                 <input type="radio" name="group_type" value="port-group">&nbsp;Port Group<br>
+                {% endif %}
             </td>
         </tr>
         <tr>

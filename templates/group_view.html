@@ -67,6 +67,10 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -80,13 +84,26 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.ip_version == 'ipv4' %}
     {% if item.group_type == 'address-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
@@ -117,7 +134,7 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv4 Address Group.">
@@ -140,6 +157,10 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv4networkgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -153,13 +174,26 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.ip_version == 'ipv4' %}
     {% if item.group_type == 'network-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
@@ -190,7 +224,7 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv4 Network Group.">
@@ -214,6 +248,10 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv6addressgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -227,13 +265,26 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list %}
     {% if item.ip_version == 'ipv6' %}
     {% if item.group_type == 'address-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
@@ -262,9 +313,9 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
+                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv6 Address Group.">
             </form>
         </td>
@@ -284,6 +335,10 @@
     </tr>
 </table>
 <table class="groups_table" id="ipv6networkgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -297,13 +352,26 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list %}
     {% if item.ip_version == 'ipv6' %}
     {% if item.group_type == 'network-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
@@ -332,7 +400,7 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv6 Network Group.">
@@ -354,6 +422,10 @@
     </tr>
 </table>
 <table class="groups_table" id="domaingroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -367,12 +439,25 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.group_type == 'domain-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="ipv4">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
@@ -402,7 +487,7 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new Domain Group.">
@@ -424,6 +509,10 @@
     </tr>
 </table>
 <table class="groups_table" id="macgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -437,19 +526,32 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.group_type == 'mac-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
             </font>
         </td>
 
-        <td>
+        <td colspan="2">
             {{item.group_desc}}
         </td>
 
@@ -470,7 +572,7 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new MAC Group">
@@ -492,6 +594,10 @@
     </tr>
 </table>
 <table class="groups_table" id="portgroup" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Name
     </th>
@@ -505,12 +611,25 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for item in group_list|sort(attribute='group_name') %}
     {% if item.group_type == 'port-group' %}
     <tr>
+        <td align="center">
+            <form action="/group_add" , method="post">
+                <input type="hidden" id="group" name="type" value="edit">
+                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
+                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
+                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
+                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
+                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit group {{item.group_name}}.">
+            </form>
+        </td>
+
         <td colspan="2">
             <font style="font-size: 20; font-variant: small-caps;">
                 {{item.group_name}}
@@ -538,7 +657,7 @@
     {% endif %}
     {% endfor %}
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/group_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Group" title="Add a new Port Group.">
