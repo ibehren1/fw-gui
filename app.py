@@ -1351,7 +1351,8 @@ def configuration_push():
         # Cache SSH user/pass to session.
         session["ssh_user"] = request.form["username"]
         session["ssh_pass"] = request.form["password"]
-        session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
+        if "ssh_key_name" in request.form:
+            session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
 
         # Include 'delete firewall' before set commands
         message, config = generate_config(session)
