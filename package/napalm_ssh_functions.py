@@ -9,6 +9,7 @@
 from flask import flash
 from napalm import get_network_driver
 from package.data_file_functions import decrypt_file
+from package.telemetry_functions import *
 import logging
 import socket
 import os
@@ -106,6 +107,8 @@ def commit_to_firewall(connection_string, session):
         str: Result message indicating success or failure
     """
     logging.debug(" |------------------------------------------")
+    telemetry_commit()
+
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
     except Exception as e:
@@ -174,6 +177,7 @@ def get_diffs_from_firewall(connection_string, session):
         str: Configuration differences or status message
     """
     logging.debug(" |------------------------------------------")
+    telemetry_diff()
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
@@ -233,6 +237,8 @@ def show_firewall_usage(connection_string, session):
         str: Firewall usage output or error message
     """
     logging.debug(" |------------------------------------------")
+    telemetry_rule_usage()
+
     tmpfile = None
     try:
         ssh, tmpfile = assemble_paramiko_driver_string(connection_string, session)

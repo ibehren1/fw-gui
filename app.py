@@ -110,6 +110,7 @@ from package.napalm_ssh_functions import (
     show_firewall_usage,
     test_connection,
 )
+from package.telemetry_functions import telemetry_instance
 from waitress import serve
 import logging
 import os
@@ -1772,6 +1773,9 @@ if __name__ == "__main__":
 
     # Create and initialize the data directory for storing firewall configurations
     initialize_data_dir()
+
+    # Post instance telemetry
+    telemetry_instance()
 
     # Check if MongoDB connection is valid using URI from environment variables
     # If connection is successful, run converter to migrate data
