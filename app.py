@@ -635,7 +635,7 @@ def interface_add():
                  On GET - Rendered interface add form template
     """
     if request.method == "POST":
-        logging.info(request.form)
+        logging.debug(request.form)
         if request.form["type"] == "add":
             add_interface_to_data(session, request)
 
@@ -758,8 +758,24 @@ def flowtable_add():
                  On GET - Rendered flowtable add form template
     """
     if request.method == "POST":
-        logging.info(f"POST: {request.form}")
-        add_flowtable_to_data(session, request)
+        logging.info(request.form)
+        if request.form["type"] == "add":
+            add_flowtable_to_data(session, request)
+
+        if request.form["type"] == "edit":
+            file_list = list_user_files(session)
+            snapshot_list = list_snapshots(session)
+            interface_list = list_interfaces(session)
+
+            return render_template(
+                "flowtable_add_form.html",
+                file_list=file_list,
+                interface_list=interface_list,
+                snapshot_list=snapshot_list,
+                firewall_name=session["firewall_name"],
+                username=session["username"],
+                flowtable_detail=request.form,
+            )
 
         return redirect(url_for("flowtable_view"))
 
@@ -775,6 +791,7 @@ def flowtable_add():
             snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            flowtable_detail={},
         )
 
 

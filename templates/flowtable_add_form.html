@@ -16,18 +16,29 @@
 <br>
 <table class="table" border="1" width="100%">
     <form action="/flowtable_add" , method="post">
+        <input type="hidden" id="flowtable" name="type" value="add">
         <tr>
             <td style="vertical-align: top;" width="30%">
                 <p class="section_heading">
                     Flowtable Name
                 </p>
+                {% if flowtable_detail.flowtable_name != '' %}
+                <input type="text" id="flowtable_name" name="flowtable_name" size="25%"
+                    value="{{flowtable_detail.flowtable_name}}"><br>
+                {% else %}
                 <input type="text" id="flowtable_name" name="flowtable_name" size="25%" value=""><br>
+                {% endif %}
             </td>
             <td style="vertical-align: top;" width="70%">
                 <p class="section_heading">
                     Flowtable Description
                 </p>
+                {% if flowtable_detail.flowtable_desc != '' %}
+                <input type="text" id="flowtable_desc" name="flowtable_desc" size="70%"
+                    value="{{flowtable_detail.flowtable_desc}}"><br>
+                {% else %}
                 <input type="text" id="flowtable_desc" name="flowtable_desc" size="70%" value=""><br>
+                {% endif %}
             </td>
         </tr>
         <tr>
