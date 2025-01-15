@@ -110,6 +110,7 @@ from package.napalm_ssh_functions import (
     show_firewall_usage,
     test_connection,
 )
+from package.telemetry_functions import telemetry_instance
 from waitress import serve
 import logging
 import os
@@ -634,7 +635,7 @@ def interface_add():
                  On GET - Rendered interface add form template
     """
     if request.method == "POST":
-        logging.info(request.form)
+        logging.debug(request.form)
         if request.form["type"] == "add":
             add_interface_to_data(session, request)
 
@@ -757,8 +758,24 @@ def flowtable_add():
                  On GET - Rendered flowtable add form template
     """
     if request.method == "POST":
-        logging.info(f"POST: {request.form}")
-        add_flowtable_to_data(session, request)
+        logging.debug(request.form)
+        if request.form["type"] == "add":
+            add_flowtable_to_data(session, request)
+
+        if request.form["type"] == "edit":
+            file_list = list_user_files(session)
+            snapshot_list = list_snapshots(session)
+            interface_list = list_interfaces(session)
+
+            return render_template(
+                "flowtable_add_form.html",
+                file_list=file_list,
+                interface_list=interface_list,
+                snapshot_list=snapshot_list,
+                firewall_name=session["firewall_name"],
+                username=session["username"],
+                flowtable_detail=request.form,
+            )
 
         return redirect(url_for("flowtable_view"))
 
@@ -774,6 +791,7 @@ def flowtable_add():
             snapshot_list=snapshot_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            flowtable_detail={},
         )
 
 
@@ -1089,7 +1107,33 @@ def filter_rule_add():
         Response: Redirect to filter view/add or rendered filter rule add form template
     """
     if request.method == "POST":
-        add_filter_rule_to_data(session, request)
+        logging.debug(request.form)
+        if request.form["type"] == "add":
+            add_filter_rule_to_data(session, request)
+
+        if request.form["type"] == "edit":
+            chain_list = assemble_list_of_chains(session)
+            file_list = list_user_files(session)
+            filter_list = assemble_list_of_filters(session)
+            interface_list = list_interfaces(session)
+            snapshot_list = list_snapshots(session)
+            flowtable_list = list_flowtables(session)
+
+            filter = request.form["filter"]
+
+            return render_template(
+                "filter_rule_add_form.html",
+                chain_list=chain_list,
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                filter_name=filter,
+                filter_list=filter_list,
+                flowtable_list=flowtable_list,
+                firewall_name=session["firewall_name"],
+                interface_list=interface_list,
+                username=session["username"],
+                rule_detail=request.form,
+            )
 
         return redirect(
             url_for("filter_view") + "#" + request.form["filter"].replace(",", "")
@@ -1136,6 +1180,7 @@ def filter_rule_add():
             firewall_name=session["firewall_name"],
             interface_list=interface_list,
             username=session["username"],
+            rule_detail={},
         )
 
 
@@ -1351,7 +1396,8 @@ def configuration_push():
         # Cache SSH user/pass to session.
         session["ssh_user"] = request.form["username"]
         session["ssh_pass"] = request.form["password"]
-        session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
+        if "ssh_key_name" in request.form:
+            session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
 
         # Include 'delete firewall' before set commands
         message, config = generate_config(session)
@@ -1771,6 +1817,9 @@ if __name__ == "__main__":
 
     # Create and initialize the data directory for storing firewall configurations
     initialize_data_dir()
+
+    # Post instance telemetry
+    telemetry_instance()
 
     # Check if MongoDB connection is valid using URI from environment variables
     # If connection is successful, run converter to migrate data

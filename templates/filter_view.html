@@ -56,6 +56,10 @@
     </tr>
 </table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th>
         Rule
     </th>
@@ -78,6 +82,22 @@
 
     {% for rule in filter_list %}
     <tr align="center" style="vertical-align: middle;">
+        <td align="center" rowspan="2">
+            <form action="/filter_rule_add" , method="post">
+                <input type="hidden" id="filter" name="type" value="edit">
+                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
+                <input type="hidden" id="filter" name="name" value="{{rule.number}}">
+                <input type="hidden" id="filter" name="description" value="{{rule.description}}">
+                <input type="hidden" id="filter" name="action" value="{{rule.action}}">
+                <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
+                <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
+                <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
+                <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit rule {{rule.number}}.">
+            </form>
+        </td>
+
         <td align="center" style="vertical-align: middle;" rowspan="2">
             <font style="font-size:60;">{{rule.number}}</font>
             <br>
@@ -118,7 +138,7 @@
     {% endfor %}
     <tr>
         <form action="/filter_rule_reorder" , method="post">
-            <td colspan="1" align="center">
+            <td colspan="2" align="center">
                 <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
             </td>
             <td colspan="3">
@@ -140,7 +160,7 @@
         </form>
     </tr>
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/filter_rule_add" , method="get">
                 <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
@@ -175,6 +195,10 @@
     </tr>
 </table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th>
         Rule
     </th>
@@ -197,6 +221,22 @@
 
     {% for rule in filter_list %}
     <tr align="center" style="vertical-align: middle;">
+        <td align="center" rowspan="2">
+            <form action="/filter_rule_add" , method="post">
+                <input type="hidden" id="filter" name="type" value="edit">
+                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
+                <input type="hidden" id="filter" name="name" value="{{rule.number}}">
+                <input type="hidden" id="filter" name="description" value="{{rule.description}}">
+                <input type="hidden" id="filter" name="action" value="{{rule.action}}">
+                <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
+                <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
+                <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
+                <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
+                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                    title="Edit rule {{rule.number}}.">
+            </form>
+        </td>
+
         <td align="center" style="vertical-align: middle;" rowspan="2">
             <font style="font-size:60;">{{rule.number}}</font>
             <br>
@@ -237,7 +277,7 @@
     {% endfor %}
     <tr>
         <form action="/filter_rule_reorder" , method="post">
-            <td colspan="1" align="center">
+            <td colspan="2" align="center">
                 <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
             </td>
             <td colspan="3">
@@ -259,7 +299,7 @@
         </form>
     </tr>
     <tr>
-        <td colspan="6">
+        <td colspan="7">
             <form action="/filter_rule_add" , method="get">
                 <input type="hidden" id="filter" name="filter" value="ipv6,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">

@@ -61,9 +61,17 @@ def add_flowtable_to_data(session, request):
         if "interface_" in key:
             interface_list.append(value)
 
-    # Check and create higher level data structure if it does not exist
+    # Capture list of flowtables and remove from user_data
+    flowtable_list = user_data["flowtables"]
+    del user_data["flowtables"]
+
+    # Create higher level data structure if it does not exist
     if "flowtables" not in user_data:
         user_data["flowtables"] = []
+
+    for flowtable in flowtable_list:
+        if flowtable["name"] != flowtable_name:
+            user_data["flowtables"].append(flowtable)
 
     # Assign values into data structure
     new_flowtable = {}
