@@ -758,7 +758,7 @@ def flowtable_add():
                  On GET - Rendered flowtable add form template
     """
     if request.method == "POST":
-        logging.info(request.form)
+        logging.debug(request.form)
         if request.form["type"] == "add":
             add_flowtable_to_data(session, request)
 
@@ -1107,7 +1107,33 @@ def filter_rule_add():
         Response: Redirect to filter view/add or rendered filter rule add form template
     """
     if request.method == "POST":
-        add_filter_rule_to_data(session, request)
+        logging.debug(request.form)
+        if request.form["type"] == "add":
+            add_filter_rule_to_data(session, request)
+
+        if request.form["type"] == "edit":
+            chain_list = assemble_list_of_chains(session)
+            file_list = list_user_files(session)
+            filter_list = assemble_list_of_filters(session)
+            interface_list = list_interfaces(session)
+            snapshot_list = list_snapshots(session)
+            flowtable_list = list_flowtables(session)
+
+            filter = request.form["filter"]
+
+            return render_template(
+                "filter_rule_add_form.html",
+                chain_list=chain_list,
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                filter_name=filter,
+                filter_list=filter_list,
+                flowtable_list=flowtable_list,
+                firewall_name=session["firewall_name"],
+                interface_list=interface_list,
+                username=session["username"],
+                rule_detail=request.form,
+            )
 
         return redirect(
             url_for("filter_view") + "#" + request.form["filter"].replace(",", "")
@@ -1154,6 +1180,7 @@ def filter_rule_add():
             firewall_name=session["firewall_name"],
             interface_list=interface_list,
             username=session["username"],
+            rule_detail={},
         )
 
 
