@@ -925,14 +925,44 @@ def chain_rule_add():
         Response: On POST - Redirect to chain view page (with optional anchor)
                  On GET - Rendered rule add form template or redirect
     """
+    logging.info(request.form)
     if request.method == "POST":
-        if request.form["fw_chain"] == "":
-            return redirect(url_for("chain_view"))
-        else:
-            add_rule_to_data(session, request)
-            return redirect(
-                url_for("chain_view") + "#" + request.form["fw_chain"].replace(",", "")
+        if request.form["type"] == "add":
+            if request.form["fw_chain"] == "":
+                return redirect(url_for("chain_view"))
+            else:
+                add_rule_to_data(session, request)
+                return redirect(
+                    url_for("chain_view")
+                    + "#"
+                    + request.form["fw_chain"].replace(",", "")
+                )
+        if request.form["type"] == "edit":
+            file_list = list_user_files(session)
+            chain_list = assemble_list_of_chains(session)
+            group_list = assemble_detail_list_of_groups(session)
+            snapshot_list = list_snapshots(session)
+            if chain_list == []:
+                return redirect(url_for("chain_add"))
+
+            if request.args.get("fw_chain"):
+                fw_chain = request.args.get("fw_chain")
+            else:
+                fw_chain = ""
+
+            return render_template(
+                "chain_rule_add_form.html",
+                chain_list=chain_list,
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                chain_name=fw_chain,
+                group_list=group_list,
+                firewall_name=session["firewall_name"],
+                username=session["username"],
+                rule_detail=request.form,
             )
+
+            pass
 
     else:
         file_list = list_user_files(session)
@@ -947,6 +977,8 @@ def chain_rule_add():
         else:
             fw_chain = ""
 
+        rule_detail_defaults = {"action": "accept", "protocol": ""}
+
         return render_template(
             "chain_rule_add_form.html",
             chain_list=chain_list,
@@ -956,6 +988,7 @@ def chain_rule_add():
             group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            rule_detail=rule_detail_defaults,
         )
 
 

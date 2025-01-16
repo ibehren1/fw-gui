@@ -57,6 +57,10 @@
     </tr>
 </table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Rule
     </th>
@@ -82,11 +86,30 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for rule in chain_list %}
     <tr>
+        <td align="center" rowspan="2">
+            <form action="/chain_rule_add" , method="post">
+                <input type="hidden" id="chain" name="type" value="edit">
+                <input type="hidden" id="chain" name="chain" value="ipv4,{{key}}">
+                <input type="hidden" id="chain" name="name" value="{{rule.number}}">
+                <input type="hidden" id="chain" name="description" value="{{rule.description}}">
+                <input type="hidden" id="chain" name="action" value="{{rule.action}}">
+                <input type="hidden" id="chain" name="protocol" value="{{rule.protocol}}">
+                <input type="hidden" id="chain" name="state_est" value="{{rule.state_est}}">
+                <input type="hidden" id="chain" name="state_inv" value="{{rule.state_inv}}">
+                <input type="hidden" id="chain" name="state_rel" value="{{rule.state_rel}}">
+                <input type="hidden" id="chain" name="state_new" value="{{rule.state_new}}">
+                <input type="hidden" id="chain" name="logging" value="{{rule.logging}}">
+                <input type="hidden" id="chain" name="rule_disable" value="{{rule.rule_disable}}">
+                <input class="edit_rule_button" type="submit" value="Edit Rule" style="height: 150; width: 20;"
+                    title="Edit rule {{rule.number}}.">
+            </form>
+        </td>
+
         <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
             <font style="font-size:60;">{{rule.number}}</font>
             <br>
@@ -128,7 +151,7 @@
     </tr>
     <tr>
         <td colspan="2">
-            {% if rule.disable %}
+            {% if rule.rule_disable %}
             &#128308; &nbspDisabled
             {% else %}
             &#128994; &nbspEnabled
@@ -182,7 +205,7 @@
     {% endfor %}
     <tr>
         <form action="/chain_rule_reorder" , method="post">
-            <td colspan="2" align="center">
+            <td colspan="3" align="center">
                 <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
             </td>
             <td colspan="6">
@@ -204,7 +227,7 @@
         </form>
     </tr>
     <tr>
-        <td colspan="11">
+        <td colspan="12">
             <form action="/chain_rule_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Rule" title="Add rule.">
@@ -239,6 +262,10 @@
     </tr>
 </table>
 <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+    <th width="45px">
+        Edit
+    </th>
+
     <th colspan="2">
         Rule
     </th>
@@ -264,11 +291,30 @@
     </th>
 
     <th width="45px">
-        Action
+        Delete
     </th>
 
     {% for rule in chain_list %}
     <tr>
+        <td align="center" rowspan="2">
+            <form action="/chain_rule_add" , method="post">
+                <input type="hidden" id="chain" name="type" value="edit">
+                <input type="hidden" id="chain" name="chain" value="ipv4,{{key}}">
+                <input type="hidden" id="chain" name="name" value="{{rule.number}}">
+                <input type="hidden" id="chain" name="description" value="{{rule.description}}">
+                <input type="hidden" id="chain" name="action" value="{{rule.action}}">
+                <input type="hidden" id="chain" name="protocol" value="{{rule.protocol}}">
+                <input type="hidden" id="chain" name="state_est" value="{{rule.state_est}}">
+                <input type="hidden" id="chain" name="state_inv" value="{{rule.state_inv}}">
+                <input type="hidden" id="chain" name="state_rel" value="{{rule.state_rel}}">
+                <input type="hidden" id="chain" name="state_new" value="{{rule.state_new}}">
+                <input type="hidden" id="chain" name="logging" value="{{rule.logging}}">
+                <input type="hidden" id="chain" name="rule_disable" value="{{rule.rule_disable}}">
+                <input class="edit_rule_button" type="submit" value="Edit Rule" style="height: 150; width: 20;"
+                    title="Edit rule {{rule.number}}.">
+            </form>
+        </td>
+
         <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
             <font style="font-size:60;">{{rule.number}}</font>
             <br>
@@ -278,7 +324,6 @@
         <td colspan="2">
             {{rule.description}}
         </td>
-
 
         <td colspan="2">
             Dest: {{rule.dest_address}}
@@ -364,7 +409,7 @@
     {% endfor %}
     <tr>
         <form action="/chain_rule_reorder" , method="post">
-            <td colspan="2" align="center">
+            <td colspan="3" align="center">
                 <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
             </td>
             <td colspan="6">
@@ -386,7 +431,7 @@
         </form>
     </tr>
     <tr>
-        <td colspan="11" align="center" rowspan="2">
+        <td colspan="12" align="center" rowspan="2">
             <form action="/chain_rule_add" , method="get">
                 <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
                 <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new rule.">

@@ -23,6 +23,7 @@
 <br>
 <table class="table" border="1">
     <form action=" /chain_rule_add" , method="post">
+        <input type="hidden" id="chain" name="type" value="add">
         <tr>
             <td colspan="4">
                 <p class="section_heading">
@@ -30,7 +31,11 @@
                 </p>
                 <label for="fw_chain">Chain Name&nbsp;</label>
                 <select name="fw_chain" id="fw_chain">
+                    {% if rule_detail.chain != "" %}
+                    <option value="{{rule_detail.chain}}">{{rule_detail.chain | replace(",", ": ")}}</option>
+                    {% else %}
                     <option value="{{chain_name}}">{{chain_name | replace(",", ": ")}}</option>
+                    {% endif %}
                     {% for chain in chain_list %}
                     <option value='{{chain[0]}},{{chain[1]}}'>
                         {{chain[0]}}: {{chain[1]}}
@@ -45,14 +50,23 @@
                     Rule
                 </p>
                 <label for="rule">Number</label>
+                {% if rule_detail.name != "" %}
+                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="{{rule_detail.name}}"><br>
+                {% else %}
                 <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
+                {% endif %}
             </td>
             <td colspan="3" width="80%">
                 <p class="section_heading">
                     Description
                 </p>
                 <label for="rule">Description</label>
+                {% if rule_detail.description != "" %}
+                <input type="text" id="description" name="description" size="60%"
+                    value="{{rule_detail.description}}"><br>
+                {% else %}
                 <input type="text" id="description" name="description" size="60%" value=""><br>
+                {% endif %}
             </td>
         </tr>
         <tr>
@@ -61,9 +75,21 @@
                     Action
                 </p>
 
+                {% if rule_detail.action == "accept" %}
                 <input type="radio" name="action" value="accept" checked="checked">&nbsp;accept<br>
+                {% else %}
+                <input type="radio" name="action" value="accept">&nbsp;accept<br>
+                {% endif %}
+                {% if rule_detail.action == "continue" %}
+                <input type="radio" name="action" value="continue" checked="checked">&nbsp;continue<br>
+                {% else %}
                 <input type="radio" name="action" value="continue">&nbsp;continue<br>
+                {% endif %}
+                {% if rule_detail.action == "drop" %}
+                <input type="radio" name="action" value="drop" checked="checked">&nbsp;drop
+                {% else %}
                 <input type="radio" name="action" value="drop">&nbsp;drop
+                {% endif %}
             </td>
 
             <td colspan="2" rowspan="2" style="vertical-align: top;" width="60%">
@@ -162,11 +188,31 @@
                 <p class="section_heading">
                     Protocol
                 </p>
+                {% if rule_detail.protocol == '' %}
                 <input type="radio" name="protocol" value="" checked="checked">&nbsp;any<br>
+                {% else %}
+                <input type="radio" name="protocol" value="">&nbsp;any<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'icmp' %}
+                <input type="radio" name="protocol" value="icmp" checked="checked">&nbsp;icmp<br>
+                {% else %}
                 <input type="radio" name="protocol" value="icmp">&nbsp;icmp<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'tcp' %}
+                <input type="radio" name="protocol" value="tcp" checked="checked">&nbsp;tcp<br>
+                {% else %}
                 <input type="radio" name="protocol" value="tcp">&nbsp;tcp<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'udp' %}
+                <input type="radio" name="protocol" value="udp" checked="checked">&nbsp;udp<br>
+                {% else %}
                 <input type="radio" name="protocol" value="udp">&nbsp;udp<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'tcp_udp' %}
+                <input type="radio" name="protocol" value="tcp_udp" checked="checked">&nbsp;tcp_udp
+                {% else %}
                 <input type="radio" name="protocol" value="tcp_udp">&nbsp;tcp_udp
+                {% endif %}
             </td>
         </tr>
         <tr>
@@ -174,7 +220,11 @@
                 <p class="section_heading" width="20%">
                     Logging
                 </p>
+                {% if rule_detail.logging == 'True' %}
+                <input type="checkbox" id="logging" name="logging" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="logging" name="logging" value="True">
+                {% endif %}
                 <label for="logging">&nbsp;Enable</label>
             </td>
         </tr>
@@ -183,7 +233,11 @@
                 <p class="section_heading">
                     Disable
                 </p>
+                {% if rule_detail.rule_disable == 'True' %}
+                <input type="checkbox" id="rule_disable" name="rule_disable" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
+                {% endif %}
                 <label for="rule_disable">&nbsp;Disable</label>
             </td>
             <td colspan="2" style="vertical-align: top;">
@@ -281,13 +335,29 @@
                 <p class="section_heading">
                     State
                 </p>
+                {% if rule_detail.state_est == "True" %}
+                <input type="checkbox" id="state_est" name="state_est" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_est" name="state_est" value="True">
+                {% endif %}
                 <label for="state_est">&nbsp;Established</label><br>
+                {% if rule_detail.state_inv == "True" %}
+                <input type="checkbox" id="state_inv" name="state_inv" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_inv" name="state_inv" value="True">
+                {% endif %}
                 <label for="state_inv">&nbsp;Invalid</label><br>
+                {% if rule_detail.state_new == "True" %}
+                <input type="checkbox" id="state_new" name="state_new" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_new" name="state_new" value="True">
+                {% endif %}
                 <label for="state_new">&nbsp;New</label><br>
+                {% if rule_detail.state_rel == "True" %}
+                <input type="checkbox" id="state_rel" name="state_rel" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_rel" name="state_rel" value="True">
+                {% endif %}
                 <label for="state_rel">&nbsp;Related</label><br>
             </td>
         </tr>
