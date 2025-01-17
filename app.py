@@ -925,7 +925,7 @@ def chain_rule_add():
         Response: On POST - Redirect to chain view page (with optional anchor)
                  On GET - Rendered rule add form template or redirect
     """
-    logging.info(request.form)
+    logging.debug(request.form)
     if request.method == "POST":
         if request.form["type"] == "add":
             if request.form["fw_chain"] == "":
