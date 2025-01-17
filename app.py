@@ -945,24 +945,16 @@ def chain_rule_add():
             if chain_list == []:
                 return redirect(url_for("chain_add"))
 
-            if request.args.get("fw_chain"):
-                fw_chain = request.args.get("fw_chain")
-            else:
-                fw_chain = ""
-
             return render_template(
                 "chain_rule_add_form.html",
                 chain_list=chain_list,
                 file_list=file_list,
                 snapshot_list=snapshot_list,
-                chain_name=fw_chain,
                 group_list=group_list,
                 firewall_name=session["firewall_name"],
                 username=session["username"],
                 rule_detail=request.form,
             )
-
-            pass
 
     else:
         file_list = list_user_files(session)
@@ -972,19 +964,21 @@ def chain_rule_add():
         if chain_list == []:
             return redirect(url_for("chain_add"))
 
-        if request.args.get("fw_chain"):
-            fw_chain = request.args.get("fw_chain")
-        else:
-            fw_chain = ""
-
-        rule_detail_defaults = {"action": "accept", "protocol": ""}
+        rule_detail_defaults = {
+            "chain": request.args.get("fw_chain"),
+            "action": "accept",
+            "protocol": "",
+            "dest_address_type": "address",
+            "dest_port_type": "port",
+            "source_address_type": "address",
+            "source_port_type": "port",
+        }
 
         return render_template(
             "chain_rule_add_form.html",
             chain_list=chain_list,
             file_list=file_list,
             snapshot_list=snapshot_list,
-            chain_name=fw_chain,
             group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
