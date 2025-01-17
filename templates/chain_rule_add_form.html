@@ -23,6 +23,7 @@
 <br>
 <table class="table" border="1">
     <form action=" /chain_rule_add" , method="post">
+        <input type="hidden" id="chain" name="type" value="add">
         <tr>
             <td colspan="4">
                 <p class="section_heading">
@@ -30,7 +31,11 @@
                 </p>
                 <label for="fw_chain">Chain Name&nbsp;</label>
                 <select name="fw_chain" id="fw_chain">
+                    {% if rule_detail.chain != "" %}
+                    <option value="{{rule_detail.chain}}">{{rule_detail.chain | replace(",", ": ")}}</option>
+                    {% else %}
                     <option value="{{chain_name}}">{{chain_name | replace(",", ": ")}}</option>
+                    {% endif %}
                     {% for chain in chain_list %}
                     <option value='{{chain[0]}},{{chain[1]}}'>
                         {{chain[0]}}: {{chain[1]}}
@@ -45,14 +50,23 @@
                     Rule
                 </p>
                 <label for="rule">Number</label>
+                {% if rule_detail.name != "" %}
+                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="{{rule_detail.name}}"><br>
+                {% else %}
                 <input type="text" id="rule" name="rule" maxlength="6" size="6" value="1"><br>
+                {% endif %}
             </td>
             <td colspan="3" width="80%">
                 <p class="section_heading">
                     Description
                 </p>
                 <label for="rule">Description</label>
+                {% if rule_detail.description != "" %}
+                <input type="text" id="description" name="description" size="60%"
+                    value="{{rule_detail.description}}"><br>
+                {% else %}
                 <input type="text" id="description" name="description" size="60%" value=""><br>
+                {% endif %}
             </td>
         </tr>
         <tr>
@@ -61,9 +75,21 @@
                     Action
                 </p>
 
+                {% if rule_detail.action == "accept" %}
                 <input type="radio" name="action" value="accept" checked="checked">&nbsp;accept<br>
+                {% else %}
+                <input type="radio" name="action" value="accept">&nbsp;accept<br>
+                {% endif %}
+                {% if rule_detail.action == "continue" %}
+                <input type="radio" name="action" value="continue" checked="checked">&nbsp;continue<br>
+                {% else %}
                 <input type="radio" name="action" value="continue">&nbsp;continue<br>
+                {% endif %}
+                {% if rule_detail.action == "drop" %}
+                <input type="radio" name="action" value="drop" checked="checked">&nbsp;drop
+                {% else %}
                 <input type="radio" name="action" value="drop">&nbsp;drop
+                {% endif %}
             </td>
 
             <td colspan="2" rowspan="2" style="vertical-align: top;" width="60%">
@@ -74,20 +100,57 @@
                 <table class="groups_table" width="100%">
                     <tr>
                         <td>
+                            {% if rule_detail.dest_address_type == 'address' %}
                             <input type="radio" name="dest_address_type" value="address"
                                 checked="checked">&nbsp;Address&nbsp;<br>
+                            {% else %}
+                            <input type="radio" name="dest_address_type" value="address">&nbsp;Address&nbsp;<br>
+                            {% endif %}
+                            {% if rule_detail.dest_address_type == 'address_group' %}
+                            <input type="radio" name="dest_address_type" value="address_group"
+                                checked="checked">&nbsp;Address
+                            Group&nbsp;<br>
+                            {% else %}
                             <input type="radio" name="dest_address_type" value="address_group">&nbsp;Address
                             Group&nbsp;<br>
+                            {% endif %}
+                            {% if rule_detail.dest_address_type == 'domain_group' %}
+                            <input type="radio" name="dest_address_type" value="domain_group"
+                                checked="checked">&nbsp;Domain
+                            Group&nbsp;<br>
+                            {% else %}
                             <input type="radio" name="dest_address_type" value="domain_group">&nbsp;Domain
                             Group&nbsp;<br>
+                            {% endif %}
+                            {% if rule_detail.dest_address_type == 'mac_group' %}
+                            <input type="radio" name="dest_address_type" value="mac_group" checked="checked">&nbsp;Mac
+                            Group&nbsp;<br>
+                            {% else %}
                             <input type="radio" name="dest_address_type" value="mac_group">&nbsp;Mac Group&nbsp;<br>
+                            {% endif %}
+                            {% if rule_detail.dest_address_type == 'network_group' %}
+                            <input type="radio" name="dest_address_type" value="network_group"
+                                checked="checked">&nbsp;Network Group&nbsp;
+                            {% else %}
                             <input type="radio" name="dest_address_type" value="network_group">&nbsp;Network Group&nbsp;
+                            {% endif %}
                         </td>
                         <td>
+                            {% if rule_detail.dest_address_type == 'address' and rule_detail.dest_address != '' %}
+                            <input type="text" id="dest_address" name="dest_address" style="width: 200;"
+                                value="{{rule_detail.dest_address}}"><br>
+                            {% else %}
                             <input type="text" id="dest_address" name="dest_address" style="width: 200;"><br>
+                            {% endif %}
 
                             <select name="dest_address_group" id="dest_address_group" style="width: 200;">
+                                {% if rule_detail.dest_address_type == 'address_group' and rule_detail.dest_address !=
+                                '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.dest_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.dest_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "address-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -100,7 +163,13 @@
                             </select><br>
 
                             <select name="dest_domain_group" id="dest_domain_group" style="width: 200;">
+                                {% if rule_detail.dest_address_type == 'domain_group' and rule_detail.dest_address !=
+                                '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.dest_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.dest_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "domain-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -112,7 +181,13 @@
                             </select><br>
 
                             <select name="dest_mac_group" id="dest_mac_group" style="width: 200;">
+                                {% if rule_detail.dest_address_type == 'mac_group' and rule_detail.dest_address !=
+                                '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.dest_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.dest_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "mac-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -124,7 +199,13 @@
                             </select><br>
 
                             <select name="dest_network_group" id="dest_network_group" style="width: 200;">
+                                {% if rule_detail.dest_address_type == 'network_group' and rule_detail.dest_address !=
+                                '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.dest_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.dest_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name')%}
                                     {% if group["group_type"] == "network-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -139,13 +220,32 @@
                     </tr>
                     <tr>
                         <td>
+                            {% if rule_detail.dest_port_type == 'port' %}
                             <input type="radio" name="dest_port_type" value="port" checked="checked">&nbsp;Port<br>
-                            <input type="radio" name="dest_port_type" value="port_group">&nbsp;Port Group
+                            {% else %}
+                            <input type="radio" name="dest_port_type" value="port">&nbsp;Port<br>
+                            {% endif %}
+                            {% if rule_detail.dest_port_type == 'port_group' %}
+                            <input type="radio" name="dest_port_type" value="port_group" checked="checked">&nbsp;Port
+                            Group
+                            {% else %}
+                            <input type="radio" name="dest_port_type">&nbsp;Port Group
+                            {% endif %}
                         </td>
                         <td>
-                            <input type="text" id="dest_port" name="dest_port" style="width: 200;"><br>
+                            {% if rule_detail.dest_port_type == 'port' and rule_detail.dest_port != '' %}
+                            <input type="text" id="dest_port" name="dest_port" style="width: 200;"
+                                value="{{rule_detail.dest_port}}""><br>
+                            {% else %}
+                            <input type=" text" id="dest_port" name="dest_port" style="width: 200;"><br>
+                            {% endif %}
                             <select name="dest_port_group" id="dest_port_group" style="width: 200;">
+                                {% if rule_detail.dest_port_type == 'port_group' and rule_detail.dest_port != '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.dest_port}}'>
+                                    {{rule_detail.dest_port}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "port-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -162,11 +262,31 @@
                 <p class="section_heading">
                     Protocol
                 </p>
+                {% if rule_detail.protocol == '' %}
                 <input type="radio" name="protocol" value="" checked="checked">&nbsp;any<br>
+                {% else %}
+                <input type="radio" name="protocol" value="">&nbsp;any<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'icmp' %}
+                <input type="radio" name="protocol" value="icmp" checked="checked">&nbsp;icmp<br>
+                {% else %}
                 <input type="radio" name="protocol" value="icmp">&nbsp;icmp<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'tcp' %}
+                <input type="radio" name="protocol" value="tcp" checked="checked">&nbsp;tcp<br>
+                {% else %}
                 <input type="radio" name="protocol" value="tcp">&nbsp;tcp<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'udp' %}
+                <input type="radio" name="protocol" value="udp" checked="checked">&nbsp;udp<br>
+                {% else %}
                 <input type="radio" name="protocol" value="udp">&nbsp;udp<br>
+                {% endif %}
+                {% if rule_detail.protocol == 'tcp_udp' %}
+                <input type="radio" name="protocol" value="tcp_udp" checked="checked">&nbsp;tcp_udp
+                {% else %}
                 <input type="radio" name="protocol" value="tcp_udp">&nbsp;tcp_udp
+                {% endif %}
             </td>
         </tr>
         <tr>
@@ -174,7 +294,11 @@
                 <p class="section_heading" width="20%">
                     Logging
                 </p>
+                {% if rule_detail.logging == 'True' %}
+                <input type="checkbox" id="logging" name="logging" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="logging" name="logging" value="True">
+                {% endif %}
                 <label for="logging">&nbsp;Enable</label>
             </td>
         </tr>
@@ -183,7 +307,11 @@
                 <p class="section_heading">
                     Disable
                 </p>
+                {% if rule_detail.rule_disable == 'True' %}
+                <input type="checkbox" id="rule_disable" name="rule_disable" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
+                {% endif %}
                 <label for="rule_disable">&nbsp;Disable</label>
             </td>
             <td colspan="2" style="vertical-align: top;">
@@ -194,19 +322,49 @@
                 <table class="groups_table" width="100%">
                     <tr>
                         <td>
+                            {% if rule_detail.source_address_type == 'address' %}
                             <input type="radio" name="source_address_type" value="address"
                                 checked="checked">&nbsp;Address<br>
+                            {% else %}
+                            <input type="radio" name="source_address_type" value="address">&nbsp;Address<br>
+                            {% endif %}
+                            {% if rule_detail.source_address_type == 'address_group' %}
+                            <input type="radio" name="source_address_type" value="address_group"
+                                checked="checked">&nbsp;Address Group<br>
+                            {% else %}
                             <input type="radio" name="source_address_type" value="address_group">&nbsp;Address Group<br>
+                            {% endif %}
+                            {% if rule_detail.source_address_type == 'domain_group' %}
+                            <input type="radio" name="source_address_type" value="domain_group"
+                                checked="checked">&nbsp;Domain Group<br>
+                            {% else %}
                             <input type="radio" name="source_address_type" value="domain_group">&nbsp;Domain Group<br>
+                            {% endif %}
+                            {% if rule_detail.source_address_type == 'mac_group' %}
+                            <input type="radio" name="source_address_type" value="mac_group" checked="checked">&nbsp;Mac
+                            Group<br>
+                            {% else %}
                             <input type="radio" name="source_address_type" value="mac_group">&nbsp;Mac Group<br>
+                            {% endif %}
+                            {% if rule_detail.source_address_type == 'network_group' %}
+                            <input type="radio" name="source_address_type" value="network_group"
+                                checked="checked">&nbsp;Network
+                            {% else %}
                             <input type="radio" name="source_address_type" value="network_group">&nbsp;Network
+                            {% endif %}
                             Group<br><br>
                         </td>
                         <td>
                             <input type="text" id="source_address" name="source_address" style="width: 200;"><br>
 
                             <select name="source_address_group" id="source_address_group" style="width: 200;">
+                                {% if rule_detail.source_address_type == 'address_group' and rule_detail.source_address
+                                != '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.source_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.source_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "address-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -219,7 +377,13 @@
                             </select><br>
 
                             <select name="source_domain_group" id="source_domain_group" style="width: 200;">
+                                {% if rule_detail.source_address_type == 'domain_group' and rule_detail.source_address
+                                != '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.source_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.source_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "domain-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -231,7 +395,13 @@
                             </select><br>
 
                             <select name="source_mac_group" id="source_mac_group" style="width: 200;">
+                                {% if rule_detail.source_address_type == 'mac_group' and rule_detail.source_address
+                                != '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.source_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.source_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "mac-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -243,7 +413,13 @@
                             </select><br>
 
                             <select name="source_network_group" id="source_network_group" style="width: 200;">
+                                {% if rule_detail.source_address_type == 'network_group' and rule_detail.source_address
+                                != '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.source_address}}'>
+                                    {{rule_detail.ip_version}}: {{rule_detail.source_address}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "network-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -258,13 +434,32 @@
                     </tr>
                     <tr>
                         <td>
+                            {% if rule_detail.source_port_type == 'port' %}
                             <input type="radio" name="source_port_type" value="port" checked="checked">&nbsp;Port<br>
+                            {% else %}
+                            <input type="radio" name="source_port_type" value="port">&nbsp;Port<br>
+                            {% endif %}
+                            {% if rule_detail.source_port_type == 'port_group' %}
+                            <input type="radio" name="source_port_type" value="port_group" checked="checked">&nbsp;Port
+                            Group
+                            {% else %}
                             <input type="radio" name="source_port_type" value="port_group">&nbsp;Port Group
+                            {% endif %}
                         </td>
                         <td>
+                            {% if rule_detail.source_port_type == 'port' and rule_detail.source_port != '' %}
+                            <input type="text" id="source_port" name="source_port" style="width: 200;"
+                                value="{{rule_detail.source_port}}"><br>
+                            {% else %}
                             <input type="text" id="source_port" name="source_port" style="width: 200;"><br>
+                            {% endif %}
                             <select name="source_port_group" id="source_port_group" style="width: 200;">
+                                {% if rule_detail.source_port_type == 'port_group' and rule_detail.source_port != '' %}
+                                <option value='{{rule_detail.ip_version}},{{rule_detail.source_port}}'>
+                                    {{rule_detail.dest_port}}
+                                    {% else %}
                                 <option value=''>
+                                    {% endif %}
                                     {% for group in group_list|sort(attribute='group_name') %}
                                     {% if group["group_type"] == "port-group"%}
                                 <option value='{{group["ip_version"]}},{{group["group_name"]}}'>
@@ -281,13 +476,29 @@
                 <p class="section_heading">
                     State
                 </p>
+                {% if rule_detail.state_est == "True" %}
+                <input type="checkbox" id="state_est" name="state_est" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_est" name="state_est" value="True">
+                {% endif %}
                 <label for="state_est">&nbsp;Established</label><br>
+                {% if rule_detail.state_inv == "True" %}
+                <input type="checkbox" id="state_inv" name="state_inv" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_inv" name="state_inv" value="True">
+                {% endif %}
                 <label for="state_inv">&nbsp;Invalid</label><br>
+                {% if rule_detail.state_new == "True" %}
+                <input type="checkbox" id="state_new" name="state_new" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_new" name="state_new" value="True">
+                {% endif %}
                 <label for="state_new">&nbsp;New</label><br>
+                {% if rule_detail.state_rel == "True" %}
+                <input type="checkbox" id="state_rel" name="state_rel" value="True" checked="checked">
+                {% else %}
                 <input type="checkbox" id="state_rel" name="state_rel" value="True">
+                {% endif %}
                 <label for="state_rel">&nbsp;Related</label><br>
             </td>
         </tr>
