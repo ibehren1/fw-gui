@@ -16,32 +16,36 @@
             Configuration items must be syntactically correct CLI set statements.
         </td>
     </tr>
-    <tr>
-        <td>
-            <label for="freeform">Extra Configuration Items:</label>
-        </td>
-    </tr>
 </table>
 <br>
-<table class="table" border="0" width="100%">
-    <form action="/configuration_extra_items" , method="post">
+
+<div id="toc_container">
+    <table class="table" border="0" width="100%">
         <tr>
-            <td align="center">
-                <textarea id="extra_items" name="extra_items" rows="20" cols="80">
+            <td>
+                <label for="freeform">Extra Configuration Items:</label>
+            </td>
+        </tr>
+        <form action="/configuration_extra_items" , method="post">
+            <tr>
+                <td align="center">
+                    <textarea id="extra_items" name="extra_items" rows="20" cols="80">
 {% for item in extra_items %}
 {%- if item -%}{{-item-}}{% endif %}
 {% endfor%}
 </textarea>
-            </td>
-        </tr>
-        <tr>
-            <td align="right">
-                <button class="add_rule_button" type="submit" value="Add Configuration Items" style="width: 20%"
-                    title="Add extra items to the configuration.">Add
-                    Configuration Items</button>
-            </td>
-        </tr>
-    </form>
-</table>
+                </td>
+            </tr>
+            <tr>
+                <td align="right">
+                    <button class="add_rule_button" type="submit" value="Add Configuration Items" style="width: 20%"
+                        title="Add extra items to the configuration.">Add
+                        Configuration Items</button>
+                </td>
+            </tr>
+        </form>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

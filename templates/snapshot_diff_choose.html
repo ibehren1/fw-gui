@@ -7,48 +7,52 @@
 <p class="section_heading">Snapshot Diff</p>
 Choose two snapshots to compare and select View Diff to see a side-by-side diff of the configuration from each snapshot.
 <br><br>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
-        Snapshot 1
-    </th>
 
-    <th>
-        Snapshot 2
-    </th>
+<div id="toc_container">
+    <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+        <th>
+            Snapshot 1
+        </th>
 
-    <th>
-        Action
-    </th>
+        <th>
+            Snapshot 2
+        </th>
 
-    <tr>
-        <form action="/snapshot_diff_display" , method="post" , target="_blank">
-            <td align="center">
-                <select name="snapshot_1" id="snapshot_1" style="width: 100%;">
-                    {% for snapshot in snapshot_list %}
-                    <option value='{{snapshot.name}}'>
-                        {{snapshot.name}}
-                    </option>
-                    {% endfor %}
-                </select>
-            </td>
+        <th>
+            Action
+        </th>
 
-            <td align="center">
-                <select name="snapshot_2" id="snapshot_2" style="width: 100%;">
-                    <option value='current'>Current (working copy)</option>
-                    {% for snapshot in snapshot_list %}
-                    <option value='{{snapshot.name}}'>
-                        {{snapshot.name}}
-                    </option>
-                    {% endfor %}
-                </select>
-            </td>
+        <tr>
+            <form action="/snapshot_diff_display" , method="post" , target="_blank">
+                <td align="center">
+                    <select name="snapshot_1" id="snapshot_1" style="width: 100%;">
+                        {% for snapshot in snapshot_list %}
+                        <option value='{{snapshot.name}}'>
+                            {{snapshot.name}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
 
-            <td align="center">
-                <input class="grey_button" type="submit" value="View Diff"
-                    title="View the diff between the two selected configuration snapshots.">
-            </td>
-        </form>
-    </tr>
-</table>
+                <td align="center">
+                    <select name="snapshot_2" id="snapshot_2" style="width: 100%;">
+                        <option value='current'>Current (working copy)</option>
+                        {% for snapshot in snapshot_list %}
+                        <option value='{{snapshot.name}}'>
+                            {{snapshot.name}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
+
+                <td align="center">
+                    <input class="grey_button" type="submit" value="View Diff"
+                        title="View the diff between the two selected configuration snapshots.">
+                </td>
+            </form>
+        </tr>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

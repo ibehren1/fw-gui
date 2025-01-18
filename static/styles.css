@@ -80,6 +80,8 @@ small {
 .page_background {
     background-color: #606263;
     color: aliceblue;
+    font-weight: bold;
+    background-image: url("./brick-wall.png");
 }
 
 header {

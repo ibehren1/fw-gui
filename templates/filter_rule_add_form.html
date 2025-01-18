@@ -19,174 +19,178 @@
     </tr>
 </table>
 <br>
-<table class="table" border="1">
-    <form action="/filter_rule_add" , method="post">
-        <input type="hidden" id="filter" name="type" value="add">
-        <tr>
-            <td colspan="4" width="100%">
-                <p class="section_heading">
-                    Filter
-                </p>
-                <label for="filter">Filter&nbsp;</label>
-                <select name="filter" id="filter" width="50%">
-                    <option value="{{filter_name}}">{{filter_name | replace(",", ": ")}}</option>
-                    {% for filter in filter_list %}
-                    <option value='{{filter[0]}},{{filter[1]}}'>
-                        {{filter[0]}}: {{filter[1]}}
-                    </option>
-                    {% endfor %}
-                </select><br>
-            </td>
-        </tr>
-        <tr>
-            <td width="20%">
-                <p class="section_heading">
-                    Rule Number
-                </p>
-                <label for="rule">Number&nbsp;</label>
-                {% if rule_detail.name != "" %}
-                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="{{rule_detail.name}}"><br>
-                {% else %}
-                <input type="text" id="rule" name="rule" maxlength="6" size="6" value=""><br>
-                {% endif %}
-            </td>
-            <td width="40%">
-                <p class="section_heading">
-                    Description
-                </p>
-                {% if rule_detail.description != "" %}
-                <input type="text" id="description" name="description" size="40"
-                    value="{{rule_detail.description}}"><br>
-                {% else %}
-                <input type="text" id="description" name="description" size="40" value=""><br>
-                {% endif %}
-            </td>
-            <td width="15%">
-                <p class="section_heading">
-                    Disable
-                </p>
-                <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
-                <label for="rule_disable">&nbsp;Disable</label>
-            </td>
-            <td width="15%">
-                <p class="section_heading">
-                    Logging
-                </p>
-                <input type="checkbox" id="logging" name="logging" value="True">
-                <label for="logging">&nbsp;Enable</label>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="20%">
-                <p class="section_heading">
-                    Action
-                </p>
-                &nbsp &nbsp &nbsp
-                {% if rule_detail.action == "jump" %}
-                <input type="radio" name="action" value="jump" checked="checked">&nbsp;jump<br>
-                {% else %}
-                <input type="radio" name="action" value="jump">&nbsp;jump<br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="40%">
-                <p class="section_heading">
-                    Jump Target
-                </p>
-                &nbsp &nbsp &nbsp
-                <label for="jump_target">Chain&nbsp;</label>
-                <select name="jump_target" id="jump_target">
+
+<div id="toc_container">
+    <table class="table" border="1">
+        <form action="/filter_rule_add" , method="post">
+            <input type="hidden" id="filter" name="type" value="add">
+            <tr>
+                <td colspan="4" width="100%">
+                    <p class="section_heading">
+                        Filter
+                    </p>
+                    <label for="filter">Filter&nbsp;</label>
+                    <select name="filter" id="filter" width="50%">
+                        <option value="{{filter_name}}">{{filter_name | replace(",", ": ")}}</option>
+                        {% for filter in filter_list %}
+                        <option value='{{filter[0]}},{{filter[1]}}'>
+                            {{filter[0]}}: {{filter[1]}}
+                        </option>
+                        {% endfor %}
+                    </select><br>
+                </td>
+            </tr>
+            <tr>
+                <td width="20%">
+                    <p class="section_heading">
+                        Rule Number
+                    </p>
+                    <label for="rule">Number&nbsp;</label>
+                    {% if rule_detail.name != "" %}
+                    <input type="text" id="rule" name="rule" maxlength="6" size="6" value="{{rule_detail.name}}"><br>
+                    {% else %}
+                    <input type="text" id="rule" name="rule" maxlength="6" size="6" value=""><br>
+                    {% endif %}
+                </td>
+                <td width="40%">
+                    <p class="section_heading">
+                        Description
+                    </p>
+                    {% if rule_detail.description != "" %}
+                    <input type="text" id="description" name="description" size="40"
+                        value="{{rule_detail.description}}"><br>
+                    {% else %}
+                    <input type="text" id="description" name="description" size="40" value=""><br>
+                    {% endif %}
+                </td>
+                <td width="15%">
+                    <p class="section_heading">
+                        Disable
+                    </p>
+                    <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
+                    <label for="rule_disable">&nbsp;Disable</label>
+                </td>
+                <td width="15%">
+                    <p class="section_heading">
+                        Logging
+                    </p>
+                    <input type="checkbox" id="logging" name="logging" value="True">
+                    <label for="logging">&nbsp;Enable</label>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;" width="20%">
+                    <p class="section_heading">
+                        Action
+                    </p>
+                    &nbsp &nbsp &nbsp
                     {% if rule_detail.action == "jump" %}
-                    <option value="{{rule_detail.ip_version}},{{rule_detail.target}}">{{rule_detail.ip_version}}:
-                        {{rule_detail.target}}</option>
+                    <input type="radio" name="action" value="jump" checked="checked">&nbsp;jump<br>
                     {% else %}
-                    <option value=""></option>
+                    <input type="radio" name="action" value="jump">&nbsp;jump<br>
                     {% endif %}
-                    {% for chain in chain_list %}
-                    <option value='{{chain[0]}},{{chain[1]}}'>
-                        {{chain[0]}}: {{chain[1]}}
-                    </option>
-                    {% endfor %}
-                </select><br>
-            </td>
-            <td colspan="2" style="vertical-align: top;">
-                <p class="section_heading">
-                    Interface
-                </p>
-                <table width="100%">
-                    <tr>
-                        <td>
-                            <label for="rule">Interface&nbsp;</label>
-                        </td>
-                        <td>
-                            <select name="interface" id="interface" style="width: 90;">
-                                {% if rule_detail.action == "jump" %}
-                                <option value="{{rule_detail.interface}}">{{rule_detail.interface}}</option>
-                                {% else %}
-                                <option value=""></option>
-                                {% endif %}
-                                {% for interface in interface_list %}
-                                <option value='{{interface.name}}'>
-                                    {{interface.name}}: {{interface.description}}
-                                </option>
-                                {% endfor %}
-                            </select><br>
-                        </td>
-                    <tr>
-                        <td>
-                            <label for="direction">Direction&nbsp;</label>
-                        </td>
-                        <td>
-                            <select name="direction" id="direction" style="width: 90;">
-                                {% if rule_detail.action == "jump" %}
-                                {% if rule_detail.direction == "inbound" %}
-                                <option value='{{rule_detail.direction}}'>&nbsp;Inbound</option>
-                                {% else %}
-                                <option value='{{rule_detail.direction}}'>&nbsp;Outbound</option>
-                                {% endif %}
-                                {% endif %}
-                                <option value='inbound'>&nbsp;Inbound</option>
-                                <option value='outbound'>&nbsp;Outbound</option>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="20%">
-                <p class="section_heading">
-                    Action
-                </p>
-                &nbsp &nbsp &nbsp
-                {% if rule_detail.action == "offload" %}
-                <input type="radio" name="action" value="offload" checked="checked">&nbsp;offload<br>
-                {% else %}
-                <input type="radio" name="action" value="offload">&nbsp;offload<br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="40%" colspan="3">
-                <p class="section_heading">
-                    Offload Target
-                </p>
-                &nbsp &nbsp &nbsp
-                <label for="offload_target">Flowtable&nbsp;</label>
-                <select name="offload_target" id="offload_target">
+                </td>
+                <td style="vertical-align: top;" width="40%">
+                    <p class="section_heading">
+                        Jump Target
+                    </p>
+                    &nbsp &nbsp &nbsp
+                    <label for="jump_target">Chain&nbsp;</label>
+                    <select name="jump_target" id="jump_target">
+                        {% if rule_detail.action == "jump" %}
+                        <option value="{{rule_detail.ip_version}},{{rule_detail.target}}">{{rule_detail.ip_version}}:
+                            {{rule_detail.target}}</option>
+                        {% else %}
+                        <option value=""></option>
+                        {% endif %}
+                        {% for chain in chain_list %}
+                        <option value='{{chain[0]}},{{chain[1]}}'>
+                            {{chain[0]}}: {{chain[1]}}
+                        </option>
+                        {% endfor %}
+                    </select><br>
+                </td>
+                <td colspan="2" style="vertical-align: top;">
+                    <p class="section_heading">
+                        Interface
+                    </p>
+                    <table width="100%">
+                        <tr>
+                            <td>
+                                <label for="rule">Interface&nbsp;</label>
+                            </td>
+                            <td>
+                                <select name="interface" id="interface" style="width: 90;">
+                                    {% if rule_detail.action == "jump" %}
+                                    <option value="{{rule_detail.interface}}">{{rule_detail.interface}}</option>
+                                    {% else %}
+                                    <option value=""></option>
+                                    {% endif %}
+                                    {% for interface in interface_list %}
+                                    <option value='{{interface.name}}'>
+                                        {{interface.name}}: {{interface.description}}
+                                    </option>
+                                    {% endfor %}
+                                </select><br>
+                            </td>
+                        <tr>
+                            <td>
+                                <label for="direction">Direction&nbsp;</label>
+                            </td>
+                            <td>
+                                <select name="direction" id="direction" style="width: 90;">
+                                    {% if rule_detail.action == "jump" %}
+                                    {% if rule_detail.direction == "inbound" %}
+                                    <option value='{{rule_detail.direction}}'>&nbsp;Inbound</option>
+                                    {% else %}
+                                    <option value='{{rule_detail.direction}}'>&nbsp;Outbound</option>
+                                    {% endif %}
+                                    {% endif %}
+                                    <option value='inbound'>&nbsp;Inbound</option>
+                                    <option value='outbound'>&nbsp;Outbound</option>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;" width="20%">
+                    <p class="section_heading">
+                        Action
+                    </p>
+                    &nbsp &nbsp &nbsp
                     {% if rule_detail.action == "offload" %}
-                    <option value="{{rule_detail.target}}">{{rule_detail.target}}</option>
+                    <input type="radio" name="action" value="offload" checked="checked">&nbsp;offload<br>
                     {% else %}
-                    <option value=""></option>
+                    <input type="radio" name="action" value="offload">&nbsp;offload<br>
                     {% endif %}
-                    {% for flowtable in flowtable_list %}
-                    <option value='{{flowtable.name}}'>{{flowtable.name}}</option>
-                    {% endfor %}
-                </select><br>
-            </td>
-        <tr>
-            <td align="right" colspan="4">
-                <button class="add_rule_button" type="submit" value="Add Filter Rule" style="width: 15%"
-                    title="Add filter rule.">Add Filter Rule</button>
-            </td>
-        </tr>
-    </form>
-</table>
+                </td>
+                <td style="vertical-align: top;" width="40%" colspan="3">
+                    <p class="section_heading">
+                        Offload Target
+                    </p>
+                    &nbsp &nbsp &nbsp
+                    <label for="offload_target">Flowtable&nbsp;</label>
+                    <select name="offload_target" id="offload_target">
+                        {% if rule_detail.action == "offload" %}
+                        <option value="{{rule_detail.target}}">{{rule_detail.target}}</option>
+                        {% else %}
+                        <option value=""></option>
+                        {% endif %}
+                        {% for flowtable in flowtable_list %}
+                        <option value='{{flowtable.name}}'>{{flowtable.name}}</option>
+                        {% endfor %}
+                    </select><br>
+                </td>
+            <tr>
+                <td align="right" colspan="4">
+                    <button class="add_rule_button" type="submit" value="Add Filter Rule" style="width: 15%"
+                        title="Add filter rule.">Add Filter Rule</button>
+                </td>
+            </tr>
+        </form>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

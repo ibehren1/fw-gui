@@ -8,63 +8,65 @@
 This section defines interfaces to be referenced by Flow Tables and in Filters.<br>
 It <b>does not</b> define or configure the interface in VyOS.
 <br><br>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
+<div id="toc_container">
+    <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+        <th width="45px">
+            Edit
+        </th>
 
-    <th>
-        Name
-    </th>
+        <th>
+            Name
+        </th>
 
-    <th colspan="2">
-        Description
-    </th>
+        <th colspan="2">
+            Description
+        </th>
 
-    <th width="45px">
-        Delete
-    </th>
+        <th width="45px">
+            Delete
+        </th>
 
-    {% for item in interface_list|sort(attribute='name') %}
-    <tr>
-        <td align="center">
-            <form action="/interface_add" , method="post">
-                <input type="hidden" id="interface" name="type" value="edit">
-                <input type="hidden" id="interface" name="interface_name" value="{{item.name}}">
-                <input type="hidden" id="interface" name="interface_desc" value="{{item.description}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
+        {% for item in interface_list|sort(attribute='name') %}
+        <tr>
+            <td align="center">
+                <form action="/interface_add" , method="post">
+                    <input type="hidden" id="interface" name="type" value="edit">
+                    <input type="hidden" id="interface" name="interface_name" value="{{item.name}}">
+                    <input type="hidden" id="interface" name="interface_desc" value="{{item.description}}">
+                    <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                        title="Edit group {{item.group_name}}.">
+                </form>
+            </td>
 
-        <td align="center">
-            <image src="static/network-interface-32-yellow.svg" align="center" width="20" height="20"></image>
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.name}}
-            </font>
-        </td>
+            <td align="center">
+                <image src="static/network-interface-32-yellow.svg" align="center" width="20" height="20"></image>
+                <font style="font-size: 20; font-variant: small-caps;">
+                    {{item.name}}
+                </font>
+            </td>
 
-        <td colspan="2">
-            {{item.description}}
-        </td>
+            <td colspan="2">
+                {{item.description}}
+            </td>
 
-        <td align="center">
-            <form action="/interface_delete" , method="post">
-                <input type="hidden" id="interface" name="interface" value="{{item.name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete interface {{item.name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <td colspan="5">
-            <form action="/interface_add" , method="get">
-                <input type="hidden" id="interface" name="type" value="edit">
-                <input class="add_rule_button" type="submit" value="Add Interface" title="Add an interface.">
-            </form>
-        </td>
-    </tr>
-</table>
+            <td align="center">
+                <form action="/interface_delete" , method="post">
+                    <input type="hidden" id="interface" name="interface" value="{{item.name}}">
+                    <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
+                        title="Delete interface {{item.name}}.">
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="5">
+                <form action="/interface_add" , method="get">
+                    <input type="hidden" id="interface" name="type" value="edit">
+                    <input class="add_rule_button" type="submit" value="Add Interface" title="Add an interface.">
+                </form>
+            </td>
+        </tr>
+    </table>
+</div>
 <br><br>
 {% endblock body %}

@@ -1,52 +1,53 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table class="table">
-    <form action="/configuration_hostname_add" , method="post">
-        <tr>
-            <th colspan="3" align="left">
-                <h2> Add Firewall Hostname </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="3">
-                Before you can push configurations to a firewall, you need to add the fully qualified hostname and SSH
-                port.
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;">
-                <p class="section_heading">
-                    Firewall Hostname
-                </p>
-                <table>
-                    <tr>
-                        <td>
-                            <label for="fw_chain">Firewall Hostname</label>
-                        </td>
-                        <td>
-                            <input type="text" id="hostname" name="hostname" size=30 value=""><br>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="description">SSH Port</label>
-                        </td>
-                        <td>
-                            <input type="text" id="port" name="port" size=5 value="22"><br>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
+
+<div id="toc_container">
+    <table class="table">
+        <form action="/configuration_hostname_add" , method="post">
+            <tr>
+                <th colspan="3" align="left">
+                    <h2> Add Firewall Hostname </h2>
+                </th>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    Before you can push configurations to a firewall, you need to add the fully qualified hostname and
+                    SSH
+                    port.
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;">
+                    <p class="section_heading">
+                        Firewall Hostname
+                    </p>
+
+            <tr>
+                <td>
+                    <label for="fw_chain">Firewall Hostname</label>
+                </td>
+                <td>
+                    <input type="text" id="hostname" name="hostname" size=30 value=""><br>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="description">SSH Port</label>
+                </td>
+                <td>
+                    <input type="text" id="port" name="port" size=5 value="22"><br>
+                </td>
+            </tr>
             <td align="right" colspan="3">
                 <button class="add_rule_button" type="submit" value="Add Hostname" style="width: 15%"
                     title="Add hostname.">Add
                     Hostname</button>
             </td>
-        </tr>
-    </form>
-</table>
+            </tr>
+        </form>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

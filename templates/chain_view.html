@@ -5,9 +5,9 @@
 <table class="groups_table" id="toc" width="100%">
     <tr>
         <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="chain_heading">IPv4 Chains</p>
-                <hr>
+            <p class="chain_heading">IPv4 Chains</p>
+            <hr>
+            <b>
                 <ul class="toc_list">
                     {% if chain_dict.ipv4 %}
                     {% for key, chain_list in chain_dict.ipv4.items() %}
@@ -17,12 +17,12 @@
                     {% endfor %}
                     {% endif %}
                 </ul>
-            </div>
+            </b>
         </td>
         <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="chain_heading">IPv6 Chains</p>
-                <hr>
+            <p class="chain_heading">IPv6 Chains</p>
+            <hr>
+            <b>
                 <ul class="toc_list">
                     {% if chain_dict.ipv6 %}
                     {% for key, chain_list in chain_dict.ipv6.items() %}
@@ -32,7 +32,7 @@
                     {% endfor %}
                     {% endif %}
                 </ul>
-            </div>
+            </b>
         </td>
     </tr>
 </table>
@@ -56,204 +56,207 @@
         </td>
     </tr>
 </table>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
 
-    <th colspan="2">
-        Rule
-    </th>
+<div id="toc_container">
+    <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+        <th width="45px">
+            Edit
+        </th>
 
-    <th colspan="2">
-        Description
-        <br>
-        Enable & Logging
-    </th>
+        <th colspan="2">
+            Rule
+        </th>
 
-    <th colspan="2">
-        Destination
-    </th>
-
-    <th colspan="2">
-        Source
-    </th>
-
-    <th colspan="2">
-        Protocols
-        <br>
-        States
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for rule in chain_list %}
-    <tr>
-        <td align="center" rowspan="2">
-            <form action="/chain_rule_add" , method="post">
-                <input type="hidden" id="chain" name="type" value="edit">
-                <input type="hidden" id="chain" name="chain" value="ipv4,{{key}}">
-                <input type="hidden" id="chain" name="name" value="{{rule.number}}">
-                <input type="hidden" id="chain" name="description" value="{{rule.description}}">
-                <input type="hidden" id="chain" name="action" value="{{rule.action}}">
-                <input type="hidden" id="chain" name="protocol" value="{{rule.protocol}}">
-                <input type="hidden" id="chain" name="state_est" value="{{rule.state_est}}">
-                <input type="hidden" id="chain" name="state_inv" value="{{rule.state_inv}}">
-                <input type="hidden" id="chain" name="state_rel" value="{{rule.state_rel}}">
-                <input type="hidden" id="chain" name="state_new" value="{{rule.state_new}}">
-                <input type="hidden" id="chain" name="logging" value="{{rule.logging}}">
-                <input type="hidden" id="chain" name="ip_version" value="ipv4">
-                <input type="hidden" id="chain" name="rule_disable" value="{{rule.rule_disable}}">
-                <input type="hidden" id="chain" name="dest_address_type" value="{{rule.dest_address_type}}">
-                <input type="hidden" id="chain" name="dest_address" value="{{rule.dest_address}}">
-                <input type="hidden" id="chain" name="dest_address_group" value="{{rule.dest_address_group}}">
-                <input type="hidden" id="chain" name="dest_domain_group" value="{{rule.dest_domain_group}}">
-                <input type="hidden" id="chain" name="dest_mac_group" value="{{rule.dest_mac_group}}">
-                <input type="hidden" id="chain" name="dest_network_group" value="{{rule.dest_network_group}}">
-                <input type="hidden" id="chain" name="dest_port_type" value="{{rule.dest_port_type}}">
-                <input type="hidden" id="chain" name="dest_port" value="{{rule.dest_port}}">
-                <input type="hidden" id="chain" name="dest_port_group" value="{{rule.dest_port_group}}">
-                <input type="hidden" id="chain" name="source_address_type" value="{{rule.source_address_type}}">
-                <input type="hidden" id="chain" name="source_address" value="{{rule.source_address}}">
-                <input type="hidden" id="chain" name="source_address_group" value="{{rule.source_address_group}}">
-                <input type="hidden" id="chain" name="source_domain_group" value="{{rule.source_domain_group}}">
-                <input type="hidden" id="chain" name="source_mac_group" value="{{rule.source_mac_group}}">
-                <input type="hidden" id="chain" name="source_network_group" value="{{rule.source_network_group}}">
-                <input type="hidden" id="chain" name="source_port_type" value="{{rule.source_port_type}}">
-                <input type="hidden" id="chain" name="source_port" value="{{rule.source_port}}">
-                <input type="hidden" id="chain" name="source_port_group" value="{{rule.source_port_group}}">
-                <input class="edit_rule_button" type="submit" value="Edit Rule" style="height: 150; width: 20;"
-                    title="Edit rule {{rule.number}}.">
-            </form>
-        </td>
-
-        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
-            <font style="font-size:60;">{{rule.number}}</font>
+        <th colspan="2">
+            Description
             <br>
-            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
-        </td>
+            Enable & Logging
+        </th>
 
-        <td colspan="2">
-            {{rule.description}}
-        </td>
+        <th colspan="2">
+            Destination
+        </th>
 
+        <th colspan="2">
+            Source
+        </th>
 
-        <td colspan="2">
-            Dest: {{rule.dest_address}}
+        <th colspan="2">
+            Protocols
             <br>
-            Type: {{rule.dest_address_type}}
-        </td>
+            States
+        </th>
 
-        <td colspan="2">
-            Source: {{rule.source_address}}
-            <br>
-            Type: {{rule.source_address_type}}
-        </td>
+        <th width="45px">
+            Delete
+        </th>
 
-        <td colspan="2" align="center" style="vertical-align: middle;">
-            {% if rule.protocol == '' %}
-            ANY
-            {% else %}
-            {{rule.protocol}}
-            {% endif %}
-        </td>
-
-        <td align="center" rowspan="2">
-            <form action="/chain_rule_delete" , method="post">
-                <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;"
-                    title="Delete rule {{rule.number}}.">
-            </form>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2">
-            {% if rule.rule_disable %}
-            &#128308; &nbspDisabled
-            {% else %}
-            &#128994; &nbspEnabled
-            {% endif %}
-            <br>
-            {% if rule.logging %}
-            &#128994; &nbspLog
-            {% else %}
-            &#128308; &nbspLog
-            {% endif %}
-        </td>
-
-        <td colspan="2">
-            Port: {{rule.dest_port}}
-            <br>
-            Type: {{rule.dest_port_type}}
-        </td>
-
-        <td colspan="2">
-            Port: {{rule.source_port}}
-            <br>
-            Type: {{rule.source_port_type}}
-        </td>
-
-        <td colspan="2">
-            {% if rule.state_est %}
-            &#128994;&nbspEst
-            {% else %}
-            &#128308;&nbspEst
-            {% endif %}
-            <br>
-            {% if rule.state_inv %}
-            &#128994;&nbspInv
-            {% else %}
-            &#128308;&nbspInv
-            {% endif %}
-            <br>
-            {% if rule.state_rel %}
-            &#128994;&nbspRel
-            {% else %}
-            &#128308;&nbspRel
-            {% endif %}
-            <br>
-            {% if rule.state_new %}
-            &#128994;&nbspNew
-            {% else %}
-            &#128308;&nbspNew
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/chain_rule_reorder" , method="post">
-            <td colspan="3" align="center">
-                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+        {% for rule in chain_list %}
+        <tr>
+            <td align="center" rowspan="2">
+                <form action="/chain_rule_add" , method="post">
+                    <input type="hidden" id="chain" name="type" value="edit">
+                    <input type="hidden" id="chain" name="chain" value="ipv4,{{key}}">
+                    <input type="hidden" id="chain" name="name" value="{{rule.number}}">
+                    <input type="hidden" id="chain" name="description" value="{{rule.description}}">
+                    <input type="hidden" id="chain" name="action" value="{{rule.action}}">
+                    <input type="hidden" id="chain" name="protocol" value="{{rule.protocol}}">
+                    <input type="hidden" id="chain" name="state_est" value="{{rule.state_est}}">
+                    <input type="hidden" id="chain" name="state_inv" value="{{rule.state_inv}}">
+                    <input type="hidden" id="chain" name="state_rel" value="{{rule.state_rel}}">
+                    <input type="hidden" id="chain" name="state_new" value="{{rule.state_new}}">
+                    <input type="hidden" id="chain" name="logging" value="{{rule.logging}}">
+                    <input type="hidden" id="chain" name="ip_version" value="ipv4">
+                    <input type="hidden" id="chain" name="rule_disable" value="{{rule.rule_disable}}">
+                    <input type="hidden" id="chain" name="dest_address_type" value="{{rule.dest_address_type}}">
+                    <input type="hidden" id="chain" name="dest_address" value="{{rule.dest_address}}">
+                    <input type="hidden" id="chain" name="dest_address_group" value="{{rule.dest_address_group}}">
+                    <input type="hidden" id="chain" name="dest_domain_group" value="{{rule.dest_domain_group}}">
+                    <input type="hidden" id="chain" name="dest_mac_group" value="{{rule.dest_mac_group}}">
+                    <input type="hidden" id="chain" name="dest_network_group" value="{{rule.dest_network_group}}">
+                    <input type="hidden" id="chain" name="dest_port_type" value="{{rule.dest_port_type}}">
+                    <input type="hidden" id="chain" name="dest_port" value="{{rule.dest_port}}">
+                    <input type="hidden" id="chain" name="dest_port_group" value="{{rule.dest_port_group}}">
+                    <input type="hidden" id="chain" name="source_address_type" value="{{rule.source_address_type}}">
+                    <input type="hidden" id="chain" name="source_address" value="{{rule.source_address}}">
+                    <input type="hidden" id="chain" name="source_address_group" value="{{rule.source_address_group}}">
+                    <input type="hidden" id="chain" name="source_domain_group" value="{{rule.source_domain_group}}">
+                    <input type="hidden" id="chain" name="source_mac_group" value="{{rule.source_mac_group}}">
+                    <input type="hidden" id="chain" name="source_network_group" value="{{rule.source_network_group}}">
+                    <input type="hidden" id="chain" name="source_port_type" value="{{rule.source_port_type}}">
+                    <input type="hidden" id="chain" name="source_port" value="{{rule.source_port}}">
+                    <input type="hidden" id="chain" name="source_port_group" value="{{rule.source_port_group}}">
+                    <input class="edit_rule_button" type="submit" value="Edit Rule" style="height: 150; width: 20;"
+                        title="Edit rule {{rule.number}}.">
+                </form>
             </td>
-            <td colspan="6">
-                <label for="reorder_rule">&nbsp;</label>
-                <select name="reorder_rule" id="reorder_rule">
-                    <option value=''></option>
-                    {% for rule in chain_list %}
-                    <option value='ipv4,{{key}},{{rule.number}}'>
-                        {{rule.number}}: {{rule.description}}
-                    </option>
-                    {% endfor %}
-                </select>
-                to
-                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+
+            <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+                <font style="font-size:60;">{{rule.number}}</font>
+                <br>
+                <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
             </td>
-            <td colspan="3">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
+
+            <td colspan="2">
+                {{rule.description}}
             </td>
-        </form>
-    </tr>
-    <tr>
-        <td colspan="12">
-            <form action="/chain_rule_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" title="Add rule.">
+
+
+            <td colspan="2">
+                Dest: {{rule.dest_address}}
+                <br>
+                Type: {{rule.dest_address_type}}
+            </td>
+
+            <td colspan="2">
+                Source: {{rule.source_address}}
+                <br>
+                Type: {{rule.source_address_type}}
+            </td>
+
+            <td colspan="2" align="center" style="vertical-align: middle;">
+                {% if rule.protocol == '' %}
+                ANY
+                {% else %}
+                {{rule.protocol}}
+                {% endif %}
+            </td>
+
+            <td align="center" rowspan="2">
+                <form action="/chain_rule_delete" , method="post">
+                    <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
+                    <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;"
+                        title="Delete rule {{rule.number}}.">
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                {% if rule.rule_disable %}
+                &#128308; &nbspDisabled
+                {% else %}
+                &#128994; &nbspEnabled
+                {% endif %}
+                <br>
+                {% if rule.logging %}
+                &#128994; &nbspLog
+                {% else %}
+                &#128308; &nbspLog
+                {% endif %}
+            </td>
+
+            <td colspan="2">
+                Port: {{rule.dest_port}}
+                <br>
+                Type: {{rule.dest_port_type}}
+            </td>
+
+            <td colspan="2">
+                Port: {{rule.source_port}}
+                <br>
+                Type: {{rule.source_port_type}}
+            </td>
+
+            <td colspan="2">
+                {% if rule.state_est %}
+                &#128994;&nbspEst
+                {% else %}
+                &#128308;&nbspEst
+                {% endif %}
+                <br>
+                {% if rule.state_inv %}
+                &#128994;&nbspInv
+                {% else %}
+                &#128308;&nbspInv
+                {% endif %}
+                <br>
+                {% if rule.state_rel %}
+                &#128994;&nbspRel
+                {% else %}
+                &#128308;&nbspRel
+                {% endif %}
+                <br>
+                {% if rule.state_new %}
+                &#128994;&nbspNew
+                {% else %}
+                &#128308;&nbspNew
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <form action="/chain_rule_reorder" , method="post">
+                <td colspan="3" align="center">
+                    <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+                </td>
+                <td colspan="6">
+                    <label for="reorder_rule">&nbsp;</label>
+                    <select name="reorder_rule" id="reorder_rule">
+                        <option value=''></option>
+                        {% for rule in chain_list %}
+                        <option value='ipv4,{{key}},{{rule.number}}'>
+                            {{rule.number}}: {{rule.description}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    to
+                    <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+                </td>
+                <td colspan="3">
+                    <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
+                </td>
             </form>
-        </td>
-    </tr>
-</table>
+        </tr>
+        <tr>
+            <td colspan="12">
+                <form action="/chain_rule_add" , method="get">
+                    <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
+                    <input class="add_rule_button" type="submit" value="Add Rule" title="Add rule.">
+                </form>
+            </td>
+        </tr>
+    </table>
+</div>
 {% endfor %}
 {% endif %}
 <br>
@@ -280,203 +283,206 @@
         </td>
     </tr>
 </table>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
 
-    <th colspan="2">
-        Rule
-    </th>
+<div id="toc_container">
+    <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+        <th width="45px">
+            Edit
+        </th>
 
-    <th colspan="2">
-        Description
-        <br>
-        Enable & Logging
-    </th>
+        <th colspan="2">
+            Rule
+        </th>
 
-    <th colspan="2">
-        Destination
-    </th>
-
-    <th colspan="2">
-        Source
-    </th>
-
-    <th colspan="2">
-        Protocols
-        <br>
-        States
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for rule in chain_list %}
-    <tr>
-        <td align="center" rowspan="2">
-            <form action="/chain_rule_add" , method="post">
-                <input type="hidden" id="chain" name="type" value="edit">
-                <input type="hidden" id="chain" name="chain" value="ipv4,{{key}}">
-                <input type="hidden" id="chain" name="name" value="{{rule.number}}">
-                <input type="hidden" id="chain" name="description" value="{{rule.description}}">
-                <input type="hidden" id="chain" name="action" value="{{rule.action}}">
-                <input type="hidden" id="chain" name="protocol" value="{{rule.protocol}}">
-                <input type="hidden" id="chain" name="state_est" value="{{rule.state_est}}">
-                <input type="hidden" id="chain" name="state_inv" value="{{rule.state_inv}}">
-                <input type="hidden" id="chain" name="state_rel" value="{{rule.state_rel}}">
-                <input type="hidden" id="chain" name="state_new" value="{{rule.state_new}}">
-                <input type="hidden" id="chain" name="logging" value="{{rule.logging}}">
-                <input type="hidden" id="chain" name="ip_version" value="ipv6">
-                <input type="hidden" id="chain" name="rule_disable" value="{{rule.rule_disable}}">
-                <input type="hidden" id="chain" name="dest_address_type" value="{{rule.dest_address_type}}">
-                <input type="hidden" id="chain" name="dest_address" value="{{rule.dest_address}}">
-                <input type="hidden" id="chain" name="dest_address_group" value="{{rule.dest_address_group}}">
-                <input type="hidden" id="chain" name="dest_domain_group" value="{{rule.dest_domain_group}}">
-                <input type="hidden" id="chain" name="dest_mac_group" value="{{rule.dest_mac_group}}">
-                <input type="hidden" id="chain" name="dest_network_group" value="{{rule.dest_network_group}}">
-                <input type="hidden" id="chain" name="dest_port_type" value="{{rule.dest_port_type}}">
-                <input type="hidden" id="chain" name="dest_port" value="{{rule.dest_port}}">
-                <input type="hidden" id="chain" name="dest_port_group" value="{{rule.dest_port_group}}">
-                <input type="hidden" id="chain" name="source_address_type" value="{{rule.source_address_type}}">
-                <input type="hidden" id="chain" name="source_address" value="{{rule.source_address}}">
-                <input type="hidden" id="chain" name="source_address_group" value="{{rule.source_address_group}}">
-                <input type="hidden" id="chain" name="source_domain_group" value="{{rule.source_domain_group}}">
-                <input type="hidden" id="chain" name="source_mac_group" value="{{rule.source_mac_group}}">
-                <input type="hidden" id="chain" name="source_network_group" value="{{rule.source_network_group}}">
-                <input type="hidden" id="chain" name="source_port_type" value="{{rule.source_port_type}}">
-                <input type="hidden" id="chain" name="source_port" value="{{rule.source_port}}">
-                <input type="hidden" id="chain" name="source_port_group" value="{{rule.source_port_group}}">
-                <input class="edit_rule_button" type="submit" value="Edit Rule" style="height: 150; width: 20;"
-                    title="Edit rule {{rule.number}}.">
-            </form>
-        </td>
-
-        <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
-            <font style="font-size:60;">{{rule.number}}</font>
+        <th colspan="2">
+            Description
             <br>
-            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
-        </td>
+            Enable & Logging
+        </th>
 
-        <td colspan="2">
-            {{rule.description}}
-        </td>
+        <th colspan="2">
+            Destination
+        </th>
 
-        <td colspan="2">
-            Dest: {{rule.dest_address}}
-            <br>
-            Type: {{rule.dest_address_type}}
-        </td>
+        <th colspan="2">
+            Source
+        </th>
 
-        <td colspan="2">
-            Source: {{rule.source_address}}
+        <th colspan="2">
+            Protocols
             <br>
-            Type: {{rule.source_address_type}}
-        </td>
+            States
+        </th>
 
-        <td colspan="2" align="center" style="vertical-align: middle;">
-            {% if rule.protocol == '' %}
-            ANY
-            {% else %}
-            {{rule.protocol}}
-            {% endif %}
-        </td>
+        <th width="45px">
+            Delete
+        </th>
 
-        <td align="center" rowspan="2">
-            <form action="/chain_rule_delete" , method="post">
-                <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;"
-                    title="Delete rule {{rule.number}}.">
-            </form>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2">
-            {% if rule.disable %}
-            &#128308; &nbspDisabled
-            {% else %}
-            &#128994; &nbspEnabled
-            {% endif %}
-            <br>
-            {% if rule.logging %}
-            &#128994; &nbspLog
-            {% else %}
-            &#128308; &nbspLog
-            {% endif %}
-        </td>
-
-        <td colspan="2">
-            Port: {{rule.dest_port}}
-            <br>
-            Type: {{rule.dest_port_type}}
-        </td>
-
-        <td colspan="2">
-            Port: {{rule.source_port}}
-            <br>
-            Type: {{rule.source_port_type}}
-        </td>
-
-        <td colspan="2">
-            {% if rule.state_est %}
-            &#128994;&nbspEst
-            {% else %}
-            &#128308;&nbspEst
-            {% endif %}
-            <br>
-            {% if rule.state_inv %}
-            &#128994;&nbspInv
-            {% else %}
-            &#128308;&nbspInv
-            {% endif %}
-            <br>
-            {% if rule.state_rel %}
-            &#128994;&nbspRel
-            {% else %}
-            &#128308;&nbspRel
-            {% endif %}
-            <br>
-            {% if rule.state_new %}
-            &#128994;&nbspNew
-            {% else %}
-            &#128308;&nbspNew
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/chain_rule_reorder" , method="post">
-            <td colspan="3" align="center">
-                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+        {% for rule in chain_list %}
+        <tr>
+            <td align="center" rowspan="2">
+                <form action="/chain_rule_add" , method="post">
+                    <input type="hidden" id="chain" name="type" value="edit">
+                    <input type="hidden" id="chain" name="chain" value="ipv4,{{key}}">
+                    <input type="hidden" id="chain" name="name" value="{{rule.number}}">
+                    <input type="hidden" id="chain" name="description" value="{{rule.description}}">
+                    <input type="hidden" id="chain" name="action" value="{{rule.action}}">
+                    <input type="hidden" id="chain" name="protocol" value="{{rule.protocol}}">
+                    <input type="hidden" id="chain" name="state_est" value="{{rule.state_est}}">
+                    <input type="hidden" id="chain" name="state_inv" value="{{rule.state_inv}}">
+                    <input type="hidden" id="chain" name="state_rel" value="{{rule.state_rel}}">
+                    <input type="hidden" id="chain" name="state_new" value="{{rule.state_new}}">
+                    <input type="hidden" id="chain" name="logging" value="{{rule.logging}}">
+                    <input type="hidden" id="chain" name="ip_version" value="ipv6">
+                    <input type="hidden" id="chain" name="rule_disable" value="{{rule.rule_disable}}">
+                    <input type="hidden" id="chain" name="dest_address_type" value="{{rule.dest_address_type}}">
+                    <input type="hidden" id="chain" name="dest_address" value="{{rule.dest_address}}">
+                    <input type="hidden" id="chain" name="dest_address_group" value="{{rule.dest_address_group}}">
+                    <input type="hidden" id="chain" name="dest_domain_group" value="{{rule.dest_domain_group}}">
+                    <input type="hidden" id="chain" name="dest_mac_group" value="{{rule.dest_mac_group}}">
+                    <input type="hidden" id="chain" name="dest_network_group" value="{{rule.dest_network_group}}">
+                    <input type="hidden" id="chain" name="dest_port_type" value="{{rule.dest_port_type}}">
+                    <input type="hidden" id="chain" name="dest_port" value="{{rule.dest_port}}">
+                    <input type="hidden" id="chain" name="dest_port_group" value="{{rule.dest_port_group}}">
+                    <input type="hidden" id="chain" name="source_address_type" value="{{rule.source_address_type}}">
+                    <input type="hidden" id="chain" name="source_address" value="{{rule.source_address}}">
+                    <input type="hidden" id="chain" name="source_address_group" value="{{rule.source_address_group}}">
+                    <input type="hidden" id="chain" name="source_domain_group" value="{{rule.source_domain_group}}">
+                    <input type="hidden" id="chain" name="source_mac_group" value="{{rule.source_mac_group}}">
+                    <input type="hidden" id="chain" name="source_network_group" value="{{rule.source_network_group}}">
+                    <input type="hidden" id="chain" name="source_port_type" value="{{rule.source_port_type}}">
+                    <input type="hidden" id="chain" name="source_port" value="{{rule.source_port}}">
+                    <input type="hidden" id="chain" name="source_port_group" value="{{rule.source_port_group}}">
+                    <input class="edit_rule_button" type="submit" value="Edit Rule" style="height: 150; width: 20;"
+                        title="Edit rule {{rule.number}}.">
+                </form>
             </td>
-            <td colspan="6">
-                <label for="reorder_rule">&nbsp;</label>
-                <select name="reorder_rule" id="reorder_rule">
-                    <option value=''></option>
-                    {% for rule in chain_list %}
-                    <option value='ipv6,{{key}},{{rule.number}}'>
-                        {{rule.number}}: {{rule.description}}
-                    </option>
-                    {% endfor %}
-                </select>
-                to
-                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+
+            <td align="center" colspan="2" rowspan="2" style="vertical-align: middle;">
+                <font style="font-size:60;">{{rule.number}}</font>
+                <br>
+                <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
             </td>
-            <td colspan="3">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
+
+            <td colspan="2">
+                {{rule.description}}
             </td>
-        </form>
-    </tr>
-    <tr>
-        <td colspan="12" align="center" rowspan="2">
-            <form action="/chain_rule_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new rule.">
+
+            <td colspan="2">
+                Dest: {{rule.dest_address}}
+                <br>
+                Type: {{rule.dest_address_type}}
+            </td>
+
+            <td colspan="2">
+                Source: {{rule.source_address}}
+                <br>
+                Type: {{rule.source_address_type}}
+            </td>
+
+            <td colspan="2" align="center" style="vertical-align: middle;">
+                {% if rule.protocol == '' %}
+                ANY
+                {% else %}
+                {{rule.protocol}}
+                {% endif %}
+            </td>
+
+            <td align="center" rowspan="2">
+                <form action="/chain_rule_delete" , method="post">
+                    <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
+                    <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 150; width: 20;"
+                        title="Delete rule {{rule.number}}.">
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                {% if rule.disable %}
+                &#128308; &nbspDisabled
+                {% else %}
+                &#128994; &nbspEnabled
+                {% endif %}
+                <br>
+                {% if rule.logging %}
+                &#128994; &nbspLog
+                {% else %}
+                &#128308; &nbspLog
+                {% endif %}
+            </td>
+
+            <td colspan="2">
+                Port: {{rule.dest_port}}
+                <br>
+                Type: {{rule.dest_port_type}}
+            </td>
+
+            <td colspan="2">
+                Port: {{rule.source_port}}
+                <br>
+                Type: {{rule.source_port_type}}
+            </td>
+
+            <td colspan="2">
+                {% if rule.state_est %}
+                &#128994;&nbspEst
+                {% else %}
+                &#128308;&nbspEst
+                {% endif %}
+                <br>
+                {% if rule.state_inv %}
+                &#128994;&nbspInv
+                {% else %}
+                &#128308;&nbspInv
+                {% endif %}
+                <br>
+                {% if rule.state_rel %}
+                &#128994;&nbspRel
+                {% else %}
+                &#128308;&nbspRel
+                {% endif %}
+                <br>
+                {% if rule.state_new %}
+                &#128994;&nbspNew
+                {% else %}
+                &#128308;&nbspNew
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <form action="/chain_rule_reorder" , method="post">
+                <td colspan="3" align="center">
+                    <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+                </td>
+                <td colspan="6">
+                    <label for="reorder_rule">&nbsp;</label>
+                    <select name="reorder_rule" id="reorder_rule">
+                        <option value=''></option>
+                        {% for rule in chain_list %}
+                        <option value='ipv6,{{key}},{{rule.number}}'>
+                            {{rule.number}}: {{rule.description}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    to
+                    <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+                </td>
+                <td colspan="3">
+                    <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
+                </td>
             </form>
-        </td>
-    </tr>
-</table>
+        </tr>
+        <tr>
+            <td colspan="12" align="center" rowspan="2">
+                <form action="/chain_rule_add" , method="get">
+                    <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
+                    <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new rule.">
+                </form>
+            </td>
+        </tr>
+    </table>
+</div>
 {% endfor %}
 {% endif %}
 <br>

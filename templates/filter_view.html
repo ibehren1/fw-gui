@@ -5,9 +5,9 @@
 <table class="groups_table" id="toc" width="100%">
     <tr>
         <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="filter_heading">IPv4 Filters</p>
-                <hr>
+            <p class="filter_heading">IPv4 Filters</p>
+            <hr>
+            <b>
                 <ul class="toc_list">
                     {% if filter_dict.ipv4 %}
                     {% for key, filter_list in filter_dict.ipv4.items() %}
@@ -17,12 +17,12 @@
                     {% endfor %}
                     {% endif %}
                 </ul>
-            </div>
+            </b>
         </td>
         <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="filter_heading">IPv6 Filters</p>
-                <hr>
+            <p class="filter_heading">IPv6 Filters</p>
+            <hr>
+            <b>
                 <ul class="toc_list">
                     {% if filter_dict.ipv6 %}
                     {% for key, filter_list in filter_dict.ipv6.items() %}
@@ -32,7 +32,7 @@
                     {% endfor %}
                     {% endif %}
                 </ul>
-            </div>
+            </b>
         </td>
     </tr>
 </table>
@@ -55,119 +55,122 @@
         </td>
     </tr>
 </table>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
 
-    <th>
-        Rule
-    </th>
+<div id="toc_container">
+    <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+        <th width="45px">
+            Edit
+        </th>
 
-    <th colspan="3">
-        Description
-        <br>
-        Target
-    </th>
+        <th>
+            Rule
+        </th>
 
-    <th>
-        Direction
-        <br>
-        Interface
-    </th>
-
-    <th width="45px">
-        Action
-    </th>
-
-    {% for rule in filter_list %}
-    <tr align="center" style="vertical-align: middle;">
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_add" , method="post">
-                <input type="hidden" id="filter" name="type" value="edit">
-                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input type="hidden" id="filter" name="name" value="{{rule.number}}">
-                <input type="hidden" id="filter" name="description" value="{{rule.description}}">
-                <input type="hidden" id="filter" name="action" value="{{rule.action}}">
-                <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
-                <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
-                <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
-                <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit rule {{rule.number}}.">
-            </form>
-        </td>
-
-        <td align="center" style="vertical-align: middle;" rowspan="2">
-            <font style="font-size:60;">{{rule.number}}</font>
+        <th colspan="3">
+            Description
             <br>
-            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
-        </td>
+            Target
+        </th>
 
-        <td align="left" style="vertical-align: middle;" colspan="3">
-            {{rule.description}}
-        </td>
+        <th>
+            Direction
+            <br>
+            Interface
+        </th>
 
-        <td style="vertical-align: middle;" rowspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {% if rule.direction == "outbound" %}
-                <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
-                {% endif %}
-                {% if rule.direction == "inbound" %}
-                <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
-                {% endif %}
-                <br><br>{{rule.interface}}
-            </font>
-        </td>
+        <th width="45px">
+            Action
+        </th>
 
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_delete" , method="post">
-                <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
-                    title="Delete rule {{rule.number}}.">
+        {% for rule in filter_list %}
+        <tr align="center" style="vertical-align: middle;">
+            <td align="center" rowspan="2">
+                <form action="/filter_rule_add" , method="post">
+                    <input type="hidden" id="filter" name="type" value="edit">
+                    <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
+                    <input type="hidden" id="filter" name="name" value="{{rule.number}}">
+                    <input type="hidden" id="filter" name="description" value="{{rule.description}}">
+                    <input type="hidden" id="filter" name="action" value="{{rule.action}}">
+                    <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
+                    <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
+                    <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
+                    <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
+                    <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                        title="Edit rule {{rule.number}}.">
+                </form>
+            </td>
+
+            <td align="center" style="vertical-align: middle;" rowspan="2">
+                <font style="font-size:60;">{{rule.number}}</font>
+                <br>
+                <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
+            </td>
+
+            <td align="left" style="vertical-align: middle;" colspan="3">
+                {{rule.description}}
+            </td>
+
+            <td style="vertical-align: middle;" rowspan="2">
+                <font style="font-size: 20; font-variant: small-caps;">
+                    {% if rule.direction == "outbound" %}
+                    <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
+                    {% endif %}
+                    {% if rule.direction == "inbound" %}
+                    <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
+                    {% endif %}
+                    <br><br>{{rule.interface}}
+                </font>
+            </td>
+
+            <td align="center" rowspan="2">
+                <form action="/filter_rule_delete" , method="post">
+                    <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
+                    <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
+                        title="Delete rule {{rule.number}}.">
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="vertical-align: middle;" colspan="3">
+                <font style="font-size:20; font-variant: small-caps;">
+                    {{rule.fw_chain}}
+                </font>
+            </td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <form action="/filter_rule_reorder" , method="post">
+                <td colspan="2" align="center">
+                    <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+                </td>
+                <td colspan="3">
+                    <label for="reorder_rule">&nbsp;</label>
+                    <select name="reorder_rule" id="reorder_rule">
+                        <option value=''></option>
+                        {% for rule in filter_list %}
+                        <option value='ipv4,{{key}},{{rule.number}}'>
+                            {{rule.number}}: {{rule.description}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    to
+                    <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+                </td>
+                <td colspan="2">
+                    <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
+                </td>
             </form>
-        </td>
-    </tr>
-    <tr>
-        <td align="center" style="vertical-align: middle;" colspan="3">
-            <font style="font-size:20; font-variant: small-caps;">
-                {{rule.fw_chain}}
-            </font>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/filter_rule_reorder" , method="post">
-            <td colspan="2" align="center">
-                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+        </tr>
+        <tr>
+            <td colspan="7">
+                <form action="/filter_rule_add" , method="get">
+                    <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
+                    <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
+                </form>
             </td>
-            <td colspan="3">
-                <label for="reorder_rule">&nbsp;</label>
-                <select name="reorder_rule" id="reorder_rule">
-                    <option value=''></option>
-                    {% for rule in filter_list %}
-                    <option value='ipv4,{{key}},{{rule.number}}'>
-                        {{rule.number}}: {{rule.description}}
-                    </option>
-                    {% endfor %}
-                </select>
-                to
-                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
-            </td>
-            <td colspan="2">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
-            </td>
-        </form>
-    </tr>
-    <tr>
-        <td colspan="7">
-            <form action="/filter_rule_add" , method="get">
-                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
-            </form>
-        </td>
-    </tr>
-</table>
+        </tr>
+    </table>
+</div>
 {% endfor %}
 {% endif %}
 <br>
@@ -194,119 +197,122 @@
         </td>
     </tr>
 </table>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
 
-    <th>
-        Rule
-    </th>
+<div id="toc_container">
+    <table class="groups_table" border="1" width="100%" style="font-size: 12;">
+        <th width="45px">
+            Edit
+        </th>
 
-    <th colspan="3">
-        Description
-        <br>
-        Target
-    </th>
+        <th>
+            Rule
+        </th>
 
-    <th>
-        Direction
-        <br>
-        Interface
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for rule in filter_list %}
-    <tr align="center" style="vertical-align: middle;">
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_add" , method="post">
-                <input type="hidden" id="filter" name="type" value="edit">
-                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input type="hidden" id="filter" name="name" value="{{rule.number}}">
-                <input type="hidden" id="filter" name="description" value="{{rule.description}}">
-                <input type="hidden" id="filter" name="action" value="{{rule.action}}">
-                <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
-                <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
-                <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
-                <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit rule {{rule.number}}.">
-            </form>
-        </td>
-
-        <td align="center" style="vertical-align: middle;" rowspan="2">
-            <font style="font-size:60;">{{rule.number}}</font>
+        <th colspan="3">
+            Description
             <br>
-            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
-        </td>
+            Target
+        </th>
 
-        <td align="left" style="vertical-align: middle;" colspan="3">
-            {{rule.description}}
-        </td>
+        <th>
+            Direction
+            <br>
+            Interface
+        </th>
 
-        <td style="vertical-align: middle;" rowspan="2">
-            <font style="font-size:20; font-variant: small-caps;">
-                {% if rule.direction == "outbound" %}
-                <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
-                {% endif %}
-                {% if rule.direction == "inbound" %}
-                <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
-                {% endif %}
-                <br><br>{{rule.interface}}
-            </font>
-        </td>
+        <th width="45px">
+            Delete
+        </th>
 
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_delete" , method="post">
-                <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
-                    title="Delete rule {{rule.number}}.">
+        {% for rule in filter_list %}
+        <tr align="center" style="vertical-align: middle;">
+            <td align="center" rowspan="2">
+                <form action="/filter_rule_add" , method="post">
+                    <input type="hidden" id="filter" name="type" value="edit">
+                    <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
+                    <input type="hidden" id="filter" name="name" value="{{rule.number}}">
+                    <input type="hidden" id="filter" name="description" value="{{rule.description}}">
+                    <input type="hidden" id="filter" name="action" value="{{rule.action}}">
+                    <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
+                    <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
+                    <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
+                    <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
+                    <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
+                        title="Edit rule {{rule.number}}.">
+                </form>
+            </td>
+
+            <td align="center" style="vertical-align: middle;" rowspan="2">
+                <font style="font-size:60;">{{rule.number}}</font>
+                <br>
+                <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
+            </td>
+
+            <td align="left" style="vertical-align: middle;" colspan="3">
+                {{rule.description}}
+            </td>
+
+            <td style="vertical-align: middle;" rowspan="2">
+                <font style="font-size:20; font-variant: small-caps;">
+                    {% if rule.direction == "outbound" %}
+                    <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
+                    {% endif %}
+                    {% if rule.direction == "inbound" %}
+                    <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
+                    {% endif %}
+                    <br><br>{{rule.interface}}
+                </font>
+            </td>
+
+            <td align="center" rowspan="2">
+                <form action="/filter_rule_delete" , method="post">
+                    <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
+                    <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
+                        title="Delete rule {{rule.number}}.">
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="vertical-align: middle;" colspan="3">
+                <font style="font-size:20; font-variant: small-caps;">
+                    {{rule.fw_chain}}
+                </font>
+            </td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <form action="/filter_rule_reorder" , method="post">
+                <td colspan="2" align="center">
+                    <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+                </td>
+                <td colspan="3">
+                    <label for="reorder_rule">&nbsp;</label>
+                    <select name="reorder_rule" id="reorder_rule">
+                        <option value=''></option>
+                        {% for rule in filter_list %}
+                        <option value='ipv6,{{key}},{{rule.number}}'>
+                            {{rule.number}}: {{rule.description}}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    to
+                    <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
+                </td>
+                <td colspan="2">
+                    <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
+                </td>
             </form>
-        </td>
-    </tr>
-    <tr>
-        <td align="center" style="vertical-align: middle;" colspan="3">
-            <font style="font-size:20; font-variant: small-caps;">
-                {{rule.fw_chain}}
-            </font>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/filter_rule_reorder" , method="post">
-            <td colspan="2" align="center">
-                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
+        </tr>
+        <tr>
+            <td colspan="7">
+                <form action="/filter_rule_add" , method="get">
+                    <input type="hidden" id="filter" name="filter" value="ipv6,{{key}}">
+                    <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
+                </form>
             </td>
-            <td colspan="3">
-                <label for="reorder_rule">&nbsp;</label>
-                <select name="reorder_rule" id="reorder_rule">
-                    <option value=''></option>
-                    {% for rule in filter_list %}
-                    <option value='ipv6,{{key}},{{rule.number}}'>
-                        {{rule.number}}: {{rule.description}}
-                    </option>
-                    {% endfor %}
-                </select>
-                to
-                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
-            </td>
-            <td colspan="2">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
-            </td>
-        </form>
-    </tr>
-    <tr>
-        <td colspan="7">
-            <form action="/filter_rule_add" , method="get">
-                <input type="hidden" id="filter" name="filter" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
-            </form>
-        </td>
-    </tr>
-</table>
+        </tr>
+    </table>
+</div>
 {% endfor %}
 {% endif %}
 <br>

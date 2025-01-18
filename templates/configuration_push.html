@@ -1,170 +1,178 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <br><br>
-<table class="table">
-    <tr>
-        <td align="center" colspan="3" style="padding:0%;">
-            <h2 class="page_heading">Push Firewall Configuration</h2>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="3">
-            Below you can provide credentials to connet to your firewall via SSH. The credentials are <b><u>not
-                    saved</u></b>
-            and you will have to provide them each time you wish to connect.
-            <br><br>
-            When you connect, you can choose to View Diffs, which will highlight the difference in the configuration
-            built here and displayed below and the running configuration of the firewall.
-            <br><br>
-            Additionally, you can choose to commit the changes to the firewall which will apply the configuration
-            and save it as the boot configuration.
-        </td>
-    </tr>
 
-    <tr>
-        <th colspan="3" align="left">
-            <h2>Firewall Connection</h2>
-        </th>
-    </tr>
-    <tr>
-        <td colspan="3">
-            <table class="groups_table" border="1" width="100%">
-                <th width="75%" style="padding: 0px;">
-                    Firewall Hostname
-                </th>
-                <th style="padding: 0px;">
-                    SSH Port
-                </th>
-                <th style="padding: 0px;">
-                    Change
-                </th>
-                <tr>
-                    <td>
-                        {% if firewall_reachable %}
-                        &#128994;&nbsp{{firewall_hostname}}
-                        {% else %}
-                        &#128308;&nbsp{{firewall_hostname}}
-                        {% endif %}
-                    </td>
-                    <td align="center">
-                        {{firewall_port}}
-                    </td>
-                    <td>
-                        <a href="{{url_for('configuration_hostname_add')}}">
-                            <button class="snapshot_button" class="button" type="submit" name="action" value="Change"
-                                style="width: 100%"
-                                title="Change the hostname of the firewall to which this configuration will be applied.">Change</button>
-                        </a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-
-    <form action="/configuration_push" method="post">
+<div id="toc_container">
+    <table class="table">
         <tr>
-            <td colspan="3" style="vertical-align: top;">
-                <table class="groups_table">
+            <td align="center" colspan="3" style="padding:0%;">
+                <h2 class="page_heading">Push Firewall Configuration</h2>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                Below you can provide credentials to connet to your firewall via SSH. The credentials are <b><u>not
+                        saved</u></b>
+                and you will have to provide them each time you wish to connect.
+                <br><br>
+                When you connect, you can choose to View Diffs, which will highlight the difference in the configuration
+                built here and displayed below and the running configuration of the firewall.
+                <br><br>
+                Additionally, you can choose to commit the changes to the firewall which will apply the configuration
+                and save it as the boot configuration.
+            </td>
+        </tr>
+
+        <tr>
+            <th colspan="3" align="left">
+                <h2>Firewall Connection</h2>
+            </th>
+        </tr>
+        <tr>
+            <td colspan="3">
+                <table class="groups_table" border="1" width="100%">
+                    <th width="75%" style="padding: 0px;">
+                        Firewall Hostname
+                    </th>
+                    <th style="padding: 0px;">
+                        SSH Port
+                    </th>
+                    <th style="padding: 0px;">
+                        Change
+                    </th>
                     <tr>
-                        <td colspan="3">
-                            Use of SSH keys is supported. To upload an SSH key, ensure the keyfile ends in .key. Use the
-                            Import Configuration Datafile upload option on the left and to upload the .key file. When
-                            you upload a key, it is encrypted and the encryption key is returned to you. You must keep
-                            the encryption key and provide it as the password when selecting the SSH key for use.
+                        <td>
+                            {% if firewall_reachable %}
+                            &#128994;&nbsp{{firewall_hostname}}
+                            {% else %}
+                            &#128308;&nbsp{{firewall_hostname}}
+                            {% endif %}
                         </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <p class="section_heading">
-                                Credentials
-                            </p>
+                        <td align="center">
+                            {{firewall_port}}
                         </td>
                         <td>
-                            <p class="section_heading">
-                                SSH Keys
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;">
-                            <label for="username">Username</label>
-                        </td>
-                        <td style="padding: 5px;">
-                            <input type="text" id="username" name="username" size=30 value="{{ssh_user_name}}"><br>
-                        </td>
-                        <td rowspan="2">
-                            {% for key in key_list%}
-                            {% if key == ssh_keyname %}
-                            <input type="checkbox" id="ssh_key_name" name="ssh_key_name" checked="checked"
-                                value="{{key}}.key">
-                            <label for="ssh_key_name">&nbsp;{{key}}</label><br>
-                            {% else %}
-                            <input type="checkbox" id="ssh_key_name" name="ssh_key_name" value="{{key}}.key">
-                            <label for="ssh_key_name">&nbsp;{{key}}</label><br>
-                            {% endif %}
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;">
-                            <label for="password">Password</label>
-                        </td>
-                        <td style="padding: 5px;">
-                            <input type="password" id="password" name="password" size=30 value="{{ssh_pass}}"><br>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="left" colspan="3">
-                            When selecting an SSH key, the password is the encryption key for the SSH key.
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="3">
-                            <input type="checkbox" id="delete_before_set" name="delete_before_set" value="True">
-                            <label for="delete_before_set">&nbsp;Add 'delete firewall' before set in
-                                configuration.</label><br>
-                            <font style="font-size: 12; background-color: rgb(200, 16, 16); font-weight: bold;">Using
-                                this option
-                                will delete
-                                all firewall
-                                configurations not
-                                contained in this managed configuration.
-                            </font>
+                            <a href="{{url_for('configuration_hostname_add')}}">
+                                <button class="snapshot_button" class="button" type="submit" name="action"
+                                    value="Change" style="width: 100%"
+                                    title="Change the hostname of the firewall to which this configuration will be applied.">Change</button>
+                            </a>
                         </td>
                     </tr>
                 </table>
             </td>
         </tr>
+
+        <form action="/configuration_push" method="post">
+            <tr>
+                <td colspan="3" style="vertical-align: top;">
+                    <table class="groups_table">
+                        <tr>
+                            <td colspan="3">
+                                Use of SSH keys is supported. To upload an SSH key, ensure the keyfile ends in .key.
+                                Use
+                                the
+                                Import Configuration Datafile upload option on the left and to upload the .key file.
+                                When
+                                you upload a key, it is encrypted and the encryption key is returned to you. You
+                                must
+                                keep
+                                the encryption key and provide it as the password when selecting the SSH key for
+                                use.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <p class="section_heading">
+                                    Credentials
+                                </p>
+                            </td>
+                            <td>
+                                <p class="section_heading">
+                                    SSH Keys
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px;">
+                                <label for="username">Username</label>
+                            </td>
+                            <td style="padding: 5px;">
+                                <input type="text" id="username" name="username" size=30 value="{{ssh_user_name}}"><br>
+                            </td>
+                            <td rowspan="2">
+                                {% for key in key_list%}
+                                {% if key == ssh_keyname %}
+                                <input type="checkbox" id="ssh_key_name" name="ssh_key_name" checked="checked"
+                                    value="{{key}}.key">
+                                <label for="ssh_key_name">&nbsp;{{key}}</label><br>
+                                {% else %}
+                                <input type="checkbox" id="ssh_key_name" name="ssh_key_name" value="{{key}}.key">
+                                <label for="ssh_key_name">&nbsp;{{key}}</label><br>
+                                {% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px;">
+                                <label for="password">Password</label>
+                            </td>
+                            <td style="padding: 5px;">
+                                <input type="password" id="password" name="password" size=30 value="{{ssh_pass}}"><br>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="left" colspan="3">
+                                When selecting an SSH key, the password is the encryption key for the SSH key.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3">
+                                <input type="checkbox" id="delete_before_set" name="delete_before_set" value="True">
+                                <label for="delete_before_set">&nbsp;Add 'delete firewall' before set in
+                                    configuration.</label><br>
+                                <font style="font-size: 12; background-color: rgb(200, 16, 16); font-weight: bold;">
+                                    Using this option will delete all firewall configurations not contained in this
+                                    managed
+                                    configuration.
+                                </font>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td align="center" width="33.3%">
+                    <input class="button" type="submit" name="action" value="View Diffs" onclick="$('#loading').show();"
+                        title="Connect to firewall via SSH and view diff between this configuration and the running configuration.">
+                </td>
+                <td align="center" width="33.3%">
+                    <input class="button" type="submit" name="action" value="Commit" onclick="$('#loading').show();"
+                        title="Connect to the firewall via SSH and commit this configuration.">
+                </td>
+                <div class="popup" id="loading" style="display:none;">
+                    <img src="static/loading.gif" width="100" height="100">
+                </div>
+                <td align="center" width="33.3%">
+                    <input class="button" type="submit" name="action" value="Show Firewall Usage"
+                        onclick="$('#loading').show();"
+                        title="Connect to firewall via SSH and view firewall usage statistics (show firewall command output).">
+                </td>
+            </tr>
+        </form>
         <tr>
-            <td align="center" width="33.3%">
-                <input class="button" type="submit" name="action" value="View Diffs" onclick="$('#loading').show();"
-                    title="Connect to firewall via SSH and view diff between this configuration and the running configuration.">
-            </td>
-            <td align="center" width="33.3%">
-                <input class="button" type="submit" name="action" value="Commit" onclick="$('#loading').show();"
-                    title="Connect to the firewall via SSH and commit this configuration.">
-            </td>
-            <div class="popup" id="loading" style="display:none;">
-                <img src="static/loading.gif" width="100" height="100">
-            </div>
-            <td align="center" width="33.3%">
-                <input class="button" type="submit" name="action" value="Show Firewall Usage"
-                    onclick="$('#loading').show();"
-                    title="Connect to firewall via SSH and view firewall usage statistics (show firewall command output).">
-            </td>
-        </tr>
-    </form>
-    <tr>
-        <td class="configuration" colspan="3">
-            <pre>
+            <td class="configuration" colspan="3">
+                <pre>
                 <code>
             {% autoescape false %}
 {{message}}
             {% endautoescape %}
                 </code>
             </pre>
-        </td>
-    </tr>
-</table>
+            </td>
+        </tr>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

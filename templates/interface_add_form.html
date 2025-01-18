@@ -14,42 +14,46 @@
     </tr>
 </table>
 <br>
-<table class="table" border="1" width="100%">
-    <form action="/interface_add" , method="post">
-        <input type="hidden" id="interface" name="type" value="add">
-        <tr>
-            <td style="vertical-align: top;" width="30%">
-                <p class="section_heading">
-                    Interface Name
-                </p>
-                {% if rule_detail.interface_name != '' %}
-                <input type="text" id="interface_name" name="interface_name" size="25%"
-                    value="{{rule_detail.interface_name}}"><br>
-                {% else %}
-                <input type="text" id="interface_name" name="interface_name" size="25%" value=""><br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="70%">
-                <p class="section_heading">
-                    Interface Description
-                </p>
-                {% if rule_detail.interface_desc != '' %}
-                <input type="text" id="interface_desc" name="interface_desc" size="70%"
-                    value="{{rule_detail.interface_desc}}"><br>
-                {% else %}
-                <input type="text" id="interface_desc" name="interface_desc" size="70%" value=""><br>
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="2" width="100%">
-                <button class="add_rule_button" type="submit" value="Add Interface" style="width: 15%"
-                    title="Add interface.">Add
-                    Interface</button>
-            </td>
-        </tr>
-        </tr>
-    </form>
-</table>
+
+<div id="toc_container">
+    <table class="table" border="1" width="100%">
+        <form action="/interface_add" , method="post">
+            <input type="hidden" id="interface" name="type" value="add">
+            <tr>
+                <td style="vertical-align: top;" width="30%">
+                    <p class="section_heading">
+                        Interface Name
+                    </p>
+                    {% if rule_detail.interface_name != '' %}
+                    <input type="text" id="interface_name" name="interface_name" size="25%"
+                        value="{{rule_detail.interface_name}}"><br>
+                    {% else %}
+                    <input type="text" id="interface_name" name="interface_name" size="25%" value=""><br>
+                    {% endif %}
+                </td>
+                <td style="vertical-align: top;" width="70%">
+                    <p class="section_heading">
+                        Interface Description
+                    </p>
+                    {% if rule_detail.interface_desc != '' %}
+                    <input type="text" id="interface_desc" name="interface_desc" size="70%"
+                        value="{{rule_detail.interface_desc}}"><br>
+                    {% else %}
+                    <input type="text" id="interface_desc" name="interface_desc" size="70%" value=""><br>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td align="right" colspan="2" width="100%">
+                    <button class="add_rule_button" type="submit" value="Add Interface" style="width: 15%"
+                        title="Add interface.">Add
+                        Interface</button>
+                </td>
+            </tr>
+            </tr>
+        </form>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

@@ -7,31 +7,33 @@
 <p class="section_heading">Tag Snapshot</p>
 Update a tag value and click update -- only one tag can be updated at a time.
 <br><br>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th style="width: 20%">
-        Snapshot ID
-    </th>
 
-    <th style="width: 60%">
-        Tag Value
-    </th>
+<div id="toc_container">
+    <table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
+        <th style="width: 20%">
+            Snapshot ID
+        </th>
 
-    <th style="width: 20%">
-        Action
-    </th>
+        <th style="width: 60%">
+            Tag Value
+        </th>
 
-    {% for snapshot in snapshot_list %}
-    <tr>
-        <form action="/snapshot_tag_create" , method="post">
-            <td align="center">
-                {{snapshot.name}}
-                </select>
-            </td>
-            <td>
-                <input type="hidden" id="firewall_name" name="firewall_name" value="{{snapshot.id}}">
-                <input type="hidden" id="snapshot_name" name="snapshot_name" value="{{snapshot.name}}">
-                Tag: &nbsp<input type="text" id="snapshot_tag" name="snapshot_tag" size="60%" value="{{snapshot.tag}}"
-                    style="width: fit-content;
+        <th style="width: 20%">
+            Action
+        </th>
+
+        {% for snapshot in snapshot_list %}
+        <tr>
+            <form action="/snapshot_tag_create" , method="post">
+                <td align="center">
+                    {{snapshot.name}}
+                    </select>
+                </td>
+                <td>
+                    <input type="hidden" id="firewall_name" name="firewall_name" value="{{snapshot.id}}">
+                    <input type="hidden" id="snapshot_name" name="snapshot_name" value="{{snapshot.name}}">
+                    Tag: &nbsp<input type="text" id="snapshot_tag" name="snapshot_tag" size="60%"
+                        value="{{snapshot.tag}}" style="width: fit-content;
                     background-color: #ffbf12;
                     color: #000000;
                     font-weight: bold;
@@ -43,16 +45,18 @@ Update a tag value and click update -- only one tag can be updated at a time.
                     vertical-align: center;
                     border-color: transparent transparent transparent transparent;">
 
-            </td>
+                </td>
 
 
-            <td align="center">
-                <input class="add_snapshot_button" type="submit" value="Update Tag" style="width: 100"
-                    title="Update the tag for the snapshot.">
-            </td>
-        </form>
-    </tr>
-    {% endfor %}
-</table>
+                <td align="center">
+                    <input class="add_snapshot_button" type="submit" value="Update Tag" style="width: 100"
+                        title="Update the tag for the snapshot.">
+                </td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

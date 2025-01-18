@@ -21,54 +21,58 @@
     </tr>
 </table>
 <br>
-<table class="table" border="1" width="100%">
-    <form action="/chain_add" , method="post">
-        <tr>
-            <td rowspan="2" style="vertical-align: top;" width="15%">
-                <p class="section_heading">
-                    IP Version
-                </p>
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
-            </td>
-            <td rowspan="2" style="vertical-align: top;" width="40%">
-                <p class="section_heading">
-                    Chain Name
-                </p>
-                <input type="text" id="fw_chain" name="fw_chain" size="40%" value=""><br>
-                <p class="section_heading">
-                    Chain Description
-                </p>
-                <input type="text" id="description" name="description" size="40%" value=""><br>
-            </td>
-            <td width="20%">
-                <p class="section_heading">
-                    Logging
-                </p>
-                <input type="checkbox" id="logging" name="logging" value="True" checked>
-                <label for="logging">&nbsp;Enable</label>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="12%">
-                <p class="section_heading">
-                    Default Action
-                </p>
-                <input type="radio" name="default_action" value="accept">&nbsp;accept<br>
-                <input type="radio" name="default_action" value="continue">&nbsp;continue<br>
-                <input type="radio" name="default_action" value="drop" checked="checked">&nbsp;drop<br>
-                <input type="radio" name="default_action" value="jump">&nbsp;jump<br>
-                <input type="radio" name="default_action" value="reject">&nbsp;reject<br>
-                <input type="radio" name="default_action" value="return">&nbsp;return<br>
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="3">
-                <button class="add_rule_button" type="submit" value="Add Chain" style="width: 15%"
-                    title="Add chain.">Add Chain</button>
-            </td>
-        </tr>
-    </form>
-</table>
+
+<div id="toc_container">
+    <table class="table" border="1" width="100%">
+        <form action="/chain_add" , method="post">
+            <tr>
+                <td rowspan="2" style="vertical-align: top;" width="15%">
+                    <p class="section_heading">
+                        IP Version
+                    </p>
+                    <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
+                    <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
+                </td>
+                <td rowspan="2" style="vertical-align: top;" width="40%">
+                    <p class="section_heading">
+                        Chain Name
+                    </p>
+                    <input type="text" id="fw_chain" name="fw_chain" size="40%" value=""><br>
+                    <p class="section_heading">
+                        Chain Description
+                    </p>
+                    <input type="text" id="description" name="description" size="40%" value=""><br>
+                </td>
+                <td width="20%">
+                    <p class="section_heading">
+                        Logging
+                    </p>
+                    <input type="checkbox" id="logging" name="logging" value="True" checked>
+                    <label for="logging">&nbsp;Enable</label>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;" width="12%">
+                    <p class="section_heading">
+                        Default Action
+                    </p>
+                    <input type="radio" name="default_action" value="accept">&nbsp;accept<br>
+                    <input type="radio" name="default_action" value="continue">&nbsp;continue<br>
+                    <input type="radio" name="default_action" value="drop" checked="checked">&nbsp;drop<br>
+                    <input type="radio" name="default_action" value="jump">&nbsp;jump<br>
+                    <input type="radio" name="default_action" value="reject">&nbsp;reject<br>
+                    <input type="radio" name="default_action" value="return">&nbsp;return<br>
+                </td>
+            </tr>
+            <tr>
+                <td align="right" colspan="3">
+                    <button class="add_rule_button" type="submit" value="Add Chain" style="width: 15%"
+                        title="Add chain.">Add Chain</button>
+                </td>
+            </tr>
+        </form>
+    </table>
+</div>
+
 <br><br>
 {% endblock body %}

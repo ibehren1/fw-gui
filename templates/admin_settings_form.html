@@ -17,37 +17,43 @@
             backup file is uploaded to the bucket for offsite storage.
         </td>
     </tr>
-    <tr>
-        <td colspan="2" align="left">
-            <p class="section_heading">Create Full Backup</p>
-        </td>
-    </tr>
-    <tr>
-        <td width="75%">
-            Press button to create a full backup of the data directory and a dump of the MongoDB.<br><br>
-            The backup will be created in the data/backups directory and must be accessed via operating system level
-            access to the filesystem. The backup includes all user directories and a full MongoDB dump.
-        </td>
-        <td align="center" width="25%">
-            <form action="/admin_settings" method=post enctype=multipart/form-data>
-                <input type="hidden" id="backup" name="backup" value="full_backup">
-                <button class="add_rule_button" class="button" type="submit" value="Create Full Backup"
-                    style="width: 100%;" style="width: 20%"
-                    title="Create a new full backup zip file which can be access in the host file system or S3 bucket if configured.">Create
-                    Full Backup</button>
-            </form>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2">
-            <li class="li"><b>Existing Full Backups</b></li>
-            {% for file in full_backup_list%}
-            <ul class="ul">
-                {{file}}
-            </ul>
-            {% endfor %}
-        </td>
-    </tr>
 </table>
+
+<div id="toc_container">
+    <table class="table" border="0">
+        <tr>
+            <td colspan="2" align="left">
+                <p class="section_heading">Create Full Backup</p>
+            </td>
+        </tr>
+        <tr>
+            <td width="75%">
+                Press button to create a full backup of the data directory and a dump of the MongoDB.<br><br>
+                The backup will be created in the data/backups directory and must be accessed via operating system
+                level
+                access to the filesystem. The backup includes all user directories and a full MongoDB dump.
+            </td>
+            <td align="center" width="25%">
+                <form action="/admin_settings" method=post enctype=multipart/form-data>
+                    <input type="hidden" id="backup" name="backup" value="full_backup">
+                    <button class="add_rule_button" class="button" type="submit" value="Create Full Backup"
+                        style="width: 100%;" style="width: 20%"
+                        title="Create a new full backup zip file which can be access in the host file system or S3 bucket if configured.">Create
+                        Full Backup</button>
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <li class="li"><b>Existing Full Backups</b></li>
+                {% for file in full_backup_list%}
+                <ul class="ul">
+                    {{file}}
+                </ul>
+                {% endfor %}
+            </td>
+        </tr>
+    </table>
+</div>
 <br><br>
 {% endblock body %}
