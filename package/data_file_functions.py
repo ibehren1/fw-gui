@@ -1,15 +1,15 @@
 """
-    Data File Support Functions
+Data File Support Functions
 
-    This module provides utility functions for handling data files in a firewall configuration system.
-    It includes functions for:
-    - Managing user configuration data (add_extra_items, add_hostname)
-    - File validation and backup operations (allowed_file, create_backup) 
-    - Encryption/decryption of sensitive files (decrypt_file)
-    - Database operations for user data (delete_user_data_file)
+This module provides utility functions for handling data files in a firewall configuration system.
+It includes functions for:
+- Managing user configuration data (add_extra_items, add_hostname)
+- File validation and backup operations (allowed_file, create_backup)
+- Encryption/decryption of sensitive files (decrypt_file)
+- Database operations for user data (delete_user_data_file)
 
-    The module uses MongoDB for data persistence and Fernet for symmetric encryption.
-    It handles both individual user data and system-wide backups.
+The module uses MongoDB for data persistence and Fernet for symmetric encryption.
+It handles both individual user data and system-wide backups.
 """
 
 from cryptography.fernet import Fernet
@@ -521,7 +521,7 @@ def list_snapshots(session):
         query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
 
         logging.debug(f"Reading data from Mongo.")
-        for doc in collection.find(query).sort("snapshot", pymongo.DESCENDING):
+        for doc in collection.find(query).sort("_id", pymongo.ASCENDING):
             if "tag" in doc:
                 tag = doc["tag"]
             else:
