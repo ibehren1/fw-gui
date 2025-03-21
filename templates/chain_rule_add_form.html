@@ -108,8 +108,7 @@
                             {% endif %}
                             {% if rule_detail.dest_address_type == 'address_group' %}
                             <input type="radio" name="dest_address_type" value="address_group"
-                                checked="checked">&nbsp;Address
-                            Group&nbsp;<br>
+                                checked="checked">&nbsp;Address Group&nbsp;<br>
                             {% else %}
                             <input type="radio" name="dest_address_type" value="address_group">&nbsp;Address
                             Group&nbsp;<br>
@@ -229,13 +228,13 @@
                             <input type="radio" name="dest_port_type" value="port_group" checked="checked">&nbsp;Port
                             Group
                             {% else %}
-                            <input type="radio" name="dest_port_type">&nbsp;Port Group
+                            <input type="radio" name="dest_port_type" value="port_group">&nbsp;Port Group
                             {% endif %}
                         </td>
                         <td>
                             {% if rule_detail.dest_port_type == 'port' and rule_detail.dest_port != '' %}
                             <input type="text" id="dest_port" name="dest_port" style="width: 200;"
-                                value="{{rule_detail.dest_port}}""><br>
+                                value="{{rule_detail.dest_port}}"><br>
                             {% else %}
                             <input type=" text" id="dest_port" name="dest_port" style="width: 200;"><br>
                             {% endif %}
@@ -355,7 +354,12 @@
                             Group<br><br>
                         </td>
                         <td>
+                            {% if rule_detail.source_address_type == 'address' and rule_detail.source_address != '' %}
+                            <input type="text" id="source_address" name="source_address" style="width: 200;"
+                                value="{{rule_detail.source_address}}"><br>
+                            {% else %}
                             <input type="text" id="source_address" name="source_address" style="width: 200;"><br>
+                            {% endif %}
 
                             <select name="source_address_group" id="source_address_group" style="width: 200;">
                                 {% if rule_detail.source_address_type == 'address_group' and rule_detail.source_address
