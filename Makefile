@@ -26,7 +26,6 @@ dev:
 	./scripts/build.sh Dev
 
 
-
 ######## Public Dev Build ########
 
 # Build a container image and push to Docker Hub with the following tags:
