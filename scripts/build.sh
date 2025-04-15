@@ -20,8 +20,10 @@ if [ "${1}" == "Prod" ]; then
    BUILD_TYPE="Prod"
 elif [ "${1}" == "PubDev" ]; then
    BUILD_TYPE="PubDev"
-else
+elif [ "${1}" == "Dev" ]; then
    BUILD_TYPE="Dev"
+else
+   BUILD_TYPE="Local"
 fi
 
 # Read the version number.
@@ -89,6 +91,13 @@ if [ "${BUILD_TYPE}" == "Dev" ]; then
         --push \
         --tag ${INTERNAL_REG}/fw-gui:dev-${VERSION} \
         --tag ${INTERNAL_REG}/fw-gui:dev-latest .
+fi
+
+if [ "${BUILD_TYPE}" == "Local" ]; then
+    docker buildx build -f docker/Dockerfile \
+        --no-cache \
+        --output type=docker \
+        --tag fw-gui:${VERSION} .
 fi
 
 echo -e "\n${GREEN}${BUILD_TYPE} Build of ${VERSION} completed.${NC}"
