@@ -243,7 +243,6 @@ def run_operational_command(connection_string, session, op_command):
     try:
         ssh, tmpfile = assemble_paramiko_driver_string(connection_string, session)
 
-        logging.info(type(op_command))
         logging.info(f"Op Command: '{op_command}'")
         commands = [
             "source /opt/vyatta/etc/functions/script-template",
