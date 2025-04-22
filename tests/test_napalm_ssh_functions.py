@@ -4,7 +4,7 @@ from package.napalm_ssh_functions import (
     assemble_paramiko_driver_string,
     commit_to_firewall,
     get_diffs_from_firewall,
-    show_firewall_usage,
+    run_operational_command,
 )
 from unittest.mock import Mock, patch, MagicMock
 import os
@@ -105,9 +105,10 @@ def test_assemble_paramiko_driver_string_password(connection_string, session):
 
 
 def test_assemble_paramiko_driver_string_with_key(connection_string_with_key, session):
-    with patch("paramiko.SSHClient") as mock_ssh, patch(
-        "package.napalm_ssh_functions.decrypt_file"
-    ) as mock_decrypt:
+    with (
+        patch("paramiko.SSHClient") as mock_ssh,
+        patch("package.napalm_ssh_functions.decrypt_file") as mock_decrypt,
+    ):
         ssh_instance = Mock()
         mock_ssh.return_value = ssh_instance
         mock_decrypt.return_value = "/tmp/decrypted_key"
@@ -177,8 +178,8 @@ def test_get_diffs_from_firewall_with_changes(connection_string, session):
         mock_driver.close.assert_called_once()
 
 
-# Test show_firewall_usage
-def test_show_firewall_usage_success(connection_string, session):
+# Test run_operational_command
+def test_run_operational_command_success(connection_string, session):
     with patch(
         "package.napalm_ssh_functions.assemble_paramiko_driver_string"
     ) as mock_assemble:
@@ -190,7 +191,7 @@ def test_show_firewall_usage_success(connection_string, session):
         mock_ssh.exec_command.return_value = (Mock(), mock_stdout, mock_stderr)
         mock_assemble.return_value = (mock_ssh, None)
 
-        result = show_firewall_usage(connection_string, session)
+        result = run_operational_command(connection_string, session)
 
         assert result == "Firewall usage stats"
         mock_ssh.exec_command.assert_called_once()
@@ -198,13 +199,13 @@ def test_show_firewall_usage_success(connection_string, session):
 
 
 # TODO
-# def test_show_firewall_usage_error(connection_string, session):
+# def test_run_operational_command_error(connection_string, session):
 #     with patch(
 #         "package.napalm_ssh_functions.assemble_paramiko_driver_string"
 #     ) as mock_assemble:
 #         mock_assemble.side_effect = Exception("Connection failed")
 
-#         result = show_firewall_usage(connection_string, session)
+#         result = run_operational_command(connection_string, session)
 
 #         assert isinstance(result, Exception)
 #         assert str(result) == "Connection failed"
@@ -212,9 +213,12 @@ def test_show_firewall_usage_success(connection_string, session):
 
 # Test cleanup of temporary key files
 def test_temporary_key_cleanup(connection_string_with_key, session):
-    with patch(
-        "package.napalm_ssh_functions.assemble_napalm_driver_string"
-    ) as mock_assemble, patch("os.remove") as mock_remove:
+    with (
+        patch(
+            "package.napalm_ssh_functions.assemble_napalm_driver_string"
+        ) as mock_assemble,
+        patch("os.remove") as mock_remove,
+    ):
         mock_driver = Mock()
         mock_assemble.return_value = (mock_driver, "/tmp/temp_key")
         mock_driver.compare_config.return_value = ""
