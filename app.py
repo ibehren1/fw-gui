@@ -1,25 +1,25 @@
 """
-    FW-GUI for use with VyOS
-    Copyright © 2023-2025 Isaac Behrens. All rights reserved.
+FW-GUI for use with VyOS
+Copyright © 2023-2025 Isaac Behrens. All rights reserved.
 
-    Basic Flask app to present web forms and process posts from them.
-    Generates VyOS firewall CLI configuration commands to create
-    the corresponding firewall filters, chains and rules.
+Basic Flask app to present web forms and process posts from them.
+Generates VyOS firewall CLI configuration commands to create
+the corresponding firewall filters, chains and rules.
 
-    Features:
-    - Web interface for managing VyOS firewall configurations
-    - User authentication and session management
-    - Firewall rule creation and management
-    - Chain and filter management
-    - Configuration backup and restore
-    - Direct VyOS device integration
-    - Diff comparison between configurations
+Features:
+- Web interface for managing VyOS firewall configurations
+- User authentication and session management
+- Firewall rule creation and management
+- Chain and filter management
+- Configuration backup and restore
+- Direct VyOS device integration
+- Diff comparison between configurations
 
-    Requirements:
-    - Python 3.x
-    - Flask web framework
-    - SQLAlchemy database
-    - VyOS compatible device
+Requirements:
+- Python 3.x
+- Flask web framework
+- SQLAlchemy database
+- VyOS compatible device
 """
 
 #
@@ -107,7 +107,7 @@ from package.mongo_converter import mongo_converter
 from package.napalm_ssh_functions import (
     commit_to_firewall,
     get_diffs_from_firewall,
-    show_firewall_usage,
+    run_operational_command,
     test_connection,
 )
 from package.telemetry_functions import telemetry_instance
@@ -1433,8 +1433,10 @@ def configuration_push():
         else:
             write_user_command_conf_file(session, config, delete=False)
 
-        if request.form["action"] == "Show Firewall Usage":
-            message = show_firewall_usage(connection_string, session)
+        if request.form["action"] == "Run Operational Command":
+            message = run_operational_command(
+                connection_string, session, request.form["op_command"]
+            )
         if request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
         if request.form["action"] == "Commit":
@@ -1442,6 +1444,10 @@ def configuration_push():
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
         snapshot_list = list_snapshots(session)
+        if "op_command" in request.form:
+            op_command = request.form["op_command"]
+        else:
+            op_command = "show firewall"
 
         return render_template(
             "configuration_push.html",
@@ -1451,6 +1457,7 @@ def configuration_push():
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
             firewall_reachable=True,
+            op_command=op_command,
             ssh_user_name=session["ssh_user"],
             ssh_pass=session["ssh_pass"],
             ssh_keyname=session["ssh_keyname"],

@@ -1,9 +1,9 @@
 """
-    Napalm & Paramiko Functions to connect with VyOS Firewall
-    
-    This module provides functions for connecting to and managing VyOS firewalls using both
-    the NAPALM and Paramiko libraries. It handles SSH key and password authentication,
-    configuration management, and connection testing.
+Napalm & Paramiko Functions to connect with VyOS Firewall
+
+This module provides functions for connecting to and managing VyOS firewalls using both
+the NAPALM and Paramiko libraries. It handles SSH key and password authentication,
+configuration management, and connection testing.
 """
 
 from flask import flash
@@ -79,7 +79,7 @@ def assemble_paramiko_driver_string(connection_string, session):
     username = connection_string["username"]
     password = connection_string["password"]
 
-    logging.info(connection_string)
+    logging.debug(connection_string)
 
     if "ssh_key_name" in connection_string:
         logging.info("key")
@@ -225,7 +225,7 @@ def get_diffs_from_firewall(connection_string, session):
 
 
 # Uses Paramiko rather than Napalm
-def show_firewall_usage(connection_string, session):
+def run_operational_command(connection_string, session, op_command):
     """
     Shows current firewall usage statistics using Paramiko SSH client.
 
@@ -243,9 +243,11 @@ def show_firewall_usage(connection_string, session):
     try:
         ssh, tmpfile = assemble_paramiko_driver_string(connection_string, session)
 
+        logging.info(type(op_command))
+        logging.info(f"Op Command: '{op_command}'")
         commands = [
             "source /opt/vyatta/etc/functions/script-template",
-            "run show firewall",
+            f"run {op_command}",
             "exit",
         ]
 
@@ -260,6 +262,8 @@ def show_firewall_usage(connection_string, session):
         # Read the output
         output = stdout.read().decode()
         error = stderr.read().decode()
+
+        logging.info(output)
 
         ssh.close()
 
