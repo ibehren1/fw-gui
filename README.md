@@ -30,10 +30,10 @@ The web-based FW-GUI allows the user to visually:
 
 | VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
 |----------------|----------------------------|----------------|
-| VyOS 1.3.x Equuleus | Untested | No support (do not open issues) |
-| **VyOS 1.4.x Sagiitta** | Designed for and heavily tested. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Functionality issues will be prioritized. |
-| **VyOS 1.5.x Circinus**<br>(rolling release) | Minimal testing but no known issues. | Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for all errors.<br>Some issues may be deprioritized as feature requests for future support.
-| VyOS Stream         | TBD ([waiting for release](https://blog.vyos.io/introducing-vyos-stream))
+| VyOS 1.3.x Equuleus | - Untested | - No support (do not open issues) |
+| VyOS 1.4.x Sagiitta | - Designed for 1.4 and heavily tested in 2024.<br> - No known issues but no longer tested due to VyOS closed release versions. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br> - Best effort support on old build from July 2024. |
+| VyOS 1.5.x Circinus<br>(rolling release) | - Minimal testing but no known issues. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br> - Issues may be deprioritized due to unstable daily build status.
+| **VyOS 1.5 Stream**<br>(latest release) | - Minimal testing but no known issues.<br>- Current target version for development and testing. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br>- Current quarterly stream release is where testing/fixes will be targeted.
 
 | Status | | |
 | - | - | - |
