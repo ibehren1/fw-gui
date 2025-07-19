@@ -196,7 +196,7 @@ def test_run_operational_command_success(connection_string, session, op_command)
         mock_ssh.exec_command.return_value = (Mock(), mock_stdout, mock_stderr)
         mock_assemble.return_value = (mock_ssh, None)
 
-        result = run_operational_command(connection_string, session)
+        result = run_operational_command(connection_string, session, op_command)
 
         assert result == "Firewall usage stats"
         mock_ssh.exec_command.assert_called_once()
