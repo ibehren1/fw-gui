@@ -42,6 +42,12 @@
 <p class="section_heading">IPv4 Filters</p>
 <hr>
 
+<br>
+<a href="{{ url_for('filter_add')}}">
+    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv4 filter.">
+</a>
+<br>
+
 {% if filter_dict.ipv4 %}
 {% for key, filter_list in filter_dict.ipv4.items() %}
 <table class="groups_table" width="100%">
@@ -180,6 +186,13 @@
 
 <p class="section_heading">IPv6 Filters</p>
 <hr>
+
+<br>
+<a href="{{ url_for('filter_add')}}">
+    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv6 filter.">
+</a>
+<br>
+
 {% if filter_dict.ipv6 %}
 {% for key, filter_list in filter_dict.ipv6.items() %}
 

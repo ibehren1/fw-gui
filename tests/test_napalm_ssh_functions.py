@@ -35,6 +35,11 @@ def connection_string_with_key():
 
 
 @pytest.fixture
+def op_command():
+    return {"show interfaces"}
+
+
+@pytest.fixture
 def session():
     return {
         "data_dir": "/tmp/test",
@@ -179,7 +184,7 @@ def test_get_diffs_from_firewall_with_changes(connection_string, session):
 
 
 # Test run_operational_command
-def test_run_operational_command_success(connection_string, session):
+def test_run_operational_command_success(connection_string, session, op_command):
     with patch(
         "package.napalm_ssh_functions.assemble_paramiko_driver_string"
     ) as mock_assemble:
@@ -191,7 +196,7 @@ def test_run_operational_command_success(connection_string, session):
         mock_ssh.exec_command.return_value = (Mock(), mock_stdout, mock_stderr)
         mock_assemble.return_value = (mock_ssh, None)
 
-        result = run_operational_command(connection_string, session)
+        result = run_operational_command(connection_string, session, op_command)
 
         assert result == "Firewall usage stats"
         mock_ssh.exec_command.assert_called_once()

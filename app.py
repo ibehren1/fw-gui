@@ -1830,7 +1830,7 @@ if __name__ == "__main__":
     # Read version from .version and display
     with open(".version", "r") as f:
         logging.info(
-            f"|---------------- FW-GUI version: {f.read().strip()} ---------------|"
+            f"|---------------- FW-GUI version: {f.read().strip()} ----------------|"
         )
         logging.info(f"|                                                        |")
         logging.info(f"|                                                        |")

@@ -42,6 +42,12 @@
 <p class="section_heading">IPv4 Chains</p>
 <hr>
 
+<br>
+<a href="{{ url_for('chain_add')}}">
+    <input class="add_rule_button" type="submit" value="Add Chain" title="Add a new IPv4 Chain.">
+</a>
+<br>
+
 {% if chain_dict.ipv4 %}
 {% for key, chain_list in chain_dict.ipv4.items() %}
 
@@ -266,6 +272,13 @@
 
 <p class="section_heading">IPv6 Chains</p>
 <hr>
+
+<br>
+<a href="{{ url_for('chain_add')}}">
+    <input class="add_rule_button" type="submit" value="Add Chain" title="Add a new IPv6 Chain.">
+</a>
+<br>
+
 {% if chain_dict.ipv6 %}
 {% for key, chain_list in chain_dict.ipv6.items() %}
 
