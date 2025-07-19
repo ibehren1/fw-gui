@@ -5,3 +5,4 @@ dump/*
 jupyter/*
 reference/*
 tmp/*
+.vscode
