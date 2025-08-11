@@ -191,6 +191,14 @@ volumes:
   mongo-config:
 ```
 
+### Kubernetes Install via Helm
+
+```bash
+git clone https://github.com/ibehren1/fw-gui.git
+cd fw-gui
+helm install fw-gui ./chart/fw-gui-0.1.0.tgz
+```
+
 ## Interface Screenshots
 
 ![image](./images/fw-gui_interface_1.png)

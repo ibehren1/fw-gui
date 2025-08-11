@@ -1,0 +1,7 @@
+apiVersion: v2
+appVersion: 1.5.0
+description: GUI for visually creating and managing firewall configurations on VyOS
+  firewalls.
+name: fw-gui
+type: application
+version: 0.1.0

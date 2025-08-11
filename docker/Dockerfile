@@ -1,5 +1,5 @@
 FROM ubuntu:24.04
-MAINTAINER isaac@behrenshome.com
+LABEL org.opencontainers.image.authors="isaac@behrenshome.com"
 
 # Update OS packages
 RUN apt-get update && \ 
@@ -7,7 +7,7 @@ RUN apt-get update && \
 
 # Install app requirements
 RUN apt-get install -y python3 python3-pip zip
-    #pip3 install --break-system-packages --upgrade pip
+# RUN pip3 install --break-system-packages --upgrade pip
 
 # Clean-up apt cache
 RUN apt-get clean && \

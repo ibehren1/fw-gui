@@ -1,12 +1,11 @@
 """
-    Database support functions.
-    
-    This module provides database operations for user management including:
-    - Password changes
-    - Version checking
-    - User authentication
-    - User registration
-    - Database queries
+Database support functions.
+This module provides database operations for user management including:
+- Password changes
+- Version checking
+- User authentication
+- User registration
+- Database queries
 """
 
 from datetime import datetime
