@@ -22,9 +22,11 @@
         }
 """
 
-from flask import flash
-from package.data_file_functions import read_user_data_file, write_user_data_file
 import logging
+
+from flask import flash
+
+from package.data_file_functions import read_user_data_file, write_user_data_file
 
 
 def add_flowtable_to_data(session, request):

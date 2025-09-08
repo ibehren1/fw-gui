@@ -6,11 +6,12 @@
     in user directories to load them into MongoDB.
 """
 
-from package.data_file_functions import write_user_data_file
 import json
 import logging
 import os
 import sqlite3
+
+from package.data_file_functions import write_user_data_file
 
 
 def mongo_converter():
@@ -48,7 +49,7 @@ def mongo_converter():
             for file in files:
                 if ".json" in file:
                     file_list.append(f"data/{user}/{file}")
-        except:
+        except Exception:
             logging.info(f"No data for {user}.")
 
     file_list.sort()

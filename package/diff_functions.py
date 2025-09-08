@@ -3,8 +3,9 @@
     Contains functions for processing configuration lists and creating styled HTML diff output.
 """
 
-from package.generate_config import generate_config
 import difflib
+
+from package.generate_config import generate_config
 
 
 def fix_list(list):
@@ -21,6 +22,8 @@ def fix_list(list):
 
     # Go line by line and split based on \n and add to list as separate list items
     for line in list:
+        print("Line:")
+        print(line)
         segments = line.split("\n")
         for segment in segments:
             new_list.append(f" {segment}")

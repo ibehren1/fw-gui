@@ -6,6 +6,7 @@
 
 import json
 import logging
+
 import urllib3
 
 
@@ -27,7 +28,7 @@ def get_version():
 
 def post_telemetry(body, route):
     try:
-        resp = urllib3.request(
+        urllib3.request(
             "POST",
             f"https://telemetry.fw-gui.com/{route}",
             headers={"Content-Type": "application/json"},
@@ -35,7 +36,7 @@ def post_telemetry(body, route):
         )
         logging.debug("Posted instance ID and version to https://telemetry.fw-gui.com.")
 
-    except:
+    except Exception:
         logging.debug("Unable to post instance ID.")
 
 

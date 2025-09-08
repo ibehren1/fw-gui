@@ -8,19 +8,20 @@ This module provides database operations for user management including:
 - Database queries
 """
 
-from datetime import datetime
-from flask import flash
-from flask_login import login_user
-from package.data_file_functions import write_user_data_file
-from package.telemetry_functions import telemetry_instance
-from packaging.version import Version
 import json
 import logging
 import os
-import urllib3
 
 # B404 -- security implications considered.
-import subprocess  # nosec
+from datetime import datetime
+
+import urllib3
+from flask import flash
+from flask_login import login_user
+from packaging.version import Version
+
+from package.data_file_functions import write_user_data_file
+from package.telemetry_functions import telemetry_instance
 
 
 def change_password(bcrypt, db, User, username, request):
@@ -96,7 +97,7 @@ def check_version():
         remote_version = resp.data.decode("utf-8").replace("v", "")
         logging.debug(f"Remote version: {remote_version}")
 
-    except:
+    except Exception:
         logging.info("Unable to check remote version.")
         remote_version = "0.0.0"
 
@@ -182,7 +183,7 @@ def query_user_by_id(db, User, id):
     """
     try:
         result = db.session.execute(db.select(User).filter_by(id=id)).scalar_one()
-    except:
+    except Exception:
         result = None
     return result
 
@@ -203,7 +204,7 @@ def query_user_by_username(db, User, username):
         result = db.session.execute(
             db.select(User).filter_by(username=username)
         ).scalar_one()
-    except:
+    except Exception:
         result = None
     return result
 

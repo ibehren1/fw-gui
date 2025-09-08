@@ -12,9 +12,11 @@
     The functions interact with user data files that store firewall configurations.
 """
 
-from package.data_file_functions import read_user_data_file, write_user_data_file
-from flask import flash
 import logging
+
+from flask import flash
+
+from package.data_file_functions import read_user_data_file, write_user_data_file
 
 
 def add_filter_rule_to_data(session, request):
@@ -56,7 +58,6 @@ def add_filter_rule_to_data(session, request):
         rule_dict["interface"] = request.form["interface"]
         rule_dict["direction"] = request.form["direction"]
     if request.form["action"] == "offload":
-        offload_target = request.form["offload_target"]
         rule_dict["fw_chain"] = request.form["offload_target"]
 
     # Check and create higher level data structure if it does not exist
@@ -165,13 +166,13 @@ def assemble_detail_list_of_filters(session):
                             ][rule]
                             rule_detail["number"] = rule
                             filter_dict[ip_version][filter_name].append(rule_detail)
-        except:
+        except Exception:
             logging.info("Error in assemble_detail_list_of_rules")
             pass
 
     # If there are no filters, flash message
     if filter_dict == {}:
-        flash(f"There are no filters defined.", "danger")
+        flash("There are no filters defined.", "danger")
 
     return filter_dict
 
@@ -201,7 +202,7 @@ def assemble_list_of_filters(session):
 
     # If there are no filters, flash message
     if filter_list == []:
-        flash(f"There are no filters defined.", "danger")
+        flash("There are no filters defined.", "danger")
 
     return filter_list
 
@@ -241,7 +242,7 @@ def assemble_list_of_filter_rules(session):
 
     # If there are no rules, flash message
     if rule_list == []:
-        flash(f"There are no filter rules defined.", "danger")
+        flash("There are no filter rules defined.", "danger")
 
     return rule_list
 
@@ -273,7 +274,7 @@ def delete_filter_rule_from_data(session, request):
         del user_data[ip_version]["filters"][filter]["rules"][rule]
         user_data[ip_version]["filters"][filter]["rule-order"].remove(rule)
         flash(f"Deleted rule {rule} from filter {ip_version}/{filter}.", "warning")
-    except:
+    except Exception:
         flash(
             f"Failed to delete rule {rule} from filter {ip_version}/{filter}.",
             "danger",
@@ -329,17 +330,17 @@ def reorder_filter_rule_in_data(session, request):
 
     # Validate new rule number
     if old_rule_number == new_rule_number:
-        flash(f"Old and new rule numbers must be different.", "danger")
+        flash("Old and new rule numbers must be different.", "danger")
         return None
 
     try:
         int(new_rule_number)
-    except:
-        flash(f"New rule number musht be an integer.", "danger")
+    except Exception:
+        flash("New rule number musht be an integer.", "danger")
         return None
 
     if new_rule_number in existing_rule_list:
-        flash(f"New rule number must not already exist in the filter.", "danger")
+        flash("New rule number must not already exist in the filter.", "danger")
         return None
 
     # Add new rule to chain in user data
