@@ -6,14 +6,20 @@ the NAPALM and Paramiko libraries. It handles SSH key and password authenticatio
 configuration management, and connection testing.
 """
 
+import logging
+import os
+import socket
+
+import paramiko
 from flask import flash
 from napalm import get_network_driver
+
 from package.data_file_functions import decrypt_file
-from package.telemetry_functions import *
-import logging
-import socket
-import os
-import paramiko
+from package.telemetry_functions import (
+    telemetry_commit,
+    telemetry_diff,
+    telemetry_rule_usage,
+)
 
 
 def assemble_napalm_driver_string(connection_string, session):
@@ -111,7 +117,7 @@ def commit_to_firewall(connection_string, session):
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
-    except Exception as e:
+    except Exception:
         tmpfile = None
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
         return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
@@ -181,7 +187,7 @@ def get_diffs_from_firewall(connection_string, session):
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
-    except Exception as e:
+    except Exception:
         tmpfile = None
         flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
         return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
@@ -260,7 +266,7 @@ def run_operational_command(connection_string, session, op_command):
 
         # Read the output
         output = stdout.read().decode()
-        error = stderr.read().decode()
+        # error = stderr.read().decode()
 
         logging.info(output)
 
@@ -301,7 +307,7 @@ def test_connection(session):
             "success",
         )
         return True
-    except:
+    except Exception:
         flash(
             f'Cannot connect to {session["hostname"]} on port {session["port"]}!',
             "danger",

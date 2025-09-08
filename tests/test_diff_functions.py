@@ -1,6 +1,4 @@
-from package.diff_functions import *
-from unittest.mock import MagicMock, Mock, patch
-import pytest
+from package.diff_functions import fix_list
 
 
 def test_fix_list():

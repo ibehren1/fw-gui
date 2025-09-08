@@ -15,9 +15,11 @@
     - logging: For logging functionality
 """
 
-from package.data_file_functions import read_user_data_file, write_user_data_file
-from flask import flash
 import logging
+
+from flask import flash
+
+from package.data_file_functions import read_user_data_file, write_user_data_file
 
 
 def add_rule_to_data(session, request):
@@ -307,13 +309,13 @@ def assemble_detail_list_of_chains(session):
                             ]
                             rule_detail["number"] = rule
                             chain_dict[ip_version][chain_name].append(rule_detail)
-    except:
+    except Exception:
         logging.info("Error in assemble_detail_list_of_rules")
         pass
 
     # If there are no groups, flash message
     if chain_dict == {}:
-        flash(f"There are no chains defined.", "danger")
+        flash("There are no chains defined.", "danger")
 
     return chain_dict
 
@@ -369,7 +371,7 @@ def assemble_list_of_rules(session):
 
     # If there are no rules, flash message
     if rule_list == []:
-        flash(f"There are no rules defined.", "danger")
+        flash("There are no rules defined.", "danger")
 
     return rule_list
 
@@ -415,7 +417,7 @@ def assemble_list_of_chains(session):
 
     # If there are no chains, flash message
     if chain_list == []:
-        flash(f"There are no chains defined.", "danger")
+        flash("There are no chains defined.", "danger")
 
     return chain_list
 
@@ -462,7 +464,7 @@ def delete_rule_from_data(session, request):
         del user_data[ip_version]["chains"][fw_chain][rule]
         user_data[ip_version]["chains"][fw_chain]["rule-order"].remove(rule)
         flash(f"Deleted rule {rule} from chain {ip_version}/{fw_chain}.", "warning")
-    except:
+    except Exception:
         flash(
             f"Failed to delete rule {rule} from chain {ip_version}/{fw_chain}.",
             "danger",
@@ -494,7 +496,7 @@ def flash_ip_version_mismatch():
     Returns:
         None
     """
-    flash(f"IP version of rule must match IP version of group object.", "danger")
+    flash("IP version of rule must match IP version of group object.", "danger")
     return
 
 
@@ -539,17 +541,17 @@ def reorder_chain_rule_in_data(session, request):
 
     # Validate new rule number
     if old_rule_number == new_rule_number:
-        flash(f"Old and new rule numbers must be different.", "danger")
+        flash("Old and new rule numbers must be different.", "danger")
         return None
 
     try:
         int(new_rule_number)
-    except:
-        flash(f"New rule number musht be an integer.", "danger")
+    except Exception:
+        flash("New rule number musht be an integer.", "danger")
         return None
 
     if new_rule_number in existing_rule_list:
-        flash(f"New rule number must not already exist in the chain.", "danger")
+        flash("New rule number must not already exist in the chain.", "danger")
         return None
 
     # Add new rule to chain in user data

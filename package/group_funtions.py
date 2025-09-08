@@ -5,9 +5,11 @@
     It includes functionality for adding, listing, and deleting groups.
 """
 
-from package.data_file_functions import read_user_data_file, write_user_data_file
-from flask import flash
 import logging
+
+from flask import flash
+
+from package.data_file_functions import read_user_data_file, write_user_data_file
 
 
 def add_group_to_data(session, request):
@@ -103,7 +105,7 @@ def assemble_detail_list_of_groups(session):
 
     # If there are no groups, flash message
     if group_list_detail == []:
-        flash(f"There are no groups defined.", "danger")
+        flash("There are no groups defined.", "danger")
 
     return group_list_detail
 
@@ -134,7 +136,7 @@ def assemble_list_of_groups(session):
 
     # If there are no groups, flash message
     if group_list == []:
-        flash(f"There are no groups defined.", "danger")
+        flash("There are no groups defined.", "danger")
 
     return group_list
 
@@ -165,7 +167,7 @@ def delete_group_from_data(session, request):
     try:
         del user_data[ip_version]["groups"][group_name]
         flash(f"Deleted group {group_name} from {ip_version}.", "warning")
-    except:
+    except Exception:
         flash(f"Failed to delete group {group_name} from {ip_version}.", "danger")
         pass
 

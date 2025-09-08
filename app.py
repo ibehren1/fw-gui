@@ -24,11 +24,16 @@ Requirements:
 
 #
 # Library Imports
+import logging
+import os
+import sys
 from datetime import datetime, timedelta
+from io import BytesIO
+
 from dotenv import load_dotenv
 from flask import (
-    flash,
     Flask,
+    flash,
     redirect,
     render_template,
     request,
@@ -39,7 +44,8 @@ from flask import (
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
-from io import BytesIO
+from waitress import serve
+
 from package.auth_functions import (
     change_password,
     process_login,
@@ -47,11 +53,10 @@ from package.auth_functions import (
     register_user,
 )
 from package.chain_functions import (
-    add_rule_to_data,
     add_chain_to_data,
-    assemble_list_of_rules,
-    assemble_list_of_chains,
+    add_rule_to_data,
     assemble_detail_list_of_chains,
+    assemble_list_of_chains,
     delete_rule_from_data,
     reorder_chain_rule_in_data,
 )
@@ -68,7 +73,6 @@ from package.data_file_functions import (
     list_user_backups,
     list_user_files,
     list_user_keys,
-    mongo_dump,
     process_upload,
     read_user_data_file,
     tag_snapshot,
@@ -80,9 +84,8 @@ from package.diff_functions import process_diff
 from package.filter_functions import (
     add_filter_rule_to_data,
     add_filter_to_data,
-    assemble_list_of_filters,
-    assemble_list_of_filter_rules,
     assemble_detail_list_of_filters,
+    assemble_list_of_filters,
     delete_filter_rule_from_data,
     reorder_filter_rule_in_data,
 )
@@ -94,7 +97,6 @@ from package.flowtable_functions import (
 from package.generate_config import download_json_data, generate_config
 from package.group_funtions import (
     add_group_to_data,
-    assemble_list_of_groups,
     assemble_detail_list_of_groups,
     delete_group_from_data,
 )
@@ -111,10 +113,6 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.telemetry_functions import telemetry_instance
-from waitress import serve
-import logging
-import os
-import sys
 
 # Load environment variables from .env file and version from .version file
 load_dotenv()
@@ -161,7 +159,7 @@ with open(".version", "r") as f:
 # Get session timeout from environment or default to 120 minutes
 try:
     session_lifetime = int(os.environ.get("SESSION_TIMEOUT"))
-except:
+except Exception:
     session_lifetime = 120
 
 # Configure Flask application settings
@@ -717,7 +715,6 @@ def interface_view():
         Response: Rendered interface view template with interface details
     """
     file_list = list_user_files(session)
-    group_list = assemble_detail_list_of_groups(session)
     interface_list = list_interfaces(session)
     snapshot_list = list_snapshots(session)
 
@@ -843,7 +840,6 @@ def flowtable_view():
         Response: Rendered flowtable view template with flowtable details
     """
     file_list = list_user_files(session)
-    group_list = assemble_detail_list_of_groups(session)
     snapshot_list = list_snapshots(session)
     flowtable_list = list_flowtables(session)
 
@@ -1183,17 +1179,11 @@ def filter_rule_add():
             return redirect(url_for("filter_add"))
 
         if chain_list == []:
-            flash(
-                f"Cannot add a filter rule if there are not chains to target.",
-                "warning",
-            )
+            flash("Cannot add a filter rule if there are not chains to target.", "warning",)
             return redirect(url_for("filter_add"))
 
         if interface_list == []:
-            flash(
-                f"Cannot add a filter rule if there are no interfaces to target.",
-                "warning",
-            )
+            flash( "Cannot add a filter rule if there are no interfaces to target.", "warning",)
             return redirect(url_for("interface_add"))
 
         return render_template(
@@ -1832,19 +1822,19 @@ if __name__ == "__main__":
         logging.info(
             f"|---------------- FW-GUI version: {f.read().strip()} ----------------|"
         )
-        logging.info(f"|                                                        |")
-        logging.info(f"|                                                        |")
-        logging.info(f"|            *** v1.4.0+ requires MongoDB ***            |")
-        logging.info(f"|                                                        |")
-        logging.info(f"|                                                        |")
-        logging.info(f"|         See https://github.com/ibehren1/fw-gui         |")
-        logging.info(f"|                            or                          |")
-        logging.info(f"|        https://hub.docker.com/r/ibehren1/fw-gui        |")
-        logging.info(f"|                                                        |")
-        logging.info(f"|       for recommended docker-compose.yml updates.      |")
-        logging.info(f"|                                                        |")
-        logging.info(f"|                                                        |")
-        logging.info(f"|--------------------------------------------------------|")
+        logging.info("|                                                        |")
+        logging.info("|                                                        |")
+        logging.info("|            *** v1.4.0+ requires MongoDB ***            |")
+        logging.info("|                                                        |")
+        logging.info("|                                                        |")
+        logging.info("|         See https://github.com/ibehren1/fw-gui         |")
+        logging.info("|                            or                          |")
+        logging.info("|        https://hub.docker.com/r/ibehren1/fw-gui        |")
+        logging.info("|                                                        |")
+        logging.info("|       for recommended docker-compose.yml updates.      |")
+        logging.info("|                                                        |")
+        logging.info("|                                                        |")
+        logging.info("|--------------------------------------------------------|")
 
     # Load environment variables from .env file
     load_dotenv()

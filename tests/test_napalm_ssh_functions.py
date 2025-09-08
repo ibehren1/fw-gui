@@ -1,15 +1,13 @@
-from napalm import get_network_driver
+from unittest.mock import Mock, patch
+
+import pytest
+
 from package.napalm_ssh_functions import (
-    assemble_napalm_driver_string,
     assemble_paramiko_driver_string,
     commit_to_firewall,
     get_diffs_from_firewall,
     run_operational_command,
 )
-from unittest.mock import Mock, patch, MagicMock
-import os
-import paramiko
-import pytest
 
 
 # Test fixtures

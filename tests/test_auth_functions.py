@@ -1,6 +1,10 @@
-from datetime import datetime
-from flask import Flask, flash
+import os
+from unittest.mock import Mock, patch
+
+import pytest
+from flask import Flask
 from flask_login import LoginManager
+
 from package.auth_functions import (
     change_password,
     check_version,
@@ -9,10 +13,6 @@ from package.auth_functions import (
     query_user_by_username,
     register_user,
 )
-from unittest.mock import Mock, patch, mock_open
-import json
-import os
-import pytest
 
 
 # Fixtures
@@ -137,7 +137,7 @@ def test_check_version_update_available(mock_request):
     mock_response.data.decode.return_value = "v2.0.0"
     mock_request.return_value = mock_response
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(Exception):
         check_version()
 
 

@@ -16,9 +16,9 @@
     - Rule descriptions, logging, and actions (jump, offload)
 """
 
-from package.data_file_functions import read_user_data_file
 import json
-import logging
+
+from package.data_file_functions import read_user_data_file
 
 
 def download_json_data(session):
@@ -37,7 +37,7 @@ def download_json_data(session):
     return json_data
 
 
-def generate_config(session, snapshot="current", diff="False"):
+def generate_config(session, snapshot="current", diff=False):
     """
     Generates firewall configuration from user data
 
@@ -50,7 +50,7 @@ def generate_config(session, snapshot="current", diff="False"):
         list: Configuration commands
     """
 
-    if diff == "False":
+    if not diff:
         # Get user data
         user_data = read_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}'
@@ -77,14 +77,14 @@ def generate_config(session, snapshot="current", diff="False"):
 
     # Add Extra Items
     if "extra-items" in user_data:
-        config.append(f"#\n#\n# Extra Configuration Items\n#\n#")
+        config.append("#\n#\n# Extra Configuration Items\n#\n#")
         for item in user_data["extra-items"]:
             config.append(f"{item}")
         config.append("")
 
     # Work through each IP Version, Chain and Rule adding to config
     if "flowtables" in user_data:
-        config.append(f"#\n#\n# FLOW TABLES\n#\n#\n")
+        config.append("#\n#\n# FLOW TABLES\n#\n#\n")
 
         for flowtable in user_data["flowtables"]:
             config.append(f"# Flowtable: {flowtable["name"]}")
@@ -112,12 +112,12 @@ def generate_config(session, snapshot="current", diff="False"):
             and ip_version != "version"
         ):
             if ip_version == "ipv4":
-                config.append(f"#\n#\n# IPv4\n#\n#\n")
+                config.append("#\n#\n# IPv4\n#\n#\n")
             if ip_version == "ipv6":
-                config.append(f"#\n#\n# IPv6\n#\n#\n")
+                config.append("#\n#\n# IPv6\n#\n#\n")
 
             if "groups" in user_data[ip_version]:
-                config.append(f"#\n# Groups\n#")
+                config.append("#\n# Groups\n#")
                 for group_name in user_data[ip_version]["groups"]:
                     # Get Values
                     group_desc = user_data[ip_version]["groups"][group_name][
@@ -507,7 +507,7 @@ def generate_config(session, snapshot="current", diff="False"):
                         config.append("")
 
     # If this is a Diff, just return the config
-    if diff == True:
+    if diff:
         return config
 
     # Convert list of lines to single string

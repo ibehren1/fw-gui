@@ -12,23 +12,24 @@ The module uses MongoDB for data persistence and Fernet for symmetric encryption
 It handles both individual user data and system-wide backups.
 """
 
-from cryptography.fernet import Fernet
-from datetime import datetime
-from flask import app, flash, redirect, url_for
-import boto3
-import bson
 import glob
 import json
 import logging
 import os
-import pymongo
 import random
 import string
-import sys
-import uuid
 
 # B404 -- security implications considered.
 import subprocess  # nosec
+import sys
+import uuid
+from datetime import datetime
+
+import boto3
+import bson
+import pymongo
+from cryptography.fernet import Fernet
+from flask import flash
 
 
 def add_extra_items(session, request):
@@ -66,14 +67,14 @@ def add_extra_items(session, request):
 
     if extra_items == default_extra_items:
         logging.info("MATCH")
-        flash(f"There are no extra configuration items to add.", "warning")
+        flash("There are no extra configuration items to add.", "warning")
         return
     else:
         user_data["extra-items"] = extra_items
         write_user_data_file(
             f'{session["data_dir"]}/{session["firewall_name"]}', user_data
         )
-        flash(f"Extra items added to configuration.", "success")
+        flash("Extra items added to configuration.", "success")
         return
 
 
@@ -177,7 +178,7 @@ def create_backup(session, user=False):
 
         except Exception as e:
             logging.info(e)
-            flash(f"Backup failed.", "critical")
+            flash("Backup failed.", "critical")
 
     else:
         user = session["username"]
@@ -205,7 +206,7 @@ def create_backup(session, user=False):
 
         except Exception as e:
             logging.info(e)
-            flash(f"Backup failed.", "critical")
+            flash("Backup failed.", "critical")
 
     return
 
@@ -281,7 +282,7 @@ def delete_user_data_file(filename):
     collection_name = filename.split("/")[1]
     firewall = filename.split("/")[2]
 
-    logging.debug(f"Prepping Mongo query.")
+    logging.debug("Prepping Mongo query.")
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
@@ -292,7 +293,7 @@ def delete_user_data_file(filename):
     else:
         query = {"_id": firewall}
 
-    logging.debug(f"Deleting data from Mongo.")
+    logging.debug("Deleting data from Mongo.")
     logging.debug(query)
     result = collection.delete_one(query)
     logging.debug(result.deleted_count, " documents deleted")
@@ -330,7 +331,7 @@ def get_extra_items(session):
 
     # If there are no filters, flash message
     if extra_items == []:
-        flash(f"There are no extra configuration items defined.", "warning")
+        flash("There are no extra configuration items defined.", "warning")
         extra_items = [
             "# Enter set commands here, one per line.",
             "# set firewall global-options all-ping 'enable'",
@@ -474,7 +475,7 @@ def list_full_backups(session):
     """
     full_backup_list = []
 
-    files = os.listdir(f"data/backups")
+    files = os.listdir("data/backups")
 
     for file in files:
         if ".zip" in file:
@@ -514,13 +515,13 @@ def list_snapshots(session):
     if "firewall_name" in session:
         collection_name = f"{session['username']}"
 
-        logging.debug(f"Prepping Mongo query.")
+        logging.debug("Prepping Mongo query.")
         client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
         db = client[os.environ.get("MONGODB_DATABASE")]
         collection = db[collection_name]
         query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
 
-        logging.debug(f"Reading data from Mongo.")
+        logging.debug("Reading data from Mongo.")
         for doc in collection.find(query).sort("_id", pymongo.ASCENDING):
             if "tag" in doc:
                 tag = doc["tag"]
@@ -591,13 +592,13 @@ def list_user_files(session):
     file_list = []
     collection_name = f"{session['username']}"
 
-    logging.debug(f"Prepping Mongo query.")
+    logging.debug("Prepping Mongo query.")
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
     query = {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
 
-    logging.debug(f"Reading data from Mongo.")
+    logging.debug("Reading data from Mongo.")
     for doc in collection.find(query):
         file_list.append(doc["_id"])
 
@@ -656,7 +657,7 @@ def mongo_dump():
 
     No parameters or return values.
     """
-    logging.info(f"Dumping MongoDB Backup")
+    logging.info("Dumping MongoDB Backup")
 
     timestamp = str(datetime.now()).replace(" ", "-")
     db_name = os.environ.get("MONGODB_DATABASE")
@@ -704,7 +705,7 @@ def process_upload(session, request, app):
         - For key files, generates and displays encryption key
     """
     if "file" not in request.files:
-        flash(f"No file upload!", "danger")
+        flash("No file upload!", "danger")
         return
     else:
         file = request.files["file"]
@@ -736,7 +737,7 @@ def process_upload(session, request, app):
                 filename = filename.replace(".json", "")
                 write_user_data_file(f'{session["data_dir"]}/{filename}', user_data)
                 os.remove(f"data/uploads/{filename}.json")
-        except:
+        except Exception:
             flash("File is not valid JSON", "danger")
 
     if filetype == "key":
@@ -763,10 +764,10 @@ def process_upload(session, request, app):
                     )
                 os.remove(f"data/uploads/{filename}")
                 flash(
-                    f"SSH key has been uploaded and encrypted.  To use the SSH Key you will have to provide the encryption key.",
+                    "SSH key has been uploaded and encrypted.  To use the SSH Key you will have to provide the encryption key.",
                     "success",
                 )
-        except:
+        except Exception:
             flash("File is not valid key", "danger")
 
     return
@@ -798,7 +799,7 @@ def read_user_data_file(filename, snapshot="current", diff=False):
         collection_name = filename.split("/")[1]
         firewall = filename.split("/")[2]
 
-        logging.debug(f"Prepping Mongo query.")
+        logging.debug("Prepping Mongo query.")
         client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
         db = client[os.environ.get("MONGODB_DATABASE")]
         collection = db[collection_name]
@@ -808,7 +809,7 @@ def read_user_data_file(filename, snapshot="current", diff=False):
         else:
             query = {"firewall": firewall, "snapshot": snapshot}
 
-        logging.debug(f"Reading data from Mongo.")
+        logging.debug("Reading data from Mongo.")
         for data in collection.find(query):
             user_data = data
             if "version" not in user_data:
@@ -824,12 +825,12 @@ def read_user_data_file(filename, snapshot="current", diff=False):
 
             # If this was not a read of "current", then we want to immediately
             #   write over current with the snapshot data.
-            if snapshot != "current" and diff == False:
+            if snapshot != "current" and not diff:
                 delete_user_data_file(filename)
                 write_user_data_file(filename, user_data)
             return user_data
 
-    except:
+    except Exception:
         return {}
 
 
@@ -968,7 +969,7 @@ def upload_backup_file(backup_file):
         None
     """
 
-    logging.debug(f"Retrieving bucket name and credentials from environment variables")
+    logging.debug("Retrieving bucket name and credentials from environment variables")
 
     bucket_name = os.environ.get("BUCKET_NAME")
 
@@ -992,8 +993,8 @@ def upload_backup_file(backup_file):
             )
             s3.upload_file(backup_file, bucket_name, key)
 
-            flash(f"Backup file uploaded to S3.", "success")
-            logging.info(f"Backup file uploaded to S3.")
+            flash("Backup file uploaded to S3.", "success")
+            logging.info("Backup file uploaded to S3.")
 
             return
 
@@ -1032,7 +1033,7 @@ def validate_mongodb_connection(mongodb_uri):
         logging.info("  |--> MongoDB connection successful.")
         client.close()
         return True
-    except:
+    except Exception:
         logging.error("  |--> MongoDB connection failed!")
         sys.exit()
 
@@ -1061,7 +1062,7 @@ def write_user_command_conf_file(session, command_list, delete=False):
     with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
         if delete is True:
             f.write(
-                f"#\n# Delete all firewall before setting new values\ndelete firewall\n"
+                "#\n# Delete all firewall before setting new values\ndelete firewall\n"
             )
             for line in command_list:
                 f.write(f"{line}\n")
@@ -1103,7 +1104,7 @@ def write_user_data_file(filename, data, snapshot="current"):
     collection_name = filename.split("/")[1]
     firewall = filename.split("/")[2]
 
-    logging.debug(f"Prepping Mongo query.")
+    logging.debug("Prepping Mongo query.")
     client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
@@ -1126,7 +1127,7 @@ def write_user_data_file(filename, data, snapshot="current"):
         query = {"firewall": firewall, "snapshot": snapshot}
     values = {"$set": data}
 
-    logging.debug(f"Writing data to Mongo.")
+    logging.debug("Writing data to Mongo.")
     logging.debug(query)
     result = collection.update_one(query, values, upsert=True)
     logging.debug(result.modified_count, " documents updated")
