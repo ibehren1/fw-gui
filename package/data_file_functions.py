@@ -628,7 +628,7 @@ def list_user_keys(session):
     """
     key_list = []
 
-    files = os.listdir(f"{session['data_dir']}")
+    files = os.listdir(f"{session['data_dir']}/{session['user']}")
 
     for file in files:
         if ".key" in file:

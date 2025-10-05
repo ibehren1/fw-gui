@@ -1,65 +1,48 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<form action="/user_registration" , method="post">
-    <table class="table">
+<div class="login-container">
+    <div class="login-form">
+        <h2 class="section-title">Register</h2>
+        
         {% with flashed_messages = get_flashed_messages(with_categories=true) %}
         {% if flashed_messages %}
-        <tr>
-            <td colspan="2">
-                {% for category, flash_message in flashed_messages %}
-                <div class="alert alert-{{ category }}">
-                    {{flash_message}}
-                </div>
-                {% endfor %}
-                {% endif %}
-            </td>
-        </tr>
+        <div class="flash-messages">
+            {% for category, flash_message in flashed_messages %}
+            <div class="alert alert-{{ category }}">
+                {{flash_message}}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
-        <tr>
-            <td>
-                <label for="username">Username</label>
-            </td>
-            <td>
-                <input type=text name=username><br>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label for="email">Email Address</label>
-            </td>
-            <td>
-                <input type=text name=email><br>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label for="password">Password</label>
-            </td>
-            <td>
-                <input type=password name=password><br>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label for="password_confirm">Confirm Password</label>
-            </td>
-            <td>
-                <input type=password name=confirm_password><br>
-            </td>
-        </tr>
-        <tr>
-            <td></td>
-            <td align="center" colspan="2">
-                <p><input type=submit value=Register>
-            </td>
-        </tr>
-        <tr>
-            <td align="center" colspan="2">
+        
+        <form action="/user_registration" method="post" class="form">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" name="username" id="username" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" name="email" id="email" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" name="password" id="password" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" class="form-input" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary full-width">Register</button>
+            
+            <div class="register-link">
                 Already registered? <a href="{{url_for('user_login')}}" class="link">Login</a>
-            </td>
-        </tr>
-    </table>
-</form>
-<br><br>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock body %}

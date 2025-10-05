@@ -1,74 +1,173 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th align="left">
-            <h2>Add Filter</h2>
-        </th>
-    </tr>
-    <tr>
-        <td>
-            Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
-            Filters exist primarily just to jump to a chain of interface and direction specific rules.
-            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                class="docs_link">
-                Docs&#x2197
+<div class="filter-form">
+    <div class="form-header">
+        <h2 class="section-title">Add Filter</h2>
+        <p class="section-description">
+            Filters define how firewall chains are applied to network interfaces and traffic directions.
+            Configure the filter properties and assign chains.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/general.html" target="_blank" class="docs_link">
+                Documentation ↗
             </a>
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1" width="100%">
-    <form action="/filter_add" , method="post">
-        <tr>
-            <td colspan="4" style="vertical-align: top;" width="100%">
-                <p class="section_heading">
-                    Description
-                </p>
-                <label for="description"></label>
-                <input type="text" id="description" name="description" size=70% value=""><br>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    IP Version
-                </p>
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
-            </td>
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    Filter Type
-                </p>
-                <input type="radio" name="type" value="input" checked="checked">&nbsp;input<br>
-                <input type="radio" name="type" value="forward">&nbsp;forward<br>
-                <input type="radio" name="type" value="output">&nbsp;output<br>
-            </td>
-
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    Default Action
-                </p>
-                <input type="radio" name="default_action" value="accept" checked="checked">&nbsp;accept<br>
-                <input type="radio" name="default_action" value="drop">&nbsp;drop<br>
-            </td>
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    Logging
-                </p>
-                <input type="checkbox" id="logging" name="logging" value="True">
-                <label for="logging">&nbsp;Enable</label>
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="4" width="100%">
-                <button class="add_rule_button" type="submit" value="Add Filter" style="width: 15%"
-                    title="Add filter.">Add Filter</button>
-            </td>
-        </tr>
+        </p>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/filter_add" method="post" class="form">
+        <input type="hidden" name="type" value="add">
+        
+        <div class="form-grid">
+            <div class="form-section">
+                <h3 class="subsection-title">Basic Configuration</h3>
+                
+                <div class="form-group">
+                    <label for="filter_name" class="form-label">Filter Name</label>
+                    <input type="text" name="filter_name" id="filter_name" class="form-input" 
+                           value="{{ filter_detail.filter_name if filter_detail.filter_name else '' }}" 
+                           placeholder="Enter filter name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Description (Optional)</label>
+                    <input type="text" name="description" id="description" class="form-input" 
+                           value="{{ filter_detail.description if filter_detail.description else '' }}" 
+                           placeholder="Brief description of the filter">
+                </div>
+                
+                <div class="form-group">
+                    <label for="interface" class="form-label">Interface</label>
+                    <select name="interface" id="interface" class="form-select" required>
+                        <option value="">Select interface...</option>
+                        {% if interfaces %}
+                        {% for interface in interfaces %}
+                        <option value="{{ interface.name }}" 
+                                {% if filter_detail.interface == interface.name %}selected{% endif %}>
+                            {{ interface.name }}
+                        </option>
+                        {% endfor %}
+                        {% else %}
+                        <option value="" disabled>No interfaces available</option>
+                        {% endif %}
+                    </select>
+                    {% if not interfaces %}
+                    <small class="form-help">
+                        <a href="{{ url_for('interface_add') }}" class="link">Add interfaces first</a> to create filters.
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3 class="subsection-title">Chain Assignment</h3>
+                
+                <div class="form-group">
+                    <label for="input_chain" class="form-label">Input Chain</label>
+                    <select name="input_chain" id="input_chain" class="form-select">
+                        <option value="">No input chain</option>
+                        {% if input_chains %}
+                        {% for chain in input_chains %}
+                        <option value="{{ chain.name }}" 
+                                {% if filter_detail.input_chain == chain.name %}selected{% endif %}>
+                            {{ chain.name }}
+                        </option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                    <small class="form-help">Chain for incoming traffic to this interface</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="output_chain" class="form-label">Output Chain</label>
+                    <select name="output_chain" id="output_chain" class="form-select">
+                        <option value="">No output chain</option>
+                        {% if output_chains %}
+                        {% for chain in output_chains %}
+                        <option value="{{ chain.name }}" 
+                                {% if filter_detail.output_chain == chain.name %}selected{% endif %}>
+                            {{ chain.name }}
+                        </option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                    <small class="form-help">Chain for outgoing traffic from this interface</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="forward_chain" class="form-label">Forward Chain</label>
+                    <select name="forward_chain" id="forward_chain" class="form-select">
+                        <option value="">No forward chain</option>
+                        {% if forward_chains %}
+                        {% for chain in forward_chains %}
+                        <option value="{{ chain.name }}" 
+                                {% if filter_detail.forward_chain == chain.name %}selected{% endif %}>
+                            {{ chain.name }}
+                        </option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                    <small class="form-help">Chain for traffic forwarded through this interface</small>
+                </div>
+                
+                {% if flowtables %}
+                <div class="form-group">
+                    <label for="flowtable" class="form-label">Flowtable (Optional)</label>
+                    <select name="flowtable" id="flowtable" class="form-select">
+                        <option value="">No flowtable</option>
+                        {% for flowtable in flowtables %}
+                        <option value="{{ flowtable.name }}" 
+                                {% if filter_detail.flowtable == flowtable.name %}selected{% endif %}>
+                            {{ flowtable.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-help">Flowtable for hardware offloading</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if not input_chains and not output_chains and not forward_chains %}
+        <div class="warning-section">
+            <div class="alert alert-warning">
+                <strong>No chains available!</strong> 
+                <a href="{{ url_for('chain_add') }}" class="link">Create chains first</a> before adding filters.
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" 
+                    {% if not interfaces or (not input_chains and not output_chains and not forward_chains) %}disabled{% endif %}>
+                Add Filter
+            </button>
+            <a href="{{ url_for('filter_view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.filter-form {
+    max-width: 1000px;
+}
+
+.warning-section {
+    margin: 2rem 0;
+}
+
+.form-actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
 {% endblock body %}

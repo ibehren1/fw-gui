@@ -1,53 +1,140 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table" border="0">
-    <tr>
-        <td colspan="2" align="left">
-            <p class="section_heading">Backups</p>
-            <hr width="100%">
-        </td>
-    </tr>
-    <tr>
-        <td width="75%">
-            While encrypted, any <font class="yellow_text">SSH keys</font> which have been uploaded <font
-                class="yellow_text">are excluded from backups</font>.<br><br>
-            If an S3 bucket name and proper credentials are provided as environment variables to the application,
-            the
-            backup file is uploaded to the bucket for offsite storage.
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2" align="left">
-            <p class="section_heading">Create Full Backup</p>
-        </td>
-    </tr>
-    <tr>
-        <td width="75%">
-            Press button to create a full backup of the data directory and a dump of the MongoDB.<br><br>
-            The backup will be created in the data/backups directory and must be accessed via operating system level
-            access to the filesystem. The backup includes all user directories and a full MongoDB dump.
-        </td>
-        <td align="center" width="25%">
-            <form action="/admin_settings" method=post enctype=multipart/form-data>
-                <input type="hidden" id="backup" name="backup" value="full_backup">
-                <button class="add_rule_button" class="button" type="submit" value="Create Full Backup"
-                    style="width: 100%;" style="width: 20%"
-                    title="Create a new full backup zip file which can be access in the host file system or S3 bucket if configured.">Create
-                    Full Backup</button>
+<div class="admin-settings">
+    <h2 class="section-title">Admin Settings</h2>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <div class="settings-grid">
+        <div class="settings-card">
+            <h3 class="subsection-title">Create Backup</h3>
+            <p class="settings-description">
+                Create a backup of all configurations and user data.  SSH keys are excluded from backups for security.
+            </p>
+            <form action="/admin_settings" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="backup" value="full_backup">
+                <button type="submit" class="btn btn-primary full-width">Create Full Backup</button>
             </form>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2">
-            <li class="li"><b>Existing Full Backups</b></li>
-            {% for file in full_backup_list%}
-            <ul class="ul">
-                {{file}}
-            </ul>
-            {% endfor %}
-        </td>
-    </tr>
-</table>
-<br><br>
+            
+            {% if full_backup_list %}
+            <div class="backup-list">
+                <h4 class="backup-list-title">Existing Full Backups</h4>
+                <p class="settings-description">
+                    Backups must be accessed via operating system level or from S3 if configured.
+                </p>
+                <ul class="backup-files">
+                    {% for file in full_backup_list %}
+                    <li class="backup-file">{{ file }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="settings-card">
+            <h3 class="subsection-title">System Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Version:</span>
+                    <span class="info-value">{{ config['VERSION'] }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Users:</span>
+                    <span class="info-value">{{ user_count if user_count else 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Configurations:</span>
+                    <span class="info-value">{{ config_count if config_count else 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-settings {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+}
+
+.settings-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.info-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-label {
+    font-weight: 600;
+}
+
+.info-value {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.backup-list {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.backup-list-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.backup-files {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.backup-file {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    border-left: 3px solid var(--primary-color);
+}
+</style>
 {% endblock body %}

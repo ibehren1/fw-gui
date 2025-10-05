@@ -1,70 +1,108 @@
 {% extends "basic_page.html" %}
 {% block body %}
+<div class="interface-view">
+    <div class="view-header">
+        <h2 class="section-title">Interfaces</h2>
+        <a href="{{ url_for('interface_add') }}" class="btn btn-add">Add Interface</a>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    {% if interface_list %}
+    <div class="interfaces-grid">
+        {% for interface in interface_list|sort(attribute='name') %}
+        <div class="interface-card">
+            <div class="interface-header">
+                <h3 class="interface-name">{{ interface.name }}</h3>
+                <form action="/interface_delete" method="post" class="delete-form">
+                    <input type="hidden" name="interface" value="{{ interface.name }}">
+                    <button type="submit" class="btn btn-delete-small" 
+                            onclick="return confirm('Delete interface {{ interface.name }}?')" 
+                            title="Delete interface">×</button>
+                </form>
+            </div>
+            {% if interface.description %}
+            <p class="interface-description">{{ interface.description }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No interfaces configured. Add an interface to get started.</p>
+        <a href="{{ url_for('interface_add') }}" class="btn btn-primary">Add First Interface</a>
+    </div>
+    {% endif %}
+</div>
 
+<style>
+.interface-view {
+    max-width: 1000px;
+}
 
-<br>
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
 
-<p class="section_heading">Interfaces</p>
-This section defines interfaces to be referenced by Flow Tables and in Filters.<br>
-It <b>does not</b> define or configure the interface in VyOS.
-<br><br>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
+.interfaces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
 
-    <th>
-        Name
-    </th>
+.interface-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-    <th colspan="2">
-        Description
-    </th>
+.interface-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
 
-    <th width="45px">
-        Delete
-    </th>
+.interface-name {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0;
+}
 
-    {% for item in interface_list|sort(attribute='name') %}
-    <tr>
-        <td align="center">
-            <form action="/interface_add" , method="post">
-                <input type="hidden" id="interface" name="type" value="edit">
-                <input type="hidden" id="interface" name="interface_name" value="{{item.name}}">
-                <input type="hidden" id="interface" name="interface_desc" value="{{item.description}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
+.interface-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    font-size: 0.9rem;
+}
 
-        <td align="center">
-            <image src="static/network-interface-32-yellow.svg" align="center" width="20" height="20"></image>
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.name}}
-            </font>
-        </td>
+.delete-form {
+    margin: 0;
+}
 
-        <td colspan="2">
-            {{item.description}}
-        </td>
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+}
 
-        <td align="center">
-            <form action="/interface_delete" , method="post">
-                <input type="hidden" id="interface" name="interface" value="{{item.name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete interface {{item.name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <td colspan="5">
-            <form action="/interface_add" , method="get">
-                <input type="hidden" id="interface" name="type" value="edit">
-                <input class="add_rule_button" type="submit" value="Add Interface" title="Add an interface.">
-            </form>
-        </td>
-    </tr>
-</table>
-<br><br>
+.empty-state p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
+}
+</style>
 {% endblock body %}

@@ -1,33 +1,85 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table" width="100%">
-    <tr>
-        <td align="center">
-            <h2 class="page_heading">Firewall Configuration</h2>
-        </td>
-    </tr>
-    <tr>
-        <td width="100%">
-            The below VyOS CLI configuration commands can be copied and pasted to the CLI for firewall configuration or
-            download the whole configuration with the button on the right.
-            <a href="https://docs.vyos.io/en/sagitta/cli.html" target=”_blank” class="docs_link">
-                Docs&#x2197
+<div class="config-display">
+    <div class="config-header">
+        <h2 class="section-title">Firewall Configuration</h2>
+        <p class="config-description">
+            The VyOS CLI configuration commands below can be copied and pasted to the CLI for firewall configuration, 
+            or download the complete configuration using the button in the sidebar.
+            <a href="https://docs.vyos.io/en/sagitta/cli.html" target="_blank" class="docs_link">
+                Documentation ↗
             </a>
-        </td>
-    </tr>
-    <tr>
-        <!-- <td style="font-family: 'Courier New', Courier, monospace;"> -->
-        <td class="configuration">
-            <pre>
-                <code>
-            {% autoescape false %}
-{{message}}
-            {% endautoescape %}
-                </code>
-            </pre>
-        </td>
-    </tr>
-</table>
-<br><br>
+        </p>
+    </div>
+    
+    <div class="config-content">
+        <div class="config-toolbar">
+            <button onclick="copyToClipboard()" class="btn btn-secondary">Copy to Clipboard</button>
+        </div>
+        <pre class="configuration" id="config-text">{% autoescape false %}{{message}}{% endautoescape %}</pre>
+    </div>
+</div>
+
+<script>
+function copyToClipboard() {
+    const text = document.getElementById('config-text').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        // Show success feedback
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    });
+}
+</script>
+
+<style>
+.config-display {
+    max-width: 100%;
+}
+
+.config-header {
+    margin-bottom: 2rem;
+}
+
+.config-description {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-top: 0.5rem;
+}
+
+.config-content {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.config-toolbar {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.configuration {
+    margin: 0;
+    padding: 1.5rem;
+    background: var(--light-color);
+    color: var(--text-dark);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.7rem !important;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.btn-success {
+    background: var(--success-color) !important;
+    color: var(--text-light) !important;
+}
+</style>
 {% endblock body %}

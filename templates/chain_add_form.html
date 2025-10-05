@@ -1,74 +1,157 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th colspan="3" align="left">
-            <h2> Add Firewall Chain </h2>
-        </th>
-    </tr>
-    <tr>
-        <td colspan="4">
-            For firewall filtering, firewall rules needs to be created. Each rule is numbered, has an action to
-            apply if the rule is matched, and the ability to specify multiple criteria matchers. Data packets go
-            through the rules from 1 - 999999, so order is crucial. At the first match the action of the rule will
-            be executed.
-            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                class="docs_link">
-                Docs&#x2197
+<div class="chain-form">
+    <div class="form-header">
+        <h2 class="section-title">Add Chain</h2>
+        <p class="section-description">
+            Chains contain firewall rules and define how traffic is processed. 
+            Configure the chain properties and default policy.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/general.html" target="_blank" class="docs_link">
+                Documentation ↗
             </a>
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1" width="100%">
-    <form action="/chain_add" , method="post">
-        <tr>
-            <td rowspan="2" style="vertical-align: top;" width="15%">
-                <p class="section_heading">
-                    IP Version
-                </p>
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
-            </td>
-            <td rowspan="2" style="vertical-align: top;" width="40%">
-                <p class="section_heading">
-                    Chain Name
-                </p>
-                <input type="text" id="fw_chain" name="fw_chain" size="40%" value=""><br>
-                <p class="section_heading">
-                    Chain Description
-                </p>
-                <input type="text" id="description" name="description" size="40%" value=""><br>
-            </td>
-            <td width="20%">
-                <p class="section_heading">
-                    Logging
-                </p>
-                <input type="checkbox" id="logging" name="logging" value="True" checked>
-                <label for="logging">&nbsp;Enable</label>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="12%">
-                <p class="section_heading">
-                    Default Action
-                </p>
-                <input type="radio" name="default_action" value="accept">&nbsp;accept<br>
-                <input type="radio" name="default_action" value="continue">&nbsp;continue<br>
-                <input type="radio" name="default_action" value="drop" checked="checked">&nbsp;drop<br>
-                <input type="radio" name="default_action" value="jump">&nbsp;jump<br>
-                <input type="radio" name="default_action" value="reject">&nbsp;reject<br>
-                <input type="radio" name="default_action" value="return">&nbsp;return<br>
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="3">
-                <button class="add_rule_button" type="submit" value="Add Chain" style="width: 15%"
-                    title="Add chain.">Add Chain</button>
-            </td>
-        </tr>
+        </p>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/chain_add" method="post" class="form">
+        <input type="hidden" name="type" value="add">
+        
+        <div class="form-grid">
+            <div class="form-section">
+                <h3 class="subsection-title">Basic Configuration</h3>
+                
+                <div class="form-group">
+                    <label for="chain_name" class="form-label">Chain Name</label>
+                    <input type="text" name="chain_name" id="chain_name" class="form-input" 
+                           value="{{ chain_detail.chain_name if chain_detail.chain_name else '' }}" 
+                           placeholder="Enter chain name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Description (Optional)</label>
+                    <input type="text" name="description" id="description" class="form-input" 
+                           value="{{ chain_detail.description if chain_detail.description else '' }}" 
+                           placeholder="Brief description of the chain">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">IP Version</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv4" 
+                                   {% if chain_detail.ip_version == 'ipv4' or not chain_detail.ip_version %}checked{% endif %}>
+                            <span>IPv4</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv6" 
+                                   {% if chain_detail.ip_version == 'ipv6' %}checked{% endif %}>
+                            <span>IPv6</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3 class="subsection-title">Chain Policy</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Default Action</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="default_action" value="accept" 
+                                   {% if chain_detail.default_action == 'accept' or not chain_detail.default_action %}checked{% endif %}>
+                            <span>Accept</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="default_action" value="drop" 
+                                   {% if chain_detail.default_action == 'drop' %}checked{% endif %}>
+                            <span>Drop</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="default_action" value="reject" 
+                                   {% if chain_detail.default_action == 'reject' %}checked{% endif %}>
+                            <span>Reject</span>
+                        </label>
+                    </div>
+                    <small class="form-help">Default action for packets that don't match any rules</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Chain Type</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="chain_type" value="input" 
+                                   {% if chain_detail.chain_type == 'input' or not chain_detail.chain_type %}checked{% endif %}>
+                            <span>Input</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="chain_type" value="output" 
+                                   {% if chain_detail.chain_type == 'output' %}checked{% endif %}>
+                            <span>Output</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="chain_type" value="forward" 
+                                   {% if chain_detail.chain_type == 'forward' %}checked{% endif %}>
+                            <span>Forward</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Enable Logging</label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="enable_logging" value="true" 
+                               {% if chain_detail.enable_logging %}checked{% endif %}>
+                        <span class="checkbox-label">Log dropped packets</span>
+                    </label>
+                    <small class="form-help">Enable logging for packets that are dropped by this chain</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Chain</button>
+            <a href="{{ url_for('chain_view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.chain-form {
+    max-width: 1000px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    width: fit-content;
+}
+
+.checkbox-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.checkbox-item input[type="checkbox"]:checked + .checkbox-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+</style>
 {% endblock body %}

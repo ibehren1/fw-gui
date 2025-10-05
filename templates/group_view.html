@@ -1,669 +1,585 @@
 {% extends "basic_page.html" %}
 {% block body %}
-
-<hr>
-<table class="groups_table" id="toc" width="100%">
-    <tr>
-        <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="chain_heading">IPv4 Groups</p>
-                <hr>
-                <ul class="toc_list">
-                    <li>
-                        <a class="link" href="#ipv4addressgroup">address groups</a>
-                    </li>
-                    <li>
-                        <a class="link" href="#ipv4networkgroup">network groups</a>
-                    </li>
-                </ul>
+<div class="group-view" id="top">
+    <div class="view-header">
+        <h2 class="section-title">Firewall Groups</h2>
+        <a href="{{ url_for('group_add') }}" class="btn btn-add">Add Group</a>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Quick Navigation -->
+    <div class="group-nav">
+        <div class="nav-section">
+            <h3 class="nav-title">IPv4 Groups</h3>
+            <div class="nav-links">
+                <a href="#ipv4-address" class="nav-link">Address Groups</a>
+                <a href="#ipv4-network" class="nav-link">Network Groups</a>
             </div>
-        </td>
-        <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="chain_heading">IPv6 Groups</p>
-                <hr>
-                <ul class="toc_list">
-                    <li>
-                        <a class="link" href="#ipv6addressgroup">address groups</a>
-                    </li>
-                    <li>
-                        <a class="link" href="#ipv6networkgroup">network groups</a>
-                    </li>
-                </ul>
+        </div>
+        <div class="nav-section">
+            <h3 class="nav-title">IPv6 Groups</h3>
+            <div class="nav-links">
+                <a href="#ipv6-address" class="nav-link">Address Groups</a>
+                <a href="#ipv6-network" class="nav-link">Network Groups</a>
             </div>
-        </td>
-        <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="chain_heading">Other Groups</p>
-                <hr>
-                <ul class="toc_list">
-                    <li>
-                        <a class="link" href="#domaingroup">domain groups</a>
-                    </li>
-                    <li>
-                        <a class="link" href="#macgroup">mac groups</a>
-                    </li>
-                    <li>
-                        <a class="link" href="#portgroup">port groups</a>
-                    </li>
-                </ul>
+        </div>
+        <div class="nav-section">
+            <h3 class="nav-title">Other Groups</h3>
+            <div class="nav-links">
+                <a href="#domain" class="nav-link">Domain Groups</a>
+                <a href="#mac" class="nav-link">MAC Groups</a>
+                <a href="#port" class="nav-link">Port Groups</a>
             </div>
-        </td>
-    </tr>
-</table>
-<hr>
-<br>
-
-<p class="section_heading">IPv4 Groups</p>
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="chain_heading">Address Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list|sort(attribute='group_name') %}
-    {% if item.ip_version == 'ipv4' %}
-    {% if item.group_type == 'address-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            <font style="font-variant: small-caps;">
-                {% for value in item.group_value %}
-                {{value}}<br>
-                {% endfor %}
-            </font>
-        </td>
-
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv4 Address Group.">
-            </form>
-        </td>
-    </tr>
-</table>
-
-<br>
-
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="chain_heading">Network Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="ipv4networkgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list|sort(attribute='group_name') %}
-    {% if item.ip_version == 'ipv4' %}
-    {% if item.group_type == 'network-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            <font style="font-variant: small-caps;">
-                {% for value in item.group_value %}
-                {{value}}<br>
-                {% endfor %}
-            </font>
-        </td>
-
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv4 Network Group.">
-            </form>
-        </td>
-    </tr>
-</table>
-
-
-
-<p class="section_heading">IPv6 Groups</p>
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="chain_heading">Address Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="ipv6addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list %}
-    {% if item.ip_version == 'ipv6' %}
-    {% if item.group_type == 'address-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
+        </div>
+    </div>
+    
+    <!-- IPv4 Address Groups -->
+    <div id="ipv4-address" class="group-section">
+        <div class="section-header">
+            <div class="section-header"><h3 class="section-heading">IPv4 Address Groups</h3></div>
+            <a href="#top" class="back-to-top">↑ Top</a>
+        </div>
+        {% set ipv4_address_groups = group_list|selectattr('group_type', 'equalto', 'address-group')|selectattr('ip_version', 'equalto', 'ipv4')|list %}
+        {% if ipv4_address_groups %}
+        <div class="groups-grid">
+            {% for group in ipv4_address_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} members</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
-        </td>
-
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv6,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv6 Address Group.">
-            </form>
-        </td>
-    </tr>
-</table>
-
-<br>
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="chain_heading">Network Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="ipv6networkgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list %}
-    {% if item.ip_version == 'ipv6' %}
-    {% if item.group_type == 'network-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No IPv4 address groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- IPv4 Network Groups -->
+    <div id="ipv4-network" class="group-section">
+        <div class="section-header"><h3 class="section-heading">IPv4 Network Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+        {% set ipv4_network_groups = group_list|selectattr('group_type', 'equalto', 'network-group')|selectattr('ip_version', 'equalto', 'ipv4')|list %}
+        {% if ipv4_network_groups %}
+        <div class="groups-grid">
+            {% for group in ipv4_network_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} networks</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
-        </td>
-
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new IPv6 Network Group.">
-            </form>
-        </td>
-    </tr>
-</table>
-<br>
-
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="section_heading">Domain Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="domaingroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list|sort(attribute='group_name') %}
-    {% if item.group_type == 'domain-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="ipv4">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            <font style="font-variant: small-caps;">
-                {% for value in item.group_value %}
-                {{value}}<br>
-                {% endfor %}
-            </font>
-        </td>
-
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new Domain Group.">
-            </form>
-        </td>
-    </tr>
-</table>
-<br>
-
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="section_heading">MAC Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="macgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list|sort(attribute='group_name') %}
-    {% if item.group_type == 'mac-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No IPv4 network groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- IPv6 Address Groups -->
+    <div id="ipv6-address" class="group-section">
+        <div class="section-header"><h3 class="section-heading">IPv6 Address Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+        {% set ipv6_address_groups = group_list|selectattr('group_type', 'equalto', 'address-group')|selectattr('ip_version', 'equalto', 'ipv6')|list %}
+        {% if ipv6_address_groups %}
+        <div class="groups-grid">
+            {% for group in ipv6_address_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="ipv6,{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} members</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
-        </td>
-
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="ipv4,{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new MAC Group">
-            </form>
-        </td>
-    </tr>
-</table>
-<br>
-
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="section_heading">Port Groups</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" id="portgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
-
-    <th colspan="2">
-        Name
-    </th>
-
-    <th colspan="2">
-        Description
-    </th>
-
-    <th>
-        Value(s)
-    </th>
-
-    <th width="45px">
-        Delete
-    </th>
-
-    {% for item in group_list|sort(attribute='group_name') %}
-    {% if item.group_type == 'port-group' %}
-    <tr>
-        <td align="center">
-            <form action="/group_add" , method="post">
-                <input type="hidden" id="group" name="type" value="edit">
-                <input type="hidden" id="group" name="ip_version" value="{{item.ip_version}}">
-                <input type="hidden" id="group" name="group_desc" value="{{item.group_desc}}">
-                <input type="hidden" id="group" name="group_name" value="{{item.group_name}}">
-                <input type="hidden" id="group" name="group_value" value="{{item.group_value}}">
-                <input type="hidden" id="group" name="group_type" value="{{item.group_type}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
-
-        <td colspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.group_name}}
-            </font>
-        </td>
-
-        <td colspan="2">
-            {{item.group_desc}}
-        </td>
-
-        <td align="center">
-            {% for value in item.group_value %}
-            {{value}}<br>
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No IPv6 address groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- IPv6 Network Groups -->
+    <div id="ipv6-network" class="group-section">
+        <div class="section-header"><h3 class="section-heading">IPv6 Network Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+        {% set ipv6_network_groups = group_list|selectattr('group_type', 'equalto', 'network-group')|selectattr('ip_version', 'equalto', 'ipv6')|list %}
+        {% if ipv6_network_groups %}
+        <div class="groups-grid">
+            {% for group in ipv6_network_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="ipv6,{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} networks</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
-        </td>
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No IPv6 network groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Port Groups -->
+    <div id="port" class="group-section">
+        <div class="section-header"><h3 class="section-heading">Port Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+        {% set port_groups = group_list|selectattr('group_type', 'equalto', 'port-group')|list %}
+        {% if port_groups %}
+        <div class="groups-grid">
+            {% for group in port_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="{{ group.ip_version }},{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} ports</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No port groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- MAC Groups -->
+    <div id="mac" class="group-section">
+        <div class="section-header"><h3 class="section-heading">MAC Address Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+        {% set mac_groups = group_list|selectattr('group_type', 'equalto', 'mac-group')|list %}
+        {% if mac_groups %}
+        <div class="groups-grid">
+            {% for group in mac_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="{{ group.ip_version }},{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} addresses</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No MAC address groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Domain Groups -->
+    <div id="domain" class="group-section">
+        <div class="section-header"><h3 class="section-heading">Domain Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+        {% set domain_groups = group_list|selectattr('group_type', 'equalto', 'domain-group')|list %}
+        {% if domain_groups %}
+        <div class="groups-grid">
+            {% for group in domain_groups|sort(attribute='group_name') %}
+            <div class="group-card">
+                <div class="group-header">
+                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-actions">
+                        <form action="/group_add" method="post" class="edit-form">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="ip_version" value="ipv4">
+                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                        </form>
+                        <form action="/group_delete" method="post" class="delete-form">
+                            <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
+                            <button type="submit" class="btn btn-delete-small" 
+                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
+                        </form>
+                    </div>
+                </div>
+                {% if group.group_desc %}
+                <p class="group-description">{{ group.group_desc }}</p>
+                {% endif %}
+                <div class="group-members">
+                    <span class="members-count">{{ group.group_value|length }} domains</span>
+                    {% if group.group_value %}
+                    <div class="members-preview">
+                        {% for member in group.group_value %}
+                        <span class="member-tag">{{ member }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-group">
+            <p>No domain groups configured.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
-        <td align="center">
-            <form action="/group_delete" , method="post">
-                <input type="hidden" id="group" name="group" value="{{item.ip_version}},{{item.group_name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete group {{item.group_name}}.">
-            </form>
-        </td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/group_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Group" title="Add a new Port Group.">
-            </form>
-        </td>
-    </tr>
-</table>
-<br><br>
+<style>
+.group-view {
+    max-width: 1400px;
+}
+
+.group-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
+
+.nav-section {
+    text-align: center;
+}
+
+.nav-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.nav-link:hover {
+    background: rgba(255, 191, 18, 0.1);
+    color: var(--primary-color);
+}
+
+.group-section {
+    margin-bottom: 3rem;
+}
+
+.section-heading {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.back-to-top {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.back-to-top:hover {
+    color: var(--primary-color);
+    background: rgba(255, 191, 18, 0.1);
+}
+
+.groups-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.group-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.group-name {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.group-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.edit-form, .delete-form {
+    margin: 0;
+}
+
+.group-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.group-members {
+    margin-top: 1rem;
+}
+
+.members-count {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.members-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.member-tag {
+    background: rgba(255, 191, 18, 0.2);
+    color: var(--primary-color);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: monospace;
+}
+
+.more-members {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+.empty-group {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+}
+
+/* Smooth scrolling for navigation */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+    .group-nav {
+        grid-template-columns: 1fr;
+    }
+    
+    .groups-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock body %}

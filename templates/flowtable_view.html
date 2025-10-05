@@ -1,79 +1,193 @@
 {% extends "basic_page.html" %}
 {% block body %}
+<div class="flowtable-view">
+    <div class="view-header">
+        <h2 class="section-title">Flowtables</h2>
+        <a href="{{ url_for('flowtable_add') }}" class="btn btn-add">Add Flowtable</a>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    {% if flowtable_list %}
+    <div class="flowtables-grid">
+        {% for flowtable in flowtable_list|sort(attribute='name') %}
+        <div class="flowtable-card">
+            <div class="card-header">
+                <h3 class="flowtable-name">{{ flowtable.name }}</h3>
+                <div class="card-actions">
+                    <form action="/flowtable_add" method="post" class="edit-form">
+                        <input type="hidden" name="type" value="edit">
+                        <input type="hidden" name="flowtable_name" value="{{ flowtable.name }}">
+                        <input type="hidden" name="flowtable_desc" value="{{ flowtable.description }}">
+                        {% for interface in flowtable.interfaces %}
+                        <input type="hidden" name="interface_{{ interface }}" value="checked">
+                        {% endfor %}
+                        <button type="submit" class="btn btn-secondary btn-sm" title="Edit flowtable">Edit</button>
+                    </form>
+                    <form action="/flowtable_delete" method="post" class="delete-form">
+                        <input type="hidden" name="flowtable" value="{{ flowtable.name }}">
+                        <button type="submit" class="btn btn-delete-small" 
+                                onclick="return confirm('Delete flowtable {{ flowtable.name }}?')" 
+                                title="Delete flowtable">×</button>
+                    </form>
+                </div>
+            </div>
+            
+            {% if flowtable.description %}
+            <p class="flowtable-description">{{ flowtable.description }}</p>
+            {% endif %}
+            
+            <div class="flowtable-interfaces">
+                <span class="interfaces-label">Interfaces:</span>
+                <div class="interfaces-list">
+                    {% if flowtable.interfaces %}
+                        {% for interface in flowtable.interfaces %}
+                        <span class="interface-tag">{{ interface }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="no-interfaces">No interfaces configured</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No flowtables configured. Add a flowtable to get started.</p>
+        <a href="{{ url_for('flowtable_add') }}" class="btn btn-primary">Add First Flowtable</a>
+    </div>
+    {% endif %}
+</div>
 
+<style>
+.flowtable-view {
+    max-width: 1200px;
+}
 
-<br>
+.flowtables-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
 
-<p class="section_heading">Flowtables</p>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
+.flowtable-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-    <th>
-        Name
-    </th>
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
 
-    <th colspan="2">
-        Description
-    </th>
+.flowtable-name {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
 
-    <th colspan="2">
-        Interfaces
-    </th>
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
 
-    <th width="45px">
-        Delete
-    </th>
+.btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+}
 
-    {% for item in flowtable_list|sort(attribute='name') %}
-    <tr>
-        <td align="center">
-            <form action="/flowtable_add" , method="post">
-                <input type="hidden" id="flowtable" name="type" value="edit">
-                <input type="hidden" id="flowtable" name="flowtable_name" value="{{item.name}}">
-                <input type="hidden" id="flowtable" name="flowtable_desc" value="{{item.description}}">
-                {% for interface in item.interfaces %}
-                <input type="hidden" id="flowtable" name="interface_{{interface}}" value="checked">
-                {% endfor %}
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit group {{item.group_name}}.">
-            </form>
-        </td>
+.edit-form, .delete-form {
+    margin: 0;
+}
 
-        <td align="center">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {{item.name}}
-            </font>
-        </td>
+.flowtable-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
 
-        <td colspan="2">
-            {{item.description}}
-        </td>
-        <td colspan="2">
-            {% for interface in item.interfaces %}
-            <image src="static/network-interface-32-yellow.svg" align="center" width="16" height="16"></image>
-            {{interface}}<br>
-            {% endfor %}
-        </td>
+.flowtable-interfaces {
+    margin-top: 1rem;
+}
 
-        <td align="center">
-            <form action="/flowtable_delete" , method="post">
-                <input type="hidden" id="flowtable" name="flowtable" value="{{item.name}}">
-                <input class="delete_rule_button" type="submit" value="Delete" style="height: 65; width: 20;"
-                    title="Delete {{item.name}} Flowtable.">
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <td colspan="7">
-            <form action="/flowtable_add" , method="get">
-                <input type="hidden" id="fw_chain" name="fw_chain" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Flowtable" title="Add a new Flowtable.">
-            </form>
-        </td>
-    </tr>
-</table>
-<br><br>
+.interfaces-label {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.interfaces-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.interface-tag {
+    background: rgba(255, 191, 18, 0.2);
+    color: var(--primary-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.no-interfaces {
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+.debug-info {
+    margin-top: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: monospace;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+}
+
+.empty-state p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .flowtables-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .card-actions {
+        justify-content: center;
+    }
+}
+</style>
 {% endblock body %}

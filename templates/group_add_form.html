@@ -1,118 +1,214 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th colspan="5" align="left">
-            <h2> Add Firewall Group </h2>
-        </th>
-    </tr>
-    <tr>
-        <td colspan="2">
-            Firewall groups represent collections of IP addresses, networks, ports, mac addresses, domains or
-            interfaces. Once created, a group can be referenced by firewall, nat and policy route rules as either a
-            source or destination matcher, and/or as inbound/outbound in the case of interface group.
-            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target=”_blank”
-                class="docs_link">Docs&#x2197</a>
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1" width="100%">
-    <form action="/group_add" , method="post">
-        <input type="hidden" id="group" name="type" value="add">
-        <tr>
-            <td style="vertical-align: top;" width="20%">
-                <p class="section_heading">
-                    IP Version
-                </p>
-
-                {% if rule_detail.ip_version == 'ipv4' %}
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
-                {% elif rule_detail.ip_version == 'ipv6' %}
-                <input type="radio" name="ip_version" value="ipv4">&nbsp;IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6" checked="checked">&nbsp;IPv6<br><br>
-                {% endif%}
-                <font style="font-size: small;">Only applies to address<br>and network groups.</font>
-
-            </td>
-            <td rowspan="2" style="vertical-align: top;" width="80%">
-                <p class="section_heading">
-                    Group Description
-                </p>
-                {% if rule_detail.group_desc != '' %}
-                <input type="text" id="group_desc" name="group_desc" size="80%" value="{{rule_detail.group_desc}}"><br>
-                {% else %}
-                <input type="text" id="group_desc" name="group_desc" size="80%" value=""><br>
-                {% endif %}
-                <p class="section_heading">
-                    Group Name
-                </p>
-                {% if rule_detail.group_name != '' %}
-                <input type="text" id="group_name" name="group_name" size="80%" value="{{rule_detail.group_name}}"><br>
-                {% else %}
-                <input type="text" id="group_name" name="group_name" size="80%" value=""><br>
-                {% endif %}
-                No spaces. Spaces will be removed.
-                <p class="section_heading">
-                    Group Value
-                </p>
-                {% if rule_detail.group_value != '' %}
-                <input type="text" id="group_value" name="group_value" size="80%"
-                    value="{{rule_detail.group_value | replace('[', '') | replace(']', '') | replace(' ', '') | replace('\'', '') }}"><br>
-                {% else %}
-                <input type="text" id="group_value" name="group_value" size="80%" value=""><br>
-                {% endif %}
-                Multiple values should be comma separated.
-            </td>
-        </tr>
-        <tr>
-            <td rowspan="1" style="vertical-align: top;">
-                <p class="section_heading">
-                    Group Type
-                </p>
-                {% if rule_detail.group_type == 'address-group' %}
-                <input type="radio" name="group_type" value="address-group" checked="checked">&nbsp;Address Group<br>
-                {% else %}
-                <input type="radio" name="group_type" value="address-group">&nbsp;Address Group<br>
-                {% endif %}
-                {% if rule_detail.group_type == 'domain-group' %}
-                <input type="radio" name="group_type" value="domain-group" checked="checked">&nbsp;Domain Group<br>
-                {% else %}
-                <input type="radio" name="group_type" value="domain-group">&nbsp;Domain Group<br>
-                {% endif %}
-                {% if rule_detail.group_type == 'interface-group' %}
-                <input type="radio" name="group_type" value="interface-group" checked="checked">&nbsp;Interface
-                Group<br>
-                {% else %}
-                <input type="radio" name="group_type" value="interface-group">&nbsp;Interface Group<br>
-                {% endif %}
-                {% if rule_detail.group_type == 'mac-group' %}
-                <input type="radio" name="group_type" value="mac-group" checked="checked">&nbsp;Mac Group<br>
-                {% else %}
-                <input type="radio" name="group_type" value="mac-group">&nbsp;Mac Group<br>
-                {% endif %}
-                {% if rule_detail.group_type == 'network-group' %}
-                <input type="radio" name="group_type" value="network-group" checked="checked">&nbsp;Network Group<br>
-                {% else %}
-                <input type="radio" name="group_type" value="network-group">&nbsp;Network Group<br>
-                {% endif %}
-                {% if rule_detail.group_type == 'port-group' %}
-                <input type="radio" name="group_type" value="port-group" checked="checked">&nbsp;Port Group<br>
-                {% else %}
-                <input type="radio" name="group_type" value="port-group">&nbsp;Port Group<br>
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="2">
-                <button class="add_rule_button" type="submit" value="Add Group" style="width: 15%"
-                    title="Add group.">Add Group</button>
-            </td>
-        </tr>
-        </tr>
+<div class="group-form">
+    <div class="form-header">
+        <h2 class="section-title">Add Firewall Group</h2>
+        <p class="section-description">
+            Firewall groups represent collections of IP addresses, networks, ports, MAC addresses, domains or interfaces. 
+            Groups can be referenced by firewall, NAT and policy route rules.
+            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/groups.html" target="_blank" class="docs_link">
+                Documentation ↗
+            </a>
+        </p>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/group_add" method="post" class="form">
+        <input type="hidden" name="type" value="add">
+        
+        <div class="form-grid">
+            <div class="form-section">
+                <h3 class="subsection-title">Basic Information</h3>
+                
+                <div class="form-group">
+                    <label for="group_name" class="form-label">Group Name</label>
+                    <input type="text" name="group_name" id="group_name" class="form-input" 
+                           value="{{ rule_detail.group_name if rule_detail.group_name else '' }}" 
+                           placeholder="Enter group name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="group_desc" class="form-label">Description</label>
+                    <input type="text" name="group_desc" id="group_desc" class="form-input" 
+                           value="{{ rule_detail.group_desc if rule_detail.group_desc else '' }}" 
+                           placeholder="Brief description of the group">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Group Type</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="group_type" value="address-group" 
+                                   {% if rule_detail.group_type == 'address-group' or not rule_detail.group_type %}checked{% endif %}>
+                            <span>Address Group</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="group_type" value="network-group" 
+                                   {% if rule_detail.group_type == 'network-group' %}checked{% endif %}>
+                            <span>Network Group</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="group_type" value="port-group" 
+                                   {% if rule_detail.group_type == 'port-group' %}checked{% endif %}>
+                            <span>Port Group</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="group_type" value="mac-group" 
+                                   {% if rule_detail.group_type == 'mac-group' %}checked{% endif %}>
+                            <span>MAC Group</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="group_type" value="domain-group" 
+                                   {% if rule_detail.group_type == 'domain-group' %}checked{% endif %}>
+                            <span>Domain Group</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="group_type" value="interface-group" 
+                                   {% if rule_detail.group_type == 'interface-group' %}checked{% endif %}>
+                            <span>Interface Group</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3 class="subsection-title">Configuration</h3>
+                
+                <div class="form-group ip-version-group">
+                    <label class="form-label">IP Version</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv4" 
+                                   {% if rule_detail.ip_version == 'ipv4' or not rule_detail.ip_version %}checked{% endif %}>
+                            <span>IPv4</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv6" 
+                                   {% if rule_detail.ip_version == 'ipv6' %}checked{% endif %}>
+                            <span>IPv6</span>
+                        </label>
+                    </div>
+                    <small class="form-help">Only applies to address and network groups</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="group_value" class="form-label">Group Value</label>
+                    <input type="text" name="group_value" id="group_value" class="form-input" 
+                           value="{{ rule_detail.group_value | replace('[', '') | replace(']', '') | replace(' ', '') | replace('\'', '') if rule_detail.group_value else '' }}" 
+                           placeholder="Enter comma-separated values">
+                    <small class="form-help">
+                        Multiple values should be comma separated. Examples: 192.168.1.1,10.0.0.0/24 or 80,443
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Group</button>
+            <a href="{{ url_for('group_view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.group-form {
+    max-width: 1000px;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 191, 18, 0.2);
+}
+
+.ip-version-group {
+    opacity: 0.7;
+    transition: var(--transition);
+}
+
+.ip-version-group.active {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .radio-group {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Show/hide IP version based on group type
+document.addEventListener('DOMContentLoaded', function() {
+    const groupTypeInputs = document.querySelectorAll('input[name="group_type"]');
+    const ipVersionGroup = document.querySelector('.ip-version-group');
+    
+    function toggleIpVersion() {
+        const selectedType = document.querySelector('input[name="group_type"]:checked').value;
+        if (selectedType === 'address-group' || selectedType === 'network-group') {
+            ipVersionGroup.classList.add('active');
+        } else {
+            ipVersionGroup.classList.remove('active');
+        }
+    }
+    
+    groupTypeInputs.forEach(input => {
+        input.addEventListener('change', toggleIpVersion);
+    });
+    
+    toggleIpVersion(); // Initial state
+});
+</script>
 {% endblock body %}

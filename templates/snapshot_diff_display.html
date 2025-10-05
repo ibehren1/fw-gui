@@ -1,3 +1,76 @@
-{% autoescape false %}
-{{message}}
-{% endautoescape %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snapshot Comparison</title>
+    <link rel="stylesheet" href="static/styles.css" type="text/css">
+</head>
+<body class="page_background">
+    <div class="diff-display">
+        <div class="diff-header">
+            <h2 class="section-title">Snapshot Comparison</h2>
+        </div>
+        
+        <div class="diff-content">
+            <div class="diff-toolbar">
+                <button onclick="copyDiff()" class="btn btn-secondary">Copy Diff</button>
+                <button onclick="window.close()" class="btn btn-secondary">Close Window</button>
+            </div>
+            
+            <pre class="diff-output" id="diff-content">{% autoescape false %}{{ message }}{% endautoescape %}</pre>
+        </div>
+    </div>
+
+    <script>
+    function copyDiff() {
+        const text = document.getElementById('diff-content').textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('btn-success');
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('btn-success');
+            }, 2000);
+        });
+    }
+    </script>
+
+    <style>
+    .diff-display {
+        max-width: 100%;
+        padding: 2rem;
+    }
+
+    .diff-content {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+    }
+
+    .diff-toolbar {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        gap: 1rem;
+    }
+
+    .diff-output {
+        margin: 0;
+        padding: 1.5rem;
+        background: var(--light-color);
+        color: var(--text-dark);
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.7rem !important;
+        line-height: 1.5;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        min-height: 300px;
+    }
+    </style>
+</body>
+</html>
