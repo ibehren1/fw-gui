@@ -41,7 +41,7 @@
                 </div>
             </div>
             
-            <form action="/configuration_push_hostname" method="post" class="hostname-form">
+            <form action="/configuration_hostname_add" method="post" class="hostname-form">
                 <div class="form-group">
                     <label for="hostname" class="form-label">Firewall Hostname/IP</label>
                     <input type="text" name="hostname" id="hostname" class="form-input" 
@@ -56,7 +56,7 @@
                            min="1" max="65535">
                 </div>
                 
-                <button type="submit" class="btn btn-secondary full-width">Update Connection</button>
+                <button type="submit" class="btn btn-primary full-width">Update Connection</button>
             </form>
         </div>
         
@@ -64,26 +64,91 @@
         <div class="auth-card">
             <h3 class="subsection-title">Authentication</h3>
             
-            <form action="/configuration_push_auth" method="post" class="auth-form">
+            <form action="/configuration_push" method="post" class="auth-form">
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
                     <input type="text" name="username" id="username" class="form-input" 
+                           value="{{ ssh_user_name if ssh_user_name else '' }}"
                            placeholder="SSH username" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
                     <input type="password" name="password" id="password" class="form-input" 
+                           value="{{ ssh_pass if ssh_pass else '' }}"
                            placeholder="SSH password" required>
                 </div>
                 
+                {% if key_list %}
+                <div class="form-group">
+                    <label class="form-label">Authentication Method</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="ssh_key_name" value="" {{ 'checked' if not ssh_keyname else '' }}>
+                            <span>Use password authentication</span>
+                        </label>
+                        {% for key in key_list %}
+                        <label class="radio-item">
+                            <input type="radio" name="ssh_key_name" value="{{ key }}" {{ 'checked' if ssh_keyname == key else '' }}>
+                            <span>Use SSH key: {{ key }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="delete_before_set" value="true">
+                        <span class="checkbox-label">Delete firewall configuration before applying changes</span>
+                        <small class="option-help">Use only if managing ALL firewall rules via FW-GUI</small>
+                    </label>
+                </div>
+                
                 <div class="auth-actions">
-                    <button type="submit" name="action" value="test" class="btn btn-secondary">Test Connection</button>
-                    <button type="submit" name="action" value="diff" class="btn btn-primary">View Diff</button>
+                    <button type="submit" name="action" value="View Diffs" class="btn btn-primary">View Diffs</button>
+                    <button type="submit" name="action" value="Commit" class="btn btn-add">Commit</button>
                 </div>
             </form>
         </div>
     </div>
+    
+    <!-- Operational Commands -->
+    <div class="operational-section">
+        <h3 class="subsection-title">Run Operational Command</h3>
+        <form action="/configuration_push" method="post" class="operational-form">
+            <input type="hidden" name="username" value="{{ ssh_user_name if ssh_user_name else '' }}">
+            <input type="hidden" name="password" value="{{ ssh_pass if ssh_pass else '' }}">
+            {% if ssh_keyname %}
+            <input type="hidden" name="ssh_key_name" value="{{ ssh_keyname }}">
+            {% endif %}
+            
+            <div class="form-group">
+                <label for="op_command" class="form-label">Command</label>
+                <input type="text" name="op_command" id="op_command" class="form-input" 
+                       value="{{ op_command if op_command else 'show firewall' }}"
+                       placeholder="show firewall">
+            </div>
+            
+            <button type="submit" name="action" value="Run Operational Command" class="btn btn-secondary">Run Command</button>
+        </form>
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Processing request...</p>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    {% if message %}
+    <!-- <div class="results-section">
+        <h3 class="subsection-title">Results</h3> -->
+        <div class="results-content">{% autoescape false %}{{ message|replace('\n', '<br>') }}{% endautoescape %}</div>
+    <!-- </div> -->
+    {% endif %}
     
     <!-- Configuration Preview -->
     {% if config_preview %}
@@ -143,16 +208,69 @@ function copyConfig() {
         }, 2000);
     });
 }
+
+function copyResults() {
+    const text = document.getElementById('results-content').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    });
+}
+
+function setSSHKey(form) {
+    const sshKeySelect = form.querySelector('#ssh_key_name');
+    if (sshKeySelect && sshKeySelect.value === '') {
+        // Remove ssh_key_name field if no key is selected
+        const hiddenSSHKey = form.querySelector('input[name="ssh_key_name"]');
+        if (hiddenSSHKey) {
+            hiddenSSHKey.remove();
+        }
+    }
+}
+
+// Auto-scroll to results section only after form submissions
+document.addEventListener('DOMContentLoaded', function() {
+    const resultsContent = document.querySelector('.results-content');
+    
+    // Only scroll if we just submitted a form
+    if (resultsContent && sessionStorage.getItem('scrollToResults') === 'true') {
+        resultsContent.scrollIntoView({ behavior: 'smooth' });
+        sessionStorage.removeItem('scrollToResults');
+    }
+    
+    // Add loading spinner and scroll flag to forms
+    const forms = document.querySelectorAll('form[action="/configuration_push"]');
+    forms.forEach(form => {
+        form.addEventListener('submit', function() {
+            sessionStorage.setItem('scrollToResults', 'true');
+            document.getElementById('loading-spinner').style.display = 'flex';
+        });
+    });
+    
+    // Add loading spinner to hostname form
+    const hostnameForm = document.querySelector('form[action="/configuration_hostname_add"]');
+    if (hostnameForm) {
+        hostnameForm.addEventListener('submit', function() {
+            document.getElementById('loading-spinner').style.display = 'flex';
+        });
+    }
+});
 </script>
 
 <style>
 .config-push {
-    max-width: 1200px;
+    max-width: 800px;
 }
 
 .push-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 2rem;
     margin-bottom: 2rem;
 }
@@ -257,6 +375,142 @@ function copyConfig() {
 .deployment-actions {
     display: flex;
     gap: 1rem;
+}
+
+.operational-section, .results-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.operational-form {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+}
+
+.operational-form .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.results-toolbar {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-top: 0.2rem;
+}
+
+.checkbox-label {
+    font-weight: 500;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.radio-item input[type="radio"] {
+    margin: 0;
+}
+
+.btn-success {
+    background: var(--success-color) !important;
+    color: var(--text-light) !important;
+}
+
+.form-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 1rem;
+    background: var(--light-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    color: var(--text-dark);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.results-content {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    background: var(--light-color);
+    color: var(--text-dark);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
+    font-size: 0.7rem;
+    line-height: 1.4;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--text-light);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 191, 18, 0.3);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

@@ -32,16 +32,16 @@
                 <h3 class="subsection-title">Basic Configuration</h3>
                 
                 <div class="form-group">
-                    <label for="chain_name" class="form-label">Chain Name</label>
-                    <input type="text" name="chain_name" id="chain_name" class="form-input" 
-                           value="{{ chain_detail.chain_name if chain_detail.chain_name else '' }}" 
+                    <label for="fw_chain" class="form-label">Chain Name</label>
+                    <input type="text" name="fw_chain" id="fw_chain" class="form-input" 
+                           value="{{ chain_detail.chain_name if chain_detail and chain_detail.chain_name else '' }}" 
                            placeholder="Enter chain name" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="description" class="form-label">Description (Optional)</label>
                     <input type="text" name="description" id="description" class="form-input" 
-                           value="{{ chain_detail.description if chain_detail.description else '' }}" 
+                           value="{{ chain_detail.description if chain_detail and chain_detail.description else '' }}" 
                            placeholder="Brief description of the chain">
                 </div>
                 
@@ -50,12 +50,12 @@
                     <div class="radio-group">
                         <label class="radio-item">
                             <input type="radio" name="ip_version" value="ipv4" 
-                                   {% if chain_detail.ip_version == 'ipv4' or not chain_detail.ip_version %}checked{% endif %}>
+                                   {% if not chain_detail or not chain_detail.ip_version or chain_detail.ip_version == 'ipv4' %}checked{% endif %}>
                             <span>IPv4</span>
                         </label>
                         <label class="radio-item">
                             <input type="radio" name="ip_version" value="ipv6" 
-                                   {% if chain_detail.ip_version == 'ipv6' %}checked{% endif %}>
+                                   {% if chain_detail and chain_detail.ip_version == 'ipv6' %}checked{% endif %}>
                             <span>IPv6</span>
                         </label>
                     </div>
@@ -70,17 +70,17 @@
                     <div class="radio-group">
                         <label class="radio-item">
                             <input type="radio" name="default_action" value="accept" 
-                                   {% if chain_detail.default_action == 'accept' or not chain_detail.default_action %}checked{% endif %}>
+                                   {% if not chain_detail or not chain_detail.default_action or chain_detail.default_action == 'accept' %}checked{% endif %}>
                             <span>Accept</span>
                         </label>
                         <label class="radio-item">
                             <input type="radio" name="default_action" value="drop" 
-                                   {% if chain_detail.default_action == 'drop' %}checked{% endif %}>
+                                   {% if chain_detail and chain_detail.default_action == 'drop' %}checked{% endif %}>
                             <span>Drop</span>
                         </label>
                         <label class="radio-item">
                             <input type="radio" name="default_action" value="reject" 
-                                   {% if chain_detail.default_action == 'reject' %}checked{% endif %}>
+                                   {% if chain_detail and chain_detail.default_action == 'reject' %}checked{% endif %}>
                             <span>Reject</span>
                         </label>
                     </div>
@@ -92,17 +92,17 @@
                     <div class="radio-group">
                         <label class="radio-item">
                             <input type="radio" name="chain_type" value="input" 
-                                   {% if chain_detail.chain_type == 'input' or not chain_detail.chain_type %}checked{% endif %}>
+                                   {% if not chain_detail or not chain_detail.chain_type or chain_detail.chain_type == 'input' %}checked{% endif %}>
                             <span>Input</span>
                         </label>
                         <label class="radio-item">
                             <input type="radio" name="chain_type" value="output" 
-                                   {% if chain_detail.chain_type == 'output' %}checked{% endif %}>
+                                   {% if chain_detail and chain_detail.chain_type == 'output' %}checked{% endif %}>
                             <span>Output</span>
                         </label>
                         <label class="radio-item">
                             <input type="radio" name="chain_type" value="forward" 
-                                   {% if chain_detail.chain_type == 'forward' %}checked{% endif %}>
+                                   {% if chain_detail and chain_detail.chain_type == 'forward' %}checked{% endif %}>
                             <span>Forward</span>
                         </label>
                     </div>
@@ -112,7 +112,7 @@
                     <label class="form-label">Enable Logging</label>
                     <label class="checkbox-item">
                         <input type="checkbox" name="enable_logging" value="true" 
-                               {% if chain_detail.enable_logging %}checked{% endif %}>
+                               {% if chain_detail and chain_detail.enable_logging %}checked{% endif %}>
                         <span class="checkbox-label">Log dropped packets</span>
                     </label>
                     <small class="form-help">Enable logging for packets that are dropped by this chain</small>
@@ -130,6 +130,34 @@
 <style>
 .chain-form {
     max-width: 1000px;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .checkbox-item {

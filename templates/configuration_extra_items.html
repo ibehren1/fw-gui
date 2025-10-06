@@ -19,24 +19,21 @@
     {% endif %}
     {% endwith %}
     
-    <div class="config-actions">
-        <a href="{{ url_for('configuration_hostname_add') }}" class="btn btn-add">Add Hostname</a>
-    </div>
-    
-    {% if extra_items %}
-    <div class="extra-items-list">
-        <h3 class="subsection-title">Current Extra Items</h3>
-        {% for item in extra_items %}
-        <div class="extra-item">
-            <code class="item-code">{{ item }}</code>
-            <form action="/configuration_extra_items" method="post" class="item-actions">
-                <button type="submit" name="delete_item" value="{{ item }}" 
-                        class="btn btn-delete-small" title="Delete this item">×</button>
-            </form>
+    <form action="/configuration_extra_items" method="post" class="extra-form">
+        <div class="form-group">
+            <label for="extra_items" class="form-label">Extra Configuration Items</label>
+            <p class="field-description">
+                Enter syntactically correct CLI set statements. Each line should be a complete configuration command.
+            </p>
+            <textarea name="extra_items" id="extra_items" class="form-textarea" rows="15" cols="80" 
+                      placeholder="set firewall ...">{% for item in extra_items %}{% if item %}{{ item }}{% endif %}
+{% endfor %}</textarea>
         </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Configuration Items</button>
+        </div>
+    </form>
 </div>
 
 <style>
@@ -50,39 +47,55 @@
     line-height: 1.6;
 }
 
-.config-actions {
+.extra-form {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
     margin-bottom: 2rem;
 }
 
-.extra-items-list {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
+.form-group {
+    margin-bottom: 1.5rem;
 }
 
-.extra-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.form-label {
+    display: block;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
-.extra-item:last-child {
-    border-bottom: none;
-}
-
-.item-code {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.5rem;
-    border-radius: 4px;
-    font-family: monospace;
+.field-description {
+    color: rgba(255, 255, 255, 0.7);
     font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
 }
 
-.item-actions {
-    margin: 0;
+.form-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 1rem;
+    background: var(--light-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    color: var(--text-dark);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 191, 18, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
 }
 </style>
 {% endblock body %}

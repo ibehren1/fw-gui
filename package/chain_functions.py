@@ -115,6 +115,7 @@ def add_rule_to_data(session, request):
         else:
             flash_ip_version_mismatch()
             return
+    logging.info(request.form)
     if request.form["dest_port_type"] == "port":
         rule_dict["dest_port_type"] = "port"
         rule_dict["dest_port"] = request.form["dest_port"].strip()

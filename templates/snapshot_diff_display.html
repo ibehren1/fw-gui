@@ -7,18 +7,33 @@
     <link rel="stylesheet" href="static/styles.css" type="text/css">
 </head>
 <body class="page_background">
-    <div class="diff-display">
-        <div class="diff-header">
+    <div class="full-width-container">
+        <div class="full-width-content">
             <h2 class="section-title">Snapshot Comparison</h2>
-        </div>
-        
-        <div class="diff-content">
-            <div class="diff-toolbar">
-                <button onclick="copyDiff()" class="btn btn-secondary">Copy Diff</button>
-                <button onclick="window.close()" class="btn btn-secondary">Close Window</button>
+            
+            <div class="diff-legend">
+                <div class="legend-item">
+                    <span class="legend-color added">+</span>
+                    <span class="legend-text">Added lines</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color removed">-</span>
+                    <span class="legend-text">Removed lines</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color unchanged"> </span>
+                    <span class="legend-text">Unchanged lines</span>
+                </div>
             </div>
             
-            <pre class="diff-output" id="diff-content">{% autoescape false %}{{ message }}{% endautoescape %}</pre>
+            <div class="diff-content">
+                <div class="diff-toolbar">
+                    <button onclick="copyDiff()" class="btn btn-secondary">Copy Diff</button>
+                    <button onclick="window.close()" class="btn btn-secondary">Close Window</button>
+                </div>
+                
+                <div class="diff-html-content" id="diff-content">{% autoescape false %}{{ message }}{% endautoescape %}</div>
+            </div>
         </div>
     </div>
 
@@ -39,9 +54,62 @@
     </script>
 
     <style>
-    .diff-display {
-        max-width: 100%;
+    .full-width-container {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .full-width-content {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
         padding: 2rem;
+    }
+
+    .diff-legend {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .legend-color {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        text-align: center;
+        line-height: 20px;
+        font-weight: bold;
+        font-family: monospace;
+    }
+
+    .legend-color.added {
+        background: rgba(29, 189, 66, 0.3);
+        color: var(--success-color);
+    }
+
+    .legend-color.removed {
+        background: rgba(220, 34, 50, 0.3);
+        color: var(--danger-color);
+    }
+
+    .legend-color.unchanged {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .legend-text {
+        color: var(--text-light);
+        font-size: 0.9rem;
     }
 
     .diff-content {
@@ -58,18 +126,63 @@
         gap: 1rem;
     }
 
-    .diff-output {
-        margin: 0;
-        padding: 1.5rem;
-        background: var(--light-color);
-        color: var(--text-dark);
+    .btn-success {
+        background: var(--success-color) !important;
+        color: var(--text-light) !important;
+    }
+
+    .diff-html-content {
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-        font-size: 0.7rem !important;
-        line-height: 1.5;
+        font-size: 0.7rem;
+        line-height: 1.2;
         overflow-x: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        min-height: 300px;
+    }
+
+    /* Override difflib default styles */
+    .diff-html-content table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--light-color);
+        margin: 0;
+    }
+
+    .diff-html-content th {
+        background: var(--primary-color) !important;
+        color: var(--text-dark) !important;
+        padding: 0.5rem !important;
+        font-weight: 600;
+        border: none !important;
+    }
+
+    .diff-html-content td {
+        padding: 0.25rem 0.5rem !important;
+        border: none !important;
+        color: var(--text-dark) !important;
+        vertical-align: top;
+        line-height: 1.2;
+    }
+
+    .diff-html-content .diff_add,
+    .diff-html-content td.diff_add {
+        background: rgba(29, 189, 66, 0.3) !important;
+        color: var(--text-dark) !important;
+    }
+
+    .diff-html-content .diff_sub,
+    .diff-html-content td.diff_sub {
+        background: rgba(220, 34, 50, 0.3) !important;
+        color: var(--text-dark) !important;
+    }
+
+    .diff-html-content .diff_chg,
+    .diff-html-content td.diff_chg {
+        background: rgba(96, 98, 99, 0.3) !important;
+        color: var(--text-dark) !important;
+    }
+
+    .diff-html-content .diff_header {
+        background: var(--secondary-color) !important;
+        color: var(--text-light) !important;
     }
     </style>
 </body>

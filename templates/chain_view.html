@@ -25,7 +25,7 @@
             <div class="nav-links">
                 {% if chain_dict.ipv4 %}
                 {% for key, chain_list in chain_dict.ipv4.items() %}
-                <a href="#ipv4{{ key }}" class="nav-link">{{ key }}</a>
+                <a href="#ipv4{{ key }}" class="nav-link member-tag">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -35,7 +35,7 @@
             <div class="nav-links">
                 {% if chain_dict.ipv6 %}
                 {% for key, chain_list in chain_dict.ipv6.items() %}
-                <a href="#ipv6{{ key }}" class="nav-link">{{ key }}</a>
+                <a href="#ipv6{{ key }}" class="nav-link member-tag">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -64,6 +64,11 @@
                         <div class="chain-info">
                             <h5 class="chain-name">Rule {{ rule.number }}</h5>
                             <div class="chain-meta">
+                                {% if rule.rule_disable %}
+                                <span class="rule-status status-disabled">DISABLED</span>
+                                {% else %}
+                                <span class="rule-status status-enabled">ENABLED</span>
+                                {% endif %}
                                 <span class="chain-action action-{{ rule.action }}">{{ rule.action|title }}</span>
                                 {% if rule.protocol %}
                                 <span class="chain-protocol">{{ rule.protocol|upper }}</span>
@@ -99,7 +104,7 @@
                             </form>
                             <form action="/chain_rule_delete" method="post" class="delete-form">
                                 <input type="hidden" name="chain" value="ipv4,{{ key }}">
-                                <input type="hidden" name="rule_number" value="{{ rule.number }}">
+                                <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small" 
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
@@ -114,8 +119,7 @@
                         <div class="rule-tabs-nav">
                             <button type="button" class="rule-tab-btn active" data-tab="source-ipv4-{{ key }}-{{ loop.index0 }}">Source</button>
                             <button type="button" class="rule-tab-btn" data-tab="destination-ipv4-{{ key }}-{{ loop.index0 }}">Destination</button>
-                            <button type="button" class="rule-tab-btn" data-tab="protocol-ipv4-{{ key }}-{{ loop.index0 }}">Protocol</button>
-                            <button type="button" class="rule-tab-btn" data-tab="advanced-ipv4-{{ key }}-{{ loop.index0 }}">Advanced</button>
+                            <button type="button" class="rule-tab-btn" data-tab="options-ipv4-{{ key }}-{{ loop.index0 }}">State, Protocol & Options</button>
                         </div>
                         
                         <div class="rule-tab-content active" id="source-ipv4-{{ key }}-{{ loop.index0 }}-tab">
@@ -196,51 +200,34 @@
                             {% endif %}
                         </div>
                         
-                        <div class="rule-tab-content" id="protocol-ipv4-{{ key }}-{{ loop.index0 }}-tab">
-                            {% if rule.protocol or rule.state_est or rule.state_new or rule.state_rel or rule.state_inv %}
+                        <div class="rule-tab-content" id="options-ipv4-{{ key }}-{{ loop.index0 }}-tab">
                             <div class="tab-details">
-                                {% if rule.protocol %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Protocol:</span>
-                                    <span class="detail-value">{{ rule.protocol|upper }}</span>
+                                    <span class="detail-value">{% if rule.protocol %}{{ rule.protocol|upper }}{% else %}Any{% endif %}</span>
                                 </div>
-                                {% endif %}
-                                {% if rule.state_est or rule.state_new or rule.state_rel or rule.state_inv %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Connection State:</span>
                                     <span class="detail-value">
-                                        {% if rule.state_est %}EST {% endif %}
-                                        {% if rule.state_new %}NEW {% endif %}
-                                        {% if rule.state_rel %}REL {% endif %}
-                                        {% if rule.state_inv %}INV {% endif %}
+                                        {% if rule.state_est or rule.state_new or rule.state_rel or rule.state_inv %}
+                                            {% if rule.state_est %}EST {% endif %}
+                                            {% if rule.state_new %}NEW {% endif %}
+                                            {% if rule.state_rel %}REL {% endif %}
+                                            {% if rule.state_inv %}INV {% endif %}
+                                        {% else %}
+                                            Any
+                                        {% endif %}
                                     </span>
                                 </div>
-                                {% endif %}
-                            </div>
-                            {% else %}
-                            <div class="empty-tab">No protocol configuration</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="rule-tab-content" id="advanced-ipv4-{{ key }}-{{ loop.index0 }}-tab">
-                            {% if rule.logging or rule.rule_disable %}
-                            <div class="tab-details">
-                                {% if rule.logging %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Logging:</span>
-                                    <span class="detail-value">Enabled</span>
+                                    <span class="detail-value">{% if rule.logging %}Enabled{% else %}Disabled{% endif %}</span>
                                 </div>
-                                {% endif %}
-                                {% if rule.rule_disable %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Status:</span>
-                                    <span class="detail-value disabled">Disabled</span>
+                                    <span class="detail-value{% if rule.rule_disable %} disabled{% endif %}">{% if rule.rule_disable %}Disabled{% else %}Enabled{% endif %}</span>
                                 </div>
-                                {% endif %}
                             </div>
-                            {% else %}
-                            <div class="empty-tab">No advanced configuration</div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -277,6 +264,11 @@
                         <div class="chain-info">
                             <h5 class="chain-name">Rule {{ rule.number }}</h5>
                             <div class="chain-meta">
+                                {% if rule.rule_disable %}
+                                <span class="rule-status status-disabled">DISABLED</span>
+                                {% else %}
+                                <span class="rule-status status-enabled">ENABLED</span>
+                                {% endif %}
                                 <span class="chain-action action-{{ rule.action }}">{{ rule.action|title }}</span>
                                 {% if rule.protocol %}
                                 <span class="chain-protocol">{{ rule.protocol|upper }}</span>
@@ -312,7 +304,7 @@
                             </form>
                             <form action="/chain_rule_delete" method="post" class="delete-form">
                                 <input type="hidden" name="chain" value="ipv6,{{ key }}">
-                                <input type="hidden" name="rule_number" value="{{ rule.number }}">
+                                <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small" 
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
@@ -327,8 +319,7 @@
                         <div class="rule-tabs-nav">
                             <button type="button" class="rule-tab-btn active" data-tab="source-ipv6-{{ key }}-{{ loop.index0 }}">Source</button>
                             <button type="button" class="rule-tab-btn" data-tab="destination-ipv6-{{ key }}-{{ loop.index0 }}">Destination</button>
-                            <button type="button" class="rule-tab-btn" data-tab="protocol-ipv6-{{ key }}-{{ loop.index0 }}">Protocol</button>
-                            <button type="button" class="rule-tab-btn" data-tab="advanced-ipv6-{{ key }}-{{ loop.index0 }}">Advanced</button>
+                            <button type="button" class="rule-tab-btn" data-tab="options-ipv6-{{ key }}-{{ loop.index0 }}">State, Protocol & Options</button>
                         </div>
                         
                         <div class="rule-tab-content active" id="source-ipv6-{{ key }}-{{ loop.index0 }}-tab">
@@ -409,51 +400,34 @@
                             {% endif %}
                         </div>
                         
-                        <div class="rule-tab-content" id="protocol-ipv6-{{ key }}-{{ loop.index0 }}-tab">
-                            {% if rule.protocol or rule.state_est or rule.state_new or rule.state_rel or rule.state_inv %}
+                        <div class="rule-tab-content" id="options-ipv6-{{ key }}-{{ loop.index0 }}-tab">
                             <div class="tab-details">
-                                {% if rule.protocol %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Protocol:</span>
-                                    <span class="detail-value">{{ rule.protocol|upper }}</span>
+                                    <span class="detail-value">{% if rule.protocol %}{{ rule.protocol|upper }}{% else %}Any{% endif %}</span>
                                 </div>
-                                {% endif %}
-                                {% if rule.state_est or rule.state_new or rule.state_rel or rule.state_inv %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Connection State:</span>
                                     <span class="detail-value">
-                                        {% if rule.state_est %}EST {% endif %}
-                                        {% if rule.state_new %}NEW {% endif %}
-                                        {% if rule.state_rel %}REL {% endif %}
-                                        {% if rule.state_inv %}INV {% endif %}
+                                        {% if rule.state_est or rule.state_new or rule.state_rel or rule.state_inv %}
+                                            {% if rule.state_est %}EST {% endif %}
+                                            {% if rule.state_new %}NEW {% endif %}
+                                            {% if rule.state_rel %}REL {% endif %}
+                                            {% if rule.state_inv %}INV {% endif %}
+                                        {% else %}
+                                            Any
+                                        {% endif %}
                                     </span>
                                 </div>
-                                {% endif %}
-                            </div>
-                            {% else %}
-                            <div class="empty-tab">No protocol configuration</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="rule-tab-content" id="advanced-ipv6-{{ key }}-{{ loop.index0 }}-tab">
-                            {% if rule.logging or rule.rule_disable %}
-                            <div class="tab-details">
-                                {% if rule.logging %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Logging:</span>
-                                    <span class="detail-value">Enabled</span>
+                                    <span class="detail-value">{% if rule.logging %}Enabled{% else %}Disabled{% endif %}</span>
                                 </div>
-                                {% endif %}
-                                {% if rule.rule_disable %}
                                 <div class="rule-detail">
                                     <span class="detail-label">Status:</span>
-                                    <span class="detail-value disabled">Disabled</span>
+                                    <span class="detail-value{% if rule.rule_disable %} disabled{% endif %}">{% if rule.rule_disable %}Disabled{% else %}Enabled{% endif %}</span>
                                 </div>
-                                {% endif %}
                             </div>
-                            {% else %}
-                            <div class="empty-tab">No advanced configuration</div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -513,6 +487,21 @@
 .nav-link:hover {
     background: rgba(255, 191, 18, 0.1);
     color: var(--primary-color);
+}
+
+.member-tag {
+    background: rgba(255, 191, 18, 0.2) !important;
+    color: var(--primary-color) !important;
+    padding: 0.2rem 0.5rem !important;
+    border-radius: 12px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    font-family: monospace !important;
+    text-decoration: none !important;
+}
+
+.member-tag:hover {
+    background: rgba(255, 191, 18, 0.3) !important;
 }
 
 .chains-section {
@@ -606,6 +595,23 @@
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 600;
+}
+
+.rule-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-enabled {
+    background: rgba(29, 189, 66, 0.2);
+    color: var(--success-color);
+}
+
+.status-disabled {
+    background: rgba(220, 34, 50, 0.2);
+    color: var(--danger-color);
 }
 
 .action-accept {

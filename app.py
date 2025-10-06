@@ -1407,13 +1407,13 @@ def configuration_push():
             "port": session["port"],
         }
 
-        if "ssh_key_name" in request.form:
+        if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
             connection_string["ssh_key_name"] = request.form["ssh_key_name"]
 
         # Cache SSH user/pass to session.
         session["ssh_user"] = request.form["username"]
         session["ssh_pass"] = request.form["password"]
-        if "ssh_key_name" in request.form:
+        if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
             session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
 
         # Include 'delete firewall' before set commands

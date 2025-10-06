@@ -60,6 +60,22 @@
                 </div>
                 
                 <div class="form-group">
+                    <label class="form-label">IP Version</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv4" 
+                                   {% if rule_detail.ip_version == 'ipv4' or not rule_detail.ip_version %}checked{% endif %}>
+                            <span>IPv4</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv6" 
+                                   {% if rule_detail.ip_version == 'ipv6' %}checked{% endif %}>
+                            <span>IPv6</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
                     <label class="form-label">Action</label>
                     <div class="radio-group">
                         <label class="radio-item">
@@ -92,46 +108,83 @@
             <div class="tabs-nav">
                 <button type="button" class="tab-btn active" data-tab="source">Source</button>
                 <button type="button" class="tab-btn" data-tab="destination">Destination</button>
-                <button type="button" class="tab-btn" data-tab="protocol">Protocol & Ports</button>
-                <button type="button" class="tab-btn" data-tab="advanced">Advanced</button>
+                <button type="button" class="tab-btn" data-tab="advanced">State, Protocol & Options</button>
             </div>
             
             <!-- Source Tab -->
             <div class="tab-content active" id="source-tab">
                 <h3 class="tab-title">Source Configuration</h3>
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label for="source_address" class="form-label">Source Address</label>
-                        <input type="text" name="source_address" id="source_address" class="form-input" 
-                               value="{{ rule_detail.source_address if rule_detail.source_address else '' }}" 
-                               placeholder="192.168.1.1 or 10.0.0.0/24">
+                <div class="source-config">
+                    <div class="config-row">
+                        <div class="radio-column">
+                            <label class="radio-item">
+                                <input type="radio" name="source_address_type" value="address" 
+                                       {% if rule_detail.source_address_type == 'address' or not rule_detail.source_address_type %}checked{% endif %}>
+                                <span>Address</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="source_address_type" value="address_group" 
+                                       {% if rule_detail.source_address_type == 'address_group' %}checked{% endif %}>
+                                <span>Address Group</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="source_address_type" value="network_group" 
+                                       {% if rule_detail.source_address_type == 'network_group' %}checked{% endif %}>
+                                <span>Network Group</span>
+                            </label>
+                        </div>
+                        <div class="input-column">
+                            <input type="text" name="source_address" id="source_address" class="form-input" 
+                                   value="{{ rule_detail.source_address if rule_detail.source_address_type == 'address' else '' }}" 
+                                   placeholder="192.168.1.1 or 10.0.0.0/24">
+                            <select name="source_address_group" id="source_address_group" class="form-select">
+                                <option value="">Select address group</option>
+                                {% for group in group_list|selectattr('group_type', 'equalto', 'address-group')|list %}
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                        {% if rule_detail.source_address_type == 'address_group' and rule_detail.source_address == group.group_name %}selected{% endif %}>
+                                    {{ group.group_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <select name="source_network_group" id="source_network_group" class="form-select">
+                                <option value="">Select network group</option>
+                                {% for group in group_list|selectattr('group_type', 'equalto', 'network-group')|list %}
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                        {% if rule_detail.source_address_type == 'network_group' and rule_detail.source_address == group.group_name %}selected{% endif %}>
+                                    {{ group.group_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="source_group" class="form-label">Source Group</label>
-                        <select name="source_group" id="source_group" class="form-select">
-                            <option value="">No group</option>
-                            {% for group in address_groups %}
-                            <option value="{{ group.name }}" 
-                                    {% if rule_detail.source_group == group.name %}selected{% endif %}>
-                                {{ group.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="source_port" class="form-label">Source Port</label>
-                        <input type="text" name="source_port" id="source_port" class="form-input" 
-                               value="{{ rule_detail.source_port if rule_detail.source_port else '' }}" 
-                               placeholder="80, 443, 1000-2000">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="source_mac" class="form-label">Source MAC</label>
-                        <input type="text" name="source_mac" id="source_mac" class="form-input" 
-                               value="{{ rule_detail.source_mac if rule_detail.source_mac else '' }}" 
-                               placeholder="aa:bb:cc:dd:ee:ff">
+                    <div class="config-row">
+                        <div class="radio-column">
+                            <label class="radio-item">
+                                <input type="radio" name="source_port_type" value="port" 
+                                       {% if not rule_detail.source_port or rule_detail.source_port not in group_list|selectattr('group_type', 'equalto', 'port-group')|map(attribute='group_name')|list %}checked{% endif %}>
+                                <span>Port</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="source_port_type" value="port_group" 
+                                       {% if rule_detail.source_port in group_list|selectattr('group_type', 'equalto', 'port-group')|map(attribute='group_name')|list %}checked{% endif %}>
+                                <span>Port Group</span>
+                            </label>
+                        </div>
+                        <div class="input-column">
+                            <input type="text" name="source_port" id="source_port" class="form-input" 
+                                   value="{% if rule_detail.source_port %}{% if rule_detail.source_port not in group_list|selectattr('group_type', 'equalto', 'port-group')|map(attribute='group_name')|list %}{{ rule_detail.source_port }}{% endif %}{% endif %}" 
+                                   placeholder="80, 443, 1000-2000">
+                            <select name="source_port_group" id="source_port_group" class="form-select">
+                                <option value="">Select port group</option>
+                                {% for group in group_list|selectattr('group_type', 'equalto', 'port-group')|list %}
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                        {% if rule_detail.source_port == group.group_name %}selected{% endif %}>
+                                    {{ group.group_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -139,142 +192,140 @@
             <!-- Destination Tab -->
             <div class="tab-content" id="destination-tab">
                 <h3 class="tab-title">Destination Configuration</h3>
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label for="dest_address" class="form-label">Destination Address</label>
-                        <input type="text" name="dest_address" id="dest_address" class="form-input" 
-                               value="{{ rule_detail.dest_address if rule_detail.dest_address else '' }}" 
-                               placeholder="192.168.1.1 or 10.0.0.0/24">
+                <div class="destination-config">
+                    <div class="config-row">
+                        <div class="radio-column">
+                            <label class="radio-item">
+                                <input type="radio" name="dest_address_type" value="address" 
+                                       {% if rule_detail.dest_address_type == 'address' or not rule_detail.dest_address_type %}checked{% endif %}>
+                                <span>Address</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="dest_address_type" value="address_group" 
+                                       {% if rule_detail.dest_address_type == 'address_group' %}checked{% endif %}>
+                                <span>Address Group</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="dest_address_type" value="network_group" 
+                                       {% if rule_detail.dest_address_type == 'network_group' %}checked{% endif %}>
+                                <span>Network Group</span>
+                            </label>
+                        </div>
+                        <div class="input-column">
+                            <input type="text" name="dest_address" id="dest_address" class="form-input" 
+                                   value="{{ rule_detail.dest_address if rule_detail.dest_address_type == 'address' else '' }}" 
+                                   placeholder="192.168.1.1 or 10.0.0.0/24">
+                            <select name="dest_address_group" id="dest_address_group" class="form-select">
+                                <option value="">Select address group</option>
+                                {% for group in group_list|selectattr('group_type', 'equalto', 'address-group')|list %}
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                        {% if rule_detail.dest_address_type == 'address_group' and rule_detail.dest_address == group.group_name %}selected{% endif %}>
+                                    {{ group.group_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <select name="dest_network_group" id="dest_network_group" class="form-select">
+                                <option value="">Select network group</option>
+                                {% for group in group_list|selectattr('group_type', 'equalto', 'network-group')|list %}
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                        {% if rule_detail.dest_address_type == 'network_group' and rule_detail.dest_address == group.group_name %}selected{% endif %}>
+                                    {{ group.group_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="dest_group" class="form-label">Destination Group</label>
-                        <select name="dest_group" id="dest_group" class="form-select">
-                            <option value="">No group</option>
-                            {% for group in address_groups %}
-                            <option value="{{ group.name }}" 
-                                    {% if rule_detail.dest_group == group.name %}selected{% endif %}>
-                                {{ group.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dest_port" class="form-label">Destination Port</label>
-                        <input type="text" name="dest_port" id="dest_port" class="form-input" 
-                               value="{{ rule_detail.dest_port if rule_detail.dest_port else '' }}" 
-                               placeholder="80, 443, 1000-2000">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="dest_fqdn" class="form-label">Destination FQDN</label>
-                        <input type="text" name="dest_fqdn" id="dest_fqdn" class="form-input" 
-                               value="{{ rule_detail.dest_fqdn if rule_detail.dest_fqdn else '' }}" 
-                               placeholder="example.com">
+                    <div class="config-row">
+                        <div class="radio-column">
+                            <label class="radio-item">
+                                <input type="radio" name="dest_port_type" value="port" 
+                                       {% if not rule_detail.dest_port or rule_detail.dest_port not in group_list|selectattr('group_type', 'equalto', 'port-group')|map(attribute='group_name')|list %}checked{% endif %}>
+                                <span>Port</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="dest_port_type" value="port_group" 
+                                       {% if rule_detail.dest_port in group_list|selectattr('group_type', 'equalto', 'port-group')|map(attribute='group_name')|list %}checked{% endif %}>
+                                <span>Port Group</span>
+                            </label>
+                        </div>
+                        <div class="input-column">
+                            <input type="text" name="dest_port" id="dest_port" class="form-input" 
+                                   value="{% if rule_detail.dest_port %}{% if rule_detail.dest_port not in group_list|selectattr('group_type', 'equalto', 'port-group')|map(attribute='group_name')|list %}{{ rule_detail.dest_port }}{% endif %}{% endif %}" 
+                                   placeholder="80, 443, 1000-2000">
+                            <select name="dest_port_group" id="dest_port_group" class="form-select">
+                                <option value="">Select port group</option>
+                                {% for group in group_list|selectattr('group_type', 'equalto', 'port-group')|list %}
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                        {% if rule_detail.dest_port == group.group_name %}selected{% endif %}>
+                                    {{ group.group_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Protocol & Ports Tab -->
-            <div class="tab-content" id="protocol-tab">
-                <h3 class="tab-title">Protocol & Port Configuration</h3>
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label for="protocol" class="form-label">Protocol</label>
-                        <select name="protocol" id="protocol" class="form-select">
-                            <option value="">Any protocol</option>
-                            <option value="tcp" {% if rule_detail.protocol == 'tcp' %}selected{% endif %}>TCP</option>
-                            <option value="udp" {% if rule_detail.protocol == 'udp' %}selected{% endif %}>UDP</option>
-                            <option value="icmp" {% if rule_detail.protocol == 'icmp' %}selected{% endif %}>ICMP</option>
-                            <option value="esp" {% if rule_detail.protocol == 'esp' %}selected{% endif %}>ESP</option>
-                            <option value="gre" {% if rule_detail.protocol == 'gre' %}selected{% endif %}>GRE</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="port_group" class="form-label">Port Group</label>
-                        <select name="port_group" id="port_group" class="form-select">
-                            <option value="">No port group</option>
-                            {% for group in port_groups %}
-                            <option value="{{ group.name }}" 
-                                    {% if rule_detail.port_group == group.name %}selected{% endif %}>
-                                {{ group.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="icmp_type" class="form-label">ICMP Type</label>
-                        <input type="text" name="icmp_type" id="icmp_type" class="form-input" 
-                               value="{{ rule_detail.icmp_type if rule_detail.icmp_type else '' }}" 
-                               placeholder="8 (ping)">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="icmp_code" class="form-label">ICMP Code</label>
-                        <input type="text" name="icmp_code" id="icmp_code" class="form-input" 
-                               value="{{ rule_detail.icmp_code if rule_detail.icmp_code else '' }}" 
-                               placeholder="0">
-                    </div>
-                </div>
-            </div>
             
-            <!-- Advanced Tab -->
+            <!-- State, Protocol & Options Tab -->
             <div class="tab-content" id="advanced-tab">
-                <h3 class="tab-title">Advanced Configuration</h3>
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label for="connection_state" class="form-label">Connection State</label>
-                        <select name="connection_state" id="connection_state" class="form-select">
-                            <option value="">Any state</option>
-                            <option value="new" {% if rule_detail.connection_state == 'new' %}selected{% endif %}>New</option>
-                            <option value="established" {% if rule_detail.connection_state == 'established' %}selected{% endif %}>Established</option>
-                            <option value="related" {% if rule_detail.connection_state == 'related' %}selected{% endif %}>Related</option>
-                            <option value="invalid" {% if rule_detail.connection_state == 'invalid' %}selected{% endif %}>Invalid</option>
-                        </select>
+                <h3 class="tab-title">State, Protocol & Options</h3>
+                <div class="advanced-config">
+                    <div class="state-column">
+                        <div class="form-group">
+                            <label class="form-label">Connection State</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="state_est" value="true" 
+                                           {% if rule_detail.state_est %}checked{% endif %}>
+                                    <span class="checkbox-label">Established</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="state_new" value="true" 
+                                           {% if rule_detail.state_new %}checked{% endif %}>
+                                    <span class="checkbox-label">New</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="state_rel" value="true" 
+                                           {% if rule_detail.state_rel %}checked{% endif %}>
+                                    <span class="checkbox-label">Related</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="state_inv" value="true" 
+                                           {% if rule_detail.state_inv %}checked{% endif %}>
+                                    <span class="checkbox-label">Invalid</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="interface_in" class="form-label">Input Interface</label>
-                        <select name="interface_in" id="interface_in" class="form-select">
-                            <option value="">Any interface</option>
-                            {% for interface in interfaces %}
-                            <option value="{{ interface.name }}" 
-                                    {% if rule_detail.interface_in == interface.name %}selected{% endif %}>
-                                {{ interface.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="interface_out" class="form-label">Output Interface</label>
-                        <select name="interface_out" id="interface_out" class="form-select">
-                            <option value="">Any interface</option>
-                            {% for interface in interfaces %}
-                            <option value="{{ interface.name }}" 
-                                    {% if rule_detail.interface_out == interface.name %}selected{% endif %}>
-                                {{ interface.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Options</label>
-                        <div class="checkbox-group">
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="log" value="true" 
-                                       {% if rule_detail.log %}checked{% endif %}>
-                                <span class="checkbox-label">Enable logging</span>
-                            </label>
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="disable" value="true" 
-                                       {% if rule_detail.disable %}checked{% endif %}>
-                                <span class="checkbox-label">Disable rule</span>
-                            </label>
+                    <div class="options-column">
+                        <div class="form-group">
+                            <label for="protocol" class="form-label">Protocol</label>
+                            <select name="protocol" id="protocol" class="form-select">
+                                <option value="">Any</option>
+                                <option value="icmp" {% if rule_detail.protocol == 'icmp' %}selected{% endif %}>ICMP</option>
+                                <option value="tcp" {% if rule_detail.protocol == 'tcp' %}selected{% endif %}>TCP</option>
+                                <option value="udp" {% if rule_detail.protocol == 'udp' %}selected{% endif %}>UDP</option>
+                                <option value="tcp_udp" {% if rule_detail.protocol == 'tcp_udp' %}selected{% endif %}>TCP_UDP</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Options</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="logging" value="True" 
+                                           {% if rule_detail.logging %}checked{% endif %}>
+                                    <span class="checkbox-label">Enable Logging</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="rule_disable" value="True" 
+                                           {% if rule_detail.rule_disable %}checked{% endif %}>
+                                    <span class="checkbox-label">Disable Rule</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -357,6 +408,72 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1rem;
+}
+
+.source-config, .destination-config {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.advanced-config {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.state-column, .options-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.config-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.radio-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .checkbox-group {

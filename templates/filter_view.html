@@ -25,7 +25,7 @@
             <div class="nav-links">
                 {% if filter_dict.ipv4 %}
                 {% for key, filter_list in filter_dict.ipv4.items() %}
-                <a href="#ipv4{{ key }}" class="nav-link">{{ key }}</a>
+                <a href="#ipv4{{ key }}" class="nav-link member-tag">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -35,7 +35,7 @@
             <div class="nav-links">
                 {% if filter_dict.ipv6 %}
                 {% for key, filter_list in filter_dict.ipv6.items() %}
-                <a href="#ipv6{{ key }}" class="nav-link">{{ key }}</a>
+                <a href="#ipv6{{ key }}" class="nav-link member-tag">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -233,6 +233,21 @@
 .nav-link:hover {
     background: rgba(255, 191, 18, 0.1);
     color: var(--primary-color);
+}
+
+.member-tag {
+    background: rgba(255, 191, 18, 0.2) !important;
+    color: var(--primary-color) !important;
+    padding: 0.2rem 0.5rem !important;
+    border-radius: 12px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    font-family: monospace !important;
+    text-decoration: none !important;
+}
+
+.member-tag:hover {
+    background: rgba(255, 191, 18, 0.3) !important;
 }
 
 .filters-section {
