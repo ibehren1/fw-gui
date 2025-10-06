@@ -5,7 +5,7 @@
         <h2 class="section-title">Push Firewall Configuration</h2>
         <p class="section-description">
             Connect to your firewall via SSH to view configuration differences and deploy changes. 
-            Credentials are <strong>not saved</strong> and must be provided each time.
+            Credentials are <strong>not saved</strong> but once you authenticate successfully, they are cached in your session until logout.
         </p>
     </div>
     
@@ -117,12 +117,6 @@
     <div class="operational-section">
         <h3 class="subsection-title">Run Operational Command</h3>
         <form action="/configuration_push" method="post" class="operational-form">
-            <input type="hidden" name="username" value="{{ ssh_user_name if ssh_user_name else '' }}">
-            <input type="hidden" name="password" value="{{ ssh_pass if ssh_pass else '' }}">
-            {% if ssh_keyname %}
-            <input type="hidden" name="ssh_key_name" value="{{ ssh_keyname }}">
-            {% endif %}
-            
             <div class="form-group">
                 <label for="op_command" class="form-label">Command</label>
                 <input type="text" name="op_command" id="op_command" class="form-input" 
@@ -130,7 +124,7 @@
                        placeholder="show firewall">
             </div>
             
-            <button type="submit" name="action" value="Run Operational Command" class="btn btn-secondary">Run Command</button>
+            <button type="submit" name="action" value="Run Operational Command" class="btn btn-secondary" onclick="copyAuthCredentials(this.form)">Run Command</button>
         </form>
     </div>
     
@@ -231,6 +225,36 @@ function setSSHKey(form) {
         if (hiddenSSHKey) {
             hiddenSSHKey.remove();
         }
+    }
+}
+
+function copyAuthCredentials(form) {
+    // Get current values from auth form
+    const authForm = document.querySelector('.auth-form');
+    const username = authForm.querySelector('input[name="username"]').value;
+    const password = authForm.querySelector('input[name="password"]').value;
+    const sshKeyRadio = authForm.querySelector('input[name="ssh_key_name"]:checked');
+    
+    // Add hidden fields to operational form
+    const usernameInput = document.createElement('input');
+    usernameInput.type = 'hidden';
+    usernameInput.name = 'username';
+    usernameInput.value = username;
+    form.appendChild(usernameInput);
+    
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'hidden';
+    passwordInput.name = 'password';
+    passwordInput.value = password;
+    form.appendChild(passwordInput);
+    
+    // Add SSH key if selected
+    if (sshKeyRadio && sshKeyRadio.value) {
+        const sshKeyInput = document.createElement('input');
+        sshKeyInput.type = 'hidden';
+        sshKeyInput.name = 'ssh_key_name';
+        sshKeyInput.value = sshKeyRadio.value;
+        form.appendChild(sshKeyInput);
     }
 }
 
