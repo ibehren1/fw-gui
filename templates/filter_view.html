@@ -50,10 +50,13 @@
         <div id="ipv4{{ key }}" class="filter-group">
             <div class="filter-group-header">
                 <h4 class="filter-group-title">{{ key }}</h4>
-                <form action="/filter_rule_add" method="get" class="add-rule-form">
-                    <input type="hidden" name="filter" value="ipv4,{{ key }}">
-                    <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
-                </form>
+                <div class="filter-group-actions">
+                    <form action="/filter_rule_add" method="get" class="add-rule-form">
+                        <input type="hidden" name="filter" value="ipv4,{{ key }}">
+                        <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
+                    </form>
+                    <a href="#top" class="back-to-top">↑ Top</a>
+                </div>
             </div>
             <div class="filters-container">
                 {% for rule in filter_list %}
@@ -63,11 +66,11 @@
                             <h5 class="filter-name">Rule {{ rule.number }}</h5>
                             <div class="filter-meta">
                                 <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
-                                {% if rule.direction %}
-                                <span class="filter-direction">{{ rule.direction|title }}</span>
-                                {% endif %}
                                 {% if rule.interface %}
                                 <span class="filter-interface">{{ rule.interface }}</span>
+                                {% endif %}
+                                {% if rule.direction %}
+                                <span class="filter-direction">{{ rule.direction|title }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -85,8 +88,7 @@
                                 <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
                             </form>
                             <form action="/filter_rule_delete" method="post" class="delete-form">
-                                <input type="hidden" name="filter" value="ipv4,{{ key }}">
-                                <input type="hidden" name="rule_number" value="{{ rule.number }}">
+                                <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small" 
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
@@ -123,10 +125,13 @@
         <div id="ipv6{{ key }}" class="filter-group">
             <div class="filter-group-header">
                 <h4 class="filter-group-title">{{ key }}</h4>
-                <form action="/filter_rule_add" method="get" class="add-rule-form">
-                    <input type="hidden" name="filter" value="ipv6,{{ key }}">
-                    <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
-                </form>
+                <div class="filter-group-actions">
+                    <form action="/filter_rule_add" method="get" class="add-rule-form">
+                        <input type="hidden" name="filter" value="ipv6,{{ key }}">
+                        <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
+                    </form>
+                    <a href="#top" class="back-to-top">↑ Top</a>
+                </div>
             </div>
             <div class="filters-container">
                 {% for rule in filter_list %}
@@ -136,11 +141,11 @@
                             <h5 class="filter-name">Rule {{ rule.number }}</h5>
                             <div class="filter-meta">
                                 <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
-                                {% if rule.direction %}
-                                <span class="filter-direction">{{ rule.direction|title }}</span>
-                                {% endif %}
                                 {% if rule.interface %}
                                 <span class="filter-interface">{{ rule.interface }}</span>
+                                {% endif %}
+                                {% if rule.direction %}
+                                <span class="filter-direction">{{ rule.direction|title }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -158,8 +163,7 @@
                                 <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
                             </form>
                             <form action="/filter_rule_delete" method="post" class="delete-form">
-                                <input type="hidden" name="filter" value="ipv6,{{ key }}">
-                                <input type="hidden" name="rule_number" value="{{ rule.number }}">
+                                <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small" 
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
@@ -258,9 +262,29 @@
     color: var(--primary-color);
     font-weight: 600;
     font-size: 1.25rem;
-    margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--primary-color);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.back-to-top {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.back-to-top:hover {
+    color: var(--primary-color);
+    background: rgba(255, 191, 18, 0.1);
 }
 
 .filter-group {
@@ -272,6 +296,12 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+}
+
+.filter-group-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .filter-group-title {
@@ -328,6 +358,11 @@
 }
 
 .action-accept {
+    background: rgba(29, 189, 66, 0.2);
+    color: var(--success-color);
+}
+
+.action-jump {
     background: rgba(29, 189, 66, 0.2);
     color: var(--success-color);
 }

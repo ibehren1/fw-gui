@@ -82,6 +82,9 @@
                 {% if key_list %}
                 <div class="form-group">
                     <label class="form-label">Authentication Method</label>
+                       <p class="section-description">
+                            To add an SSH key, use the import configuration field on the left.  Ensure the private key ends in .key or upload will not be allowed.
+                        </p>
                     <div class="radio-group">
                         <label class="radio-item">
                             <input type="radio" name="ssh_key_name" value="" {{ 'checked' if not ssh_keyname else '' }}>
@@ -89,7 +92,7 @@
                         </label>
                         {% for key in key_list %}
                         <label class="radio-item">
-                            <input type="radio" name="ssh_key_name" value="{{ key }}" {{ 'checked' if ssh_keyname == key else '' }}>
+                            <input type="radio" name="ssh_key_name" value="{{ key }}.key" {{ 'checked' if ssh_keyname == key else '' }}>
                             <span>Use SSH key: {{ key }}</span>
                         </label>
                         {% endfor %}
