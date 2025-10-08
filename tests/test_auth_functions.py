@@ -134,7 +134,7 @@ def test_check_version_update_available(mock_request):
         f.write("v1.0.0")
 
     mock_response = Mock()
-    mock_response.data.decode.return_value = "v2.0.0"
+    mock_response.data.decode.return_value = "v3.0.0"
     mock_request.return_value = mock_response
 
     with pytest.raises(Exception):
