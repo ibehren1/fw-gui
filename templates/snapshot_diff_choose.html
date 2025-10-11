@@ -1,54 +1,110 @@
 {% extends "basic_page.html" %}
 {% block body %}
-
-
-<br>
-
-<p class="section_heading">Snapshot Diff</p>
-Choose two snapshots to compare and select View Diff to see a side-by-side diff of the configuration from each snapshot.
-<br><br>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th>
-        Snapshot 1
-    </th>
-
-    <th>
-        Snapshot 2
-    </th>
-
-    <th>
-        Action
-    </th>
-
-    <tr>
-        <form action="/snapshot_diff_display" , method="post" , target="_blank">
-            <td align="center">
-                <select name="snapshot_1" id="snapshot_1" style="width: 100%;">
+<div class="snapshot-diff">
+    <h2 class="section-title">Compare Snapshots</h2>
+    <p class="section-description">
+        Choose two snapshots to compare and select View Diff to see a side-by-side diff of the configuration from each snapshot.
+    </p>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    {% if snapshot_list %}
+    <form action="/snapshot_diff_display" method="post" target="_blank" class="diff-form">
+        <div class="snapshot-selectors">
+            <div class="selector-group">
+                <label for="snapshot_1" class="form-label">First Snapshot</label>
+                <select name="snapshot_1" id="snapshot_1" class="form-select" required>
                     {% for snapshot in snapshot_list %}
-                    <option value='{{snapshot.name}}'>
-                        {{snapshot.name}}
-                    </option>
+                    <option value="{{ snapshot.name }}">{{ snapshot.name }}</option>
                     {% endfor %}
                 </select>
-            </td>
-
-            <td align="center">
-                <select name="snapshot_2" id="snapshot_2" style="width: 100%;">
-                    <option value='current'>Current (working copy)</option>
+            </div>
+            
+            <div class="vs-indicator">
+                <span>VS</span>
+            </div>
+            
+            <div class="selector-group">
+                <label for="snapshot_2" class="form-label">Second Snapshot</label>
+                <select name="snapshot_2" id="snapshot_2" class="form-select" required>
+                    <option value="current">Current (working copy)</option>
                     {% for snapshot in snapshot_list %}
-                    <option value='{{snapshot.name}}'>
-                        {{snapshot.name}}
-                    </option>
+                    <option value="{{ snapshot.name }}">{{ snapshot.name }}</option>
                     {% endfor %}
                 </select>
-            </td>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">View Diff</button>
+            <a href="{{ url_for('chain_view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+    {% else %}
+    <div class="empty-state">
+        <p>No snapshots available for comparison. Create at least one snapshot first.</p>
+        <a href="{{ url_for('chain_view') }}" class="btn btn-primary">Back to Configuration</a>
+    </div>
+    {% endif %}
+</div>
 
-            <td align="center">
-                <input class="grey_button" type="submit" value="View Diff"
-                    title="View the diff between the two selected configuration snapshots.">
-            </td>
-        </form>
-    </tr>
-</table>
-<br><br>
+<style>
+.snapshot-diff {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.diff-form {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+}
+
+.snapshot-selectors {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 2rem;
+}
+
+.selector-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.vs-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    color: var(--text-dark);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .snapshot-selectors {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .vs-indicator {
+        justify-self: center;
+    }
+}
+</style>
 {% endblock body %}

@@ -1,67 +1,122 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th colspan="5" align="left">
-            <h2>Add Flowtable</h2>
-        </th>
-    </tr>
-    <tr>
-        <td colspan="2">
+<div class="flowtable-form">
+    <div class="form-header">
+        <h2 class="section-title">Add Flowtable</h2>
+        <p class="section-description">
             Flowtables are referenced by Filters and determine the traffic which skips other rules in the filter.
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1" width="100%">
-    <form action="/flowtable_add" , method="post">
-        <input type="hidden" id="flowtable" name="type" value="add">
-        <tr>
-            <td style="vertical-align: top;" width="30%">
-                <p class="section_heading">
-                    Flowtable Name
-                </p>
-                {% if flowtable_detail.flowtable_name != '' %}
-                <input type="text" id="flowtable_name" name="flowtable_name" size="25%"
-                    value="{{flowtable_detail.flowtable_name}}"><br>
-                {% else %}
-                <input type="text" id="flowtable_name" name="flowtable_name" size="25%" value=""><br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="70%">
-                <p class="section_heading">
-                    Flowtable Description
-                </p>
-                {% if flowtable_detail.flowtable_desc != '' %}
-                <input type="text" id="flowtable_desc" name="flowtable_desc" size="70%"
-                    value="{{flowtable_detail.flowtable_desc}}"><br>
-                {% else %}
-                <input type="text" id="flowtable_desc" name="flowtable_desc" size="70%" value=""><br>
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2">
-                <p class="section_heading">
-                    Interfaces
-                </p>
-                {% for item in interface_list|sort(attribute='name') %}
-                &nbsp&nbsp&nbsp
-                <input type="checkbox" id="{{item.name}}" name="interface_{{item.name}}" value="{{item.name}}">
-                <label for="{{item.name}}">{{item.name}}</label><br>
-                {% endfor %}
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="2" width="100%">
-                <button class="add_rule_button" type="submit" value="Add Flowtable" style="width: 15%"
-                    title="Add Flowtable.">Add
-                    Flowtable</button>
-            </td>
-        </tr>
-        </tr>
+        </p>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/flowtable_add" method="post" class="form">
+        <input type="hidden" name="type" value="add">
+        
+        <div class="form-grid">
+            <div class="form-section">
+                <h3 class="subsection-title">Basic Configuration</h3>
+                
+                <div class="form-group">
+                    <label for="flowtable_name" class="form-label">Flowtable Name</label>
+                    <input type="text" name="flowtable_name" id="flowtable_name" class="form-input" 
+                           value="{{ flowtable_detail.flowtable_name if flowtable_detail.flowtable_name else '' }}" 
+                           placeholder="Enter flowtable name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="flowtable_desc" class="form-label">Description (Optional)</label>
+                    <input type="text" name="flowtable_desc" id="flowtable_desc" class="form-input" 
+                           value="{{ flowtable_detail.flowtable_desc if flowtable_detail.flowtable_desc else '' }}" 
+                           placeholder="Brief description">
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h3 class="subsection-title">Interface Configuration</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Interfaces</label>
+                    {% if interface_list %}
+                    <div class="checkbox-grid">
+                        {% for item in interface_list|sort(attribute='name') %}
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="interface_{{ item.name }}" value="{{ item.name }}" 
+                                   {% if flowtable_detail.interfaces and item.name in flowtable_detail.interfaces %}checked{% endif %}>
+                            <span class="checkbox-label">{{ item.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="form-help">No interfaces available. <a href="{{ url_for('interface_add') }}" class="link">Add interfaces first</a>.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Flowtable</button>
+            <a href="{{ url_for('flowtable_view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.flowtable-form {
+    max-width: 1000px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.form-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.checkbox-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.checkbox-label {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock body %}

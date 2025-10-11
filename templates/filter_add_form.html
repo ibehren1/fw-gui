@@ -1,74 +1,198 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th align="left">
-            <h2>Add Filter</h2>
-        </th>
-    </tr>
-    <tr>
-        <td>
-            Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
-            Filters exist primarily just to jump to a chain of interface and direction specific rules.
-            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                class="docs_link">
-                Docs&#x2197
-            </a>
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1" width="100%">
-    <form action="/filter_add" , method="post">
-        <tr>
-            <td colspan="4" style="vertical-align: top;" width="100%">
-                <p class="section_heading">
-                    Description
-                </p>
-                <label for="description"></label>
-                <input type="text" id="description" name="description" size=70% value=""><br>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    IP Version
-                </p>
-                <input type="radio" name="ip_version" value="ipv4" checked="checked">&nbsp;IPv4<br>
-                <input type="radio" name="ip_version" value="ipv6">&nbsp;IPv6<br><br>
-            </td>
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    Filter Type
-                </p>
-                <input type="radio" name="type" value="input" checked="checked">&nbsp;input<br>
-                <input type="radio" name="type" value="forward">&nbsp;forward<br>
-                <input type="radio" name="type" value="output">&nbsp;output<br>
-            </td>
-
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    Default Action
-                </p>
-                <input type="radio" name="default_action" value="accept" checked="checked">&nbsp;accept<br>
-                <input type="radio" name="default_action" value="drop">&nbsp;drop<br>
-            </td>
-            <td style="vertical-align: top;" width="25%">
-                <p class="section_heading">
-                    Logging
-                </p>
-                <input type="checkbox" id="logging" name="logging" value="True">
-                <label for="logging">&nbsp;Enable</label>
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="4" width="100%">
-                <button class="add_rule_button" type="submit" value="Add Filter" style="width: 15%"
-                    title="Add filter.">Add Filter</button>
-            </td>
-        </tr>
+<div class="filter-form">
+    <h2 class="section-title">Add Filter</h2>
+    
+    <p class="section-description">
+        Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
+        Filters exist primarily just to jump to a chain of interface and direction specific rules.
+        <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target="_blank" class="docs_link">
+            Documentation ↗
+        </a>
+    </p>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/filter_add" method="post" class="form-content">
+        <div class="form-section">
+            <h3 class="subsection-title">Basic Information</h3>
+            
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                <input type="text" id="description" name="description" class="form-input" 
+                       placeholder="Brief description of the filter">
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3 class="subsection-title">Configuration</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">IP Version</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv4" checked>
+                            <span>IPv4</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="ip_version" value="ipv6">
+                            <span>IPv6</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Filter Type</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="type" value="input" checked>
+                            <span>Input</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="type" value="forward">
+                            <span>Forward</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="type" value="output">
+                            <span>Output</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Default Action</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="default_action" value="accept" checked>
+                            <span>Accept</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="default_action" value="drop">
+                            <span>Drop</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Logging</label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="logging" name="logging" value="True">
+                        <span class="checkbox-label">Enable logging</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Filter</button>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.filter-form {
+    max-width: 800px;
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.form-content {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.radio-item input[type="radio"] {
+    margin: 0;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.checkbox-label {
+    font-weight: 500;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock body %}

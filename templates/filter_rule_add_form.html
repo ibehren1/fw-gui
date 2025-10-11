@@ -1,192 +1,268 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th align="left">
-            <h2> Add Filter Rule </h2>
-        </th>
-    </tr>
-    <tr>
-        <td>
-            Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
-            Filters exist primarily just to jump to a chain of interface and direction specific rules.
-            <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target=”_blank”
-                class="docs_link">
-                Docs&#x2197
-            </a>
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1">
-    <form action="/filter_rule_add" , method="post">
-        <input type="hidden" id="filter" name="type" value="add">
-        <tr>
-            <td colspan="4" width="100%">
-                <p class="section_heading">
-                    Filter
-                </p>
-                <label for="filter">Filter&nbsp;</label>
-                <select name="filter" id="filter" width="50%">
-                    <option value="{{filter_name}}">{{filter_name | replace(",", ": ")}}</option>
+<div class="filter-rule-form">
+    <h2 class="section-title">Add Filter Rule</h2>
+    
+    <p class="section-description">
+        Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
+        Filters exist primarily just to jump to a chain of interface and direction specific rules.
+        <a href="https://docs.vyos.io/en/sagitta/configuration/firewall/index.html" target="_blank" class="docs_link">
+            Documentation ↗
+        </a>
+    </p>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/filter_rule_add" method="post" class="form-content">
+        <input type="hidden" name="type" value="add">
+        
+        <div class="form-section">
+            <h3 class="subsection-title">Filter Selection</h3>
+            
+            <div class="form-group">
+                <label for="filter" class="form-label">Filter</label>
+                <select name="filter" id="filter" class="form-select" required>
                     {% for filter in filter_list %}
-                    <option value='{{filter[0]}},{{filter[1]}}'>
+                    <option value='{{filter[0]}},{{filter[1]}}' {% if filter_name == filter[0] + ',' + filter[1] %}selected{% endif %}>
                         {{filter[0]}}: {{filter[1]}}
                     </option>
                     {% endfor %}
-                </select><br>
-            </td>
-        </tr>
-        <tr>
-            <td width="20%">
-                <p class="section_heading">
-                    Rule Number
-                </p>
-                <label for="rule">Number&nbsp;</label>
-                {% if rule_detail.name != "" %}
-                <input type="text" id="rule" name="rule" maxlength="6" size="6" value="{{rule_detail.name}}"><br>
-                {% else %}
-                <input type="text" id="rule" name="rule" maxlength="6" size="6" value=""><br>
-                {% endif %}
-            </td>
-            <td width="40%">
-                <p class="section_heading">
-                    Description
-                </p>
-                {% if rule_detail.description != "" %}
-                <input type="text" id="description" name="description" size="40"
-                    value="{{rule_detail.description}}"><br>
-                {% else %}
-                <input type="text" id="description" name="description" size="40" value=""><br>
-                {% endif %}
-            </td>
-            <td width="15%">
-                <p class="section_heading">
-                    Disable
-                </p>
-                <input type="checkbox" id="rule_disable" name="rule_disable" value="True">
-                <label for="rule_disable">&nbsp;Disable</label>
-            </td>
-            <td width="15%">
-                <p class="section_heading">
-                    Logging
-                </p>
-                <input type="checkbox" id="logging" name="logging" value="True">
-                <label for="logging">&nbsp;Enable</label>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="20%">
-                <p class="section_heading">
-                    Action
-                </p>
-                &nbsp &nbsp &nbsp
-                {% if rule_detail.action == "jump" %}
-                <input type="radio" name="action" value="jump" checked="checked">&nbsp;jump<br>
-                {% else %}
-                <input type="radio" name="action" value="jump">&nbsp;jump<br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="40%">
-                <p class="section_heading">
-                    Jump Target
-                </p>
-                &nbsp &nbsp &nbsp
-                <label for="jump_target">Chain&nbsp;</label>
-                <select name="jump_target" id="jump_target">
-                    {% if rule_detail.action == "jump" %}
-                    <option value="{{rule_detail.ip_version}},{{rule_detail.target}}">{{rule_detail.ip_version}}:
-                        {{rule_detail.target}}</option>
-                    {% else %}
-                    <option value=""></option>
-                    {% endif %}
-                    {% for chain in chain_list %}
-                    <option value='{{chain[0]}},{{chain[1]}}'>
-                        {{chain[0]}}: {{chain[1]}}
-                    </option>
-                    {% endfor %}
-                </select><br>
-            </td>
-            <td colspan="2" style="vertical-align: top;">
-                <p class="section_heading">
-                    Interface
-                </p>
-                <table width="100%">
-                    <tr>
-                        <td>
-                            <label for="rule">Interface&nbsp;</label>
-                        </td>
-                        <td>
-                            <select name="interface" id="interface" style="width: 90;">
-                                {% if rule_detail.action == "jump" %}
-                                <option value="{{rule_detail.interface}}">{{rule_detail.interface}}</option>
-                                {% else %}
-                                <option value=""></option>
-                                {% endif %}
-                                {% for interface in interface_list %}
-                                <option value='{{interface.name}}'>
-                                    {{interface.name}}: {{interface.description}}
-                                </option>
-                                {% endfor %}
-                            </select><br>
-                        </td>
-                    <tr>
-                        <td>
-                            <label for="direction">Direction&nbsp;</label>
-                        </td>
-                        <td>
-                            <select name="direction" id="direction" style="width: 90;">
-                                {% if rule_detail.action == "jump" %}
-                                {% if rule_detail.direction == "inbound" %}
-                                <option value='{{rule_detail.direction}}'>&nbsp;Inbound</option>
-                                {% else %}
-                                <option value='{{rule_detail.direction}}'>&nbsp;Outbound</option>
-                                {% endif %}
-                                {% endif %}
-                                <option value='inbound'>&nbsp;Inbound</option>
-                                <option value='outbound'>&nbsp;Outbound</option>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;" width="20%">
-                <p class="section_heading">
-                    Action
-                </p>
-                &nbsp &nbsp &nbsp
-                {% if rule_detail.action == "offload" %}
-                <input type="radio" name="action" value="offload" checked="checked">&nbsp;offload<br>
-                {% else %}
-                <input type="radio" name="action" value="offload">&nbsp;offload<br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="40%" colspan="3">
-                <p class="section_heading">
-                    Offload Target
-                </p>
-                &nbsp &nbsp &nbsp
-                <label for="offload_target">Flowtable&nbsp;</label>
-                <select name="offload_target" id="offload_target">
-                    {% if rule_detail.action == "offload" %}
-                    <option value="{{rule_detail.target}}">{{rule_detail.target}}</option>
-                    {% else %}
-                    <option value=""></option>
-                    {% endif %}
-                    {% for flowtable in flowtable_list %}
-                    <option value='{{flowtable.name}}'>{{flowtable.name}}</option>
-                    {% endfor %}
-                </select><br>
-            </td>
-        <tr>
-            <td align="right" colspan="4">
-                <button class="add_rule_button" type="submit" value="Add Filter Rule" style="width: 15%"
-                    title="Add filter rule.">Add Filter Rule</button>
-            </td>
-        </tr>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3 class="subsection-title">Rule Configuration</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="rule" class="form-label">Rule Number</label>
+                    <input type="text" id="rule" name="rule" class="form-input" 
+                           maxlength="6" value="{{ rule_detail.name if rule_detail.name else '1' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <input type="text" id="description" name="description" class="form-input" 
+                           value="{{ rule_detail.description if rule_detail.description else '' }}"
+                           placeholder="Brief description">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Options</label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="rule_disable" name="rule_disable" value="True" {% if rule_detail.rule_disable %}checked{% endif %}>
+                        <span class="checkbox-label">Disable rule</span>
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Logging</label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="logging" name="logging" value="True" {% if rule_detail.logging %}checked{% endif %}>
+                        <span class="checkbox-label">Enable logging</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3 class="subsection-title">Action & Target</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Action</label>
+                    <div class="action-targets">
+                        <label class="radio-item">
+                            <input type="radio" name="action" value="jump" {% if not rule_detail.action or rule_detail.action == 'jump' %}checked{% endif %}>
+                            <span>Jump</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="action" value="offload" {% if rule_detail.action == 'offload' %}checked{% endif %}>
+                            <span>Offload</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="jump_target" class="form-label">Target</label>
+                    <div class="action-targets">
+                        <select name="jump_target" id="jump_target" class="form-select">
+                            {% for chain in chain_list %}
+                            <option value='{{chain[0]}},{{chain[1]}}' {% if rule_detail.target == chain[0] + ',' + chain[1] %}selected{% endif %}>
+                                {{chain[0]}}: {{chain[1]}}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        
+                        <select name="offload_target" id="offload_target" class="form-select">
+                            <option value="">Select flowtable</option>
+                            {% for flowtable in flowtable_list %}
+                            <option value='{{flowtable[0]}},{{flowtable[1]}}' {% if rule_detail.offload_target == flowtable[0] + ',' + flowtable[1] %}selected{% endif %}>
+                                {{flowtable[0]}}: {{flowtable[1]}}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h3 class="subsection-title">Interface</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="interface" class="form-label">Interface Name</label>
+                    <div class="action-targets">
+                        <select name="interface" id="interface" class="form-select">
+                            <option value="">Select interface</option>
+                            {% for interface in interface_list %}
+                            <option value="{{ interface.name }}" {% if rule_detail.interface == interface.name %}selected{% endif %}>{{ interface.name }}{% if interface.description %} - {{ interface.description }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Direction</label>
+                    <div class="action-targets">
+                        <label class="radio-item">
+                            <input type="radio" name="direction" value="inbound" {% if not rule_detail.direction or rule_detail.direction == 'inbound' %}checked{% endif %}>
+                            <span>Inbound</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="direction" value="outbound" {% if rule_detail.direction == 'outbound' %}checked{% endif %}>
+                            <span>Outbound</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Filter Rule</button>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.filter-rule-form {
+    max-width: 800px;
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.form-content {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.action-targets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.radio-item input[type="radio"] {
+    margin: 0;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.checkbox-label {
+    font-weight: 500;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock body %}

@@ -1,173 +1,553 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <td align="center" colspan="3" style="padding:0%;">
-            <h2 class="page_heading">Push Firewall Configuration</h2>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="3">
-            Below you can provide credentials to connet to your firewall via SSH. The credentials are <b><u>not
-                    saved</u></b>
-            and you will have to provide them each time you wish to connect.
-            <br><br>
-            When you connect, you can choose to View Diffs, which will highlight the difference in the configuration
-            built here and displayed below and the running configuration of the firewall.
-            <br><br>
-            Additionally, you can choose to commit the changes to the firewall which will apply the configuration
-            and save it as the boot configuration.
-        </td>
-    </tr>
-
-    <tr>
-        <th colspan="3" align="left">
-            <h2>Firewall Connection</h2>
-        </th>
-    </tr>
-    <tr>
-        <td colspan="3">
-            <table class="groups_table" border="1" width="100%">
-                <th width="75%" style="padding: 0px;">
-                    Firewall Hostname
-                </th>
-                <th style="padding: 0px;">
-                    SSH Port
-                </th>
-                <th style="padding: 0px;">
-                    Change
-                </th>
-                <tr>
-                    <td>
-                        {% if firewall_reachable %}
-                        &#128994;&nbsp{{firewall_hostname}}
-                        {% else %}
-                        &#128308;&nbsp{{firewall_hostname}}
-                        {% endif %}
-                    </td>
-                    <td align="center">
-                        {{firewall_port}}
-                    </td>
-                    <td>
-                        <a href="{{url_for('configuration_hostname_add')}}">
-                            <button class="snapshot_button" class="button" type="submit" name="action" value="Change"
-                                style="width: 100%"
-                                title="Change the hostname of the firewall to which this configuration will be applied.">Change</button>
-                        </a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-
-    <form action="/configuration_push" method="post">
-        <tr>
-            <td colspan="3" style="vertical-align: top;">
-                <table class="groups_table">
-                    <tr>
-                        <td colspan="3">
-                            Use of SSH keys is supported. To upload an SSH key, ensure the keyfile ends in .key. Use the
-                            Import Configuration Datafile upload option on the left and to upload the .key file. When
-                            you upload a key, it is encrypted and the encryption key is returned to you. You must keep
-                            the encryption key and provide it as the password when selecting the SSH key for use.
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <p class="section_heading">
-                                Credentials
-                            </p>
-                        </td>
-                        <td>
-                            <p class="section_heading">
-                                SSH Keys
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;">
-                            <label for="username">Username</label>
-                        </td>
-                        <td style="padding: 5px;">
-                            <input type="text" id="username" name="username" size=30 value="{{ssh_user_name}}"><br>
-                        </td>
-                        <td rowspan="2">
-                            {% for key in key_list%}
-                            {% if key == ssh_keyname %}
-                            <input type="checkbox" id="ssh_key_name" name="ssh_key_name" checked="checked"
-                                value="{{key}}.key">
-                            <label for="ssh_key_name">&nbsp;{{key}}</label><br>
-                            {% else %}
-                            <input type="checkbox" id="ssh_key_name" name="ssh_key_name" value="{{key}}.key">
-                            <label for="ssh_key_name">&nbsp;{{key}}</label><br>
-                            {% endif %}
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;">
-                            <label for="password">Password</label>
-                        </td>
-                        <td style="padding: 5px;">
-                            <input type="password" id="password" name="password" size=30 value="{{ssh_pass}}"><br>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="left" colspan="3">
-                            When selecting an SSH key, the password is the encryption key for the SSH key.
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="3">
-                            <input type="checkbox" id="delete_before_set" name="delete_before_set" value="True">
-                            <label for="delete_before_set">&nbsp;Add 'delete firewall' before set in
-                                configuration.</label><br>
-                            <font style="font-size: 12; background-color: rgb(200, 16, 16); font-weight: bold;">Using
-                                this option will delete all firewall configurations not contained in this managed
-                                configuration.
-                            </font>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;" colspan="2">
-                            <label for="op_command">Operational Command (i.e. show firewall)</label>
-                            <input type="text" id="op_command" name="op_command" size=70 value="{{op_command}}"><br>
-                        </td>
-                        <td align="center">
-                            <input class="button" type="submit" name="action" value="Run Operational Command"
-                                onclick="$('#loading').show();"
-                                title="Connect to firewall via SSH and view firewall usage statistics (show firewall command output).">
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td align="center" width="33.3%">
-                <input class="button" type="submit" name="action" value="View Diffs" onclick="$('#loading').show();"
-                    title="Connect to firewall via SSH and view diff between this configuration and the running configuration.">
-            </td>
-            <td align="center" width="33.3%">
-                <input class="button" type="submit" name="action" value="Commit" onclick="$('#loading').show();"
-                    title="Connect to the firewall via SSH and commit this configuration.">
-            </td>
-            <div class="popup" id="loading" style="display:none;">
-                <img src="static/loading.gif" width="100" height="100">
+<div class="config-push">
+    <div class="push-header">
+        <h2 class="section-title">Push Firewall Configuration</h2>
+        <p class="section-description">
+            Connect to your firewall via SSH to view configuration differences and deploy changes. 
+            Credentials are <strong>not saved</strong> but once you authenticate successfully, they are cached in your session until logout.
+        </p>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <div class="push-grid">
+        <!-- Connection Status -->
+        <div class="connection-card">
+            <h3 class="subsection-title">Firewall Connection</h3>
+            
+            <div class="connection-status">
+                <div class="status-item">
+                    <span class="status-label">Hostname:</span>
+                    <div class="status-value">
+                        <span class="status-indicator {{ 'online' if firewall_reachable else 'offline' }}"></span>
+                        {{ firewall_hostname if firewall_hostname else 'Not configured' }}
+                    </div>
+                </div>
+                
+                <div class="status-item">
+                    <span class="status-label">SSH Port:</span>
+                    <span class="status-value">{{ firewall_port if firewall_port else '22' }}</span>
+                </div>
             </div>
-        </tr>
-    </form>
-    <tr>
-        <td class="configuration" colspan="3">
-            <pre>
-                <code>
-            {% autoescape false %}
-{{message}}
-            {% endautoescape %}
-                </code>
-            </pre>
-        </td>
-    </tr>
-</table>
-<br><br>
+            
+            <form action="/configuration_hostname_add" method="post" class="hostname-form">
+                <div class="form-group">
+                    <label for="hostname" class="form-label">Firewall Hostname/IP</label>
+                    <input type="text" name="hostname" id="hostname" class="form-input" 
+                           value="{{ firewall_hostname if firewall_hostname else '' }}" 
+                           placeholder="192.168.1.1 or firewall.example.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="port" class="form-label">SSH Port</label>
+                    <input type="number" name="port" id="port" class="form-input" 
+                           value="{{ firewall_port if firewall_port else '22' }}" 
+                           min="1" max="65535">
+                </div>
+                
+                <button type="submit" class="btn btn-primary full-width">Update Connection</button>
+            </form>
+        </div>
+        
+        <!-- Authentication -->
+        <div class="auth-card">
+            <h3 class="subsection-title">Authentication</h3>
+            
+            <form action="/configuration_push" method="post" class="auth-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" name="username" id="username" class="form-input" 
+                           value="{{ ssh_user_name if ssh_user_name else '' }}"
+                           placeholder="SSH username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" id="password" class="form-input" 
+                           value="{{ ssh_pass if ssh_pass else '' }}"
+                           placeholder="SSH password" required>
+                </div>
+                
+                {% if key_list %}
+                <div class="form-group">
+                    <label class="form-label">Authentication Method</label>
+                       <p class="section-description">
+                            To add an SSH key, use the import configuration field on the left.  Ensure the private key ends in .key or upload will not be allowed.
+                        </p>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="ssh_key_name" value="" {{ 'checked' if not ssh_keyname else '' }}>
+                            <span>Use password authentication</span>
+                        </label>
+                        {% for key in key_list %}
+                        <label class="radio-item">
+                            <input type="radio" name="ssh_key_name" value="{{ key }}.key" {{ 'checked' if ssh_keyname == key else '' }}>
+                            <span>Use SSH key: {{ key }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="delete_before_set" value="true">
+                        <span class="checkbox-label">Delete firewall configuration before applying changes</span>
+                        <small class="option-help">Use only if managing ALL firewall rules via FW-GUI</small>
+                    </label>
+                </div>
+                
+                <div class="auth-actions">
+                    <button type="submit" name="action" value="View Diffs" class="btn btn-primary">View Diffs</button>
+                    <button type="submit" name="action" value="Commit" class="btn btn-add">Commit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Operational Commands -->
+    <div class="operational-section">
+        <h3 class="subsection-title">Run Operational Command</h3>
+        <form action="/configuration_push" method="post" class="operational-form">
+            <div class="form-group">
+                <label for="op_command" class="form-label">Command</label>
+                <input type="text" name="op_command" id="op_command" class="form-input" 
+                       value="{{ op_command if op_command else 'show firewall' }}"
+                       placeholder="show firewall">
+            </div>
+            
+            <button type="submit" name="action" value="Run Operational Command" class="btn btn-secondary" onclick="copyAuthCredentials(this.form)">Run Command</button>
+        </form>
+    </div>
+    
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Processing request...</p>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    {% if message %}
+    <!-- <div class="results-section">
+        <h3 class="subsection-title">Results</h3> -->
+        <div class="results-content">{% autoescape false %}{{ message|replace('\n', '<br>') }}{% endautoescape %}</div>
+    <!-- </div> -->
+    {% endif %}
+    
+    <!-- Configuration Preview -->
+    {% if config_preview %}
+    <div class="config-preview">
+        <h3 class="subsection-title">Configuration to Deploy</h3>
+        <div class="preview-toolbar">
+            <button onclick="copyConfig()" class="btn btn-secondary">Copy Configuration</button>
+            <span class="config-size">{{ config_lines }} lines</span>
+        </div>
+        <pre class="configuration" id="config-preview">{{ config_preview }}</pre>
+    </div>
+    {% endif %}
+    
+    <!-- Deployment Options -->
+    {% if authenticated %}
+    <div class="deployment-card">
+        <h3 class="subsection-title">Deployment Options</h3>
+        <p class="deployment-warning">
+            <strong>Warning:</strong> Committing changes will modify your firewall configuration. 
+            Ensure you have reviewed the differences before proceeding.
+        </p>
+        
+        <form action="/configuration_push_commit" method="post" class="deployment-form">
+            <div class="deployment-options">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="delete_existing" value="true">
+                    <span class="checkbox-label">Delete existing firewall configuration first</span>
+                    <small class="option-help">Use only if managing ALL firewall rules via FW-GUI</small>
+                </label>
+            </div>
+            
+            <div class="deployment-actions">
+                <button type="submit" name="action" value="commit" class="btn btn-primary" 
+                        onclick="return confirm('Are you sure you want to commit these changes to the firewall?')">
+                    Commit Changes
+                </button>
+                <button type="submit" name="action" value="dry-run" class="btn btn-secondary">
+                    Dry Run (Test Only)
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function copyConfig() {
+    const text = document.getElementById('config-preview').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    });
+}
+
+function copyResults() {
+    const text = document.getElementById('results-content').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    });
+}
+
+function setSSHKey(form) {
+    const sshKeySelect = form.querySelector('#ssh_key_name');
+    if (sshKeySelect && sshKeySelect.value === '') {
+        // Remove ssh_key_name field if no key is selected
+        const hiddenSSHKey = form.querySelector('input[name="ssh_key_name"]');
+        if (hiddenSSHKey) {
+            hiddenSSHKey.remove();
+        }
+    }
+}
+
+function copyAuthCredentials(form) {
+    // Get current values from auth form
+    const authForm = document.querySelector('.auth-form');
+    const username = authForm.querySelector('input[name="username"]').value;
+    const password = authForm.querySelector('input[name="password"]').value;
+    const sshKeyRadio = authForm.querySelector('input[name="ssh_key_name"]:checked');
+    
+    // Add hidden fields to operational form
+    const usernameInput = document.createElement('input');
+    usernameInput.type = 'hidden';
+    usernameInput.name = 'username';
+    usernameInput.value = username;
+    form.appendChild(usernameInput);
+    
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'hidden';
+    passwordInput.name = 'password';
+    passwordInput.value = password;
+    form.appendChild(passwordInput);
+    
+    // Add SSH key if selected
+    if (sshKeyRadio && sshKeyRadio.value) {
+        const sshKeyInput = document.createElement('input');
+        sshKeyInput.type = 'hidden';
+        sshKeyInput.name = 'ssh_key_name';
+        sshKeyInput.value = sshKeyRadio.value;
+        form.appendChild(sshKeyInput);
+    }
+}
+
+// Auto-scroll to results section only after form submissions
+document.addEventListener('DOMContentLoaded', function() {
+    const resultsContent = document.querySelector('.results-content');
+    
+    // Only scroll if we just submitted a form
+    if (resultsContent && sessionStorage.getItem('scrollToResults') === 'true') {
+        resultsContent.scrollIntoView({ behavior: 'smooth' });
+        sessionStorage.removeItem('scrollToResults');
+    }
+    
+    // Add loading spinner and scroll flag to forms
+    const forms = document.querySelectorAll('form[action="/configuration_push"]');
+    forms.forEach(form => {
+        form.addEventListener('submit', function() {
+            sessionStorage.setItem('scrollToResults', 'true');
+            document.getElementById('loading-spinner').style.display = 'flex';
+        });
+    });
+    
+    // Add loading spinner to hostname form
+    const hostnameForm = document.querySelector('form[action="/configuration_hostname_add"]');
+    if (hostnameForm) {
+        hostnameForm.addEventListener('submit', function() {
+            document.getElementById('loading-spinner').style.display = 'flex';
+        });
+    }
+});
+</script>
+
+<style>
+.config-push {
+    max-width: 800px;
+}
+
+.push-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.connection-card, .auth-card, .deployment-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
+
+.connection-status {
+    margin-bottom: 1.5rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-item:last-child {
+    border-bottom: none;
+}
+
+.status-label {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.status-value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.online {
+    background: var(--success-color);
+}
+
+.status-indicator.offline {
+    background: var(--danger-color);
+}
+
+.auth-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.config-preview {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.preview-toolbar {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.config-size {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+.deployment-warning {
+    background: rgba(247, 212, 35, 0.1);
+    border: 1px solid var(--warning-color);
+    color: var(--warning-color);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.deployment-options {
+    margin-bottom: 1.5rem;
+}
+
+.option-help {
+    display: block;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.deployment-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.operational-section, .results-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.operational-form {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+}
+
+.operational-form .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.results-toolbar {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-top: 0.2rem;
+}
+
+.checkbox-label {
+    font-weight: 500;
+}
+
+.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color);
+}
+
+.radio-item input[type="radio"]:checked + span {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.radio-item input[type="radio"] {
+    margin: 0;
+}
+
+.btn-success {
+    background: var(--success-color) !important;
+    color: var(--text-light) !important;
+}
+
+.form-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 1rem;
+    background: var(--light-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    color: var(--text-dark);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.results-content {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    background: var(--light-color);
+    color: var(--text-dark);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    overflow-x: auto;
+    font-size: 0.7rem;
+    line-height: 1.4;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--text-light);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 191, 18, 0.3);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .push-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .auth-actions, .deployment-actions {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 {% endblock body %}

@@ -1,58 +1,141 @@
 {% extends "basic_page.html" %}
 {% block body %}
-
-
-<br>
-
-<p class="section_heading">Tag Snapshot</p>
-Update a tag value and click update -- only one tag can be updated at a time.
-<br><br>
-<table class="groups_table" id="ipv4addressgroup" border="1" width="100%" style="font-size: 12;">
-    <th style="width: 20%">
-        Snapshot ID
-    </th>
-
-    <th style="width: 60%">
-        Tag Value
-    </th>
-
-    <th style="width: 20%">
-        Action
-    </th>
-
-    {% for snapshot in snapshot_list %}
-    <tr>
-        <form action="/snapshot_tag_create" , method="post">
-            <td align="center">
-                {{snapshot.name}}
-                </select>
-            </td>
-            <td>
-                <input type="hidden" id="firewall_name" name="firewall_name" value="{{snapshot.id}}">
-                <input type="hidden" id="snapshot_name" name="snapshot_name" value="{{snapshot.name}}">
-                Tag: &nbsp<input type="text" id="snapshot_tag" name="snapshot_tag" size="60%" value="{{snapshot.tag}}"
-                    style="width: fit-content;
-                    background-color: #ffbf12;
-                    color: #000000;
-                    font-weight: bold;
-                    font-size: 12;
-                    text-align: left;
-                    border-radius: 8px;
-                    padding: 0px 5;
-                    /* position: fixed; */
-                    vertical-align: center;
-                    border-color: transparent transparent transparent transparent;">
-
-            </td>
-
-
-            <td align="center">
-                <input class="add_snapshot_button" type="submit" value="Update Tag" style="width: 100"
-                    title="Update the tag for the snapshot.">
-            </td>
+<div class="snapshot-tag">
+    <h2 class="section-title">Tag Snapshot</h2>
+    <p class="section-description">
+        Update a tag value and click update. Only one tag can be updated at a time.
+    </p>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    {% if snapshot_list %}
+    <div class="snapshots-table">
+        <div class="table-header">
+            <div class="header-cell">Snapshot ID</div>
+            <div class="header-cell">Tag Value</div>
+            <div class="header-cell">Action</div>
+        </div>
+        
+        {% for snapshot in snapshot_list %}
+        <form action="/snapshot_tag_create" method="post" class="snapshot-row">
+            <div class="row-cell">{{ snapshot.name }}</div>
+            <div class="row-cell">
+                <input type="hidden" name="firewall_name" value="{{ snapshot.id }}">
+                <input type="hidden" name="snapshot_name" value="{{ snapshot.name }}">
+                <label for="snapshot_tag_{{ loop.index }}" class="tag-label">Tag:</label>
+                <input type="text" name="snapshot_tag" id="snapshot_tag_{{ loop.index }}" 
+                       class="tag-input" value="{{ snapshot.tag }}">
+            </div>
+            <div class="row-cell">
+                <button type="submit" class="btn btn-primary">Update Tag</button>
+            </div>
         </form>
-    </tr>
-    {% endfor %}
-</table>
-<br><br>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No snapshots available to tag.</p>
+        <a href="{{ url_for('chain_view') }}" class="btn btn-primary">Back to Configuration</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.snapshot-tag {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.snapshots-table {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 20% 60% 20%;
+    background: var(--primary-color);
+    color: var(--text-dark);
+}
+
+.header-cell {
+    padding: 1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.snapshot-row {
+    display: grid;
+    grid-template-columns: 20% 60% 20%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    align-items: center;
+}
+
+.snapshot-row:last-child {
+    border-bottom: none;
+}
+
+.row-cell {
+    padding: 1rem;
+    text-align: center;
+}
+
+.tag-label {
+    margin-right: 0.5rem;
+    font-weight: 500;
+}
+
+.tag-input {
+    background: var(--primary-color);
+    color: var(--text-dark);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    width: 70%;
+}
+
+.tag-input:focus {
+    outline: 2px solid rgba(255, 191, 18, 0.5);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+}
+
+.empty-state p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .table-header, .snapshot-row {
+        grid-template-columns: 1fr;
+        text-align: left;
+    }
+    
+    .header-cell, .row-cell {
+        padding: 0.75rem;
+    }
+    
+    .tag-input {
+        width: 100%;
+    }
+}
+</style>
 {% endblock body %}

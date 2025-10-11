@@ -1,332 +1,462 @@
 {% extends "basic_page.html" %}
 {% block body %}
-
-<hr>
-<table class="groups_table" id="toc" width="100%">
-    <tr>
-        <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="filter_heading">IPv4 Filters</p>
-                <hr>
-                <ul class="toc_list">
-                    {% if filter_dict.ipv4 %}
-                    {% for key, filter_list in filter_dict.ipv4.items() %}
-                    <li>
-                        <a class="link" href="#ipv4{{key}}">{{key}}</a>
-                    </li>
-                    {% endfor %}
-                    {% endif %}
-                </ul>
+<div class="filter-view">
+    <div class="view-header">
+        <h2 class="section-title">Firewall Filters</h2>
+        <a href="{{ url_for('filter_add') }}" class="btn btn-add">Add Filter</a>
+    </div>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Quick Navigation -->
+    <div class="filter-nav">
+        <div class="nav-section">
+            <h3 class="nav-title">IPv4 Filters</h3>
+            <div class="nav-links">
+                {% if filter_dict.ipv4 %}
+                {% for key, filter_list in filter_dict.ipv4.items() %}
+                <a href="#ipv4{{ key }}" class="nav-link member-tag">{{ key }}</a>
+                {% endfor %}
+                {% endif %}
             </div>
-        </td>
-        <td style="width:50%; vertical-align: top;">
-            <div id="toc_container">
-                <p class="filter_heading">IPv6 Filters</p>
-                <hr>
-                <ul class="toc_list">
-                    {% if filter_dict.ipv6 %}
-                    {% for key, filter_list in filter_dict.ipv6.items() %}
-                    <li>
-                        <a class="link" href="#ipv6{{key}}">{{key}}</a>
-                    </li>
-                    {% endfor %}
-                    {% endif %}
-                </ul>
+        </div>
+        <div class="nav-section">
+            <h3 class="nav-title">IPv6 Filters</h3>
+            <div class="nav-links">
+                {% if filter_dict.ipv6 %}
+                {% for key, filter_list in filter_dict.ipv6.items() %}
+                <a href="#ipv6{{ key }}" class="nav-link member-tag">{{ key }}</a>
+                {% endfor %}
+                {% endif %}
             </div>
-        </td>
-    </tr>
-</table>
-<hr>
-<br>
+        </div>
+    </div>
+    
+    <!-- IPv4 Filters -->
+    <div class="filters-section">
+        <h3 class="section-heading">IPv4 Filters</h3>
+        {% if filter_dict.ipv4 %}
+        {% for key, filter_list in filter_dict.ipv4.items() %}
+        <div id="ipv4{{ key }}" class="filter-group">
+            <div class="filter-group-header">
+                <h4 class="filter-group-title">{{ key }}</h4>
+                <div class="filter-group-actions">
+                    <form action="/filter_rule_add" method="get" class="add-rule-form">
+                        <input type="hidden" name="filter" value="ipv4,{{ key }}">
+                        <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
+                    </form>
+                    <a href="#top" class="back-to-top">↑ Top</a>
+                </div>
+            </div>
+            <div class="filters-container">
+                {% for rule in filter_list %}
+                <div class="filter-card">
+                    <div class="filter-header">
+                        <div class="filter-info">
+                            <h5 class="filter-name">Rule {{ rule.number }}</h5>
+                            <div class="filter-meta">
+                                <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
+                                {% if rule.interface %}
+                                <span class="filter-interface">{{ rule.interface }}</span>
+                                {% endif %}
+                                {% if rule.direction %}
+                                <span class="filter-direction">{{ rule.direction|title }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <form action="/filter_rule_add" method="post" class="edit-form">
+                                <input type="hidden" name="type" value="edit">
+                                <input type="hidden" name="filter" value="ipv4,{{ key }}">
+                                <input type="hidden" name="name" value="{{ rule.number }}">
+                                <input type="hidden" name="description" value="{{ rule.description }}">
+                                <input type="hidden" name="action" value="{{ rule.action }}">
+                                <input type="hidden" name="direction" value="{{ rule.direction }}">
+                                <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
+                                <input type="hidden" name="target" value="{{ rule.fw_chain }}">
+                                <input type="hidden" name="interface" value="{{ rule.interface }}">
+                                <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                            </form>
+                            <form action="/filter_rule_delete" method="post" class="delete-form">
+                                <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
+                                <button type="submit" class="btn btn-delete-small" 
+                                        onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    {% if rule.description %}
+                    <p class="filter-description">{{ rule.description }}</p>
+                    {% endif %}
+                    
+                    {% if rule.fw_chain %}
+                    <div class="filter-target">
+                        <span class="target-label">Target Chain:</span>
+                        <span class="target-value">{{ rule.fw_chain }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <p>No IPv4 filters configured.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- IPv6 Filters -->
+    <div class="filters-section">
+        <h3 class="section-heading">IPv6 Filters</h3>
+        {% if filter_dict.ipv6 %}
+        {% for key, filter_list in filter_dict.ipv6.items() %}
+        <div id="ipv6{{ key }}" class="filter-group">
+            <div class="filter-group-header">
+                <h4 class="filter-group-title">{{ key }}</h4>
+                <div class="filter-group-actions">
+                    <form action="/filter_rule_add" method="get" class="add-rule-form">
+                        <input type="hidden" name="filter" value="ipv6,{{ key }}">
+                        <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
+                    </form>
+                    <a href="#top" class="back-to-top">↑ Top</a>
+                </div>
+            </div>
+            <div class="filters-container">
+                {% for rule in filter_list %}
+                <div class="filter-card">
+                    <div class="filter-header">
+                        <div class="filter-info">
+                            <h5 class="filter-name">Rule {{ rule.number }}</h5>
+                            <div class="filter-meta">
+                                <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
+                                {% if rule.interface %}
+                                <span class="filter-interface">{{ rule.interface }}</span>
+                                {% endif %}
+                                {% if rule.direction %}
+                                <span class="filter-direction">{{ rule.direction|title }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <form action="/filter_rule_add" method="post" class="edit-form">
+                                <input type="hidden" name="type" value="edit">
+                                <input type="hidden" name="filter" value="ipv6,{{ key }}">
+                                <input type="hidden" name="name" value="{{ rule.number }}">
+                                <input type="hidden" name="description" value="{{ rule.description }}">
+                                <input type="hidden" name="action" value="{{ rule.action }}">
+                                <input type="hidden" name="direction" value="{{ rule.direction }}">
+                                <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
+                                <input type="hidden" name="target" value="{{ rule.fw_chain }}">
+                                <input type="hidden" name="interface" value="{{ rule.interface }}">
+                                <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+                            </form>
+                            <form action="/filter_rule_delete" method="post" class="delete-form">
+                                <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
+                                <button type="submit" class="btn btn-delete-small" 
+                                        onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    {% if rule.description %}
+                    <p class="filter-description">{{ rule.description }}</p>
+                    {% endif %}
+                    
+                    {% if rule.fw_chain %}
+                    <div class="filter-target">
+                        <span class="target-label">Target Chain:</span>
+                        <span class="target-value">{{ rule.fw_chain }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <p>No IPv6 filters configured.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
-<p class="section_heading">IPv4 Filters</p>
-<hr>
+<style>
+.filter-view {
+    max-width: 1400px;
+}
 
-<br>
-<a href="{{ url_for('filter_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv4 filter.">
-</a>
-<br>
+.filter-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
 
-{% if filter_dict.ipv4 %}
-{% for key, filter_list in filter_dict.ipv4.items() %}
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="filter_heading" id="ipv4{{key}}">{{key}}</p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv4{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
+.nav-section {
+    text-align: center;
+}
 
-    <th>
-        Rule
-    </th>
+.nav-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
 
-    <th colspan="3">
-        Description
-        <br>
-        Target
-    </th>
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
 
-    <th>
-        Direction
-        <br>
-        Interface
-    </th>
+.nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
 
-    <th width="45px">
-        Action
-    </th>
+.nav-link:hover {
+    background: rgba(255, 191, 18, 0.1);
+    color: var(--primary-color);
+}
 
-    {% for rule in filter_list %}
-    <tr align="center" style="vertical-align: middle;">
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_add" , method="post">
-                <input type="hidden" id="filter" name="type" value="edit">
-                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input type="hidden" id="filter" name="name" value="{{rule.number}}">
-                <input type="hidden" id="filter" name="description" value="{{rule.description}}">
-                <input type="hidden" id="filter" name="action" value="{{rule.action}}">
-                <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
-                <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
-                <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
-                <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit rule {{rule.number}}.">
-            </form>
-        </td>
+.member-tag {
+    background: rgba(255, 191, 18, 0.2) !important;
+    color: var(--primary-color) !important;
+    padding: 0.2rem 0.5rem !important;
+    border-radius: 12px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    font-family: monospace !important;
+    text-decoration: none !important;
+}
 
-        <td align="center" style="vertical-align: middle;" rowspan="2">
-            <font style="font-size:60;">{{rule.number}}</font>
-            <br>
-            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
-        </td>
+.member-tag:hover {
+    background: rgba(255, 191, 18, 0.3) !important;
+}
 
-        <td align="left" style="vertical-align: middle;" colspan="3">
-            {{rule.description}}
-        </td>
+.filters-section {
+    margin-bottom: 3rem;
+}
 
-        <td style="vertical-align: middle;" rowspan="2">
-            <font style="font-size: 20; font-variant: small-caps;">
-                {% if rule.direction == "outbound" %}
-                <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
-                {% endif %}
-                {% if rule.direction == "inbound" %}
-                <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
-                {% endif %}
-                <br><br>{{rule.interface}}
-            </font>
-        </td>
+.section-heading {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-color);
+}
 
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_delete" , method="post">
-                <input type="hidden" id="rule" name="rule" value="ipv4,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
-                    title="Delete rule {{rule.number}}.">
-            </form>
-        </td>
-    </tr>
-    <tr>
-        <td align="center" style="vertical-align: middle;" colspan="3">
-            <font style="font-size:20; font-variant: small-caps;">
-                {{rule.fw_chain}}
-            </font>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/filter_rule_reorder" , method="post">
-            <td colspan="2" align="center">
-                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
-            </td>
-            <td colspan="3">
-                <label for="reorder_rule">&nbsp;</label>
-                <select name="reorder_rule" id="reorder_rule">
-                    <option value=''></option>
-                    {% for rule in filter_list %}
-                    <option value='ipv4,{{key}},{{rule.number}}'>
-                        {{rule.number}}: {{rule.description}}
-                    </option>
-                    {% endfor %}
-                </select>
-                to
-                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
-            </td>
-            <td colspan="2">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
-            </td>
-        </form>
-    </tr>
-    <tr>
-        <td colspan="7">
-            <form action="/filter_rule_add" , method="get">
-                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
-            </form>
-        </td>
-    </tr>
-</table>
-{% endfor %}
-{% endif %}
-<br>
-<a href="{{ url_for('filter_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv4 filter.">
-</a>
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
 
+.back-to-top {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: var(--transition);
+}
 
-<br><br>
+.back-to-top:hover {
+    color: var(--primary-color);
+    background: rgba(255, 191, 18, 0.1);
+}
 
-<p class="section_heading">IPv6 Filters</p>
-<hr>
+.filter-group {
+    margin-bottom: 2rem;
+}
 
-<br>
-<a href="{{ url_for('filter_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv6 filter.">
-</a>
-<br>
+.filter-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
 
-{% if filter_dict.ipv6 %}
-{% for key, filter_list in filter_dict.ipv6.items() %}
+.filter-group-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
 
-<table class="groups_table" width="100%">
-    <tr>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}">{{key}} </p>
-        </td>
-        <td>
-            <p class="filter_heading" id="ipv6{{key}}" align="right"><a class="link_yellow" href="#toc">top&#x02191</a>
-            </p>
-        </td>
-    </tr>
-</table>
-<table class="groups_table" border="1" width="100%" style="font-size: 12;">
-    <th width="45px">
-        Edit
-    </th>
+.filter-group-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.1rem;
+}
 
-    <th>
-        Rule
-    </th>
+.add-rule-form {
+    margin: 0;
+}
 
-    <th colspan="3">
-        Description
-        <br>
-        Target
-    </th>
+.filters-container {
+    display: grid;
+    gap: 1rem;
+}
 
-    <th>
-        Direction
-        <br>
-        Interface
-    </th>
+.filter-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-    <th width="45px">
-        Delete
-    </th>
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
 
-    {% for rule in filter_list %}
-    <tr align="center" style="vertical-align: middle;">
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_add" , method="post">
-                <input type="hidden" id="filter" name="type" value="edit">
-                <input type="hidden" id="filter" name="filter" value="ipv4,{{key}}">
-                <input type="hidden" id="filter" name="name" value="{{rule.number}}">
-                <input type="hidden" id="filter" name="description" value="{{rule.description}}">
-                <input type="hidden" id="filter" name="action" value="{{rule.action}}">
-                <input type="hidden" id="filter" name="direction" value="{{rule.direction}}">
-                <input type="hidden" id="filter" name="ip_version" value="{{rule.ip_version}}">
-                <input type="hidden" id="filter" name="target" value="{{rule.fw_chain}}">
-                <input type="hidden" id="filter" name="interface" value="{{rule.interface}}">
-                <input class="edit_rule_button" type="submit" value="Edit" style="height: 65; width: 20;"
-                    title="Edit rule {{rule.number}}.">
-            </form>
-        </td>
+.filter-info {
+    flex: 1;
+}
 
-        <td align="center" style="vertical-align: middle;" rowspan="2">
-            <font style="font-size:60;">{{rule.number}}</font>
-            <br>
-            <font style="font-size:30; font-variant: small-caps ;">{{rule.action}}</font>
-        </td>
+.filter-name {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
 
-        <td align="left" style="vertical-align: middle;" colspan="3">
-            {{rule.description}}
-        </td>
+.filter-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
 
-        <td style="vertical-align: middle;" rowspan="2">
-            <font style="font-size:20; font-variant: small-caps;">
-                {% if rule.direction == "outbound" %}
-                <font style="font-size: 28;">&#x02192;</font><br>{{rule.direction}}
-                {% endif %}
-                {% if rule.direction == "inbound" %}
-                <font style="font-size: 28;">&#x02190;</font><br>{{rule.direction}}
-                {% endif %}
-                <br><br>{{rule.interface}}
-            </font>
-        </td>
+.filter-action {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
 
-        <td align="center" rowspan="2">
-            <form action="/filter_rule_delete" , method="post">
-                <input type="hidden" id="rule" name="rule" value="ipv6,{{key}},{{rule.number}}">
-                <input class="delete_rule_button" type="submit" value="Delete Rule" style="height: 110; width: 20;"
-                    title="Delete rule {{rule.number}}.">
-            </form>
-        </td>
-    </tr>
-    <tr>
-        <td align="center" style="vertical-align: middle;" colspan="3">
-            <font style="font-size:20; font-variant: small-caps;">
-                {{rule.fw_chain}}
-            </font>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/filter_rule_reorder" , method="post">
-            <td colspan="2" align="center">
-                <font style="font-size:20; font-variant: small-caps ;">reorder rule</font>
-            </td>
-            <td colspan="3">
-                <label for="reorder_rule">&nbsp;</label>
-                <select name="reorder_rule" id="reorder_rule">
-                    <option value=''></option>
-                    {% for rule in filter_list %}
-                    <option value='ipv6,{{key}},{{rule.number}}'>
-                        {{rule.number}}: {{rule.description}}
-                    </option>
-                    {% endfor %}
-                </select>
-                to
-                <input type="text" id="new_rule_number" name="new_rule_number" maxlength="6" size="6" value="">
-            </td>
-            <td colspan="2">
-                <input class="reorder_rule_button" type="submit" value="Reorder Rule" title="Re-order rule.">
-            </td>
-        </form>
-    </tr>
-    <tr>
-        <td colspan="7">
-            <form action="/filter_rule_add" , method="get">
-                <input type="hidden" id="filter" name="filter" value="ipv6,{{key}}">
-                <input class="add_rule_button" type="submit" value="Add Rule" title="Add a new filter rule.">
-            </form>
-        </td>
-    </tr>
-</table>
-{% endfor %}
-{% endif %}
-<br>
-<a href="{{ url_for('filter_add')}}">
-    <input class="add_rule_button" type="submit" value="Add Filter" style="width: 100%" title="Add a new IPv6 filter.">
-</a>
+.action-accept {
+    background: rgba(29, 189, 66, 0.2);
+    color: var(--success-color);
+}
 
-<br><br>
+.action-jump {
+    background: rgba(29, 189, 66, 0.2);
+    color: var(--success-color);
+}
 
+.action-drop, .action-reject {
+    background: rgba(220, 34, 50, 0.2);
+    color: var(--danger-color);
+}
+
+.action-offload {
+    background: rgba(0, 123, 255, 0.2);
+    color: #007bff;
+}
+
+.filter-direction, .filter-interface {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.edit-form, .delete-form {
+    margin: 0;
+}
+
+.filter-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.filter-target {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+}
+
+.target-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.target-value {
+    color: var(--primary-color);
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+}
+
+/* Smooth scrolling for navigation */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (max-width: 768px) {
+    .filter-nav {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-group-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .filter-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .filter-actions {
+        justify-content: center;
+    }
+}
+</style>
 {% endblock body %}

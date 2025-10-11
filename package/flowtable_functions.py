@@ -53,6 +53,7 @@ def add_flowtable_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
+    logging.info(request.form.items())
     interface_list = []
     # Set local vars from posted form data
     for key, value in request.form.items():
@@ -63,13 +64,14 @@ def add_flowtable_to_data(session, request):
         if "interface_" in key:
             interface_list.append(value)
 
-    # Capture list of flowtables and remove from user_data
-    flowtable_list = user_data["flowtables"]
-    del user_data["flowtables"]
-
     # Create higher level data structure if it does not exist
     if "flowtables" not in user_data:
         user_data["flowtables"] = []
+
+    # Capture list of flowtables and remove from user_data
+    flowtable_list = user_data["flowtables"]
+    del user_data["flowtables"]
+    user_data["flowtables"] = []
 
     for flowtable in flowtable_list:
         if flowtable["name"] != flowtable_name:

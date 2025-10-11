@@ -1,52 +1,59 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <form action="/configuration_hostname_add" , method="post">
-        <tr>
-            <th colspan="3" align="left">
-                <h2> Add Firewall Hostname </h2>
-            </th>
-        </tr>
-        <tr>
-            <td colspan="3">
-                Before you can push configurations to a firewall, you need to add the fully qualified hostname and SSH
-                port.
-            </td>
-        </tr>
-        <tr>
-            <td style="vertical-align: top;">
-                <p class="section_heading">
-                    Firewall Hostname
-                </p>
-                <table>
-                    <tr>
-                        <td>
-                            <label for="fw_chain">Firewall Hostname</label>
-                        </td>
-                        <td>
-                            <input type="text" id="hostname" name="hostname" size=30 value=""><br>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="description">SSH Port</label>
-                        </td>
-                        <td>
-                            <input type="text" id="port" name="port" size=5 value="22"><br>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="3">
-                <button class="add_rule_button" type="submit" value="Add Hostname" style="width: 15%"
-                    title="Add hostname.">Add
-                    Hostname</button>
-            </td>
-        </tr>
-    </form>
-</table>
-<br><br>
+<div class="form-container">
+    <div class="form-card">
+        <h2 class="section-title">Add Hostname Configuration</h2>
+        
+        {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+        {% if flashed_messages %}
+        <div class="flash-messages">
+            {% for category, flash_message in flashed_messages %}
+            <div class="alert alert-{{ category }}">
+                {{flash_message}}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        
+        <form action="/configuration_hostname_add" method="post" class="form">
+            <div class="form-group">
+                <label for="hostname" class="form-label">Hostname</label>
+                <input type="text" name="hostname" id="hostname" class="form-input" 
+                       placeholder="Enter hostname" required>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Add Hostname</button>
+                <a href="{{ url_for('configuration_extra_items') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.form-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+</style>
 {% endblock body %}

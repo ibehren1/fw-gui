@@ -1,47 +1,101 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <td align="center">
-            <h2 class="page_heading">Extra Configuration Items</h2>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            You can add extra configuration statements to configure items that have not yet been implemented in the
-            GUI.
-            This section is only intended to be used for configurations that fall under firewall.<br>
-            <br>
-            Configuration items must be syntactically correct CLI set statements.
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <label for="freeform">Extra Configuration Items:</label>
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="0" width="100%">
-    <form action="/configuration_extra_items" , method="post">
-        <tr>
-            <td align="center">
-                <textarea id="extra_items" name="extra_items" rows="20" cols="80">
-{% for item in extra_items %}
-{%- if item -%}{{-item-}}{% endif %}
-{% endfor%}
-</textarea>
-            </td>
-        </tr>
-        <tr>
-            <td align="right">
-                <button class="add_rule_button" type="submit" value="Add Configuration Items" style="width: 20%"
-                    title="Add extra items to the configuration.">Add
-                    Configuration Items</button>
-            </td>
-        </tr>
+<div class="extra-config">
+    <h2 class="section-title">Extra Configurations</h2>
+    <p class="section-description">
+        Add extra configurations that are not directly supported by FW-GUI. 
+        These should be properly formatted CLI commands.
+    </p>
+    
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    
+    <form action="/configuration_extra_items" method="post" class="extra-form">
+        <div class="form-group">
+            <label for="extra_items" class="form-label">Extra Configuration Items</label>
+            <p class="field-description">
+                Enter syntactically correct CLI set statements. Each line should be a complete configuration command.
+            </p>
+            <textarea name="extra_items" id="extra_items" class="form-textarea" rows="15" cols="80" 
+                      placeholder="set firewall ...">{% for item in extra_items %}{% if item %}{{ item }}{% endif %}
+{% endfor %}</textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Configuration Items</button>
+        </div>
     </form>
-</table>
-<br><br>
+</div>
+
+<style>
+.extra-config {
+    max-width: 800px;
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.extra-form {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.field-description {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.form-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: 1rem;
+    background: var(--light-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    color: var(--text-dark);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 191, 18, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+</style>
 {% endblock body %}

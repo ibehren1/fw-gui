@@ -1,55 +1,56 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<br><br>
-<table class="table">
-    <tr>
-        <th colspan="5" align="left">
-            <h2>Add Interface</h2>
-        </th>
-    </tr>
-    <tr>
-        <td colspan="2">
+<div class="form-container">
+    <div class="form-card">
+        <h2 class="section-title">Add Interface</h2>
+        <p class="section-description">
             Interfaces are referenced by Filters and determine the traffic to which filters are applied.
-        </td>
-    </tr>
-</table>
-<br>
-<table class="table" border="1" width="100%">
-    <form action="/interface_add" , method="post">
-        <input type="hidden" id="interface" name="type" value="add">
-        <tr>
-            <td style="vertical-align: top;" width="30%">
-                <p class="section_heading">
-                    Interface Name
-                </p>
-                {% if rule_detail.interface_name != '' %}
-                <input type="text" id="interface_name" name="interface_name" size="25%"
-                    value="{{rule_detail.interface_name}}"><br>
-                {% else %}
-                <input type="text" id="interface_name" name="interface_name" size="25%" value=""><br>
-                {% endif %}
-            </td>
-            <td style="vertical-align: top;" width="70%">
-                <p class="section_heading">
-                    Interface Description
-                </p>
-                {% if rule_detail.interface_desc != '' %}
-                <input type="text" id="interface_desc" name="interface_desc" size="70%"
-                    value="{{rule_detail.interface_desc}}"><br>
-                {% else %}
-                <input type="text" id="interface_desc" name="interface_desc" size="70%" value=""><br>
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td align="right" colspan="2" width="100%">
-                <button class="add_rule_button" type="submit" value="Add Interface" style="width: 15%"
-                    title="Add interface.">Add
-                    Interface</button>
-            </td>
-        </tr>
-        </tr>
-    </form>
-</table>
-<br><br>
+        </p>
+        
+        {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+        {% if flashed_messages %}
+        <div class="flash-messages">
+            {% for category, flash_message in flashed_messages %}
+            <div class="alert alert-{{ category }}">
+                {{flash_message}}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        
+        <form action="/interface_add" method="post" class="form">
+            <input type="hidden" name="type" value="add">
+            
+            <div class="form-group">
+                <label for="interface_name" class="form-label">Interface Name</label>
+                <input type="text" name="interface_name" id="interface_name" class="form-input" 
+                       value="{{ rule_detail.interface_name if rule_detail.interface_name else '' }}" 
+                       placeholder="e.g., eth0, eth1" required>
+                <small class="form-help">Enter the interface name as it appears in VyOS</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="interface_desc" class="form-label">Interface Description</label>
+                <input type="text" name="interface_desc" id="interface_desc" class="form-input" 
+                       value="{{ rule_detail.interface_desc if rule_detail.interface_desc else '' }}" 
+                       placeholder="Brief description of the interface">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Add Interface</button>
+                <a href="{{ url_for('interface_view') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-help {
+    display: block;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+</style>
 {% endblock body %}
