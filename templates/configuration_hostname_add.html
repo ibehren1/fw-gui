@@ -20,7 +20,13 @@
             <div class="form-group">
                 <label for="hostname" class="form-label">Hostname</label>
                 <input type="text" name="hostname" id="hostname" class="form-input" 
-                       placeholder="Enter hostname" required>
+                       placeholder="Enter hostname or IP address" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="port" class="form-label">SSH Port</label>
+                <input type="number" name="port" id="port" class="form-input" 
+                       value="22" min="1" max="65535" required>
             </div>
             
             <div class="form-actions">
