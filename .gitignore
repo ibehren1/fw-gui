@@ -6,3 +6,4 @@ jupyter/*
 reference/*
 tmp/*
 .vscode
+flask-modernization
