@@ -7,3 +7,4 @@ reference/*
 tmp/*
 .vscode
 flask-modernization
+MODERNIZATION_SUMMARY.md
