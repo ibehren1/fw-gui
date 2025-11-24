@@ -1,8 +1,8 @@
 """
-    Interface Support Functions
+Interface Support Functions
 
-    This module provides functions for managing network interface data in a firewall configuration system.
-    It handles adding, deleting and listing interface configurations using a JSON-based data store.
+This module provides functions for managing network interface data in a firewall configuration system.
+It handles adding, deleting and listing interface configurations using a JSON-based data store.
 """
 
 import logging
@@ -24,17 +24,18 @@ def add_interface_to_data(session, request):
         None. Updates data file and displays success message.
     """
     # Get user's data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
-
-    logging.debug(user_data["interfaces"])
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     # Set local vars from posted form data
     interface_name = request.form["interface_name"].replace(" ", "")
     interface_desc = request.form["interface_desc"]
 
     # Capture list of interfaces and remove from user_data
-    interface_list = user_data["interfaces"]
-    del user_data["interfaces"]
+    if "interfaces" in user_data:
+        interface_list = user_data["interfaces"]
+        del user_data["interfaces"]
+    else:
+        interface_list = []
 
     # Create higher level data structure if it does not exist
     if "interfaces" not in user_data:
@@ -51,7 +52,7 @@ def add_interface_to_data(session, request):
     user_data["interfaces"].append(new_interface)
 
     # Write user_data to file
-    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+    write_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", user_data)
 
     flash(f"Interface {interface_name} added.", "success")
 
@@ -70,7 +71,7 @@ def delete_interface_from_data(session, request):
         None. Updates data file and displays success message.
     """
     # Get user's data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     # Set local vars from posted form data
     interface_name = request.form["interface"]
@@ -89,7 +90,7 @@ def delete_interface_from_data(session, request):
     user_data["interfaces"] = new_interface_list
 
     # Write user_data to file
-    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+    write_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", user_data)
 
     flash(f"Interface {interface_name} deleted.", "success")
 
@@ -108,7 +109,7 @@ def list_interfaces(session):
               Returns empty list if no interfaces exist.
     """
     # Get user's data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     if "interfaces" not in user_data:
         interface_list = []
