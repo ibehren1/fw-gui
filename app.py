@@ -356,7 +356,6 @@ def user_change_password():
         None
     """
     if request.method == "POST":
-
         result = change_password(bcrypt, db, User, session["username"], request)
 
         if result:
@@ -1179,11 +1178,17 @@ def filter_rule_add():
             return redirect(url_for("filter_add"))
 
         if chain_list == []:
-            flash("Cannot add a filter rule if there are not chains to target.", "warning",)
+            flash(
+                "Cannot add a filter rule if there are not chains to target.",
+                "warning",
+            )
             return redirect(url_for("filter_add"))
 
         if interface_list == []:
-            flash( "Cannot add a filter rule if there are no interfaces to target.", "warning",)
+            flash(
+                "Cannot add a filter rule if there are no interfaces to target.",
+                "warning",
+            )
             return redirect(url_for("interface_add"))
 
         return render_template(
@@ -1399,7 +1404,6 @@ def configuration_push():
         Response: Rendered configuration push template or redirect to hostname config
     """
     if request.method == "POST":
-
         connection_string = {
             "hostname": session["hostname"],
             "username": request.form["username"],
@@ -1509,7 +1513,7 @@ def create_config():
 
         session["firewall_name"] = request.form["config_name"]
         write_user_data_file(
-            f'{session["data_dir"]}/{request.form["config_name"]}', user_data
+            f"{session['data_dir']}/{request.form['config_name']}", user_data
         )
 
     return redirect(url_for("display_config"))
@@ -1696,9 +1700,9 @@ def delete_config():
         if session["firewall_name"] == request.form["delete_config"]:
             session.pop("firewall_name")
 
-    delete_user_data_file(f'{session["data_dir"]}/{request.form["delete_config"]}')
+    delete_user_data_file(f"{session['data_dir']}/{request.form['delete_config']}")
     flash(
-        f'Firewall config {request.form["delete_config"]} has been deleted.', "success"
+        f"Firewall config {request.form['delete_config']} has been deleted.", "success"
     )
 
     return redirect(url_for("display_config"))
@@ -1765,19 +1769,19 @@ def select_firewall_config():
         snapshot = "current"
 
     # Execute a read to read the "snapshot" version into "current"
-    read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', snapshot)
+    read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", snapshot)
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
     if snapshot == "create":
         snapshot_name = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
 
         user_data = read_user_data_file(
-            f'{session["data_dir"]}/{session["firewall_name"]}'
+            f"{session['data_dir']}/{session['firewall_name']}"
         )
         if "tag" in user_data:
             del user_data["tag"]
         write_user_data_file(
-            f'{session["data_dir"]}/{session["firewall_name"]}',
+            f"{session['data_dir']}/{session['firewall_name']}",
             user_data,
             snapshot_name,
         )
@@ -1785,7 +1789,7 @@ def select_firewall_config():
     # If snapshot name is "delete" then delete a snapshot
     if snapshot == "delete":
         delete_user_data_file(
-            f'{session["data_dir"]}/{session["firewall_name"]}/{snapshot_name}'
+            f"{session['data_dir']}/{session['firewall_name']}/{snapshot_name}"
         )
 
     # Load firewall values to session
