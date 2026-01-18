@@ -10,7 +10,6 @@ requires-python = ">= 3.12"
 dependencies = [
     "boto3",
     "cryptography",
-    "datetime",
     "flask",
     "flask_bcrypt",
     "flask_login",
@@ -22,13 +21,12 @@ dependencies = [
     "paramiko",
     "python-dotenv",
     "pymongo",
-    "uuid",
     "waitress",
     "werkzeug",
 ]
 
 [project.optional-dependencies]
-test = ["black", "mongomock", "pytest", "unittest"]
+test = ["black", "mongomock", "pytest"]
 
 [project.urls]
 Homepage = "https://fw-gui.com"
@@ -37,7 +35,7 @@ Issues = "https://github.com/ibehren1/fw-gui/issues"
 Docker = "https://hub.docker.com/r/ibehren1/fw-gui"
 
 [tool.bandit]
-exclude_dirs = ["tests"]
+exclude_dirs = ["tests", ".venv"]
 # tests = ["B201", "B301"]
 # skips = ["B101", "B601"]
 
