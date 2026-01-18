@@ -1,6 +1,6 @@
 """
 FW-GUI for use with VyOS
-Copyright © 2023-2025 Isaac Behrens. All rights reserved.
+Copyright © 2023-2026 Isaac Behrens. All rights reserved.
 
 Basic Flask app to present web forms and process posts from them.
 Generates VyOS firewall CLI configuration commands to create

@@ -1,6 +1,6 @@
 [project]
 name = "FW-GUI"
-version = "2.0.2"
+version = "2.0.3"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
@@ -10,7 +10,6 @@ requires-python = ">= 3.12"
 dependencies = [
     "boto3",
     "cryptography",
-    "datetime",
     "flask",
     "flask_bcrypt",
     "flask_login",
@@ -22,13 +21,12 @@ dependencies = [
     "paramiko",
     "python-dotenv",
     "pymongo",
-    "uuid",
     "waitress",
     "werkzeug",
 ]
 
 [project.optional-dependencies]
-test = ["black", "mongomock", "pytest", "unittest"]
+test = ["black", "mongomock", "pytest"]
 
 [project.urls]
 Homepage = "https://fw-gui.com"
@@ -37,7 +35,7 @@ Issues = "https://github.com/ibehren1/fw-gui/issues"
 Docker = "https://hub.docker.com/r/ibehren1/fw-gui"
 
 [tool.bandit]
-exclude_dirs = ["tests"]
+exclude_dirs = ["tests", ".venv"]
 # tests = ["B201", "B301"]
 # skips = ["B101", "B601"]
 

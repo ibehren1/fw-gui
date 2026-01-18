@@ -1,4 +1,4 @@
-# Copyright © 2023-2025 Isaac Behrens. All rights reserved.
+# Copyright © 2023-2026 Isaac Behrens. All rights reserved.
 
 SHELL := /usr/bin/env bash -euo pipefail -c
 
@@ -18,10 +18,10 @@ local:
 
 ######## Local Dev Build ########
 
-# Build a container image and push to Developer's local registry with the 
+# Build a container image and push to Developer's local registry with the
 # following tags:
 #	${INTERNAL_REG}/fw-gui:dev-latest
-# 	${INTERNAL_REG}/fw-gui:dev-${VERSION} 
+# 	${INTERNAL_REG}/fw-gui:dev-${VERSION}
 dev:
 	./scripts/build.sh Dev
 
@@ -30,7 +30,7 @@ dev:
 
 # Build a container image and push to Docker Hub with the following tags:
 #	${DOCKER_USER}/fw-gui:dev-latest
-#	${DOCKER_USER}/fw-gui:dev-${VERSION} 
+#	${DOCKER_USER}/fw-gui:dev-${VERSION}
 pubdev:
 	./scripts/build.sh PubDev
 
@@ -38,7 +38,7 @@ pubdev:
 ######## PROD BUILD ########
 
 # Build a container image and push to Docker Hub with the following tags:
-#	${DOCKER_USER}/fw-gui:latest 
-#	${DOCKER_USER}/fw-gui:${VERSION} 
+#	${DOCKER_USER}/fw-gui:latest
+#	${DOCKER_USER}/fw-gui:${VERSION}
 prod:
 	./scripts/build.sh Prod
