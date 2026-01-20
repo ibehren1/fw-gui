@@ -404,10 +404,11 @@ wheels = [
 
 [[package]]
 name = "fw-gui"
-version = "2.0.3"
+version = "2.0.4"
 source = { virtual = "." }
 dependencies = [
     { name = "boto3" },
+    { name = "certifi" },
     { name = "cryptography" },
     { name = "flask" },
     { name = "flask-bcrypt" },
@@ -435,6 +436,7 @@ test = [
 requires-dist = [
     { name = "black", marker = "extra == 'test'" },
     { name = "boto3" },
+    { name = "certifi", specifier = ">=2026.1.4" },
     { name = "cryptography" },
     { name = "flask" },
     { name = "flask-bcrypt" },

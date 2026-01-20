@@ -30,6 +30,7 @@ import sys
 from datetime import datetime, timedelta
 from io import BytesIO
 
+import certifi
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -113,6 +114,10 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.telemetry_functions import telemetry_instance
+
+# Set SSL certificate file path
+os.environ["SSL_CERT_FILE"] = certifi.where()
+os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
 # Load environment variables from .env file and version from .version file
 load_dotenv()
