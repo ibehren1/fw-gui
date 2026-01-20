@@ -1,6 +1,6 @@
 [project]
 name = "FW-GUI"
-version = "2.0.4"
+version = "2.0.5"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
@@ -9,21 +9,24 @@ readme = "README.md"
 requires-python = ">= 3.12"
 dependencies = [
     "boto3",
+    "certifi>=2026.1.4",
     "cryptography",
     "flask",
     "flask_bcrypt",
     "flask_login",
     "flask_sqlalchemy",
     "Jinja2",
+    "logging>=0.4.9.6",
     "napalm",
     "napalm-vyos",
     "packaging",
     "paramiko",
+    "pymongo>=4.16.0",
     "python-dotenv",
-    "pymongo",
+    "urllib3>=2.6.3",
+    "uuid>=1.30",
     "waitress",
     "werkzeug",
-    "certifi>=2026.1.4",
 ]
 
 [project.optional-dependencies]

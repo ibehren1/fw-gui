@@ -18,11 +18,9 @@ import logging
 import os
 import random
 import string
-
-# B404 -- security implications considered.
-import subprocess  # nosec
 import sys
 import uuid
+import zipfile
 from datetime import datetime
 
 import boto3
@@ -150,60 +148,37 @@ def create_backup(session, user=False):
     timestamp = str(datetime.now()).replace(" ", "-")
     if user is False:
         try:
-            # Get a fresh Mongo Dump
             mongo_dump()
-            # B607 -- Cmd is partial executable path for compatibility between OSes.
-            subprocess.run(
-                [
-                    "zip",
-                    "-r",
-                    f"data/backups/full-backup-{timestamp}.zip",
-                    "data/",
-                    "-x",
-                    "data/backups/*",
-                    "-x",
-                    "data/tmp/*",
-                    "-x",
-                    "data/uploads/*",
-                    "-x",
-                    "data/users/*.key",
-                ]
-            )  # nosec
+            backup_path = f"data/backups/full-backup-{timestamp}.zip"
+            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk("data/"):
+                    if root.startswith(("data/backups", "data/tmp", "data/uploads")):
+                        continue
+                    for file in files:
+                        if file.endswith(".key"):
+                            continue
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, os.path.relpath(file_path, "data/"))
             logging.info(f'User <{session["username"]}> created a full backup.')
-            flash(
-                f"Backup created: data/backups/full-backup-{timestamp}.zip", "success"
-            )
-
-            upload_backup_file(f"data/backups/full-backup-{timestamp}.zip")
-
+            flash(f"Backup created: {backup_path}", "success")
+            upload_backup_file(backup_path)
         except Exception as e:
             logging.info(e)
             flash("Backup failed.", "critical")
-
     else:
         user = session["username"]
         try:
-            # B607 -- Cmd is partial executable path for compatibility between OSes.
-            subprocess.run(
-                [
-                    "zip",
-                    "-r",
-                    f"data/{user}/user-{user}-backup-{timestamp}.zip",
-                    f"data/{user}",
-                    "-x",
-                    f"data/{user}/*.zip",
-                    "-x",
-                    f"data/{user}/*.key",
-                ]
-            )  # nosec
+            backup_path = f"data/{user}/user-{user}-backup-{timestamp}.zip"
+            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(f"data/{user}"):
+                    for file in files:
+                        if file.endswith((".zip", ".key")):
+                            continue
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, os.path.relpath(file_path, f"data/{user}"))
             logging.info(f'User <{session["username"]}> created a user backup.')
-            flash(
-                f"Backup created: data/{user}/user-{user}-backup-{timestamp}.zip",
-                "success",
-            )
-
-            upload_backup_file(f"data/{user}/user-{user}-backup-{timestamp}.zip")
-
+            flash(f"Backup created: {backup_path}", "success")
+            upload_backup_file(backup_path)
         except Exception as e:
             logging.info(e)
             flash("Backup failed.", "critical")
