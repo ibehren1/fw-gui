@@ -18,7 +18,7 @@ import logging
 import os
 import random
 import string
-import subprocess
+import subprocess  # nosec B404
 import sys
 import uuid
 import zipfile
