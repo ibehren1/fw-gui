@@ -18,6 +18,7 @@ import logging
 import os
 import random
 import string
+import subprocess
 import sys
 import uuid
 import zipfile
@@ -49,7 +50,7 @@ def add_extra_items(session, request):
         None
     """
     # Get user's data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
     default_extra_items = [
         "# Enter set commands here, one per line.",
         "# set firewall global-options all-ping 'enable'",
@@ -70,7 +71,7 @@ def add_extra_items(session, request):
     else:
         user_data["extra-items"] = extra_items
         write_user_data_file(
-            f'{session["data_dir"]}/{session["firewall_name"]}', user_data
+            f"{session['data_dir']}/{session['firewall_name']}", user_data
         )
         flash("Extra items added to configuration.", "success")
         return
@@ -93,14 +94,14 @@ def add_hostname(session, reqest):
         None
     """
     # Get user's data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     # Add hostname and port to user_data
     user_data["system"]["hostname"] = reqest.form["hostname"]
     user_data["system"]["port"] = reqest.form["port"]
 
     # Write user_data to file
-    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+    write_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", user_data)
 
 
 def allowed_file(filename):
@@ -150,7 +151,7 @@ def create_backup(session, user=False):
         try:
             mongo_dump()
             backup_path = f"data/backups/full-backup-{timestamp}.zip"
-            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk("data/"):
                     if root.startswith(("data/backups", "data/tmp", "data/uploads")):
                         continue
@@ -159,7 +160,7 @@ def create_backup(session, user=False):
                             continue
                         file_path = os.path.join(root, file)
                         zipf.write(file_path, os.path.relpath(file_path, "data/"))
-            logging.info(f'User <{session["username"]}> created a full backup.')
+            logging.info(f"User <{session['username']}> created a full backup.")
             flash(f"Backup created: {backup_path}", "success")
             upload_backup_file(backup_path)
         except Exception as e:
@@ -169,14 +170,16 @@ def create_backup(session, user=False):
         user = session["username"]
         try:
             backup_path = f"data/{user}/user-{user}-backup-{timestamp}.zip"
-            with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk(f"data/{user}"):
                     for file in files:
                         if file.endswith((".zip", ".key")):
                             continue
                         file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, f"data/{user}"))
-            logging.info(f'User <{session["username"]}> created a user backup.')
+                        zipf.write(
+                            file_path, os.path.relpath(file_path, f"data/{user}")
+                        )
+            logging.info(f"User <{session['username']}> created a user backup.")
             flash(f"Backup created: {backup_path}", "success")
             upload_backup_file(backup_path)
         except Exception as e:
@@ -296,7 +299,7 @@ def get_extra_items(session):
     4. Returns the list of extra items
     """
     # Get user's data
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     # Create list of defined filters
     extra_items = []
@@ -336,7 +339,7 @@ def get_system_name(session):
     4. If no system config exists:
        - Returns (None, None)
     """
-    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     if "system" in user_data:
         return user_data["system"]["hostname"], user_data["system"]["port"]
@@ -710,7 +713,7 @@ def process_upload(session, request, app):
                 if "_id" in user_data:
                     del user_data["_id"]
                 filename = filename.replace(".json", "")
-                write_user_data_file(f'{session["data_dir"]}/{filename}', user_data)
+                write_user_data_file(f"{session['data_dir']}/{filename}", user_data)
                 os.remove(f"data/uploads/{filename}.json")
         except Exception:
             flash("File is not valid JSON", "danger")
@@ -731,7 +734,7 @@ def process_upload(session, request, app):
                 encrypted = fernet.encrypt(data)
 
                 # writing the encrypted data
-                with open(f'{session["data_dir"]}/{filename}', "wb") as encrypted_file:
+                with open(f"{session['data_dir']}/{filename}", "wb") as encrypted_file:
                     encrypted_file.write(encrypted)
                     flash(
                         f"Your encryption key for this file is: {key.decode('utf-8')}",
@@ -834,13 +837,13 @@ def tag_snapshot(session, request):
     snapshot_name = request.form["snapshot_name"]
     snapshot_tag = request.form["snapshot_tag"]
     user_data = read_user_data_file(
-        f"data/{session["username"]}/{firewall_name}",
+        f"data/{session['username']}/{firewall_name}",
         snapshot=snapshot_name,
     )
 
     user_data["tag"] = snapshot_tag
     write_user_data_file(
-        f"data/{session["username"]}/{firewall_name}", user_data, snapshot=snapshot_name
+        f"data/{session['username']}/{firewall_name}", user_data, snapshot=snapshot_name
     )
 
     flash(f"Tag updated for snapshot {snapshot_name}.", "success")
@@ -903,13 +906,7 @@ def update_schema(user_data):
                                         rule
                                     ]["fw_chain"] = user_data[ip_version]["filters"][
                                         filter
-                                    ][
-                                        "rules"
-                                    ][
-                                        rule
-                                    ][
-                                        "fw_table"
-                                    ]
+                                    ]["rules"][rule]["fw_table"]
                                     del user_data[ip_version]["filters"][filter][
                                         "rules"
                                     ][rule]["fw_table"]
@@ -1034,7 +1031,7 @@ def write_user_command_conf_file(session, command_list, delete=False):
     Returns:
         None
     """
-    with open(f'{session["data_dir"]}/{session["firewall_name"]}.conf', "w") as f:
+    with open(f"{session['data_dir']}/{session['firewall_name']}.conf", "w") as f:
         if delete is True:
             f.write(
                 "#\n# Delete all firewall before setting new values\ndelete firewall\n"
