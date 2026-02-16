@@ -326,8 +326,13 @@ def download():
     """
     path = request.form["path"]
     filename = request.form["filename"]
+    full_path = os.path.realpath(path + filename)
 
-    with open(path + filename, "rb") as f:
+    if not full_path.startswith(os.path.realpath("data/")):
+        flash("Invalid file path.", "danger")
+        return redirect(url_for("index"))
+
+    with open(full_path, "rb") as f:
         data = f.read()
     return send_file(BytesIO(data), download_name=filename, as_attachment=True)
 
