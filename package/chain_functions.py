@@ -547,7 +547,7 @@ def reorder_chain_rule_in_data(session, request):
     try:
         int(new_rule_number)
     except Exception:
-        flash("New rule number musht be an integer.", "danger")
+        flash("New rule number must be an integer.", "danger")
         return None
 
     if new_rule_number in existing_rule_list:
