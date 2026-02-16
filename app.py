@@ -139,6 +139,8 @@ handlers.append(stdout_handler)
 if "LOG_LEVEL" in os.environ:
     if os.environ.get("LOG_LEVEL") in logging._nameToLevel:
         log_level = os.environ.get("LOG_LEVEL")
+    else:
+        log_level = logging.INFO
 else:
     log_level = logging.INFO
 
