@@ -71,7 +71,6 @@ from package.data_file_functions import (
     initialize_data_dir,
     list_full_backups,
     list_snapshots,
-    list_user_backups,
     list_user_files,
     list_user_keys,
     process_upload,
@@ -275,17 +274,12 @@ def admin_settings():
             if request.form["backup"] == "full_backup":
                 create_backup(session)
 
-            if request.form["backup"] == "user_backup":
-                create_backup(session, True)
-
-            backup_list = list_user_backups(session)
-            file_list = list_user_files(session)
-            full_backup_list = list_full_backups(session)
-            snapshot_list = list_snapshots(session)
+        file_list = list_user_files(session)
+        full_backup_list = list_full_backups(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "admin_settings_form.html",
-            backup_list=backup_list,
             file_list=file_list,
             snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
@@ -293,14 +287,12 @@ def admin_settings():
         )
 
     else:
-        backup_list = list_user_backups(session)
         file_list = list_user_files(session)
         full_backup_list = list_full_backups(session)
         snapshot_list = list_snapshots(session)
 
         return render_template(
             "admin_settings_form.html",
-            backup_list=backup_list,
             file_list=file_list,
             snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
