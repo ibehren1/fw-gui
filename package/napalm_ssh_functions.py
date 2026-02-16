@@ -161,7 +161,7 @@ def commit_to_firewall(connection_string, session):
     except Exception as e:
         logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        return e
+        return str(e)
 
     finally:
         # Delete key
@@ -220,7 +220,7 @@ def get_diffs_from_firewall(connection_string, session):
     except Exception as e:
         logging.info(f" |--X Error: {e}")
         flash("Error in diff.  Inspect output and correct errors.", "danger")
-        return e
+        return str(e)
 
     finally:
         # Delete key
@@ -277,7 +277,7 @@ def run_operational_command(connection_string, session, op_command):
     except Exception as e:
         logging.info(f" |--X Error: {e}")
         flash("Error connecting to host.  Inspect output and correct errors.", "danger")
-        return e
+        return str(e)
 
     finally:
         # Delete key
