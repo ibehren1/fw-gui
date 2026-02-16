@@ -710,6 +710,7 @@ def process_upload(session, request, app):
             filetype = "key"
         else:
             flash("Invalid file type, only .json and .key files are allowed.", "danger")
+            return
 
     if filetype == "json":
         try:
