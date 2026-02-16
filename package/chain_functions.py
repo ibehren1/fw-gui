@@ -471,7 +471,8 @@ def delete_rule_from_data(session, request):
         )
         pass
 
-    # Clean-up data
+    # Clean-up data — intentionally removes the entire chain (including defaults)
+    # when the last rule is deleted, as empty chains are not desired.
     try:
         if not user_data[ip_version]["chains"][fw_chain]["rule-order"]:
             del user_data[ip_version]["chains"][fw_chain]

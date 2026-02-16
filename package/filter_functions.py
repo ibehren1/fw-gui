@@ -281,7 +281,8 @@ def delete_filter_rule_from_data(session, request):
         )
         pass
 
-    # Clean-up data
+    # Clean-up data — intentionally removes the entire filter (including defaults)
+    # when the last rule is deleted, as empty filters are not desired.
     try:
         if not user_data[ip_version]["filters"][filter]["rule-order"]:
             del user_data[ip_version]["filters"][filter]
