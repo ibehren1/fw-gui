@@ -1764,10 +1764,14 @@ def select_firewall_config():
         return redirect(url_for("snapshot_diff_choose"))
     # If selecting a snapshot
     if request.form["file"].__contains__("/"):
-        session["firewall_name"] = request.form["file"].split("/")[0]
-        snapshot = request.form["file"].split("/")[1]
+        parts = request.form["file"].split("/")
+        session["firewall_name"] = parts[0]
+        snapshot = parts[1]
         if snapshot == "delete":
-            snapshot_name = request.form["file"].split("/")[2]
+            if len(parts) < 3:
+                flash("Invalid snapshot selection.", "danger")
+                return redirect(url_for("display_config"))
+            snapshot_name = parts[2]
     # Else selecting a firewall config
     else:
         session["firewall_name"] = request.form["file"]
