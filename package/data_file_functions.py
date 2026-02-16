@@ -77,7 +77,7 @@ def add_extra_items(session, request):
         return
 
 
-def add_hostname(session, reqest):
+def add_hostname(session, request):
     """
     Adds or updates hostname and port information in a user's firewall configuration file.
 
@@ -97,8 +97,8 @@ def add_hostname(session, reqest):
     user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     # Add hostname and port to user_data
-    user_data["system"]["hostname"] = reqest.form["hostname"]
-    user_data["system"]["port"] = reqest.form["port"]
+    user_data["system"]["hostname"] = request.form["hostname"]
+    user_data["system"]["port"] = request.form["port"]
 
     # Write user_data to file
     write_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", user_data)
