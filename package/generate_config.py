@@ -328,7 +328,7 @@ def generate_config(session, snapshot="current", diff=False):
                                 in user_data[ip_version]["chains"][fw_chain][rule]
                                 else False
                             )
-                            logging = (
+                            rule_logging = (
                                 True
                                 if "logging"
                                 in user_data[ip_version]["chains"][fw_chain][rule]
@@ -482,7 +482,7 @@ def generate_config(session, snapshot="current", diff=False):
                             )
 
                         # Logging
-                        if logging:
+                        if rule_logging:
                             config.append(
                                 f"set firewall {ip_version} name {fw_chain} rule {rule} log"
                             )
