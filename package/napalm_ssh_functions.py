@@ -38,7 +38,7 @@ def assemble_napalm_driver_string(connection_string, session):
 
     if "ssh_key_name" in connection_string:
         key = connection_string["password"].encode("utf-8")
-        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+        key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
         tmp_key_name = decrypt_file(key_name, key)
         optional_args["key_file"] = tmp_key_name
 
@@ -90,7 +90,7 @@ def assemble_paramiko_driver_string(connection_string, session):
     if "ssh_key_name" in connection_string:
         logging.info("key")
         key = connection_string["password"].encode("utf-8")
-        key_name = f'{session["data_dir"]}/{connection_string["ssh_key_name"]}'
+        key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
         tmp_key_name = decrypt_file(key_name, key)
         ssh.connect(hostname, port=port, username=username, key_filename=tmp_key_name)
     else:
@@ -117,12 +117,13 @@ def commit_to_firewall(connection_string, session):
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
-    except Exception:
+    except Exception as e:
         tmpfile = None
-        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
-        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
+        logging.info(f" |--X Error assembling NAPALM driver: {e}")
+        flash(f"Error: {e}", "danger")
+        return f"Authentication failure!\n{e}\n\nIf using SSH key, suggest uploading again and saving your encryption key."
 
-    logging.debug(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.debug(f" |--> Connecting to: {session['hostname']}:{session['port']}")
     logging.debug(" |--> Configuring driver")
 
     vyos_router = driver
@@ -132,7 +133,7 @@ def commit_to_firewall(connection_string, session):
     try:
         vyos_router.open()
         vyos_router.load_merge_candidate(
-            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
+            filename=f"{session['data_dir']}/{session['firewall_name']}.conf"
         )
 
         logging.debug(" |--> Comparing configuration")
@@ -187,12 +188,13 @@ def get_diffs_from_firewall(connection_string, session):
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
-    except Exception:
+    except Exception as e:
         tmpfile = None
-        flash("Authentication error. Cannot unencrypt your SSH key.", "danger")
-        return "Authentication failure!\nCannot unencrypt your SSH key.\n\nSuggest uploading again and saving your encryption key."
+        logging.info(f" |--X Error assembling NAPALM driver: {e}")
+        flash(f"Error: {e}", "danger")
+        return f"Authentication failure!\n{e}\n\nIf using SSH key, suggest uploading again and saving your encryption key."
 
-    logging.debug(f' |--> Connecting to: {session["hostname"]}:{session["port"]}')
+    logging.debug(f" |--> Connecting to: {session['hostname']}:{session['port']}")
     logging.debug(" |--> Configuring driver")
 
     vyos_router = driver
@@ -202,7 +204,7 @@ def get_diffs_from_firewall(connection_string, session):
     try:
         vyos_router.open()
         vyos_router.load_merge_candidate(
-            filename=f'{session["data_dir"]}/{session["firewall_name"]}.conf'
+            filename=f"{session['data_dir']}/{session['firewall_name']}.conf"
         )
 
         logging.debug(" |--> Comparing configuration")
@@ -303,13 +305,13 @@ def test_connection(session):
         s.connect((session["hostname"], int(session["port"])))
         s.shutdown(2)
         flash(
-            f'Connection to {session["hostname"]} on port {session["port"]} validated!',
+            f"Connection to {session['hostname']} on port {session['port']} validated!",
             "success",
         )
         return True
     except Exception:
         flash(
-            f'Cannot connect to {session["hostname"]} on port {session["port"]}!',
+            f"Cannot connect to {session['hostname']} on port {session['port']}!",
             "danger",
         )
         return False

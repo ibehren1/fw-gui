@@ -226,7 +226,9 @@ def load_user(user_id):
     Raises:
         NoResultFound: If no user with the given ID exists
     """
-    return db.session.execute(db.select(User).filter_by(id=user_id)).scalar_one_or_none()
+    return db.session.execute(
+        db.select(User).filter_by(id=user_id)
+    ).scalar_one_or_none()
 
 
 #
