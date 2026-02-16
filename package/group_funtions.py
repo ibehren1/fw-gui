@@ -51,7 +51,7 @@ def add_group_to_data(session, request):
         user_data[ip_version] = {}
     if "groups" not in user_data[ip_version]:
         user_data[ip_version]["groups"] = {}
-    if "group-name" not in user_data[ip_version]["groups"]:
+    if group_name not in user_data[ip_version]["groups"]:
         user_data[ip_version]["groups"][group_name] = {}
 
     # Assign values into data structure

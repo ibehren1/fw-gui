@@ -471,7 +471,8 @@ def delete_rule_from_data(session, request):
         )
         pass
 
-    # Clean-up data
+    # Clean-up data — intentionally removes the entire chain (including defaults)
+    # when the last rule is deleted, as empty chains are not desired.
     try:
         if not user_data[ip_version]["chains"][fw_chain]["rule-order"]:
             del user_data[ip_version]["chains"][fw_chain]
@@ -547,7 +548,7 @@ def reorder_chain_rule_in_data(session, request):
     try:
         int(new_rule_number)
     except Exception:
-        flash("New rule number musht be an integer.", "danger")
+        flash("New rule number must be an integer.", "danger")
         return None
 
     if new_rule_number in existing_rule_list:

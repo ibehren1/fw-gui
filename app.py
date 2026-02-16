@@ -71,7 +71,6 @@ from package.data_file_functions import (
     initialize_data_dir,
     list_full_backups,
     list_snapshots,
-    list_user_backups,
     list_user_files,
     list_user_keys,
     process_upload,
@@ -139,6 +138,8 @@ handlers.append(stdout_handler)
 if "LOG_LEVEL" in os.environ:
     if os.environ.get("LOG_LEVEL") in logging._nameToLevel:
         log_level = os.environ.get("LOG_LEVEL")
+    else:
+        log_level = logging.INFO
 else:
     log_level = logging.INFO
 
@@ -225,7 +226,9 @@ def load_user(user_id):
     Raises:
         NoResultFound: If no user with the given ID exists
     """
-    return db.session.execute(db.select(User).filter_by(id=user_id)).scalar_one()
+    return db.session.execute(
+        db.select(User).filter_by(id=user_id)
+    ).scalar_one_or_none()
 
 
 #
@@ -273,17 +276,12 @@ def admin_settings():
             if request.form["backup"] == "full_backup":
                 create_backup(session)
 
-            if request.form["backup"] == "user_backup":
-                create_backup(session, True)
-
-            backup_list = list_user_backups(session)
-            file_list = list_user_files(session)
-            full_backup_list = list_full_backups(session)
-            snapshot_list = list_snapshots(session)
+        file_list = list_user_files(session)
+        full_backup_list = list_full_backups(session)
+        snapshot_list = list_snapshots(session)
 
         return render_template(
             "admin_settings_form.html",
-            backup_list=backup_list,
             file_list=file_list,
             snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
@@ -291,14 +289,12 @@ def admin_settings():
         )
 
     else:
-        backup_list = list_user_backups(session)
         file_list = list_user_files(session)
         full_backup_list = list_full_backups(session)
         snapshot_list = list_snapshots(session)
 
         return render_template(
             "admin_settings_form.html",
-            backup_list=backup_list,
             file_list=file_list,
             snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
@@ -326,8 +322,13 @@ def download():
     """
     path = request.form["path"]
     filename = request.form["filename"]
+    full_path = os.path.realpath(path + filename)
 
-    with open(path + filename, "rb") as f:
+    if not full_path.startswith(os.path.realpath("data/")):
+        flash("Invalid file path.", "danger")
+        return redirect(url_for("index"))
+
+    with open(full_path, "rb") as f:
         data = f.read()
     return send_file(BytesIO(data), download_name=filename, as_attachment=True)
 
@@ -925,8 +926,8 @@ def chain_rule_add():
         Response: On POST - Redirect to chain view page (with optional anchor)
                  On GET - Rendered rule add form template or redirect
     """
-    logging.debug(request.form)
     if request.method == "POST":
+        logging.debug(request.form)
         if request.form["type"] == "add":
             if request.form["fw_chain"] == "":
                 return redirect(url_for("chain_view"))
@@ -1459,7 +1460,7 @@ def configuration_push():
             op_command=op_command,
             ssh_user_name=session["ssh_user"],
             ssh_pass=session["ssh_pass"],
-            ssh_keyname=session["ssh_keyname"],
+            ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
             message=message,
             username=session["username"],
@@ -1486,7 +1487,7 @@ def configuration_push():
             firewall_reachable=firewall_reachable,
             ssh_user_name=session["ssh_user"],
             ssh_pass=session["ssh_pass"],
-            ssh_keyname=session["ssh_keyname"],
+            ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
             message=message,
             username=session["username"],
@@ -1764,10 +1765,14 @@ def select_firewall_config():
         return redirect(url_for("snapshot_diff_choose"))
     # If selecting a snapshot
     if request.form["file"].__contains__("/"):
-        session["firewall_name"] = request.form["file"].split("/")[0]
-        snapshot = request.form["file"].split("/")[1]
+        parts = request.form["file"].split("/")
+        session["firewall_name"] = parts[0]
+        snapshot = parts[1]
         if snapshot == "delete":
-            snapshot_name = request.form["file"].split("/")[2]
+            if len(parts) < 3:
+                flash("Invalid snapshot selection.", "danger")
+                return redirect(url_for("display_config"))
+            snapshot_name = parts[2]
     # Else selecting a firewall config
     else:
         session["firewall_name"] = request.form["file"]

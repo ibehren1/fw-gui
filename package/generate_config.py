@@ -132,16 +132,18 @@ def generate_config(session, snapshot="current", diff=False):
 
                     if group_type == "address-group":
                         value_type = "address"
-                    if group_type == "domain-group":
+                    elif group_type == "domain-group":
                         value_type = "address"
-                    if group_type == "interface-group":
+                    elif group_type == "interface-group":
                         value_type = "interface"
-                    if group_type == "mac-group":
+                    elif group_type == "mac-group":
                         value_type = "mac-address"
-                    if group_type == "network-group":
+                    elif group_type == "network-group":
                         value_type = "network"
-                    if group_type == "port-group":
+                    elif group_type == "port-group":
                         value_type = "port"
+                    else:
+                        value_type = "address"
 
                     config.append(f"\n# Group: {group_name}")
 
@@ -328,7 +330,7 @@ def generate_config(session, snapshot="current", diff=False):
                                 in user_data[ip_version]["chains"][fw_chain][rule]
                                 else False
                             )
-                            logging = (
+                            rule_logging = (
                                 True
                                 if "logging"
                                 in user_data[ip_version]["chains"][fw_chain][rule]
@@ -482,7 +484,7 @@ def generate_config(session, snapshot="current", diff=False):
                             )
 
                         # Logging
-                        if logging:
+                        if rule_logging:
                             config.append(
                                 f"set firewall {ip_version} name {fw_chain} rule {rule} log"
                             )
@@ -508,7 +510,10 @@ def generate_config(session, snapshot="current", diff=False):
 
     # If this is a Diff, just return the config
     if diff:
-        return config
+        message = ""
+        for line in config:
+            message = message + line.replace("\n", "<br>") + "<br>"
+        return message, config
 
     # Convert list of lines to single string
     message = ""

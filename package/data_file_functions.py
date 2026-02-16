@@ -30,6 +30,16 @@ import pymongo
 from cryptography.fernet import Fernet
 from flask import flash
 
+# Shared MongoDB client — reused across calls to avoid connection leaks.
+_mongo_client = None
+
+
+def _get_mongo_client():
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    return _mongo_client
+
 
 def add_extra_items(session, request):
     """
@@ -77,7 +87,7 @@ def add_extra_items(session, request):
         return
 
 
-def add_hostname(session, reqest):
+def add_hostname(session, request):
     """
     Adds or updates hostname and port information in a user's firewall configuration file.
 
@@ -97,8 +107,8 @@ def add_hostname(session, reqest):
     user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
     # Add hostname and port to user_data
-    user_data["system"]["hostname"] = reqest.form["hostname"]
-    user_data["system"]["port"] = reqest.form["port"]
+    user_data["system"]["hostname"] = request.form["hostname"]
+    user_data["system"]["port"] = request.form["port"]
 
     # Write user_data to file
     write_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", user_data)
@@ -261,7 +271,7 @@ def delete_user_data_file(filename):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    client = _get_mongo_client()
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
 
@@ -494,7 +504,7 @@ def list_snapshots(session):
         collection_name = f"{session['username']}"
 
         logging.debug("Prepping Mongo query.")
-        client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        client = _get_mongo_client()
         db = client[os.environ.get("MONGODB_DATABASE")]
         collection = db[collection_name]
         query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
@@ -571,7 +581,7 @@ def list_user_files(session):
     collection_name = f"{session['username']}"
 
     logging.debug("Prepping Mongo query.")
-    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    client = _get_mongo_client()
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
     query = {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
@@ -644,7 +654,7 @@ def mongo_dump():
     if not os.path.exists(mongo_dump_path):
         os.makedirs(mongo_dump_path)
 
-    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    client = _get_mongo_client()
     db = client[db_name]
     collist = db.list_collection_names()
     for coll in collist:
@@ -692,14 +702,15 @@ def process_upload(session, request, app):
             return
         # if file and allowed_file(file.filename):
         filename = f"{file.filename}"
+        if not allowed_file(filename):
+            flash("Invalid file type, only .json and .key files are allowed.", "danger")
+            return
         if filename.rsplit(".", 1)[1].lower() in ["json"]:
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             filetype = "json"
         elif filename.rsplit(".", 1)[1].lower() in ["key"]:
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             filetype = "key"
-        else:
-            flash("Invalid file type, only .json and .key files are allowed.", "danger")
 
     if filetype == "json":
         try:
@@ -778,7 +789,7 @@ def read_user_data_file(filename, snapshot="current", diff=False):
         firewall = filename.split("/")[2]
 
         logging.debug("Prepping Mongo query.")
-        client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        client = _get_mongo_client()
         db = client[os.environ.get("MONGODB_DATABASE")]
         collection = db[collection_name]
 
@@ -839,6 +850,7 @@ def tag_snapshot(session, request):
     user_data = read_user_data_file(
         f"data/{session['username']}/{firewall_name}",
         snapshot=snapshot_name,
+        diff=True,
     )
 
     user_data["tag"] = snapshot_tag
@@ -1077,7 +1089,7 @@ def write_user_data_file(filename, data, snapshot="current"):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+    client = _get_mongo_client()
     db = client[os.environ.get("MONGODB_DATABASE")]
     collection = db[collection_name]
 
