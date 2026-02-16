@@ -508,7 +508,10 @@ def generate_config(session, snapshot="current", diff=False):
 
     # If this is a Diff, just return the config
     if diff:
-        return config
+        message = ""
+        for line in config:
+            message = message + line.replace("\n", "<br>") + "<br>"
+        return message, config
 
     # Convert list of lines to single string
     message = ""
