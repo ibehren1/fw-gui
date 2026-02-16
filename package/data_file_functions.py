@@ -849,6 +849,7 @@ def tag_snapshot(session, request):
     user_data = read_user_data_file(
         f"data/{session['username']}/{firewall_name}",
         snapshot=snapshot_name,
+        diff=True,
     )
 
     user_data["tag"] = snapshot_tag
