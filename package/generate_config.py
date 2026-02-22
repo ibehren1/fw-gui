@@ -198,48 +198,20 @@ def generate_config(session, snapshot="current", diff=False):
                     for rule in user_data[ip_version]["filters"][filter_name][
                         "rule-order"
                     ]:
-                        for key in user_data[ip_version]["filters"][filter_name][
+                        # Get Values
+                        rule_data = user_data[ip_version]["filters"][filter_name][
                             "rules"
-                        ][rule]:
-                            # Get Values
-                            description = user_data[ip_version]["filters"][filter_name][
-                                "rules"
-                            ][rule]["description"]
-                            log = (
-                                True
-                                if "log"
-                                in user_data[ip_version]["filters"][filter_name][
-                                    "rules"
-                                ][rule]
-                                else False
-                            )
-                            rule_disable = (
-                                True
-                                if "rule_disable"
-                                in user_data[ip_version]["filters"][filter_name][
-                                    "rules"
-                                ][rule]
-                                else False
-                            )
-                            action = user_data[ip_version]["filters"][filter_name][
-                                "rules"
-                            ][rule]["action"]
-                            if action == "jump":
-                                interface = user_data[ip_version]["filters"][
-                                    filter_name
-                                ]["rules"][rule]["interface"]
-                                direction = user_data[ip_version]["filters"][
-                                    filter_name
-                                ]["rules"][rule]["direction"]
-                                jump_target = user_data[ip_version]["filters"][
-                                    filter_name
-                                ]["rules"][rule]["fw_chain"]
-                            if action == "offload":
-                                offload_target = user_data[ip_version]["filters"][
-                                    filter_name
-                                ]["rules"][rule]["fw_chain"]
-                                # set firewall [ipv4 | ipv6] forward filter rule <1-999999> action offload
-                                # set firewall [ipv4 | ipv6] forward filter rule <1-999999> offload-target <flowtable>
+                        ][rule]
+                        description = rule_data["description"]
+                        log = "log" in rule_data
+                        rule_disable = "rule_disable" in rule_data
+                        action = rule_data["action"]
+                        if action == "jump":
+                            interface = rule_data["interface"]
+                            direction = rule_data["direction"]
+                            jump_target = rule_data["fw_chain"]
+                        if action == "offload":
+                            offload_target = rule_data["fw_chain"]
 
                         # Write Config Statements
                         config.append(f"# Rule {rule}")
@@ -319,77 +291,25 @@ def generate_config(session, snapshot="current", diff=False):
                         config.append("\n")
 
                     for rule in user_data[ip_version]["chains"][fw_chain]["rule-order"]:
-                        for key in user_data[ip_version]["chains"][fw_chain][rule]:
-                            # Get Values
-                            description = user_data[ip_version]["chains"][fw_chain][
-                                rule
-                            ]["description"]
-                            rule_disable = (
-                                True
-                                if "rule_disable"
-                                in user_data[ip_version]["chains"][fw_chain][rule]
-                                else False
-                            )
-                            rule_logging = (
-                                True
-                                if "logging"
-                                in user_data[ip_version]["chains"][fw_chain][rule]
-                                else False
-                            )
-                            action = user_data[ip_version]["chains"][fw_chain][rule][
-                                "action"
-                            ]
-                            dest_address = user_data[ip_version]["chains"][fw_chain][
-                                rule
-                            ]["dest_address"]
-                            dest_address_type = user_data[ip_version]["chains"][
-                                fw_chain
-                            ][rule]["dest_address_type"]
-                            dest_port = user_data[ip_version]["chains"][fw_chain][rule][
-                                "dest_port"
-                            ]
-                            dest_port_type = user_data[ip_version]["chains"][fw_chain][
-                                rule
-                            ]["dest_port_type"]
-                            source_address = user_data[ip_version]["chains"][fw_chain][
-                                rule
-                            ]["source_address"]
-                            source_address_type = user_data[ip_version]["chains"][
-                                fw_chain
-                            ][rule]["source_address_type"]
-                            source_port = user_data[ip_version]["chains"][fw_chain][
-                                rule
-                            ]["source_port"]
-                            source_port_type = user_data[ip_version]["chains"][
-                                fw_chain
-                            ][rule]["source_port_type"]
-                            protocol = user_data[ip_version]["chains"][fw_chain][rule][
-                                "protocol"
-                            ]
-                            state_est = (
-                                True
-                                if "state_est"
-                                in user_data[ip_version]["chains"][fw_chain][rule]
-                                else False
-                            )
-                            state_inv = (
-                                True
-                                if "state_inv"
-                                in user_data[ip_version]["chains"][fw_chain][rule]
-                                else False
-                            )
-                            state_new = (
-                                True
-                                if "state_new"
-                                in user_data[ip_version]["chains"][fw_chain][rule]
-                                else False
-                            )
-                            state_rel = (
-                                True
-                                if "state_rel"
-                                in user_data[ip_version]["chains"][fw_chain][rule]
-                                else False
-                            )
+                        # Get Values
+                        rule_data = user_data[ip_version]["chains"][fw_chain][rule]
+                        description = rule_data["description"]
+                        rule_disable = "rule_disable" in rule_data
+                        rule_logging = "logging" in rule_data
+                        action = rule_data["action"]
+                        dest_address = rule_data["dest_address"]
+                        dest_address_type = rule_data["dest_address_type"]
+                        dest_port = rule_data["dest_port"]
+                        dest_port_type = rule_data["dest_port_type"]
+                        source_address = rule_data["source_address"]
+                        source_address_type = rule_data["source_address_type"]
+                        source_port = rule_data["source_port"]
+                        source_port_type = rule_data["source_port_type"]
+                        protocol = rule_data["protocol"]
+                        state_est = "state_est" in rule_data
+                        state_inv = "state_inv" in rule_data
+                        state_new = "state_new" in rule_data
+                        state_rel = "state_rel" in rule_data
 
                         # Write Config Statements
                         config.append(f"# Rule {rule}")
