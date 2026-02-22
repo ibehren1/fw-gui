@@ -2,9 +2,17 @@
 Shared test fixtures for FW-GUI test suite.
 """
 
+import os
+
+# Set environment defaults before any imports could trigger app.py loading.
+os.environ.setdefault("APP_SECRET_KEY", "test-secret-key")
+os.environ.setdefault("DISABLE_REGISTRATION", "False")
+os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017/")
+os.environ.setdefault("MONGODB_DATABASE", "test_db")
+os.environ.setdefault("SESSION_TIMEOUT", "120")
+
 import copy
 import json
-import os
 
 import pytest
 from flask import Flask
@@ -126,3 +134,72 @@ def user_model():
             return str(self.id)
 
     return User
+
+
+@pytest.fixture(scope="session")
+def flask_app():
+    """Real Flask app from app.py configured for testing with in-memory SQLite."""
+    from sqlalchemy.pool import StaticPool
+
+    from app import app as flask_application
+    from app import bcrypt as flask_bcrypt
+    from app import db as flask_db
+    from app import User
+
+    flask_application.config.update(
+        {
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_ENGINE_OPTIONS": {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": StaticPool,
+            },
+            "TESTING": True,
+        }
+    )
+
+    with flask_application.app_context():
+        flask_db.create_all()
+
+        hashed_pw = flask_bcrypt.generate_password_hash("testpass").decode("utf-8")
+        test_user = User(
+            username="testuser", email="test@test.com", password=hashed_pw
+        )
+        flask_db.session.add(test_user)
+        flask_db.session.commit()
+
+        yield flask_application
+
+        flask_db.session.remove()
+        flask_db.drop_all()
+
+
+@pytest.fixture
+def client(flask_app):
+    """Unauthenticated test client."""
+    return flask_app.test_client()
+
+
+@pytest.fixture
+def auth_client(flask_app):
+    """Authenticated test client that logs in via the real login flow."""
+    from unittest.mock import patch
+
+    test_client = flask_app.test_client()
+    # Log in through the real endpoint; mock only the network side-effects
+    # that process_login triggers (telemetry + version check).
+    with patch("package.auth_functions.telemetry_instance"), patch(
+        "package.auth_functions.check_version"
+    ):
+        test_client.post(
+            "/user_login",
+            data={"username": "testuser", "password": "testpass"},
+        )
+    # Set additional session state that routes expect.
+    with test_client.session_transaction() as sess:
+        sess["firewall_name"] = "test_firewall"
+        sess["hostname"] = "192.168.1.1"
+        sess["port"] = "22"
+        sess["ssh_user"] = ""
+        sess["ssh_pass"] = ""  # nosec
+        sess["ssh_keyname"] = ""
+    return test_client
