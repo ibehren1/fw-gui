@@ -160,13 +160,15 @@ def generate_config(session, snapshot="current", diff=False):
                                 )
 
                     if ip_version == "ipv6":
-                        config.append(
-                            f"set firewall group {ip_version}-{group_type} {group_name} description '{group_desc}'"
-                        )
-                        for value in group_value:
+                        if group_desc != "":
                             config.append(
-                                f"set firewall group {ip_version}-{group_type} {group_name} {value_type} '{value}'"
+                                f"set firewall group {ip_version}-{group_type} {group_name} description '{group_desc}'"
                             )
+                        for value in group_value:
+                            if value != "":
+                                config.append(
+                                    f"set firewall group {ip_version}-{group_type} {group_name} {value_type} '{value}'"
+                                )
 
                 config.append("")
 
