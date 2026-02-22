@@ -49,3 +49,8 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 addopts = "-v -ra -q"
+filterwarnings = [
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore::DeprecationWarning:napalm",
+    "ignore::DeprecationWarning:telnetlib",
+]
