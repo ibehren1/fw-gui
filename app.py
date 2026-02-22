@@ -1764,7 +1764,7 @@ def select_firewall_config():
     if request.form["file"] == "Snapshot Diff":
         return redirect(url_for("snapshot_diff_choose"))
     # If selecting a snapshot
-    if request.form["file"].__contains__("/"):
+    if "/" in request.form["file"]:
         parts = request.form["file"].split("/")
         session["firewall_name"] = parts[0]
         snapshot = parts[1]
