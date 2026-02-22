@@ -1437,9 +1437,9 @@ def configuration_push():
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
-        if request.form["action"] == "View Diffs":
+        elif request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
-        if request.form["action"] == "Commit":
+        elif request.form["action"] == "Commit":
             message = commit_to_firewall(connection_string, session)
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
