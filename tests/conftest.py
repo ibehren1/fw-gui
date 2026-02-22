@@ -1,0 +1,128 @@
+"""
+Shared test fixtures for FW-GUI test suite.
+"""
+
+import copy
+import json
+import os
+
+import pytest
+from flask import Flask
+from flask_login import LoginManager
+from unittest.mock import Mock
+from werkzeug.datastructures import ImmutableMultiDict
+
+
+@pytest.fixture
+def app():
+    app = Flask(__name__)
+    app.config["SECRET_KEY"] = "test_secret_key"
+    app.config["TESTING"] = True
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = "user_login"
+    return app
+
+
+@pytest.fixture
+def mock_session():
+    return {
+        "data_dir": "data/testuser",
+        "firewall_name": "test_firewall",
+        "username": "testuser",
+        "hostname": "192.168.1.1",
+        "port": "22",
+    }
+
+
+@pytest.fixture
+def example_user_data():
+    with open(
+        os.path.join(os.path.dirname(__file__), "..", "examples", "example.json")
+    ) as f:
+        data = json.load(f)
+    return copy.deepcopy(data)
+
+
+@pytest.fixture
+def mock_read_write(monkeypatch):
+    """Factory fixture that patches read_user_data_file/write_user_data_file for a module.
+
+    Usage:
+        capture = mock_read_write("package.chain_functions", initial_data)
+        # ... call function under test ...
+        assert capture.written_data[...] == expected
+    """
+
+    class Capture:
+        def __init__(self, data):
+            self.data = data
+            self.written_data = None
+            self.written_filename = None
+            self.written_snapshot = None
+
+        def read(self, *args, **kwargs):
+            return copy.deepcopy(self.data)
+
+        def write(self, filename, data, snapshot="current"):
+            self.written_data = copy.deepcopy(data)
+            self.written_filename = filename
+            self.written_snapshot = snapshot
+            self.data = copy.deepcopy(data)
+
+    def _factory(module_path, initial_data):
+        capture = Capture(initial_data)
+        monkeypatch.setattr(f"{module_path}.read_user_data_file", capture.read)
+        monkeypatch.setattr(f"{module_path}.write_user_data_file", capture.write)
+        return capture
+
+    return _factory
+
+
+def make_request(form_dict):
+    """Create a mock request object from a dict of form data."""
+    form = ImmutableMultiDict(list(form_dict.items()))
+    return type("Request", (), {"form": form})()
+
+
+@pytest.fixture
+def bcrypt():
+    class MockBcrypt:
+        def check_password_hash(self, hashed, password):
+            return hashed == f"hashed_{password}"
+
+        def generate_password_hash(self, password):
+            return f"hashed_{password}"
+
+    return MockBcrypt()
+
+
+@pytest.fixture
+def db():
+    class MockDB:
+        def __init__(self):
+            self.session = Mock()
+
+        def select(self, model):
+            return self
+
+        def filter_by(self, **kwargs):
+            return self
+
+    return MockDB()
+
+
+@pytest.fixture
+def user_model():
+    class User:
+        def __init__(self, username, password, email, id=1):
+            self.id = id
+            self.username = username
+            self.password = password
+            self.email = email
+            self.is_active = True
+
+        def get_id(self):
+            return str(self.id)
+
+    return User

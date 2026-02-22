@@ -1,4 +1,6 @@
-from package.diff_functions import fix_list
+from unittest.mock import Mock, patch
+
+from package.diff_functions import fix_list, process_diff
 
 
 def test_fix_list():
@@ -23,62 +25,50 @@ def test_fix_list():
     assert fix_list(["\n\n"]) == [" ", " ", " "]
 
 
-# TODO
-# def test_process_diff():
-#     # Mock session and request objects
-#     mock_session = Mock()
-#     mock_request = Mock()
-#     mock_request.form = {"snapshot_1": "123", "snapshot_2": "456"}
+def test_process_diff(app, mock_session):
+    with app.test_request_context():
+        mock_request = Mock()
+        mock_request.form = {"snapshot_1": "snap1", "snapshot_2": "snap2"}
 
-#     # Mock the generate_config function
-#     with patch("package.generate_config.generate_config") as mock_generate:
-#         # Set up mock return values
-#         mock_generate.side_effect = [
-#             ["line1\nline2"],  # First snapshot
-#             ["line3\nline4"],  # Second snapshot
-#         ]
+        with patch("package.diff_functions.generate_config") as mock_generate:
+            mock_generate.side_effect = [
+                ("", ["# Config A\nset firewall rule 1"]),
+                ("", ["# Config B\nset firewall rule 2"]),
+            ]
 
-#         # Call the function
-#         result = process_diff(mock_session, mock_request)
+            result = process_diff(mock_session, mock_request)
 
-#         # Verify generate_config was called correctly
-#         assert mock_generate.call_count == 2
-#         mock_generate.assert_any_call(mock_session, snapshot="123", diff=True)
-#         mock_generate.assert_any_call(mock_session, snapshot="456", diff=True)
+            assert mock_generate.call_count == 2
+            mock_generate.assert_any_call(mock_session, snapshot="snap1", diff=True)
+            mock_generate.assert_any_call(mock_session, snapshot="snap2", diff=True)
 
-#         # Verify HTML output contains expected elements
-#         assert "Snapshot: 123" in result
-#         assert "Snapshot: 456" in result
-#         assert "Firewall GUI" in result
-#         assert "page_background" in result
-#         assert "diff_add" in result
-#         assert "diff_chg" in result
-#         assert "diff_sub" in result
-#         assert "line1" in result
-#         assert "line2" in result
-#         assert "line3" in result
-#         assert "line4" in result
+            assert "Snapshot: snap1" in result
+            assert "Snapshot: snap2" in result
 
 
-# TODO
-# def test_process_diff_empty_snapshots():
-#     mock_session = MagicMock()
-#     mock_request = MagicMock()
-#     mock_request.form = {"snapshot_1": "", "snapshot_2": ""}
+def test_process_diff_identical_snapshots(app, mock_session):
+    with app.test_request_context():
+        mock_request = Mock()
+        mock_request.form = {"snapshot_1": "snap1", "snapshot_2": "snap1"}
 
-#     with patch("package.generate_config.generate_config") as mock_generate:
-#         mock_generate.side_effect = [[], []]
+        config_lines = ["# Same config\nset firewall rule 1"]
+        with patch("package.diff_functions.generate_config") as mock_generate:
+            mock_generate.return_value = ("", config_lines)
 
-#         result = process_diff(mock_session, mock_request)
+            result = process_diff(mock_session, mock_request)
 
-#         assert mock_generate.call_count == 2
-#         assert "Snapshot: " in result
+            assert isinstance(result, str)
+            assert "Snapshot: snap1" in result
 
 
-# def test_process_diff_invalid_request():
-#     mock_session = Mock()[1:999]
-#     mock_request = Mock()[1:999]
-#     mock_request.form = {}
+def test_process_diff_empty_configs(app, mock_session):
+    with app.test_request_context():
+        mock_request = Mock()
+        mock_request.form = {"snapshot_1": "snap1", "snapshot_2": "snap2"}
 
-#     with pytest.raises(KeyError):
-#         process_diff(mock_session, mock_request)
+        with patch("package.diff_functions.generate_config") as mock_generate:
+            mock_generate.return_value = ("", [])
+
+            result = process_diff(mock_session, mock_request)
+
+            assert isinstance(result, str)
