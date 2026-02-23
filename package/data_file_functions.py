@@ -1011,15 +1011,18 @@ def validate_mongodb_connection(mongodb_uri):
     5. Closes the connection if successful
     6. Returns True on success, exits program on failure
     """
+    client = None
     try:
         client = pymongo.MongoClient(mongodb_uri, serverSelectionTimeoutMS=1)
         client.server_info()
         logging.info("  |--> MongoDB connection successful.")
-        client.close()
         return True
     except Exception:
         logging.error("  |--> MongoDB connection failed!")
         sys.exit()
+    finally:
+        if client is not None:
+            client.close()
 
 
 def write_user_command_conf_file(session, command_list, delete=False):
