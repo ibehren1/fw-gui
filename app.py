@@ -534,7 +534,7 @@ def group_add():
         if request.form["type"] == "add":
             add_group_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             snapshot_list = list_snapshots(session)
 
@@ -642,7 +642,7 @@ def interface_add():
         if request.form["type"] == "add":
             add_interface_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             snapshot_list = list_snapshots(session)
 
@@ -764,7 +764,7 @@ def flowtable_add():
         if request.form["type"] == "add":
             add_flowtable_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             snapshot_list = list_snapshots(session)
             interface_list = list_interfaces(session)
@@ -938,7 +938,7 @@ def chain_rule_add():
                     + "#"
                     + request.form["fw_chain"].replace(",", "")
                 )
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             chain_list = assemble_list_of_chains(session)
             group_list = assemble_detail_list_of_groups(session)
@@ -1139,7 +1139,7 @@ def filter_rule_add():
         if request.form["type"] == "add":
             add_filter_rule_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             chain_list = assemble_list_of_chains(session)
             file_list = list_user_files(session)
             filter_list = assemble_list_of_filters(session)
