@@ -270,7 +270,7 @@ def run_operational_command(connection_string, session, op_command):
         output = stdout.read().decode()
         # error = stderr.read().decode()
 
-        logging.info(output)
+        logging.debug(output)
 
         ssh.close()
 
