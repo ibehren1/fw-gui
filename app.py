@@ -1639,6 +1639,18 @@ def snapshot_diff_display():
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
+
+        if "firewall_name" not in session:
+            message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
+
+            return render_template(
+                "configuration_display.html",
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                message=message,
+                username=session["username"],
+            )
+
         message, config = generate_config(session)
 
         return render_template(
