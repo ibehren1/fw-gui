@@ -315,3 +315,5 @@ def test_connection(session):
             "danger",
         )
         return False
+    finally:
+        s.close()
