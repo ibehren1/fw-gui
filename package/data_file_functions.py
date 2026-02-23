@@ -284,7 +284,7 @@ def delete_user_data_file(filename):
     logging.debug("Deleting data from Mongo.")
     logging.debug(query)
     result = collection.delete_one(query)
-    logging.debug(result.deleted_count, " documents deleted")
+    logging.debug(f"{result.deleted_count} documents deleted")
 
     return
 
@@ -1114,6 +1114,6 @@ def write_user_data_file(filename, data, snapshot="current"):
     logging.debug("Writing data to Mongo.")
     logging.debug(query)
     result = collection.update_one(query, values, upsert=True)
-    logging.debug(result.modified_count, " documents updated")
+    logging.debug(f"{result.modified_count} documents updated")
 
     return
