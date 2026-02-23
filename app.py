@@ -446,9 +446,13 @@ def user_logout():
     Raises:
         None
     """
-    logging.info(
-        f"{datetime.now()} User <{query_user_by_id(db, User, session['_user_id']).username}> logged out."
-    )
+    user_id = session.get("_user_id")
+    if user_id:
+        user = query_user_by_id(db, User, user_id)
+        username = user.username if user else "Unknown"
+    else:
+        username = "Unknown"
+    logging.info(f"{datetime.now()} User <{username}> logged out.")
     logout_user()
     session.clear()
     return redirect(url_for("index"))
