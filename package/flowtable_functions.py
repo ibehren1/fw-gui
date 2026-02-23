@@ -54,6 +54,8 @@ def add_flowtable_to_data(session, request):
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
     logging.info(request.form.items())
+    flowtable_name = ""
+    flowtable_desc = ""
     interface_list = []
     # Set local vars from posted form data
     for key, value in request.form.items():

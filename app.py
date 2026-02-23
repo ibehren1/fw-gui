@@ -446,9 +446,13 @@ def user_logout():
     Raises:
         None
     """
-    logging.info(
-        f"{datetime.now()} User <{query_user_by_id(db, User, session['_user_id']).username}> logged out."
-    )
+    user_id = session.get("_user_id")
+    if user_id:
+        user = query_user_by_id(db, User, user_id)
+        username = user.username if user else "Unknown"
+    else:
+        username = "Unknown"
+    logging.info(f"{datetime.now()} User <{username}> logged out.")
     logout_user()
     session.clear()
     return redirect(url_for("index"))
@@ -534,7 +538,7 @@ def group_add():
         if request.form["type"] == "add":
             add_group_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             snapshot_list = list_snapshots(session)
 
@@ -642,7 +646,7 @@ def interface_add():
         if request.form["type"] == "add":
             add_interface_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             snapshot_list = list_snapshots(session)
 
@@ -764,7 +768,7 @@ def flowtable_add():
         if request.form["type"] == "add":
             add_flowtable_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             snapshot_list = list_snapshots(session)
             interface_list = list_interfaces(session)
@@ -938,7 +942,7 @@ def chain_rule_add():
                     + "#"
                     + request.form["fw_chain"].replace(",", "")
                 )
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             file_list = list_user_files(session)
             chain_list = assemble_list_of_chains(session)
             group_list = assemble_detail_list_of_groups(session)
@@ -1139,7 +1143,7 @@ def filter_rule_add():
         if request.form["type"] == "add":
             add_filter_rule_to_data(session, request)
 
-        if request.form["type"] == "edit":
+        elif request.form["type"] == "edit":
             chain_list = assemble_list_of_chains(session)
             file_list = list_user_files(session)
             filter_list = assemble_list_of_filters(session)
@@ -1437,9 +1441,9 @@ def configuration_push():
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
-        if request.form["action"] == "View Diffs":
+        elif request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session)
-        if request.form["action"] == "Commit":
+        elif request.form["action"] == "Commit":
             message = commit_to_firewall(connection_string, session)
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
@@ -1485,8 +1489,8 @@ def configuration_push():
             firewall_hostname=session["hostname"],
             firewall_port=session["port"],
             firewall_reachable=firewall_reachable,
-            ssh_user_name=session["ssh_user"],
-            ssh_pass=session["ssh_pass"],
+            ssh_user_name=session.get("ssh_user", ""),
+            ssh_pass=session.get("ssh_pass", ""),
             ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
             message=message,
@@ -1639,6 +1643,18 @@ def snapshot_diff_display():
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
+
+        if "firewall_name" not in session:
+            message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
+
+            return render_template(
+                "configuration_display.html",
+                file_list=file_list,
+                snapshot_list=snapshot_list,
+                message=message,
+                username=session["username"],
+            )
+
         message, config = generate_config(session)
 
         return render_template(
@@ -1764,7 +1780,7 @@ def select_firewall_config():
     if request.form["file"] == "Snapshot Diff":
         return redirect(url_for("snapshot_diff_choose"))
     # If selecting a snapshot
-    if request.form["file"].__contains__("/"):
+    if "/" in request.form["file"]:
         parts = request.form["file"].split("/")
         session["firewall_name"] = parts[0]
         snapshot = parts[1]

@@ -46,8 +46,9 @@ echo -e "\n${GREEN}Bandit security scan completed.${NC}\n"
 #
 # Run pytest to validate the codebase.
 echo -e "\n${CYAN}#\n# Running Pytest on codebase.${NC}\n"
-pytest
-
+#pytest
+coverage run --source=. -m pytest
+coverage report -m
 
 #
 # Run Docker Build and Publish

@@ -284,7 +284,7 @@ def delete_user_data_file(filename):
     logging.debug("Deleting data from Mongo.")
     logging.debug(query)
     result = collection.delete_one(query)
-    logging.debug(result.deleted_count, " documents deleted")
+    logging.debug(f"{result.deleted_count} documents deleted")
 
     return
 
@@ -705,12 +705,8 @@ def process_upload(session, request, app):
         if not allowed_file(filename):
             flash("Invalid file type, only .json and .key files are allowed.", "danger")
             return
-        if filename.rsplit(".", 1)[1].lower() in ["json"]:
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            filetype = "json"
-        elif filename.rsplit(".", 1)[1].lower() in ["key"]:
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            filetype = "key"
+        filetype = filename.rsplit(".", 1)[1].lower()
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
     if filetype == "json":
         try:
@@ -1011,15 +1007,18 @@ def validate_mongodb_connection(mongodb_uri):
     5. Closes the connection if successful
     6. Returns True on success, exits program on failure
     """
+    client = None
     try:
         client = pymongo.MongoClient(mongodb_uri, serverSelectionTimeoutMS=1)
         client.server_info()
         logging.info("  |--> MongoDB connection successful.")
-        client.close()
         return True
     except Exception:
         logging.error("  |--> MongoDB connection failed!")
         sys.exit()
+    finally:
+        if client is not None:
+            client.close()
 
 
 def write_user_command_conf_file(session, command_list, delete=False):
@@ -1114,6 +1113,6 @@ def write_user_data_file(filename, data, snapshot="current"):
     logging.debug("Writing data to Mongo.")
     logging.debug(query)
     result = collection.update_one(query, values, upsert=True)
-    logging.debug(result.modified_count, " documents updated")
+    logging.debug(f"{result.modified_count} documents updated")
 
     return
