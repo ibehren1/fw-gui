@@ -138,39 +138,38 @@ def user_model():
 
 @pytest.fixture(scope="session")
 def flask_app():
-    """Real Flask app from app.py configured for testing with in-memory SQLite."""
-    from sqlalchemy.pool import StaticPool
+    """Real Flask app from app.py configured for testing.
 
+    Uses the app's existing SQLite database with TESTING=True.
+    Creates a dedicated test user if one does not already exist.
+    """
     from app import app as flask_application
     from app import bcrypt as flask_bcrypt
     from app import db as flask_db
     from app import User
 
-    flask_application.config.update(
-        {
-            "SQLALCHEMY_DATABASE_URI": "sqlite://",
-            "SQLALCHEMY_ENGINE_OPTIONS": {
-                "connect_args": {"check_same_thread": False},
-                "poolclass": StaticPool,
-            },
-            "TESTING": True,
-        }
-    )
+    flask_application.config["TESTING"] = True
 
     with flask_application.app_context():
         flask_db.create_all()
 
-        hashed_pw = flask_bcrypt.generate_password_hash("testpass").decode("utf-8")
-        test_user = User(
-            username="testuser", email="test@test.com", password=hashed_pw
-        )
-        flask_db.session.add(test_user)
-        flask_db.session.commit()
+        # Create test user if not already present.
+        existing = flask_db.session.execute(
+            flask_db.select(User).filter_by(username="testuser")
+        ).scalar_one_or_none()
+        if not existing:
+            hashed_pw = flask_bcrypt.generate_password_hash("testpass").decode(
+                "utf-8"
+            )
+            test_user = User(
+                username="testuser", email="test@test.com", password=hashed_pw
+            )
+            flask_db.session.add(test_user)
+            flask_db.session.commit()
 
         yield flask_application
 
         flask_db.session.remove()
-        flask_db.drop_all()
 
 
 @pytest.fixture
