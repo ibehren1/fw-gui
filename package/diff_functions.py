@@ -8,12 +8,12 @@ import difflib
 from package.generate_config import generate_config
 
 
-def fix_list(list):
+def fix_list(config_lines):
     """
     Processes a list of configuration lines to handle newlines.
 
     Args:
-        list: List of configuration lines
+        config_lines: List of configuration lines
 
     Returns:
         new_list: Processed list with newlines split into separate items
@@ -21,7 +21,7 @@ def fix_list(list):
     new_list = []
 
     # Go line by line and split based on \n and add to list as separate list items
-    for line in list:
+    for line in config_lines:
         # print("Line:")
         # print(line)
         segments = line.split("\n")
