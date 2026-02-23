@@ -705,12 +705,8 @@ def process_upload(session, request, app):
         if not allowed_file(filename):
             flash("Invalid file type, only .json and .key files are allowed.", "danger")
             return
-        if filename.rsplit(".", 1)[1].lower() in ["json"]:
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            filetype = "json"
-        elif filename.rsplit(".", 1)[1].lower() in ["key"]:
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-            filetype = "key"
+        filetype = filename.rsplit(".", 1)[1].lower()
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
     if filetype == "json":
         try:
