@@ -1,6 +1,6 @@
 [project]
 name = "FW-GUI"
-version = "2.2.3"
+version = "2.2.4"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
@@ -10,7 +10,7 @@ requires-python = ">= 3.12"
 dependencies = [
     "boto3",
     "certifi>=2026.1.4",
-    "cryptography>=46.0.6",
+    "cryptography>=46.0.7",
     "flask>=3.1.3",
     "flask_bcrypt",
     "flask_login",
