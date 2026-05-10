@@ -1,12 +1,12 @@
 [project]
 name = "FW-GUI"
-version = "2.2.6"
+version = "2.2.7"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 license = { file = "LICENSE.md" }
 readme = "README.md"
-requires-python = ">= 3.12"
+requires-python = ">=3.12.8"
 dependencies = [
     "boto3",
     "certifi>=2026.1.4",
@@ -18,10 +18,10 @@ dependencies = [
     "Jinja2",
     "logging>=0.4.9.6",
     "lxml>=6.1.0",
-    "napalm == 5.1.0",
+    "napalm==5.1.0",
     "napalm-vyos",
     "packaging",
-    "paramiko",
+    "paramiko>=4.0.0",
     "Pygments>=2.20.0",
     "pymongo>=4.16.0",
     "python-dotenv>=1.2.2",
@@ -36,8 +36,9 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "black >= 26.3.1",
-    "mongomock",
+    "mongomock>=4.3.0",
     "pytest >= 9.0.3",
+    "toml>=0.10.2",
 ]
 
 [project.urls]
