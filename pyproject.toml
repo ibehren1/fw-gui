@@ -1,6 +1,6 @@
 [project]
 name = "FW-GUI"
-version = "2.2.7"
+version = "2.2.8"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
@@ -27,7 +27,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "requests>=2.33.0",
     "setuptools<82",
-    "urllib3>=2.6.3",
+    "urllib3>=2.7.0",
     "uuid>=1.30",
     "waitress",
     "werkzeug>=3.1.6",
