@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;">
+<!-- Furnace filter icon - pleated filter panel on diagonal -->
+<g transform="rotate(15 50 50)">
+    <!-- Outer frame -->
+    <rect x="15" y="15" width="70" height="70" rx="4" ry="4" fill="none" stroke="#ffbf12" stroke-width="4.5"/>
+    <!-- Pleats (zigzag horizontal lines representing the accordion folds) -->
+    <polyline points="23,28 35,33 47,28 59,33 71,28 78,30" fill="none" stroke="#ffbf12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="23,40 35,45 47,40 59,45 71,40 78,42" fill="none" stroke="#ffbf12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="23,52 35,57 47,52 59,57 71,52 78,54" fill="none" stroke="#ffbf12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="23,64 35,69 47,64 59,69 71,64 78,66" fill="none" stroke="#ffbf12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="23,76 35,81 47,76 59,81 71,76 78,78" fill="none" stroke="#ffbf12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

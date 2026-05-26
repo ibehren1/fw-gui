@@ -61,9 +61,11 @@
             <div class="filters-container">
                 {% for rule in filter_list %}
                 <div class="filter-card">
+                    <img src="{{ url_for('static', filename='filter-32-yellow-layers.svg') }}" alt="" class="filter-icon">
+                    <div class="filter-content">
                     <div class="filter-header">
                         <div class="filter-info">
-                            <h5 class="filter-name">Rule {{ rule.number }}</h5>
+                            <h5 class="filter-name">Rule {{ rule.number }}{% if rule.description %}<span class="filter-desc-separator">—</span><span class="filter-description-inline">{{ rule.description }}</span>{% endif %}</h5>
                             <div class="filter-meta">
                                 <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
                                 {% if rule.interface %}
@@ -89,15 +91,11 @@
                             </form>
                             <form action="/filter_rule_delete" method="post" class="delete-form">
                                 <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
-                                <button type="submit" class="btn btn-delete-small" 
+                                <button type="submit" class="btn btn-delete-small"
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
                         </div>
                     </div>
-                    
-                    {% if rule.description %}
-                    <p class="filter-description">{{ rule.description }}</p>
-                    {% endif %}
                     
                     {% if rule.fw_chain %}
                     <div class="filter-target">
@@ -105,6 +103,7 @@
                         <span class="target-value">{{ rule.fw_chain }}</span>
                     </div>
                     {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -136,9 +135,11 @@
             <div class="filters-container">
                 {% for rule in filter_list %}
                 <div class="filter-card">
+                    <img src="{{ url_for('static', filename='filter-32-yellow-layers.svg') }}" alt="" class="filter-icon">
+                    <div class="filter-content">
                     <div class="filter-header">
                         <div class="filter-info">
-                            <h5 class="filter-name">Rule {{ rule.number }}</h5>
+                            <h5 class="filter-name">Rule {{ rule.number }}{% if rule.description %}<span class="filter-desc-separator">—</span><span class="filter-description-inline">{{ rule.description }}</span>{% endif %}</h5>
                             <div class="filter-meta">
                                 <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
                                 {% if rule.interface %}
@@ -164,15 +165,11 @@
                             </form>
                             <form action="/filter_rule_delete" method="post" class="delete-form">
                                 <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
-                                <button type="submit" class="btn btn-delete-small" 
+                                <button type="submit" class="btn btn-delete-small"
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
                         </div>
                     </div>
-                    
-                    {% if rule.description %}
-                    <p class="filter-description">{{ rule.description }}</p>
-                    {% endif %}
                     
                     {% if rule.fw_chain %}
                     <div class="filter-target">
@@ -180,6 +177,7 @@
                         <span class="target-value">{{ rule.fw_chain }}</span>
                     </div>
                     {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -325,6 +323,19 @@
     border-radius: var(--border-radius);
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.filter-icon {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.filter-content {
+    flex: 1;
 }
 
 .filter-header {
@@ -341,6 +352,7 @@
 .filter-name {
     color: var(--primary-color);
     font-weight: 600;
+    font-size: 1.1rem;
     margin: 0 0 0.5rem 0;
 }
 
@@ -396,11 +408,15 @@
     margin: 0;
 }
 
-.filter-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 1rem 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
+.filter-desc-separator {
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0.5rem;
+}
+
+.filter-description-inline {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1.1rem;
 }
 
 .filter-target {

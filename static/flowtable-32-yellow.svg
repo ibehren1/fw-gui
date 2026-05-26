@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;">
+<!-- Flow arrows with curvy stream lines - diagonal bottom-left to upper-right -->
+<g transform="rotate(-15 50 50)">
+    <!-- Curvy stream line 1 (top) -->
+    <path d="M5,25 C22,18 38,32 55,25 C63,22 70,23 80,25" fill="none" stroke="#ffbf12" stroke-width="5" stroke-linecap="round"/>
+    <!-- Arrowhead 1 -->
+    <polyline points="70,16 82,25 70,34" fill="none" stroke="#ffbf12" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Curvy stream line 2 (middle) -->
+    <path d="M5,50 C22,43 38,57 55,50 C63,47 70,48 80,50" fill="none" stroke="#ffbf12" stroke-width="5" stroke-linecap="round"/>
+    <!-- Arrowhead 2 -->
+    <polyline points="70,41 82,50 70,59" fill="none" stroke="#ffbf12" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Curvy stream line 3 (bottom) -->
+    <path d="M5,75 C22,68 38,82 55,75 C63,72 70,73 80,75" fill="none" stroke="#ffbf12" stroke-width="5" stroke-linecap="round"/>
+    <!-- Arrowhead 3 -->
+    <polyline points="70,66 82,75 70,84" fill="none" stroke="#ffbf12" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

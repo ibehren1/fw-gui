@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" style="width: 1.2em; height: 1em;vertical-align: middle;overflow: hidden;">
+<!-- Folded newspaper icon with "EXTRA" headline -->
+<g transform="rotate(5 60 50)">
+    <!-- Main front page -->
+    <rect x="12" y="12" width="65" height="76" rx="4" ry="4" fill="none" stroke="#ffbf12" stroke-width="4.5"/>
+    <!-- "EXTRA" headline text -->
+    <text x="44" y="36" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffbf12" text-anchor="middle">EXTRA</text>
+    <!-- Text lines on front page -->
+    <line x1="22" y1="46" x2="67" y2="46" stroke="#ffbf12" stroke-width="3" stroke-linecap="round"/>
+    <line x1="22" y1="55" x2="67" y2="55" stroke="#ffbf12" stroke-width="3" stroke-linecap="round"/>
+    <line x1="22" y1="64" x2="50" y2="64" stroke="#ffbf12" stroke-width="3" stroke-linecap="round"/>
+    <line x1="22" y1="73" x2="67" y2="73" stroke="#ffbf12" stroke-width="3" stroke-linecap="round"/>
+    <line x1="22" y1="82" x2="60" y2="82" stroke="#ffbf12" stroke-width="3" stroke-linecap="round"/>
+</g>
+</svg>

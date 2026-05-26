@@ -55,8 +55,12 @@
         <div class="groups-grid">
             {% for group in ipv4_address_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -74,9 +78,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} members</span>
                     {% if group.group_value %}
@@ -86,6 +87,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -105,8 +107,12 @@
         <div class="groups-grid">
             {% for group in ipv4_network_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -124,9 +130,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} networks</span>
                     {% if group.group_value %}
@@ -136,6 +139,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -155,8 +159,12 @@
         <div class="groups-grid">
             {% for group in ipv6_address_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -174,9 +182,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} members</span>
                     {% if group.group_value %}
@@ -186,6 +191,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -205,8 +211,12 @@
         <div class="groups-grid">
             {% for group in ipv6_network_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -224,9 +234,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} networks</span>
                     {% if group.group_value %}
@@ -236,6 +243,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -255,8 +263,12 @@
         <div class="groups-grid">
             {% for group in port_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -274,9 +286,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} ports</span>
                     {% if group.group_value %}
@@ -286,6 +295,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -305,8 +315,12 @@
         <div class="groups-grid">
             {% for group in mac_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -324,9 +338,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} addresses</span>
                     {% if group.group_value %}
@@ -336,6 +347,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -355,8 +367,12 @@
         <div class="groups-grid">
             {% for group in domain_groups|sort(attribute='group_name') %}
             <div class="group-card">
+                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
+                <div class="group-content">
                 <div class="group-header">
-                    <h4 class="group-name">{{ group.group_name }}</h4>
+                    <div class="group-info">
+                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
+                    </div>
                     <div class="group-actions">
                         <form action="/group_add" method="post" class="edit-form">
                             <input type="hidden" name="type" value="edit">
@@ -374,9 +390,6 @@
                         </form>
                     </div>
                 </div>
-                {% if group.group_desc %}
-                <p class="group-description">{{ group.group_desc }}</p>
-                {% endif %}
                 <div class="group-members">
                     <span class="members-count">{{ group.group_value|length }} domains</span>
                     {% if group.group_value %}
@@ -386,6 +399,7 @@
                         {% endfor %}
                     </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
             {% endfor %}
@@ -489,20 +503,37 @@
     border-radius: var(--border-radius);
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.group-icon {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.group-content {
+    flex: 1;
 }
 
 .group-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 1rem;
+}
+
+.group-info {
+    flex: 1;
 }
 
 .group-name {
     color: var(--primary-color);
     font-weight: 600;
+    font-size: 1.1rem;
     margin: 0;
-    flex: 1;
 }
 
 .group-actions {
@@ -515,11 +546,15 @@
     margin: 0;
 }
 
-.group-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 1rem 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
+.group-desc-separator {
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0.5rem;
+}
+
+.group-description-inline {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1.1rem;
 }
 
 .group-members {
