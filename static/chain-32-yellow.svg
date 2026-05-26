@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;">
+<defs>
+    <clipPath id="c1">
+        <path d="M0 0h100v100H0z M36 35h6v30h-6z" clip-rule="evenodd" transform="rotate(-45 50 50)"/>
+    </clipPath>
+    <clipPath id="c2">
+        <path d="M0 0h100v100H0z M58 35h6v30h-6z M26 35h6v30h-6z" clip-rule="evenodd" transform="rotate(-45 50 50)"/>
+    </clipPath>
+    <clipPath id="c3">
+        <path d="M0 0h100v100H0z M68 35h6v30h-6z" clip-rule="evenodd" transform="rotate(-45 50 50)"/>
+    </clipPath>
+</defs>
+<g transform="rotate(-45 50 50)">
+    <!-- Link 1 (bottom-left when rotated) -->
+    <rect x="2" y="35" width="38" height="30" rx="15" ry="15" fill="none" stroke="#ffbf12" stroke-width="5.5" clip-path="url(#c1)"/>
+    <!-- Link 2 (center) -->
+    <rect x="31" y="35" width="38" height="30" rx="15" ry="15" fill="none" stroke="#ffbf12" stroke-width="5.5" clip-path="url(#c2)"/>
+    <!-- Link 3 (top-right when rotated) -->
+    <rect x="60" y="35" width="38" height="30" rx="15" ry="15" fill="none" stroke="#ffbf12" stroke-width="5.5" clip-path="url(#c3)"/>
+</g>
+</svg>

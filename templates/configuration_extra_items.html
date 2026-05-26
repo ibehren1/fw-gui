@@ -20,18 +20,21 @@
     {% endwith %}
     
     <form action="/configuration_extra_items" method="post" class="extra-form">
-        <div class="form-group">
-            <label for="extra_items" class="form-label">Extra Configuration Items</label>
-            <p class="field-description">
-                Enter syntactically correct CLI set statements. Each line should be a complete configuration command.
-            </p>
-            <textarea name="extra_items" id="extra_items" class="form-textarea" rows="15" cols="80" 
-                      placeholder="set firewall ...">{% for item in extra_items %}{% if item %}{{ item }}{% endif %}
+        <img src="{{ url_for('static', filename='extra-config-32-yellow.svg') }}" alt="" class="extra-config-icon">
+        <div class="extra-form-content">
+            <div class="form-group">
+                <label for="extra_items" class="form-label">Extra Configuration Items</label>
+                <p class="field-description">
+                    Enter syntactically correct CLI set statements. Each line should be a complete configuration command.
+                </p>
+                <textarea name="extra_items" id="extra_items" class="form-textarea" rows="15" cols="80"
+                          placeholder="set firewall ...">{% for item in extra_items %}{% if item %}{{ item }}{% endif %}
 {% endfor %}</textarea>
-        </div>
-        
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Save Configuration Items</button>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Configuration Items</button>
+            </div>
         </div>
     </form>
 </div>
@@ -39,6 +42,17 @@
 <style>
 .extra-config {
     max-width: 800px;
+}
+
+.extra-config-icon {
+    width: 4rem;
+    height: 5rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.extra-form-content {
+    flex: 1;
 }
 
 .section-description {
@@ -52,6 +66,8 @@
     border-radius: var(--border-radius);
     padding: 2rem;
     margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
 }
 
 .form-group {

@@ -22,8 +22,10 @@
     <div class="flowtables-grid">
         {% for flowtable in flowtable_list|sort(attribute='name') %}
         <div class="flowtable-card">
+            <img src="{{ url_for('static', filename='flowtable-32-yellow.svg') }}" alt="" class="flowtable-icon">
+            <div class="flowtable-content">
             <div class="card-header">
-                <h3 class="flowtable-name">{{ flowtable.name }}</h3>
+                <h3 class="flowtable-name">{{ flowtable.name }}{% if flowtable.description %}<span class="flowtable-desc-separator">—</span><span class="flowtable-description-inline">{{ flowtable.description }}</span>{% endif %}</h3>
                 <div class="card-actions">
                     <form action="/flowtable_add" method="post" class="edit-form">
                         <input type="hidden" name="type" value="edit">
@@ -43,9 +45,6 @@
                 </div>
             </div>
             
-            {% if flowtable.description %}
-            <p class="flowtable-description">{{ flowtable.description }}</p>
-            {% endif %}
             
             <div class="flowtable-interfaces">
                 <span class="interfaces-label">Interfaces:</span>
@@ -58,6 +57,7 @@
                         <span class="no-interfaces">No interfaces configured</span>
                     {% endif %}
                 </div>
+            </div>
             </div>
         </div>
         {% endfor %}
@@ -86,6 +86,19 @@
     border-radius: var(--border-radius);
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.flowtable-icon {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.flowtable-content {
+    flex: 1;
 }
 
 .card-header {
@@ -98,6 +111,7 @@
 .flowtable-name {
     color: var(--primary-color);
     font-weight: 600;
+    font-size: 1.1rem;
     margin: 0;
     flex: 1;
 }
@@ -117,11 +131,15 @@
     margin: 0;
 }
 
-.flowtable-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 1rem 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
+.flowtable-desc-separator {
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0.5rem;
+}
+
+.flowtable-description-inline {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1.1rem;
 }
 
 .flowtable-interfaces {
