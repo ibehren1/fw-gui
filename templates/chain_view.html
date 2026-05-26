@@ -60,9 +60,11 @@
             <div class="chains-container">
                 {% for rule in chain_list %}
                 <div class="chain-card">
+                    <img src="{{ url_for('static', filename='chain-32-yellow.svg') }}" alt="" class="chain-icon">
+                    <div class="chain-content">
                     <div class="chain-header">
                         <div class="chain-info">
-                            <h5 class="chain-name">Rule {{ rule.number }}</h5>
+                            <h5 class="chain-name">Rule {{ rule.number }}{% if rule.description %}<span class="chain-desc-separator">—</span><span class="chain-description-inline">{{ rule.description }}</span>{% endif %}</h5>
                             <div class="chain-meta">
                                 {% if rule.rule_disable %}
                                 <span class="rule-status status-disabled">DISABLED</span>
@@ -105,15 +107,11 @@
                             <form action="/chain_rule_delete" method="post" class="delete-form">
                                 <input type="hidden" name="chain" value="ipv4,{{ key }}">
                                 <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
-                                <button type="submit" class="btn btn-delete-small" 
+                                <button type="submit" class="btn btn-delete-small"
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
                         </div>
                     </div>
-                    
-                    {% if rule.description %}
-                    <p class="chain-description">{{ rule.description }}</p>
-                    {% endif %}
                     
                     <div class="rule-tabs">
                         <div class="rule-tabs-nav">
@@ -230,6 +228,7 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -260,9 +259,11 @@
             <div class="chains-container">
                 {% for rule in chain_list %}
                 <div class="chain-card">
+                    <img src="{{ url_for('static', filename='chain-32-yellow.svg') }}" alt="" class="chain-icon">
+                    <div class="chain-content">
                     <div class="chain-header">
                         <div class="chain-info">
-                            <h5 class="chain-name">Rule {{ rule.number }}</h5>
+                            <h5 class="chain-name">Rule {{ rule.number }}{% if rule.description %}<span class="chain-desc-separator">—</span><span class="chain-description-inline">{{ rule.description }}</span>{% endif %}</h5>
                             <div class="chain-meta">
                                 {% if rule.rule_disable %}
                                 <span class="rule-status status-disabled">DISABLED</span>
@@ -305,15 +306,11 @@
                             <form action="/chain_rule_delete" method="post" class="delete-form">
                                 <input type="hidden" name="chain" value="ipv6,{{ key }}">
                                 <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
-                                <button type="submit" class="btn btn-delete-small" 
+                                <button type="submit" class="btn btn-delete-small"
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
                             </form>
                         </div>
                     </div>
-                    
-                    {% if rule.description %}
-                    <p class="chain-description">{{ rule.description }}</p>
-                    {% endif %}
                     
                     <div class="rule-tabs">
                         <div class="rule-tabs-nav">
@@ -429,6 +426,7 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -565,6 +563,19 @@
     border-radius: var(--border-radius);
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.chain-icon {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.chain-content {
+    flex: 1;
 }
 
 .chain-header {
@@ -581,6 +592,7 @@
 .chain-name {
     color: var(--primary-color);
     font-weight: 600;
+    font-size: 1.1rem;
     margin: 0 0 0.5rem 0;
 }
 
@@ -643,11 +655,15 @@
     margin: 0;
 }
 
-.chain-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 1rem 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
+.chain-desc-separator {
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0 0.5rem;
+}
+
+.chain-description-inline {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1.1rem;
 }
 
 /* Rule Tabs Styling */

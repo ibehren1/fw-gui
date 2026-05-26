@@ -23,17 +23,20 @@
         {% for interface in interface_list|sort(attribute='name') %}
         <div class="interface-card">
             <div class="interface-header">
-                <h3 class="interface-name">{{ interface.name }}</h3>
+                <img src="{{ url_for('static', filename='network-interface-32-yellow.svg') }}" alt="" class="interface-icon">
+                <div class="interface-info">
+                    <h3 class="interface-name">{{ interface.name }}</h3>
+                    {% if interface.description %}
+                    <p class="interface-subtitle">{{ interface.description }}</p>
+                    {% endif %}
+                </div>
                 <form action="/interface_delete" method="post" class="delete-form">
                     <input type="hidden" name="interface" value="{{ interface.name }}">
-                    <button type="submit" class="btn btn-delete-small" 
-                            onclick="return confirm('Delete interface {{ interface.name }}?')" 
+                    <button type="submit" class="btn btn-delete-small"
+                            onclick="return confirm('Delete interface {{ interface.name }}?')"
                             title="Delete interface">×</button>
                 </form>
             </div>
-            {% if interface.description %}
-            <p class="interface-description">{{ interface.description }}</p>
-            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -74,19 +77,30 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+}
+
+.interface-info {
+    flex: 1;
+}
+
+.interface-icon {
+    width: 1.8rem;
+    height: 1.8rem;
+    margin-right: 0.75rem;
 }
 
 .interface-name {
     color: var(--primary-color);
     font-weight: 600;
+    font-size: 1.1rem;
     margin: 0;
 }
 
-.interface-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0;
-    font-size: 0.9rem;
+.interface-subtitle {
+    color: var(--text-light);
+    margin: 0.25rem 0 0 0;
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 .delete-form {
