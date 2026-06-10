@@ -4,18 +4,18 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>FW-GUI - Firewall Management</title>
-        <link rel="stylesheet" href="static/styles.css" type="text/css" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" type="text/css" />
         <link
             rel="shortcut icon"
             href="{{ url_for('static', filename='favicon.ico') }}"
         />
-        <script type="text/javascript" src="static/jquery.min.js"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='jquery.min.js') }}"></script>
     </head>
 
     <header class="header">
         <div class="header-content">
             <div class="header-logo">
-                <img src="static/fw-gui.png" alt="FW-GUI Logo" />
+                <img src="{{ url_for('static', filename='fw-gui.png') }}" alt="FW-GUI Logo" />
             </div>
             <div class="header-title">
                 <h1>Firewall GUI</h1>
@@ -137,7 +137,7 @@
                                                 href="{{url_for('snapshot_tag_create')}}"
                                             >
                                                 <img
-                                                    src="static/tag-yellow.svg"
+                                                    src="{{ url_for('static', filename='tag-yellow.svg') }}"
                                                     width="16"
                                                     height="16"
                                                     alt="Tag"
@@ -349,7 +349,7 @@
                         class="footer-link"
                     >
                         <img
-                            src="./static/docker-logo.png"
+                            src="{{ url_for('static', filename='docker-logo.png') }}"
                             alt="Docker Hub"
                             class="footer-logo"
                         />
@@ -360,7 +360,7 @@
                     <p class="copyright">
                         Made in the USA<br />
                         <img
-                            src="./static/us-flag.png"
+                            src="{{ url_for('static', filename='us-flag.png') }}"
                             alt="USA Flag"
                             class="flag-icon"
                         /><br />
@@ -374,12 +374,12 @@
                         class="footer-link"
                     >
                         <img
-                            src="./static/github-logo.png"
+                            src="{{ url_for('static', filename='github-logo.png') }}"
                             alt="GitHub"
                             class="footer-logo"
                         />
                         <img
-                            src="./static/github-mark.png"
+                            src="{{ url_for('static', filename='github-mark.png') }}"
                             alt="GitHub Mark"
                             class="github-mark"
                         />
