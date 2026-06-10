@@ -12,7 +12,7 @@
 :root {
     --primary-color: #ffbf12;
     --primary-hover: #ffa812;
-    --secondary-color: #606263;
+    --secondary-color: #2d2f31;
     --dark-color: #323231;
     --light-color: #f0f2f5;
     --text-light: #ffffff;
@@ -182,6 +182,7 @@ body {
     border-radius: var(--border-radius);
     padding: 0.75rem;
     height: fit-content;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-section {
@@ -212,6 +213,7 @@ body {
     border-radius: var(--border-radius);
     padding: 2rem;
     min-height: 400px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* Buttons */
@@ -370,47 +372,77 @@ body {
     width: 100%;
     border-collapse: collapse;
     margin: 1rem 0;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
     border-radius: var(--border-radius);
     overflow: hidden;
 }
 
 .table th {
-    background: var(--primary-color);
-    color: var(--text-dark);
-    padding: 1rem;
+    background: #3a3c3e;
+    color: var(--primary-color);
+    padding: 0.75rem 1rem;
     font-weight: 600;
     text-align: left;
+    font-variant: small-caps;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--primary-color);
 }
 
 .table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #3a3c3e;
+    vertical-align: middle;
 }
 
-.table tr:hover {
-    background: rgba(255, 255, 255, 0.05);
+.table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+    background: #3a3c3e;
+}
+
+.table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .groups_table {
     width: 100%;
     border-collapse: collapse;
     margin: 1rem 0;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
     border-radius: var(--border-radius);
     overflow: hidden;
 }
 
 .groups_table th {
-    background: var(--primary-color);
-    color: var(--text-dark);
-    padding: 1rem;
+    background: #3a3c3e;
+    color: var(--primary-color);
+    padding: 0.75rem 1rem;
     font-weight: 600;
+    font-variant: small-caps;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--primary-color);
 }
 
 .groups_table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #3a3c3e;
+    vertical-align: middle;
+}
+
+.groups_table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.groups_table tbody tr:hover {
+    background: #3a3c3e;
+}
+
+.groups_table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
 }
 
 /* Tooltips */

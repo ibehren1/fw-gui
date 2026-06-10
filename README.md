@@ -51,13 +51,13 @@ See [Deployment](#deployment) section below for configuration commands.
 
 ### Known Issue
 
-When deployed behind HAProxy (VyOS load-balancing reverse-proxy) timeouts can prevent diffs and commits for firewalls with large configurations.  Issue is not obeserved connecting directly to app when hosted in Docker or behind Nginx proxy.
+When deployed behind HAProxy (VyOS load-balancing reverse-proxy) timeouts can prevent diffs and commits for firewalls with large configurations.  Issue is not observed connecting directly to app when hosted in Docker or behind Nginx proxy.
 
 Resolution: TBD
 
-## Commiting to the Firewall
+## Committing to the Firewall
 
-Connections to the firewall are made using the [Napalm-VyOS library](https://github.com/napalm-automation-community/napalm-vyos) via SSH.  Napalm for VyOS only allows merging configurations (changes with existing) and does not allow for replacing configuriations (new replacing existing).  As such, by default, if you remove an item from the config and push, it will not be removed from the firewall as the configs are merged.  To work around this, the View Diffs and Commit interface has the option to preface the firewall configuration with a 'delete firewall' command.  This causes the configuration to remove all firewall configuration and then add the specified configuration settings so that the net configuration is a replacement of the existing configuration.  You will __NOT__ want to use this feature unless you are managing __ALL__ firewall configurations via the GUI.
+Connections to the firewall are made using the [Napalm-VyOS library](https://github.com/napalm-automation-community/napalm-vyos) via SSH.  Napalm for VyOS only allows merging configurations (changes with existing) and does not allow for replacing configurations (new replacing existing).  As such, by default, if you remove an item from the config and push, it will not be removed from the firewall as the configs are merged.  To work around this, the View Diffs and Commit interface has the option to preface the firewall configuration with a 'delete firewall' command.  This causes the configuration to remove all firewall configuration and then add the specified configuration settings so that the net configuration is a replacement of the existing configuration.  You will __NOT__ want to use this feature unless you are managing __ALL__ firewall configurations via the GUI.
 
 ![images](./images/commit.png)
 
@@ -89,7 +89,6 @@ See below for updated Docker Compose configuration settings.
 ```
 
 ```diff
-version: '3.7'
 services:
   fw-gui:
     image: ibehren1/fw-gui:latest
@@ -158,7 +157,6 @@ No longer recommended with additional MongoDB container needed.
 ### Docker Compose Minimal (just FW-GUI and MongoDB no TLS)
 
 ```yaml
-version: '3.7'
 services:
   fw-gui:
     image: ibehren1/fw-gui:latest
