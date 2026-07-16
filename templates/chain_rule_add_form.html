@@ -137,19 +137,19 @@
                             <input type="text" name="source_address" id="source_address" class="form-input" 
                                    value="{{ rule_detail.source_address if rule_detail.source_address_type == 'address' else '' }}" 
                                    placeholder="192.168.1.1 or 10.0.0.0/24">
-                            <select name="source_address_group" id="source_address_group" class="form-select">
+                            <select name="source_address_group" id="source_address_group" class="form-select group-select">
                                 <option value="">Select address group</option>
                                 {% for group in group_list|selectattr('group_type', 'equalto', 'address-group')|list %}
-                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" data-ip-version="{{ group.ip_version }}"
                                         {% if rule_detail.source_address_type == 'address_group' and rule_detail.source_address == group.group_name %}selected{% endif %}>
                                     {{ group.group_name }}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <select name="source_network_group" id="source_network_group" class="form-select">
+                            <select name="source_network_group" id="source_network_group" class="form-select group-select">
                                 <option value="">Select network group</option>
                                 {% for group in group_list|selectattr('group_type', 'equalto', 'network-group')|list %}
-                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" data-ip-version="{{ group.ip_version }}"
                                         {% if rule_detail.source_address_type == 'network_group' and rule_detail.source_address == group.group_name %}selected{% endif %}>
                                     {{ group.group_name }}
                                 </option>
@@ -215,19 +215,19 @@
                             <input type="text" name="dest_address" id="dest_address" class="form-input" 
                                    value="{{ rule_detail.dest_address if rule_detail.dest_address_type == 'address' else '' }}" 
                                    placeholder="192.168.1.1 or 10.0.0.0/24">
-                            <select name="dest_address_group" id="dest_address_group" class="form-select">
+                            <select name="dest_address_group" id="dest_address_group" class="form-select group-select">
                                 <option value="">Select address group</option>
                                 {% for group in group_list|selectattr('group_type', 'equalto', 'address-group')|list %}
-                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" data-ip-version="{{ group.ip_version }}"
                                         {% if rule_detail.dest_address_type == 'address_group' and rule_detail.dest_address == group.group_name %}selected{% endif %}>
                                     {{ group.group_name }}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <select name="dest_network_group" id="dest_network_group" class="form-select">
+                            <select name="dest_network_group" id="dest_network_group" class="form-select group-select">
                                 <option value="">Select network group</option>
                                 {% for group in group_list|selectattr('group_type', 'equalto', 'network-group')|list %}
-                                <option value="{{ group.ip_version }},{{ group.group_name }}" 
+                                <option value="{{ group.ip_version }},{{ group.group_name }}" data-ip-version="{{ group.ip_version }}"
                                         {% if rule_detail.dest_address_type == 'network_group' and rule_detail.dest_address == group.group_name %}selected{% endif %}>
                                     {{ group.group_name }}
                                 </option>
@@ -537,6 +537,42 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById(targetTab + '-tab').classList.add('active');
         });
     });
+
+    // Filter address/network group dropdowns to the selected IP version
+    const groupSelects = document.querySelectorAll('.group-select');
+
+    function filterGroupSelects(ipVersion) {
+        groupSelects.forEach(select => {
+            let selectedHidden = false;
+            select.querySelectorAll('option[data-ip-version]').forEach(option => {
+                const matches = option.dataset.ipVersion === ipVersion;
+                option.hidden = !matches;
+                option.disabled = !matches;
+                if (!matches && option.selected) {
+                    selectedHidden = true;
+                }
+            });
+            // If the current selection was hidden, reset to the placeholder
+            if (selectedHidden) {
+                select.value = '';
+            }
+        });
+    }
+
+    const ipVersionRadios = document.querySelectorAll('input[name="ip_version"]');
+    ipVersionRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                filterGroupSelects(this.value);
+            }
+        });
+    });
+
+    // Initialize on page load with the currently selected IP version
+    const checkedIpVersion = document.querySelector('input[name="ip_version"]:checked');
+    if (checkedIpVersion) {
+        filterGroupSelects(checkedIpVersion.value);
+    }
 });
 </script>
 {% endblock body %}
