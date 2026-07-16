@@ -299,7 +299,7 @@ def assemble_detail_list_of_chains(session):
             if ip_version in user_data:
                 chain_dict[ip_version] = {}
                 if "chains" in user_data[ip_version]:
-                    for chain_name in user_data[ip_version]["chains"]:
+                    for chain_name in sorted(user_data[ip_version]["chains"]):
                         chain_dict[ip_version][chain_name] = []
                         for rule in user_data[ip_version]["chains"][chain_name][
                             "rule-order"
