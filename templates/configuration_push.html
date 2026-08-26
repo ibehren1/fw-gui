@@ -76,9 +76,12 @@
                 
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password" name="password" id="password" class="form-input" 
-                           value="{{ ssh_pass if ssh_pass else '' }}"
-                           placeholder="SSH password" required>
+                    <input type="password" name="password" id="password" class="form-input"
+                           placeholder="{{ 'Leave blank to use saved credentials' if ssh_pass_cached else 'SSH password' }}"
+                           {{ '' if ssh_pass_cached else 'required' }}>
+                    {% if ssh_pass_cached %}
+                    <p class="section-description">Credentials are saved for this session; leave blank to reuse them.</p>
+                    {% endif %}
                 </div>
                 
                 {% if key_list %}

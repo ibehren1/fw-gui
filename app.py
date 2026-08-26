@@ -30,7 +30,11 @@ import sys
 from datetime import datetime, timedelta
 from io import BytesIO
 
+import base64
+import hashlib
+
 import certifi
+from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from flask import (
     Flask,
@@ -44,6 +48,7 @@ from flask import (
 )
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
+from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from waitress import serve
@@ -188,6 +193,52 @@ bcrypt = Bcrypt(app)
 # Enable CSRF protection for all state-changing POST requests. Every rendered
 # <form> must include {{ csrf_token() }}; the token is signed with APP_SECRET_KEY.
 csrf = CSRFProtect(app)
+
+# Store session data server-side so the browser cookie holds only an opaque,
+# signed session id -- cached SSH credentials never travel to (or persist on)
+# the client. Backed by the existing MongoDB by default; SESSION_TYPE can be
+# overridden (e.g. "filesystem") for offline/test use.
+session_type = os.environ.get("SESSION_TYPE", "mongodb")
+app.config["SESSION_TYPE"] = session_type
+app.config["SESSION_PERMANENT"] = True  # honors PERMANENT_SESSION_LIFETIME
+if session_type == "mongodb":
+    from pymongo import MongoClient
+
+    app.config["SESSION_MONGODB"] = MongoClient(os.environ["MONGODB_URI"])
+    app.config["SESSION_MONGODB_DB"] = os.environ.get(
+        "MONGODB_DATABASE", "fwgui_database"
+    )
+    app.config["SESSION_MONGODB_COLLECT"] = "sessions"
+Session(app)
+
+
+def _session_fernet():
+    """Fernet built from a key derived from APP_SECRET_KEY.
+
+    Used to encrypt the cached SSH secret before it is stored in the
+    server-side session, so the value is not readable in the session store
+    (e.g. the MongoDB `sessions` collection) at rest.
+    """
+    secret = app.secret_key or os.environ.get("APP_SECRET_KEY", "")
+    digest = hashlib.sha256(secret.encode("utf-8")).digest()
+    return Fernet(base64.urlsafe_b64encode(digest))
+
+
+def encrypt_secret(value):
+    """Encrypt a cached SSH secret for storage in the session. Empty stays empty."""
+    if not value:
+        return ""
+    return _session_fernet().encrypt(value.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_secret(token):
+    """Decrypt a cached SSH secret read from the session. Returns "" on failure."""
+    if not token:
+        return ""
+    try:
+        return _session_fernet().decrypt(token.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return ""
 
 # Configure login manager for user authentication
 login_manager = LoginManager()
@@ -1422,19 +1473,31 @@ def configuration_push():
         Response: Rendered configuration push template or redirect to hostname config
     """
     if request.method == "POST":
+        # Prefer freshly-typed credentials; otherwise reuse the values cached
+        # in the (server-side) session so the secret never has to round-trip
+        # through the browser on every submit.
+        # The cached password is stored encrypted in the session; decrypt it as
+        # the fallback when the form field is left blank.
+        username = request.form.get("username") or session.get("ssh_user", "")
+        password = request.form.get("password") or decrypt_secret(
+            session.get("ssh_pass", "")
+        )
+
         connection_string = {
             "hostname": session["hostname"],
-            "username": request.form["username"],
-            "password": request.form["password"],
+            "username": username,
+            "password": password,
             "port": session["port"],
         }
 
         if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
             connection_string["ssh_key_name"] = request.form["ssh_key_name"]
 
-        # Cache SSH user/pass to session.
-        session["ssh_user"] = request.form["username"]
-        session["ssh_pass"] = request.form["password"]
+        # Cache SSH user/pass to the server-side session for this login. The
+        # password/Fernet key is encrypted so it is not stored in cleartext in
+        # the session store at rest.
+        session["ssh_user"] = username
+        session["ssh_pass"] = encrypt_secret(password)
         if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
             session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
 
@@ -1471,7 +1534,7 @@ def configuration_push():
             firewall_reachable=True,
             op_command=op_command,
             ssh_user_name=session["ssh_user"],
-            ssh_pass=session["ssh_pass"],
+            ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
             message=message,
@@ -1498,7 +1561,7 @@ def configuration_push():
             firewall_port=session["port"],
             firewall_reachable=firewall_reachable,
             ssh_user_name=session.get("ssh_user", ""),
-            ssh_pass=session.get("ssh_pass", ""),
+            ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
             message=message,

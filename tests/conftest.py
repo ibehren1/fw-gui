@@ -10,6 +10,8 @@ os.environ.setdefault("DISABLE_REGISTRATION", "False")
 os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017/")
 os.environ.setdefault("MONGODB_DATABASE", "test_db")
 os.environ.setdefault("SESSION_TIMEOUT", "120")
+# Use a local, offline session backend for tests (no live MongoDB required).
+os.environ.setdefault("SESSION_TYPE", "filesystem")
 
 import copy
 import json

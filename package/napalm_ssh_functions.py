@@ -85,7 +85,10 @@ def assemble_paramiko_driver_string(connection_string, session):
     username = connection_string["username"]
     password = connection_string["password"]
 
-    logging.debug(connection_string)
+    # Never log the password / Fernet key.
+    logging.debug(
+        {k: v for k, v in connection_string.items() if k != "password"}
+    )
 
     if "ssh_key_name" in connection_string:
         logging.info("key")

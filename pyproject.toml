@@ -15,6 +15,7 @@ dependencies = [
     "flask_bcrypt",
     "flask_login",
     "flask_sqlalchemy",
+    "flask-session",
     "flask-wtf",
     "idna>=3.15",
     "Jinja2",
