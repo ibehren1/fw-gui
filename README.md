@@ -26,6 +26,11 @@ The web-based FW-GUI allows the user to visually:
 
 ![](images/fw-gui-usage-diagram.png)
 
+## Documentation
+
+- [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, SQLite auth, session store, filesystem layout, backups, and data flow (with diagrams).
+- [SSH, Password, Key & Cookie Handling](docs/ssh-credential-handling.md) — how SSH connectivity, passwords, keys, and cookies are stored, used, and disposed of (with diagrams).
+
 ## VyOS Release Support
 
 | VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
