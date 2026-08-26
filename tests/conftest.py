@@ -20,6 +20,9 @@ os.environ.setdefault("SESSION_TYPE", "filesystem")
 # SQLite/telemetry would fail. Make the suite self-contained.
 os.makedirs("data/database", exist_ok=True)
 os.makedirs("data/tmp", exist_ok=True)
+# Pre-create the test user's data dir so the first login does not trigger the
+# example-config write to MongoDB (which is not available in the offline suite).
+os.makedirs("data/testuser", exist_ok=True)
 if not os.path.exists("data/database/instance.id"):
     with open("data/database/instance.id", "w") as _f:
         _f.write(str(uuid.uuid4()))
