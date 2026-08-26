@@ -63,8 +63,9 @@ coverage report -m || true
 echo -e "\n${CYAN}#\n# Running Dockerbuild.${NC}\n"
 
 # Set the Docker Hub username and password (only needed for publish builds).
+# Pipe the token via stdin so it never appears in the process argv/list.
 if [ "${BUILD_TYPE}" != "Local" ]; then
-    docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
+    echo "${DOCKER_PAT}" | docker login -u "${DOCKER_USER}" --password-stdin
 fi
 
 # Build images for ARM64 and AMD64.
