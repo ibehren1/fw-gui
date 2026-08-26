@@ -194,6 +194,17 @@ app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
+# Session cookie hardening. HttpOnly blocks JavaScript from reading the cookie;
+# SameSite=Lax limits cross-site sending (defense-in-depth alongside CSRF
+# tokens). Secure requires HTTPS, so it is opt-in via env to avoid breaking
+# plain-HTTP deployments -- set SESSION_COOKIE_SECURE=True when serving over
+# HTTPS (e.g. behind the recommended Nginx Proxy Manager).
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("SESSION_COOKIE_SECURE", "False").strip().lower() == "true"
+)
+
 # Initialize database and encryption
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
