@@ -96,6 +96,7 @@ services:
 +    depends_on:
 +     - mongodb
     environment:
+      # Change this default to a unique random value before any non-local use.
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
       - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
@@ -164,6 +165,7 @@ services:
     depends_on:
       - mongodb
     environment:
+      # Change this default to a unique random value before any non-local use.
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
       - SESSION_TIMEOUT=120

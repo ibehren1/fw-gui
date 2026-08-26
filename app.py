@@ -170,6 +170,9 @@ except Exception:
 
 # Configure Flask application settings
 app = Flask(__name__)
+# APP_SECRET_KEY ships with a well-known default (see .env / compose / Helm values)
+# for quick start-up. Operators are expected to override it with a unique random
+# value before any non-local use; the shipped default must not be trusted.
 app.secret_key = os.environ.get("APP_SECRET_KEY")
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
