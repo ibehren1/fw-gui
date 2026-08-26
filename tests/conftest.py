@@ -3,6 +3,7 @@ Shared test fixtures for FW-GUI test suite.
 """
 
 import os
+import uuid
 
 # Set environment defaults before any imports could trigger app.py loading.
 os.environ.setdefault("APP_SECRET_KEY", "test-secret-key")
@@ -12,6 +13,16 @@ os.environ.setdefault("MONGODB_DATABASE", "test_db")
 os.environ.setdefault("SESSION_TIMEOUT", "120")
 # Use a local, offline session backend for tests (no live MongoDB required).
 os.environ.setdefault("SESSION_TYPE", "filesystem")
+
+# Bootstrap the data directories the app normally creates via
+# initialize_data_dir() at startup. pytest imports the app without running its
+# __main__ block, so on a fresh checkout (e.g. CI) these do not yet exist and
+# SQLite/telemetry would fail. Make the suite self-contained.
+os.makedirs("data/database", exist_ok=True)
+os.makedirs("data/tmp", exist_ok=True)
+if not os.path.exists("data/database/instance.id"):
+    with open("data/database/instance.id", "w") as _f:
+        _f.write(str(uuid.uuid4()))
 
 import copy
 import json
