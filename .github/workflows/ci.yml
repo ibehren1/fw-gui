@@ -1,0 +1,30 @@
+name: CI
+
+# Validation only: run the test suite and the Bandit security scan on every
+# push and pull request. Does NOT build or publish the Docker image — that
+# stays in `make local|dev|pubdev|prod` (scripts/build.sh).
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Tests & security scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Run tests
+        run: uv run --extra test pytest
+
+      - name: Run Bandit security scan
+        run: uv run --extra test bandit -c pyproject.toml -r .

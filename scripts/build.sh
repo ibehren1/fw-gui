@@ -1,6 +1,11 @@
 #!/bin/bash
 # Script to run Docker build.
 
+# Fail fast: abort the build (before any image is published) if any step,
+# including the test suite, fails. `-u` is omitted because optional publish
+# credentials (DOCKER_USER/DOCKER_PAT) are only set for non-Local builds.
+set -eo pipefail
+
 # Internal registry for publishing dev builds.
 INTERNAL_REG="registry.internal.behrenshome.com"
 
@@ -47,21 +52,29 @@ echo -e "\n${GREEN}Bandit security scan completed.${NC}\n"
 # Run pytest to validate the codebase.
 echo -e "\n${CYAN}#\n# Running Pytest on codebase.${NC}\n"
 #pytest
-coverage run --source=. -m pytest
-coverage report -m
+if ! coverage run --source=. -m pytest; then
+    echo -e "{${RED}\n***\n*\n*   Error - Pytest failed. Exiting.\n*\n***${NC}"
+    exit 1
+fi
+coverage report -m || true
 
 #
 # Run Docker Build and Publish
 echo -e "\n${CYAN}#\n# Running Dockerbuild.${NC}\n"
 
-# Set the Docker Hub username and password
-docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
+# Set the Docker Hub username and password (only needed for publish builds).
+if [ "${BUILD_TYPE}" != "Local" ]; then
+    docker login -u ${DOCKER_USER} -p ${DOCKER_PAT}
+fi
 
 # Build images for ARM64 and AMD64.
+# Reuse the builder if it already exists (create fails on a repeat run, which
+# would otherwise abort under `set -e`).
 docker buildx create \
     --use \
     --platform=linux/arm64,linux/amd64 \
-    --name multi-platform-builder
+    --name multi-platform-builder \
+    || docker buildx use multi-platform-builder
 
 docker buildx inspect \
     --bootstrap
