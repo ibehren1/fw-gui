@@ -47,6 +47,20 @@ services:
       MYSQL_PASSWORD: 'npm'
     volumes:
       - mysql-data:/var/lib/mysql
+  # MongoDB runs WITHOUT authentication. This is intentional for this
+  # single-stack deployment: the service publishes no `ports:`, so it is only
+  # reachable by other containers on this Compose project's internal network
+  # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet, and it
+  # stores all firewall configs plus the session store.
+  #
+  # SECURITY NOTES:
+  #   - Do NOT add a `ports:` mapping (e.g. 27017:27017) — that would expose an
+  #     unauthenticated database to the host/network.
+  #   - For any shared/multi-tenant host or external access, enable auth:
+  #     set MONGO_INITDB_ROOT_USERNAME / MONGO_INITDB_ROOT_PASSWORD here and use
+  #     MONGODB_URI=mongodb://user:pass@mongodb:27017/ above. (Auth only
+  #     initializes on a fresh mongo-data volume; existing installs need a
+  #     one-time user-creation step.)
   mongodb:
     container_name: mongodb
     image: mongo:latest
