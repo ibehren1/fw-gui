@@ -119,6 +119,7 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.telemetry_functions import telemetry_instance
+from package.validators import is_safe_name
 
 # Set SSL certificate file path
 os.environ["SSL_CERT_FILE"] = certifi.where()
@@ -383,7 +384,14 @@ def download():
     filename = request.form["filename"]
     full_path = os.path.realpath(path + filename)
 
-    if not full_path.startswith(os.path.realpath("data/")):
+    # Confirm the resolved path stays within the data/ directory. Using
+    # commonpath (not startswith) avoids the sibling-prefix bypass where a path
+    # like ".../data_secrets/..." would pass a naive "starts with .../data" test.
+    data_root = os.path.realpath("data")
+    if (
+        os.path.commonpath([full_path, data_root]) != data_root
+        or full_path == data_root
+    ):
         flash("Invalid file path.", "danger")
         return redirect(url_for("index"))
 
@@ -1589,6 +1597,9 @@ def create_config():
     if request.form["config_name"] == "":
         flash("Config name cannot be empty", "danger")
         return redirect(url_for("index"))
+    elif not is_safe_name(request.form["config_name"]):
+        flash("Invalid config name.", "danger")
+        return redirect(url_for("index"))
     else:
         user_data = {}
 
@@ -1789,6 +1800,10 @@ def delete_config():
         flash("You must select a config to delete.", "danger")
         return redirect(url_for("index"))
 
+    if not is_safe_name(request.form["delete_config"]):
+        flash("Invalid config name.", "danger")
+        return redirect(url_for("index"))
+
     if "firewall_name" in session:
         if session["firewall_name"] == request.form["delete_config"]:
             session.pop("firewall_name")
@@ -1853,15 +1868,21 @@ def select_firewall_config():
     # If selecting a snapshot
     if "/" in request.form["file"]:
         parts = request.form["file"].split("/")
+        if not is_safe_name(parts[0]):
+            flash("Invalid firewall selection.", "danger")
+            return redirect(url_for("display_config"))
         session["firewall_name"] = parts[0]
         snapshot = parts[1]
         if snapshot == "delete":
-            if len(parts) < 3:
+            if len(parts) < 3 or not is_safe_name(parts[2]):
                 flash("Invalid snapshot selection.", "danger")
                 return redirect(url_for("display_config"))
             snapshot_name = parts[2]
     # Else selecting a firewall config
     else:
+        if not is_safe_name(request.form["file"]):
+            flash("Invalid firewall selection.", "danger")
+            return redirect(url_for("display_config"))
         session["firewall_name"] = request.form["file"]
         snapshot = "current"
 

@@ -22,6 +22,7 @@ from packaging.version import Version
 
 from package.data_file_functions import write_user_data_file
 from package.telemetry_functions import telemetry_instance
+from package.validators import is_valid_username
 
 
 def change_password(bcrypt, db, User, username, request):
@@ -231,6 +232,15 @@ def register_user(bcrypt, db, request, User):
     # Basic Validations
     if username == "":
         flash("Username cannot be empty.", "danger")
+        return False
+
+    # Username becomes a directory name and a MongoDB collection name; hold it
+    # to a strict allowlist to prevent path traversal / collection injection.
+    if not is_valid_username(username):
+        flash(
+            "Username may only contain letters, numbers, dashes, underscores, and dots.",
+            "danger",
+        )
         return False
 
     if email == "":
