@@ -181,6 +181,13 @@ app = Flask(__name__)
 # for quick start-up. Operators are expected to override it with a unique random
 # value before any non-local use; the shipped default must not be trusted.
 app.secret_key = os.environ.get("APP_SECRET_KEY")
+# Fail loudly at startup rather than erroring on the first session/CSRF use.
+# secret_key signs the session id and CSRF tokens and derives the session-secret
+# encryption key; it must be set (all shipped configs set it).
+if not app.secret_key:
+    raise RuntimeError(
+        "APP_SECRET_KEY is not set. Set it in the environment / .env before starting."
+    )
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
