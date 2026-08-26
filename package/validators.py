@@ -40,6 +40,30 @@ def is_safe_name(name):
     return True
 
 
+# Shell metacharacters that must never reach the vbash script that runs
+# operational commands on the device (they would allow shell breakout).
+_OP_METACHARACTERS = set(";&|$`()<>\n\r\\'\"")
+
+
+def is_allowed_op_command(command):
+    """Return True if ``command`` is a permitted read-only operational command.
+
+    Policy: only ``show ...`` commands are allowed, and the command may not
+    contain any shell metacharacter or newline. This confines the feature to
+    operational-mode inspection and prevents shell/command injection into the
+    vbash script that executes it.
+    """
+    if not isinstance(command, str):
+        return False
+    cmd = command.strip()
+    if cmd == "":
+        return False
+    if any(ch in _OP_METACHARACTERS for ch in cmd):
+        return False
+    tokens = cmd.split()
+    return bool(tokens) and tokens[0] == "show"
+
+
 def is_valid_username(name):
     """Return True if ``name`` is a valid username (strict allowlist)."""
     return bool(

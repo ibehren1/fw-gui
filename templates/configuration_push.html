@@ -128,9 +128,10 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="op_command" class="form-label">Command</label>
-                <input type="text" name="op_command" id="op_command" class="form-input" 
+                <input type="text" name="op_command" id="op_command" class="form-input"
                        value="{{ op_command if op_command else 'show firewall' }}"
                        placeholder="show firewall">
+                <p class="section-description">Only read-only <code>show ...</code> commands are permitted.</p>
             </div>
             
             <button type="submit" name="action" value="Run Operational Command" class="btn btn-secondary" onclick="copyAuthCredentials(this.form)">Run Command</button>

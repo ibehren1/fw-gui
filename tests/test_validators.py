@@ -1,6 +1,10 @@
 """Tests for package.validators name/username validation."""
 
-from package.validators import is_safe_name, is_valid_username
+from package.validators import (
+    is_allowed_op_command,
+    is_safe_name,
+    is_valid_username,
+)
 
 
 class TestIsSafeName:
@@ -50,3 +54,33 @@ class TestIsValidUsername:
     def test_rejects_non_strings(self):
         assert not is_valid_username(None)
         assert not is_valid_username(42)
+
+
+class TestIsAllowedOpCommand:
+    def test_accepts_show_commands(self):
+        assert is_allowed_op_command("show interfaces")
+        assert is_allowed_op_command("show firewall")
+        assert is_allowed_op_command("  show firewall group  ")
+
+    def test_rejects_non_show_verbs(self):
+        assert not is_allowed_op_command("ping 1.1.1.1")
+        assert not is_allowed_op_command("configure")
+        assert not is_allowed_op_command("reboot")
+
+    def test_rejects_shell_metacharacters(self):
+        assert not is_allowed_op_command("show version; reboot")
+        assert not is_allowed_op_command("show version && reboot")
+        assert not is_allowed_op_command("show version | tee /tmp/x")
+        assert not is_allowed_op_command("show version$(reboot)")
+        assert not is_allowed_op_command("show `reboot`")
+        assert not is_allowed_op_command("show > /tmp/x")
+
+    def test_rejects_newlines(self):
+        assert not is_allowed_op_command("show version\nconfigure")
+        assert not is_allowed_op_command("show version\rreboot")
+
+    def test_rejects_empty_and_non_string(self):
+        assert not is_allowed_op_command("")
+        assert not is_allowed_op_command("   ")
+        assert not is_allowed_op_command(None)
+        assert not is_allowed_op_command(["show", "version"])
