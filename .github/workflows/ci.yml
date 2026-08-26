@@ -25,6 +25,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
+      - name: Seed CI instance id
+        # Identify telemetry from CI runs. conftest only writes a random id when
+        # this file is absent, so seeding it here makes the CI value stick.
+        run: |
+          mkdir -p data/database
+          printf 'github-actions-ci' > data/database/instance.id
+
       - name: Run tests
         run: uv run --extra test pytest
 
