@@ -45,6 +45,7 @@ from flask import (
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_required, logout_user
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from waitress import serve
 
 from package.auth_functions import (
@@ -183,6 +184,10 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 # Initialize database and encryption
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+
+# Enable CSRF protection for all state-changing POST requests. Every rendered
+# <form> must include {{ csrf_token() }}; the token is signed with APP_SECRET_KEY.
+csrf = CSRFProtect(app)
 
 # Configure login manager for user authentication
 login_manager = LoginManager()

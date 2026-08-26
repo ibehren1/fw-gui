@@ -149,6 +149,8 @@ def flask_app():
     from app import User
 
     flask_application.config["TESTING"] = True
+    # Disable CSRF validation so tests can POST to forms without a token.
+    flask_application.config["WTF_CSRF_ENABLED"] = False
 
     with flask_application.app_context():
         flask_db.create_all()

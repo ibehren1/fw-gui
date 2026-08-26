@@ -28,6 +28,7 @@
         
         {% for snapshot in snapshot_list %}
         <form action="/snapshot_tag_create" method="post" class="snapshot-row">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row-cell">{{ snapshot.name }}</div>
             <div class="row-cell">
                 <input type="hidden" name="firewall_name" value="{{ snapshot.id }}">

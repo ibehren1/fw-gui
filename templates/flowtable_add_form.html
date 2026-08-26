@@ -21,6 +21,7 @@
     {% endwith %}
     
     <form action="/flowtable_add" method="post" class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="type" value="add">
         
         <div class="form-grid">

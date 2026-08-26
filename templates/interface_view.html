@@ -31,6 +31,7 @@
                     {% endif %}
                 </div>
                 <form action="/interface_delete" method="post" class="delete-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="interface" value="{{ interface.name }}">
                     <button type="submit" class="btn btn-delete-small"
                             onclick="return confirm('Delete interface {{ interface.name }}?')"

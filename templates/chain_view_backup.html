@@ -70,6 +70,7 @@
                         </div>
                         <div class="chain-actions">
                             <form action="/chain_rule_add" method="post" class="edit-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="type" value="edit">
                                 <input type="hidden" name="chain" value="ipv4,{{ key }}">
                                 <input type="hidden" name="name" value="{{ rule.number }}">
@@ -96,6 +97,7 @@
                                 <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
                             </form>
                             <form action="/chain_rule_delete" method="post" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="chain" value="ipv4,{{ key }}">
                                 <input type="hidden" name="rule_number" value="{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small" 
@@ -210,6 +212,7 @@
                         </div>
                         <div class="chain-actions">
                             <form action="/chain_rule_add" method="post" class="edit-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="type" value="edit">
                                 <input type="hidden" name="chain" value="ipv6,{{ key }}">
                                 <input type="hidden" name="name" value="{{ rule.number }}">
@@ -236,6 +239,7 @@
                                 <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
                             </form>
                             <form action="/chain_rule_delete" method="post" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="chain" value="ipv6,{{ key }}">
                                 <input type="hidden" name="rule_number" value="{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small" 

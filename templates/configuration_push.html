@@ -42,6 +42,7 @@
             </div>
             
             <form action="/configuration_hostname_add" method="post" class="hostname-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="hostname" class="form-label">Firewall Hostname/IP</label>
                     <input type="text" name="hostname" id="hostname" class="form-input" 
@@ -65,6 +66,7 @@
             <h3 class="subsection-title">Authentication</h3>
             
             <form action="/configuration_push" method="post" class="auth-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
                     <input type="text" name="username" id="username" class="form-input" 
@@ -120,6 +122,7 @@
     <div class="operational-section">
         <h3 class="subsection-title">Run Operational Command</h3>
         <form action="/configuration_push" method="post" class="operational-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="op_command" class="form-label">Command</label>
                 <input type="text" name="op_command" id="op_command" class="form-input" 
@@ -169,6 +172,7 @@
         </p>
         
         <form action="/configuration_push_commit" method="post" class="deployment-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="deployment-options">
                 <label class="checkbox-item">
                     <input type="checkbox" name="delete_existing" value="true">

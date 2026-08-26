@@ -22,6 +22,7 @@
                 Create a backup of all configurations and user data.  SSH keys are excluded from backups for security.
             </p>
             <form action="/admin_settings" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="backup" value="full_backup">
                 <button type="submit" class="btn btn-primary full-width">Create Full Backup</button>
             </form>

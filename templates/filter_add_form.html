@@ -24,6 +24,7 @@
     {% endwith %}
     
     <form action="/filter_add" method="post" class="form-content">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-section">
             <h3 class="subsection-title">Basic Information</h3>
             
