@@ -61,6 +61,15 @@ def add_filter_rule_to_data(session, request):
         rule_dict["fw_chain"] = request.form["offload_target"]
 
     # Check and create higher level data structure if it does not exist
+    # (mirror the chain path so adding a rule to a missing filter cannot KeyError)
+    if ip_version not in user_data:
+        user_data[ip_version] = {}
+    if "filters" not in user_data[ip_version]:
+        user_data[ip_version]["filters"] = {}
+    if filter not in user_data[ip_version]["filters"]:
+        user_data[ip_version]["filters"][filter] = {}
+    if "rule-order" not in user_data[ip_version]["filters"][filter]:
+        user_data[ip_version]["filters"][filter]["rule-order"] = []
     if "rules" not in user_data[ip_version]["filters"][filter]:
         user_data[ip_version]["filters"][filter]["rules"] = {}
 
