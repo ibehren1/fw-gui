@@ -1765,52 +1765,41 @@ def display_config():
 
 @app.route("/snapshot_diff_choose")
 @login_required
+@requires_firewall
 def snapshot_diff_choose():
     """
     Display page for selecting snapshots to compare.
 
     Endpoint that shows interface for choosing two snapshots to diff.
-    Requires user to be logged in.
+    Requires user to be logged in and a firewall selected.
 
     Returns:
-        Response: Rendered template for snapshot selection or message if no firewall selected
+        Response: Rendered template for snapshot selection
     """
     file_list = list_user_files(session)
     snapshot_list = list_snapshots(session)
+    message, config = generate_config(session)
 
-    if "firewall_name" not in session:
-        message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
-
-        return render_template(
-            "configuration_display.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            message=message,
-            username=session["username"],
-        )
-
-    else:
-        snapshot_list = list_snapshots(session)
-        message, config = generate_config(session)
-
-        return render_template(
-            "snapshot_diff_choose.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            firewall_name=session["firewall_name"],
-            message=message,
-            username=session["username"],
-        )
+    return render_template(
+        "snapshot_diff_choose.html",
+        file_list=file_list,
+        snapshot_list=snapshot_list,
+        firewall_name=session["firewall_name"],
+        message=message,
+        username=session["username"],
+    )
 
 
 @app.route("/snapshot_diff_display", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def snapshot_diff_display():
     """
     Display diff between two snapshots.
 
     Endpoint that shows differences between two selected snapshots.
-    Requires user to be logged in. Validates snapshots are different and selected.
+    Requires user to be logged in and a firewall selected. Validates snapshots
+    are different and selected.
 
     Returns:
         Response: Rendered template showing diff or redirect back to selection on error
@@ -1832,17 +1821,6 @@ def snapshot_diff_display():
     else:
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
-
-        if "firewall_name" not in session:
-            message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
-
-            return render_template(
-                "configuration_display.html",
-                file_list=file_list,
-                snapshot_list=snapshot_list,
-                message=message,
-                username=session["username"],
-            )
 
         message, config = generate_config(session)
 
