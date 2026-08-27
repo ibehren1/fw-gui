@@ -28,6 +28,7 @@ from package.data_file_functions import (
     list_user_files,
     list_user_keys,
     read_user_data_file,
+    restore_snapshot,
     tag_snapshot,
     update_schema,
     upload_backup_file,
@@ -536,6 +537,52 @@ class TestReadUserDataFile:
         current = coll.find_one({"_id": "test_firewall"})
         assert current is not None
         assert "extra-items" not in current
+
+    def test_read_snapshot_is_non_destructive(self, mock_mongo, sample_user_data):
+        # A plain read of a snapshot must NOT overwrite current.
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        coll.insert_one({"_id": "test_firewall", **sample_user_data})
+        snap_data = copy.deepcopy(sample_user_data)
+        snap_data["firewall"] = "test_firewall"
+        snap_data["snapshot"] = "snap1"
+        snap_data["extra-items"] = ["snapshot item"]
+        coll.insert_one(snap_data)
+        read_user_data_file("data/testuser/test_firewall", snapshot="snap1")
+        current = coll.find_one({"_id": "test_firewall"})
+        assert "extra-items" not in current
+
+
+class TestRestoreSnapshot:
+    def test_restore_overwrites_current(self, mock_mongo, sample_user_data):
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        coll.insert_one({"_id": "test_firewall", **sample_user_data})
+        snap_data = copy.deepcopy(sample_user_data)
+        snap_data["firewall"] = "test_firewall"
+        snap_data["snapshot"] = "snap1"
+        snap_data["extra-items"] = ["snapshot item"]
+        coll.insert_one(snap_data)
+
+        result = restore_snapshot("data/testuser/test_firewall", "snap1")
+
+        assert result["extra-items"] == ["snapshot item"]
+        # Current now reflects the snapshot, with snapshot/firewall fields stripped.
+        current = coll.find_one({"_id": "test_firewall"})
+        assert current["extra-items"] == ["snapshot item"]
+        assert "snapshot" not in current
+        assert "firewall" not in current
+
+    def test_restore_missing_snapshot_leaves_current(self, mock_mongo, sample_user_data):
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        coll.insert_one({"_id": "test_firewall", **sample_user_data})
+
+        result = restore_snapshot("data/testuser/test_firewall", "does-not-exist")
+
+        assert result == {}
+        # Current must be untouched.
+        assert coll.find_one({"_id": "test_firewall"}) is not None
 
 
 # ===========================================================================

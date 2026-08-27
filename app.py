@@ -81,6 +81,7 @@ from package.data_file_functions import (
     list_user_keys,
     process_upload,
     read_user_data_file,
+    restore_snapshot,
     tag_snapshot,
     validate_mongodb_connection,
     write_user_command_conf_file,
@@ -1918,8 +1919,12 @@ def select_firewall_config():
         session["firewall_name"] = request.form["file"]
         snapshot = "current"
 
-    # Execute a read to read the "snapshot" version into "current"
-    read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", snapshot)
+    # Restore the selected snapshot into "current" (only for an actual
+    # snapshot; current/create/delete are handled below).
+    if snapshot not in ("current", "create", "delete"):
+        restore_snapshot(
+            f"{session['data_dir']}/{session['firewall_name']}", snapshot
+        )
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
     if snapshot == "create":

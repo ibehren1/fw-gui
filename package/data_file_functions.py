@@ -814,15 +814,31 @@ def read_user_data_file(filename, snapshot="current", diff=False):
                 }
                 write_user_data_file(filename, user_data)
 
-            # If this was not a read of "current", then we want to immediately
-            #   write over current with the snapshot data.
-            if snapshot != "current" and not diff:
-                delete_user_data_file(filename)
-                write_user_data_file(filename, user_data)
             return user_data
 
     except Exception:
         return {}
+
+
+def restore_snapshot(filename, snapshot):
+    """Overwrite the current config with the named snapshot's data.
+
+    This is the explicit, destructive counterpart to read_user_data_file:
+    it reads the snapshot (without side effects), deletes the current
+    document, and writes the snapshot's data back as current.
+
+    Args:
+        filename (str): 'data/<user>/<firewall_name>'
+        snapshot (str): snapshot name to restore
+
+    Returns:
+        dict: the restored data, or {} if the snapshot was not found
+    """
+    user_data = read_user_data_file(filename, snapshot, diff=True)
+    if user_data:
+        delete_user_data_file(filename)
+        write_user_data_file(filename, user_data)
+    return user_data or {}
 
 
 def tag_snapshot(session, request):
