@@ -86,9 +86,12 @@ def check_version():
     Reads local version from .version file and compares against version from GitHub.
     Displays warning if running development version or if update is available.
     """
-    with open(".version", "r") as f:
-        local_version = f.read().replace("v", "")
-        logging.debug(f"Local version: {local_version}")
+    try:
+        with open(".version", "r") as f:
+            local_version = f.read().replace("v", "")
+            logging.debug(f"Local version: {local_version}")
+    except OSError:
+        local_version = "0.0.0"
 
     try:
         # Get remote version from https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version

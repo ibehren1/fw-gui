@@ -168,8 +168,12 @@ logging.info(f"Logging Level: {log_level}")
 db_location = os.path.join(os.getcwd(), "data/database")
 
 # Load version from .version file into environment
-with open(".version", "r") as f:
-    os.environ["FWGUI_VERSION"] = f.read()
+try:
+    with open(".version", "r") as f:
+        os.environ["FWGUI_VERSION"] = f.read()
+except OSError:
+    logging.warning(".version file not found; defaulting version to 0.0.0.")
+    os.environ["FWGUI_VERSION"] = "0.0.0"
 
 # Get session timeout from environment or default to 120 minutes
 try:
@@ -2049,23 +2053,27 @@ def upload_json():
 
 if __name__ == "__main__":
     # Read version from .version and display
-    with open(".version", "r") as f:
-        logging.info(
-            f"|---------------- FW-GUI version: {f.read().strip()} ----------------|"
-        )
-        logging.info("|                                                        |")
-        logging.info("|                                                        |")
-        logging.info("|            *** v1.4.0+ requires MongoDB ***            |")
-        logging.info("|                                                        |")
-        logging.info("|                                                        |")
-        logging.info("|         See https://github.com/ibehren1/fw-gui         |")
-        logging.info("|                            or                          |")
-        logging.info("|        https://hub.docker.com/r/ibehren1/fw-gui        |")
-        logging.info("|                                                        |")
-        logging.info("|       for recommended docker-compose.yml updates.      |")
-        logging.info("|                                                        |")
-        logging.info("|                                                        |")
-        logging.info("|--------------------------------------------------------|")
+    try:
+        with open(".version", "r") as f:
+            fwgui_version = f.read().strip()
+    except OSError:
+        fwgui_version = "unknown"
+    logging.info(
+        f"|---------------- FW-GUI version: {fwgui_version} ----------------|"
+    )
+    logging.info("|                                                        |")
+    logging.info("|                                                        |")
+    logging.info("|            *** v1.4.0+ requires MongoDB ***            |")
+    logging.info("|                                                        |")
+    logging.info("|                                                        |")
+    logging.info("|         See https://github.com/ibehren1/fw-gui         |")
+    logging.info("|                            or                          |")
+    logging.info("|        https://hub.docker.com/r/ibehren1/fw-gui        |")
+    logging.info("|                                                        |")
+    logging.info("|       for recommended docker-compose.yml updates.      |")
+    logging.info("|                                                        |")
+    logging.info("|                                                        |")
+    logging.info("|--------------------------------------------------------|")
 
     # Load environment variables from .env file
     load_dotenv()
