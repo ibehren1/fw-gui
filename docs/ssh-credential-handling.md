@@ -36,16 +36,16 @@ rendered back into the page.
 
 ```mermaid
 flowchart TD
-    U([User on Configuration Push page]) --> M{Auth method}
-    M -->|Password| P[Enter username + device password]
-    M -->|SSH key| K[Enter username + key's encryption key<br/>and select an uploaded .key]
-    P --> A[Submit: View Diffs / Commit / Run Command]
+    U(["User on Configuration Push page"]) --> M{"Auth method"}
+    M -->|Password| P["Enter username + device password"]
+    M -->|SSH key| K["Enter username + key's encryption key<br/>and select an uploaded .key"]
+    P --> A["Submit: View Diffs / Commit / Run Command"]
     K --> A
-    A --> S[Server caches username + secret<br/>in the server-side session]
-    S --> C{Key selected?}
-    C -->|No| PW[Connect with password auth]
-    C -->|Yes| DEC[Decrypt stored key file to a temp file<br/>connect with key auth<br/>delete temp file]
-    PW --> R([Result shown; secret stays server-side])
+    A --> S["Server caches username + secret<br/>in the server-side session"]
+    S --> C{"Key selected?"}
+    C -->|No| PW["Connect with password auth"]
+    C -->|Yes| DEC["Decrypt stored key file to a temp file<br/>connect with key auth<br/>delete temp file"]
+    PW --> R(["Result shown; secret stays server-side"])
     DEC --> R
 ```
 
@@ -255,7 +255,7 @@ flowchart LR
       KeyFile["data/&lt;user&gt;/&lt;name&gt;.key<br/>Fernet-encrypted private key (at rest)"]
       Tmp["data/tmp/&lt;random&gt;<br/>plaintext key, only during one action,<br/>deleted in finally"]
     end
-    Device[(VyOS device)]
+    Device[("VyOS device")]
 
     Cookie -->|maps to| Sess
     Sess -->|password path: password sent as SSH login| Device

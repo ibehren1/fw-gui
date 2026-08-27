@@ -23,15 +23,15 @@ FW-GUI uses **three persistent stores**, plus a server-side session store:
 
 ```mermaid
 flowchart TD
-    Browser([Browser]) -->|"session cookie = opaque id"| App[Flask app app.py]
+    Browser(["Browser"]) -->|"session cookie = opaque id"| App["Flask app (app.py)"]
 
-    App -->|"firewall configs + snapshots<br/>PyMongo"| Mongo[(MongoDB<br/>db: MONGODB_DATABASE)]
-    App -->|"users / auth<br/>SQLAlchemy"| SQLite[(SQLite<br/>data/database/auth.db)]
-    App -->|"session state<br/>Flask-Session"| Sessions[("MongoDB<br/>sessions collection")]
-    App -->|"keys / .conf / backups / logs"| FS[/"Filesystem data/"/]
+    App -->|"firewall configs + snapshots (PyMongo)"| Mongo[("MongoDB (MONGODB_DATABASE)")]
+    App -->|"users / auth (SQLAlchemy)"| SQLite[("SQLite auth.db")]
+    App -->|"session state (Flask-Session)"| Sessions[("Mongo sessions")]
+    App -->|"keys / .conf / backups / logs"| FS[/"Filesystem data dir"/]
 
-    App -->|"generated set commands via SSH"| VyOS[(VyOS device)]
-    FS -.->|"optional backup upload"| S3[("AWS S3<br/>BUCKET_NAME")]
+    App -->|"generated set commands via SSH"| VyOS[("VyOS device")]
+    FS -.->|"optional backup upload"| S3[("AWS S3 (BUCKET_NAME)")]
     App -.->|"UUID + version only"| Tele[("telemetry.fw-gui.com")]
 ```
 
@@ -110,7 +110,7 @@ erDiagram
     }
     GROUP {
         string group_desc
-        string group_type "address|domain|interface|mac|network|port -group"
+        string group_type "e.g. address-group, port-group"
         list group_value
     }
     CHAIN {
@@ -122,7 +122,7 @@ erDiagram
         string description
         string action
         string protocol
-        string flags "state_est/inv/new/rel, rule_disable, logging"
+        string flags "state_*, rule_disable, logging"
     }
     FILTER {
         list rule_order "rule-order: ordered ids"
@@ -186,7 +186,7 @@ flowchart TD
     Snap1["Snapshot doc: firewall='home-fw', snapshot='09-01 12:00'"]
     Snap2["Snapshot doc: firewall='home-fw', snapshot='09-02 08:30', tag='pre-change'"]
 
-    Cur -->|"create snapshot<br/>(copy current → new snapshot doc)"| Snap1
+    Cur -->|"create snapshot (copy current to a new snapshot doc)"| Snap1
     Cur --> Snap2
     Snap2 -->|"RESTORE (destructive):<br/>overwrite current with snapshot data"| Cur
 ```
@@ -214,9 +214,9 @@ flowchart TD
 erDiagram
     USER {
         int id PK
-        string username "String(20), unique, not null — also dir + Mongo collection name"
+        string username "String(20), unique; also dir + collection name"
         string email "String(40), not null"
-        string password "String(80), not null — bcrypt hash (never cleartext)"
+        string password "String(80); bcrypt hash, never cleartext"
     }
 ```
 
@@ -283,10 +283,10 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A["Admin: Create Full Backup"] --> MD["mongo_dump():<br/>data/mongo_dumps/&lt;ts&gt;/&lt;db&gt;/&lt;coll&gt;.bson"]
-    MD --> Z["zip → data/backups/full-backup-&lt;ts&gt;.zip<br/>(excludes backups/, tmp/, uploads/, *.key)"]
+    A["Admin: Create Full Backup"] --> MD["mongo_dump() writes<br/>data/mongo_dumps/ts/db/coll.bson"]
+    MD --> Z["zip to data/backups/full-backup-ts.zip<br/>(excludes backups/, tmp/, uploads/, *.key)"]
     Z --> U{"BUCKET_NAME set?"}
-    U -->|yes| S3["boto3 upload → s3://BUCKET/fw-gui/backups/&lt;file&gt;"]
+    U -->|yes| S3["boto3 upload to<br/>s3 BUCKET/fw-gui/backups/file"]
     U -->|no| Skip["skip upload (logged)"]
 ```
 
