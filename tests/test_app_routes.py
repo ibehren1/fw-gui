@@ -959,3 +959,27 @@ class TestSecurityHeaders:
         # SESSION_COOKIE_SECURE is False in the test env -> no HSTS.
         resp = client.get("/user_login")
         assert "Strict-Transport-Security" not in resp.headers
+
+
+class TestRegistrationEnabled:
+    def test_parsing(self, monkeypatch):
+        import app
+
+        cases = {
+            "False": True,
+            "false": True,
+            "": True,
+            "True": False,
+            "true": False,
+            "1": False,
+            "yes": False,
+        }
+        for val, expected in cases.items():
+            monkeypatch.setenv("DISABLE_REGISTRATION", val)
+            assert app.registration_enabled() is expected
+
+    def test_unset_defaults_enabled(self, monkeypatch):
+        import app
+
+        monkeypatch.delenv("DISABLE_REGISTRATION", raising=False)
+        assert app.registration_enabled() is True

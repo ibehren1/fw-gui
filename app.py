@@ -260,6 +260,20 @@ def decrypt_secret(token):
     except Exception:
         return ""
 
+
+def registration_enabled():
+    """Whether new-user registration is allowed.
+
+    Registration is enabled unless DISABLE_REGISTRATION is a truthy value.
+    Parsing is case-insensitive and tolerant of an unset var (defaults to
+    enabled, matching the shipped configuration).
+    """
+    return os.environ.get("DISABLE_REGISTRATION", "False").strip().lower() not in (
+        "true",
+        "1",
+        "yes",
+    )
+
 @app.after_request
 def set_security_headers(response):
     """Add defense-in-depth security response headers.
@@ -522,9 +536,7 @@ def user_login():
         else:
             return redirect(url_for("user_login"))
     else:
-        registration = (
-            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
-        )
+        registration = registration_enabled()
         logging.debug(f"Registration Enabled: {registration}")
 
         return render_template(
@@ -592,9 +604,7 @@ def user_registration():
         None
     """
     if request.method == "POST":
-        registration = (
-            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
-        )
+        registration = registration_enabled()
 
         if registration:
             if register_user(bcrypt, db, request, User):
@@ -604,9 +614,7 @@ def user_registration():
         else:
             return redirect(url_for("user_login"))
     else:
-        registration = (
-            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
-        )
+        registration = registration_enabled()
 
         if registration:
             return render_template("user_registration_form.html")
