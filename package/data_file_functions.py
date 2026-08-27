@@ -16,7 +16,7 @@ import glob
 import json
 import logging
 import os
-import subprocess  # nosec B404
+import shutil
 import sys
 import tempfile
 import uuid
@@ -418,9 +418,7 @@ def initialize_data_dir():
 
     if not os.path.exists("data/example.json"):
         logging.info(" |--> Example data file not found, copying...")
-        # B603 -- No untrusted input
-        # B607 -- Cmd is partial executable path for compatibility between OSes.
-        subprocess.run(["cp", "examples/example.json", "data/example.json"])  # nosec
+        shutil.copy("examples/example.json", "data/example.json")
 
     if not os.path.exists("./data/database/auth.db"):
         logging.info(" |--> Auth database not found, creating...")
