@@ -16,10 +16,9 @@ import glob
 import json
 import logging
 import os
-import random
-import string
 import subprocess  # nosec B404
 import sys
+import tempfile
 import uuid
 import zipfile
 from datetime import datetime
@@ -218,8 +217,9 @@ def decrypt_file(filename, key):
     4. Writes the decrypted data to the temporary file
     5. Returns the path to the temporary decrypted file
 
-    Note: The temporary file is created in data/tmp/ directory with a
-    6-character random name using uppercase letters and digits
+    Note: The temporary file is created in data/tmp/ via tempfile.mkstemp,
+    which uses a cryptographically-random name and 0o600 (owner-only)
+    permissions so the plaintext key is not world-readable.
     """
     # using the key
     fernet = Fernet(key)
@@ -231,19 +231,14 @@ def decrypt_file(filename, key):
     # decrypting the file
     decrypted = fernet.decrypt(encrypted)
 
-    # B311 -- Use of pseudo-random generator is not for security purposes.
-    tmp_file_name = "data/tmp/" + "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=6)  # nosec
-    )
-
-    # opening the file in write mode and
-    # writing the decrypted data
-    with open(f"{tmp_file_name}", "wb") as dec_file:
+    # Stage the plaintext key in an owner-only temp file with an
+    # unpredictable name. mkstemp creates the file with mode 0o600.
+    fd, tmp_file_name = tempfile.mkstemp(dir="data/tmp")
+    with os.fdopen(fd, "wb") as dec_file:
         dec_file.write(decrypted)
-        logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
-        dec_file.close()
+    logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
 
-    return f"{tmp_file_name}"
+    return tmp_file_name
 
 
 def delete_user_data_file(filename):

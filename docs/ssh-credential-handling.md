@@ -146,15 +146,19 @@ flowchart TD
 
 1. `Fernet(key)` where `key = connection_string["password"].encode("utf-8")`.
 2. Reads `data/<username>/<name>.key`, decrypts it.
-3. Writes the **plaintext** private key to `data/tmp/<6 random chars>`
-   (name from the non-cryptographic `random` module — see Threats).
+3. Writes the **plaintext** private key to a `tempfile.mkstemp(dir="data/tmp")`
+   file — a cryptographically-random name with **`0o600` (owner-only)**
+   permissions, so it is not world-readable.
 4. Returns that path; NAPALM/Paramiko use it as `key_file` / `key_filename`.
 5. The caller deletes it in a `finally` block:
-   - `commit_to_firewall()` → `napalm_ssh_functions.py:170-175`
-   - `get_diffs_from_firewall()` → `finally` block in the same pattern
-   - `run_operational_command()` → `napalm_ssh_functions.py:287-292`
-6. If driver assembly itself raises before a temp file is created, `tmpfile`
-   is `None` and cleanup is correctly skipped.
+   - `commit_to_firewall()` → `napalm_ssh_functions.py` finally / `os.remove`
+   - `get_diffs_from_firewall()` → same pattern
+   - `run_operational_command()` → same pattern
+6. In the Paramiko path the temp file is created before `ssh.connect()`; if
+   `connect` fails, `assemble_paramiko_driver_string` removes the temp key
+   itself (so it is not left staged when the caller never receives the path).
+7. If driver assembly raises before a temp file is created, `tmpfile` is
+   `None` and cleanup is correctly skipped.
 
 ### Host key policy
 
@@ -253,7 +257,7 @@ flowchart LR
     subgraph Server
       Sess["Server-side session store<br/>(Mongo 'sessions' collection)<br/>ssh_user / ssh_keyname (plain)<br/>ssh_pass (Fernet-encrypted)"]
       KeyFile["data/&lt;user&gt;/&lt;name&gt;.key<br/>Fernet-encrypted private key (at rest)"]
-      Tmp["data/tmp/&lt;random&gt;<br/>plaintext key, only during one action,<br/>deleted in finally"]
+      Tmp["data/tmp/&lt;mkstemp 0o600&gt;<br/>plaintext key, only during one action,<br/>deleted in finally"]
     end
     Device[("VyOS device")]
 
@@ -273,7 +277,7 @@ flowchart LR
 | Device SSH password | User types on push form | Server-side session (`ssh_pass`), **Fernet-encrypted at rest** | Yes, as SSH login password | On config switch, logout, or session timeout |
 | Fernet encryption key (for uploaded key) | Generated at upload, shown once | **Not stored** by FW-GUI; user keeps it. Cached in server-side session (`ssh_pass`) **encrypted** after entry, for the session | No | Cache cleared on config switch / logout / timeout |
 | Encrypted private key file | Encrypted at upload | `data/<username>/<name>.key` (Fernet-encrypted, at rest) | No (only its decrypted form is used) | Deleted only if the user deletes the key |
-| Decrypted private key (temp) | Per action, by `decrypt_file()` | `data/tmp/<random>` (plaintext) | Used as `key_file` for the SSH login | Removed in the action's `finally` block |
+| Decrypted private key (temp) | Per action, by `decrypt_file()` | `data/tmp/` via `mkstemp` (plaintext, `0o600`) | Used as `key_file` for the SSH login | Removed in the action's `finally` (and on connect failure) |
 | Session id | On login | Signed cookie in browser | No | Cookie expiry / logout / timeout |
 
 ---
@@ -303,7 +307,7 @@ flowchart LR
 | 4 | Cached secret at rest in the Mongo `sessions` collection | **Mitigated** — the cached secret is Fernet-encrypted before storage (§10). Residual: the derivation key comes from `APP_SECRET_KEY`, so a host/app compromise that exposes that key defeats it; still lock down DB access. |
 | 5 | `paramiko.AutoAddPolicy()` trusts unknown host keys | **Residual** — MITM exposure; intentional today. Consider `RejectPolicy` + known-hosts. |
 | 6 | `run_operational_command()` sends arbitrary `op_command` to the device with no allowlist | **Residual** — authenticated users can run any operational command. |
-| 7 | `decrypt_file()` writes the plaintext key to `data/tmp/` with a non-crypto random name and default permissions; a crash before the `finally` could leave it on disk | **Residual** — prefer `tempfile.mkstemp(0o600)` or in-memory key loading. |
+| 7 | `decrypt_file()` writes the plaintext key to `data/tmp/` | **Mitigated** — now `tempfile.mkstemp` (crypto-random name, `0o600` owner-only) and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it (cleared on next startup). |
 | 8 | Uploaded `.key` content is not validated as a real SSH key | **Residual** — see `# TODO` at `data_file_functions.py:730`. |
 
 ---
