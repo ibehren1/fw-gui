@@ -145,7 +145,7 @@ handlers.append(stdout_handler)
 # Set logging level from environment variable if it exists and is valid
 # Otherwise default to INFO level
 if "LOG_LEVEL" in os.environ:
-    if os.environ.get("LOG_LEVEL") in logging._nameToLevel:
+    if os.environ.get("LOG_LEVEL") in logging.getLevelNamesMapping():
         log_level = os.environ.get("LOG_LEVEL")
     else:
         log_level = logging.INFO
