@@ -946,3 +946,16 @@ class TestSessionCookieHardening:
         assert flask_app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
         # SESSION_COOKIE_SECURE is not set in the test env -> defaults False.
         assert flask_app.config["SESSION_COOKIE_SECURE"] is False
+
+
+class TestSecurityHeaders:
+    def test_headers_present_on_response(self, client):
+        resp = client.get("/user_login")
+        assert resp.headers.get("X-Frame-Options") == "SAMEORIGIN"
+        assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+        assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+
+    def test_hsts_absent_without_https(self, client):
+        # SESSION_COOKIE_SECURE is False in the test env -> no HSTS.
+        resp = client.get("/user_login")
+        assert "Strict-Transport-Security" not in resp.headers

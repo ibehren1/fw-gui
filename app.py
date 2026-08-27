@@ -259,6 +259,26 @@ def decrypt_secret(token):
     except Exception:
         return ""
 
+@app.after_request
+def set_security_headers(response):
+    """Add defense-in-depth security response headers.
+
+    HSTS is only emitted when the app is served over HTTPS (reusing the
+    SESSION_COOKIE_SECURE signal) so plain-HTTP deployments are not pinned to
+    HTTPS. CSP is intentionally not set here — a strict policy would break the
+    inline scripts/handlers in the templates and warrants a separate, tested
+    change.
+    """
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if app.config.get("SESSION_COOKIE_SECURE"):
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+    return response
+
+
 # Configure login manager for user authentication
 login_manager = LoginManager()
 login_manager.init_app(app)
