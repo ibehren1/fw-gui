@@ -464,7 +464,6 @@ dependencies = [
     { name = "flask-wtf" },
     { name = "idna" },
     { name = "jinja2" },
-    { name = "logging" },
     { name = "lxml" },
     { name = "napalm" },
     { name = "napalm-vyos" },
@@ -476,7 +475,6 @@ dependencies = [
     { name = "requests" },
     { name = "setuptools" },
     { name = "urllib3" },
-    { name = "uuid" },
     { name = "waitress" },
     { name = "werkzeug" },
 ]
@@ -505,7 +503,6 @@ requires-dist = [
     { name = "flask-wtf" },
     { name = "idna", specifier = ">=3.15" },
     { name = "jinja2" },
-    { name = "logging", specifier = ">=0.4.9.6" },
     { name = "lxml", specifier = ">=6.1.0" },
     { name = "mongomock", marker = "extra == 'test'", specifier = ">=4.3.0" },
     { name = "napalm", specifier = "==5.1.0" },
@@ -520,7 +517,6 @@ requires-dist = [
     { name = "setuptools", specifier = ">=83.0.0" },
     { name = "toml", marker = "extra == 'test'", specifier = ">=0.10.2" },
     { name = "urllib3", specifier = ">=2.7.0" },
-    { name = "uuid", specifier = ">=1.30" },
     { name = "waitress" },
     { name = "werkzeug", specifier = ">=3.1.6" },
 ]
@@ -643,12 +639,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/d4/2e/fbfb53be4adc17ded
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/fc/c6c801dffc57fc85e1285fa7f32acb5daa8ef9527d2a5600be423495e2cb/junos_eznc-2.7.6-py2.py3-none-any.whl", hash = "sha256:a4f9cc290fde95b881b7e83ecd5bc315ec32051679894d811075d6758cc1fb20", size = 207938, upload-time = "2026-01-16T07:12:12.208Z" },
 ]
-
-[[package]]
-name = "logging"
-version = "0.4.9.6"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/93/4b/979db9e44be09f71e85c9c8cfc42f258adfb7d93ce01deed2788b2948919/logging-0.4.9.6.tar.gz", hash = "sha256:26f6b50773f085042d301085bd1bf5d9f3735704db9f37c1ce6d8b85c38f2417", size = 96029, upload-time = "2013-06-04T23:43:22.086Z" }
 
 [[package]]
 name = "lxml"
@@ -1486,12 +1476,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087, upload-time = "2026-05-07T16:13:17.151Z" },
 ]
-
-[[package]]
-name = "uuid"
-version = "1.30"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ce/63/f42f5aa951ebf2c8dac81f77a8edcc1c218640a2a35a03b9ff2d4aa64c3d/uuid-1.30.tar.gz", hash = "sha256:1f87cc004ac5120466f36c5beae48b4c48cc411968eed0eaecd3da82aa96193f", size = 5811, upload-time = "2007-05-26T11:13:24Z" }
 
 [[package]]
 name = "vyattaconfparser"
