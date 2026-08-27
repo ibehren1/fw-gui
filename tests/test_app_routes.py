@@ -983,3 +983,26 @@ class TestRegistrationEnabled:
 
         monkeypatch.delenv("DISABLE_REGISTRATION", raising=False)
         assert app.registration_enabled() is True
+
+
+class TestRequiresFirewall:
+    def test_redirects_when_no_firewall_selected(self, auth_client):
+        with auth_client.session_transaction() as sess:
+            sess.pop("firewall_name", None)
+        resp = auth_client.get("/group_view")
+        assert resp.status_code == 302
+        assert "/display_config" in resp.headers["Location"]
+
+    def test_allows_when_firewall_selected(self, auth_client):
+        with auth_client.session_transaction() as sess:
+            sess["firewall_name"] = "test_firewall"
+        # Should not redirect to display_config for missing firewall.
+        resp = auth_client.get("/group_view")
+        assert resp.status_code == 200
+
+
+class TestErrorHandlers:
+    def test_404_friendly_page(self, client):
+        resp = client.get("/definitely-not-a-route")
+        assert resp.status_code == 404
+        assert b"Error 404" in resp.data

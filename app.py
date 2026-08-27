@@ -32,6 +32,7 @@ from io import BytesIO
 
 import base64
 import hashlib
+from functools import wraps
 
 import certifi
 from cryptography.fernet import Fernet
@@ -274,6 +275,23 @@ def registration_enabled():
         "yes",
     )
 
+
+def requires_firewall(view):
+    """Redirect to the config page (with a prompt) when no firewall is selected.
+
+    Routes that operate on the selected config read session["firewall_name"];
+    without a selection that would KeyError (500). This guards them uniformly.
+    """
+
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        if not session.get("firewall_name"):
+            flash("Select or create a firewall configuration first.", "warning")
+            return redirect(url_for("display_config"))
+        return view(*args, **kwargs)
+
+    return wrapper
+
 @app.after_request
 def set_security_headers(response):
     """Add defense-in-depth security response headers.
@@ -292,6 +310,27 @@ def set_security_headers(response):
             "max-age=31536000; includeSubDomains"
         )
     return response
+
+
+@app.errorhandler(404)
+def handle_404(error):
+    """Friendly 404 instead of a bare error page."""
+    return render_template("error.html", code=404, message="Page not found."), 404
+
+
+@app.errorhandler(500)
+def handle_500(error):
+    """Log the exception and show a friendly page instead of a stack trace.
+
+    Safety net for any unguarded session/dict access that would otherwise 500.
+    """
+    logging.exception("Unhandled server error")
+    return (
+        render_template(
+            "error.html", code=500, message="Something went wrong."
+        ),
+        500,
+    )
 
 
 # Configure login manager for user authentication
@@ -626,6 +665,7 @@ def user_registration():
 # Groups
 @app.route("/group_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def group_add():
     """
     Handle group addition requests.
@@ -683,6 +723,7 @@ def group_add():
 
 @app.route("/group_delete", methods=["POST"])
 @login_required
+@requires_firewall
 def group_delete():
     """
     Handle group deletion requests.
@@ -702,6 +743,7 @@ def group_delete():
 
 @app.route("/group_view")
 @login_required
+@requires_firewall
 def group_view():
     """
     Handle group view requests.
@@ -733,6 +775,7 @@ def group_view():
 # Interfaces
 @app.route("/interface_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def interface_add():
     """
     Handle interface addition requests.
@@ -790,6 +833,7 @@ def interface_add():
 
 @app.route("/interface_delete", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def interface_delete():
     """
     Handle interface deletion requests.
@@ -822,6 +866,7 @@ def interface_delete():
 
 @app.route("/interface_view")
 @login_required
+@requires_firewall
 def interface_view():
     """
     Handle interface view requests.
@@ -853,6 +898,7 @@ def interface_view():
 # Flowtables
 @app.route("/flowtable_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def flowtable_add():
     """
     Handle flowtable addition requests.
@@ -914,6 +960,7 @@ def flowtable_add():
 
 @app.route("/flowtable_delete", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def flowtable_delete():
     """
     Handle flowtable deletion requests.
@@ -946,6 +993,7 @@ def flowtable_delete():
 
 @app.route("/flowtable_view")
 @login_required
+@requires_firewall
 def flowtable_view():
     """
     Handle flowtable view requests.
@@ -977,6 +1025,7 @@ def flowtable_view():
 # Chains
 @app.route("/chain_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def chain_add():
     """
     Handle chain addition requests.
@@ -1018,6 +1067,7 @@ def chain_add():
 
 @app.route("/chain_rule_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def chain_rule_add():
     """
     Handle chain rule addition requests.
@@ -1103,6 +1153,7 @@ def chain_rule_add():
 
 @app.route("/chain_rule_delete", methods=["POST"])
 @login_required
+@requires_firewall
 def chain_rule_delete():
     """
     Handle chain rule deletion requests.
@@ -1122,6 +1173,7 @@ def chain_rule_delete():
 
 @app.route("/chain_rule_reorder", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def chain_rule_reorder():
     """
     Handle chain rule reordering requests.
@@ -1151,6 +1203,7 @@ def chain_rule_reorder():
 
 @app.route("/chain_view")
 @login_required
+@requires_firewall
 def chain_view():
     """
     Handle chain view requests.
@@ -1186,6 +1239,7 @@ def chain_view():
 # Filters
 @app.route("/filter_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def filter_add():
     """
     Handle filter addition requests.
@@ -1227,6 +1281,7 @@ def filter_add():
 
 @app.route("/filter_rule_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def filter_rule_add():
     """
     Handle filter rule addition requests.
@@ -1327,6 +1382,7 @@ def filter_rule_add():
 
 @app.route("/filter_rule_delete", methods=["POST"])
 @login_required
+@requires_firewall
 def filter_rule_delete():
     """
     Handle filter rule deletion requests.
@@ -1346,6 +1402,7 @@ def filter_rule_delete():
 
 @app.route("/filter_rule_reorder", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def filter_rule_reorder():
     """
     Handle filter rule reordering requests.
@@ -1375,6 +1432,7 @@ def filter_rule_reorder():
 
 @app.route("/filter_view")
 @login_required
+@requires_firewall
 def filter_view():
     """
     Handle filter view requests.
@@ -1410,6 +1468,7 @@ def filter_view():
 # Configuration
 @app.route("/configuration_extra_items", methods=["Get", "POST"])
 @login_required
+@requires_firewall
 def configuration_extra_items():
     """
     Handle configuration extra items requests.
@@ -1455,6 +1514,7 @@ def configuration_extra_items():
 
 @app.route("/configuration_hostname_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def configuration_hostname_add():
     """
     Handle hostname configuration requests.
@@ -1498,6 +1558,7 @@ def configuration_hostname_add():
 
 @app.route("/configuration_push", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def configuration_push():
     """
     Handle configuration push requests.
@@ -1793,6 +1854,7 @@ def snapshot_diff_display():
 
 @app.route("/snapshot_tag_create", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def snapshot_tag_create():
     """
     Create tags for snapshots.
@@ -1859,6 +1921,7 @@ def delete_config():
 
 @app.route("/download_config")
 @login_required
+@requires_firewall
 def download_config():
     """
     Download the current firewall configuration as a text file.
@@ -1873,6 +1936,7 @@ def download_config():
 
 @app.route("/download_json")
 @login_required
+@requires_firewall
 def download_json():
     """
     Download the current firewall configuration as a JSON file.

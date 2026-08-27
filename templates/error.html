@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FW-GUI — Error {{ code }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div style="max-width: 40rem; margin: 4rem auto; text-align: center;">
+        <h1>Error {{ code }}</h1>
+        <p>{{ message }}</p>
+        <p><a href="{{ url_for('index') }}">Return to home</a></p>
+    </div>
+</body>
+</html>
