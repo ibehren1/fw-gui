@@ -11,6 +11,7 @@ This module provides database operations for user management including:
 import json
 import logging
 import os
+import re
 
 # B404 -- security implications considered.
 from datetime import datetime
@@ -23,6 +24,11 @@ from packaging.version import Version
 from package.data_file_functions import write_user_data_file
 from package.telemetry_functions import telemetry_instance
 from package.validators import is_valid_username
+
+# Minimum length for new/changed passwords (enforced on set, not on login).
+MIN_PASSWORD_LENGTH = 8
+# Basic email sanity check (not full RFC validation).
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def change_password(bcrypt, db, User, username, request):
@@ -48,6 +54,12 @@ def change_password(bcrypt, db, User, username, request):
     # B105 -- Not a hardcoded password.
     if new_password == "":  # nosec
         flash("New password cannot be empty.", "danger")
+        return False
+    if len(new_password) < MIN_PASSWORD_LENGTH:
+        flash(
+            f"New password must be at least {MIN_PASSWORD_LENGTH} characters.",
+            "danger",
+        )
         return False
     if new_password == username:
         flash("New password cannot be your username.", "danger")
@@ -252,14 +264,24 @@ def register_user(bcrypt, db, request, User):
         flash("Email cannot be empty.", "danger")
         return False
 
+    if not _EMAIL_RE.match(email):
+        flash("Enter a valid email address.", "danger")
+        return False
+
     # B105 -- Not a hardcoded password.
     if password == "":  # nosec
         flash("Password cannot be empty", "danger")
         return False
-    else:
-        if password != confirm_password:
-            flash("Passwords do not match", "danger")
-            return False
+
+    if len(password) < MIN_PASSWORD_LENGTH:
+        flash(
+            f"Password must be at least {MIN_PASSWORD_LENGTH} characters.", "danger"
+        )
+        return False
+
+    if password != confirm_password:
+        flash("Passwords do not match", "danger")
+        return False
 
     if query_user_by_username(db, User, username) is not None:
         flash("Username already exists.", "danger")
