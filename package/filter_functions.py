@@ -103,7 +103,6 @@ def add_filter_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
-    logging.info(request.form)
     # Set local vars from posted form data
     ip_version = request.form["ip_version"]
     type = request.form["type"]

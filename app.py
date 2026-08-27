@@ -619,7 +619,6 @@ def group_add():
                  On GET - Rendered group add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_group_to_data(session, request)
 
@@ -727,7 +726,6 @@ def interface_add():
                  On GET - Rendered interface add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_interface_to_data(session, request)
 
@@ -849,7 +847,6 @@ def flowtable_add():
                  On GET - Rendered flowtable add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_flowtable_to_data(session, request)
 
@@ -1016,7 +1013,6 @@ def chain_rule_add():
                  On GET - Rendered rule add form template or redirect
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             if request.form["fw_chain"] == "":
                 return redirect(url_for("chain_view"))
@@ -1224,7 +1220,6 @@ def filter_rule_add():
         Response: Redirect to filter view/add or rendered filter rule add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_filter_rule_to_data(session, request)
 
@@ -1780,7 +1775,6 @@ def snapshot_tag_create():
         Response: Redirect to tag creation page or rendered template for tag creation
     """
     if request.method == "POST":
-        logging.info(request.form)
 
         tag_snapshot(session, request)
 

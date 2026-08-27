@@ -53,7 +53,6 @@ def add_flowtable_to_data(session, request):
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
 
-    logging.info(request.form.items())
     flowtable_name = ""
     flowtable_desc = ""
     interface_list = []
