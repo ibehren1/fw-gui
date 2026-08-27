@@ -33,6 +33,7 @@ def post_telemetry(body, route):
             f"https://telemetry.fw-gui.com/{route}",
             headers={"Content-Type": "application/json"},
             body=body,
+            timeout=5.0,
         )
         logging.debug("Posted instance ID and version to https://telemetry.fw-gui.com.")
 

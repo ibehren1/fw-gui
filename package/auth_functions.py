@@ -93,7 +93,9 @@ def check_version():
     try:
         # Get remote version from https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version
         resp = urllib3.request(
-            "GET", "https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version"
+            "GET",
+            "https://raw.githubusercontent.com/ibehren1/fw-gui/master/.version",
+            timeout=5.0,
         )
         remote_version = resp.data.decode("utf-8").replace("v", "")
         logging.debug(f"Remote version: {remote_version}")
