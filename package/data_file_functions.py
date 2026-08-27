@@ -816,8 +816,12 @@ def read_user_data_file(filename, snapshot="current", diff=False):
 
             return user_data
 
-    except Exception:
-        return {}
+    except pymongo.errors.PyMongoError as e:
+        # Do NOT return {} on a DB error: callers treat {} as "empty config"
+        # and can overwrite real data. Fail loud instead, and let non-DB
+        # exceptions (real bugs) propagate rather than being swallowed.
+        logging.error(f"MongoDB read failed for {filename}: {e}")
+        raise
 
 
 def restore_snapshot(filename, snapshot):

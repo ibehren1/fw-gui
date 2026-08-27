@@ -552,6 +552,29 @@ class TestReadUserDataFile:
         current = coll.find_one({"_id": "test_firewall"})
         assert "extra-items" not in current
 
+    def test_read_raises_on_db_error(self, monkeypatch):
+        # A DB error must propagate, not be swallowed into {} (which callers
+        # would treat as an empty config and could overwrite real data).
+        import pymongo
+
+        class BoomColl:
+            def find(self, *a, **k):
+                raise pymongo.errors.PyMongoError("boom")
+
+        class BoomDB:
+            def __getitem__(self, name):
+                return BoomColl()
+
+        class BoomClient:
+            def __getitem__(self, name):
+                return BoomDB()
+
+        monkeypatch.setattr(
+            "package.data_file_functions._get_mongo_client", lambda: BoomClient()
+        )
+        with pytest.raises(pymongo.errors.PyMongoError):
+            read_user_data_file("data/testuser/test_firewall")
+
 
 class TestRestoreSnapshot:
     def test_restore_overwrites_current(self, mock_mongo, sample_user_data):
