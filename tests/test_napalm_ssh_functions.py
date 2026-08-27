@@ -37,7 +37,7 @@ def connection_string_with_key():
 
 @pytest.fixture
 def op_command():
-    return {"show interfaces"}
+    return "show interfaces"
 
 
 @pytest.fixture
@@ -277,6 +277,20 @@ def test_get_diffs_driver_error(app, connection_string, session):
             result = get_diffs_from_firewall(connection_string, session)
 
             assert "Authentication failure" in result
+
+
+def test_run_operational_command_rejects_non_show(app, connection_string, session):
+    """A non-show / metacharacter command is rejected before any SSH connect."""
+    with app.test_request_context():
+        with patch(
+            "package.napalm_ssh_functions.assemble_paramiko_driver_string"
+        ) as mock_assemble:
+            result = run_operational_command(
+                connection_string, session, "show version; reboot"
+            )
+
+            assert "Only 'show ...'" in result
+            mock_assemble.assert_not_called()
 
 
 def test_run_operational_command_error(app, connection_string, session):

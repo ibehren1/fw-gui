@@ -20,6 +20,7 @@ from package.telemetry_functions import (
     telemetry_diff,
     telemetry_rule_usage,
 )
+from package.validators import is_allowed_op_command
 
 
 def assemble_napalm_driver_string(connection_string, session):
@@ -85,7 +86,10 @@ def assemble_paramiko_driver_string(connection_string, session):
     username = connection_string["username"]
     password = connection_string["password"]
 
-    logging.debug(connection_string)
+    # Never log the password / Fernet key.
+    logging.debug(
+        {k: v for k, v in connection_string.items() if k != "password"}
+    )
 
     if "ssh_key_name" in connection_string:
         logging.info("key")
@@ -245,6 +249,15 @@ def run_operational_command(connection_string, session, op_command):
         str: Firewall usage output or error message
     """
     logging.debug(" |------------------------------------------")
+
+    # Only permit read-only "show ..." commands with no shell metacharacters.
+    # This confines the feature to operational-mode inspection and prevents
+    # shell/command injection into the vbash script below.
+    if not is_allowed_op_command(op_command):
+        logging.warning(f"Rejected operational command: {op_command!r}")
+        flash("Only 'show ...' operational commands are permitted.", "danger")
+        return "Only 'show ...' operational commands are permitted."
+
     telemetry_rule_usage()
 
     tmpfile = None
@@ -260,8 +273,11 @@ def run_operational_command(connection_string, session, op_command):
 
         command_string = "\n".join(commands) + "\n"
 
-        # B601 -- no shell injection
-        stdin, stdout, stderr = ssh.exec_command(f"vbash -s {command_string}")  # nosec
+        # `vbash -s` reads the script from stdin; the command is validated
+        # (show-only, no metacharacters) above. Do not pass the script as
+        # command-line args.
+        # B601 -- input validated; script fed via stdin only.
+        stdin, stdout, stderr = ssh.exec_command("vbash -s")  # nosec
         stdin.write(command_string)
         stdin.flush()
         stdin.channel.shutdown_write()

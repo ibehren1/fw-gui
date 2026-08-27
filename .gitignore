@@ -5,6 +5,8 @@ dump/*
 jupyter/*
 reference/*
 tmp/*
+flask_session/
+CODE_REVIEW_TODO.md
 .coverage
 .vscode
 flask-modernization

@@ -17,6 +17,7 @@
         {% endwith %}
         
         <form action="/configuration_hostname_add" method="post" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="hostname" class="form-label">Hostname</label>
                 <input type="text" name="hostname" id="hostname" class="form-input" 

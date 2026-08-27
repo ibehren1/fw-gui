@@ -42,6 +42,7 @@
             </div>
             
             <form action="/configuration_hostname_add" method="post" class="hostname-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="hostname" class="form-label">Firewall Hostname/IP</label>
                     <input type="text" name="hostname" id="hostname" class="form-input" 
@@ -65,6 +66,7 @@
             <h3 class="subsection-title">Authentication</h3>
             
             <form action="/configuration_push" method="post" class="auth-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
                     <input type="text" name="username" id="username" class="form-input" 
@@ -74,9 +76,12 @@
                 
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password" name="password" id="password" class="form-input" 
-                           value="{{ ssh_pass if ssh_pass else '' }}"
-                           placeholder="SSH password" required>
+                    <input type="password" name="password" id="password" class="form-input"
+                           placeholder="{{ 'Leave blank to use saved credentials' if ssh_pass_cached else 'SSH password' }}"
+                           {{ '' if ssh_pass_cached else 'required' }}>
+                    {% if ssh_pass_cached %}
+                    <p class="section-description">Credentials are saved for this session; leave blank to reuse them.</p>
+                    {% endif %}
                 </div>
                 
                 {% if key_list %}
@@ -120,11 +125,13 @@
     <div class="operational-section">
         <h3 class="subsection-title">Run Operational Command</h3>
         <form action="/configuration_push" method="post" class="operational-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label for="op_command" class="form-label">Command</label>
-                <input type="text" name="op_command" id="op_command" class="form-input" 
+                <input type="text" name="op_command" id="op_command" class="form-input"
                        value="{{ op_command if op_command else 'show firewall' }}"
                        placeholder="show firewall">
+                <p class="section-description">Only read-only <code>show ...</code> commands are permitted.</p>
             </div>
             
             <button type="submit" name="action" value="Run Operational Command" class="btn btn-secondary" onclick="copyAuthCredentials(this.form)">Run Command</button>
@@ -169,6 +176,7 @@
         </p>
         
         <form action="/configuration_push_commit" method="post" class="deployment-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="deployment-options">
                 <label class="checkbox-item">
                     <input type="checkbox" name="delete_existing" value="true">

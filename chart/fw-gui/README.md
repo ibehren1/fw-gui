@@ -46,7 +46,7 @@ helm upgrade fw-gui .
 
 The fw-gui-app container includes these environment variables:
 
-- `APP_SECRET_KEY`: Application secret key
+- `APP_SECRET_KEY`: Application secret key. **Change the shipped default to a unique random value before any non-local use** — reusing it lets anyone forge session cookies.
 - `DISABLE_REGISTRATION`: Registration setting
 - `SESSION_TIMEOUT`: Session timeout in minutes
 - `BUCKET_NAME`: S3 bucket name (optional)

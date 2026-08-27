@@ -6,6 +6,9 @@ services:
     depends_on:
       - mongodb
     environment:
+      # CHANGE THIS before any non-local use — reusing the default lets anyone
+      # forge session cookies. Set a unique random value, e.g.
+      # `python -c "import secrets; print(secrets.token_hex(32))"`.
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
       - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
@@ -18,6 +21,15 @@ services:
     restart: unless-stopped
     volumes:
       - fwgui-data:/opt/fw-gui/data
+  # Nginx Proxy Manager (NPM) — reverse proxy / TLS for fw-gui. This is NPM's
+  # stock example configuration.
+  #
+  # SECURITY NOTES:
+  #   - The admin UI on port 81 ships with a well-known default login
+  #     (admin@example.com / changeme). CHANGE IT on first login.
+  #   - The DB_MYSQL_* values below are NPM's default DB credentials and match
+  #     the `db` service. They only need to change if you harden that DB
+  #     (see the `db` service notes).
   nginx:
     restart: always
     image: 'jc21/nginx-proxy-manager:latest'
@@ -34,6 +46,16 @@ services:
     volumes:
       - nginx-data:/data
       - letsencrypt:/etc/letsencrypt
+  # MariaDB backing Nginx Proxy Manager (NOT fw-gui data — fw-gui uses
+  # MongoDB + SQLite). Credentials are NPM's stock `npm`/`npm` defaults,
+  # including a predictable root password.
+  #
+  # SECURITY NOTES:
+  #   - This service publishes no `ports:`, so it is only reachable by `nginx`
+  #     on the internal Compose network — not the host/LAN/internet.
+  #   - For any hardened/shared deployment, replace these values (especially
+  #     MYSQL_ROOT_PASSWORD) with unique secrets via .env substitution and set
+  #     the matching DB_MYSQL_* values on the `nginx` service.
   db:
     restart: always
     image: 'jc21/mariadb-aria:latest'
@@ -44,6 +66,20 @@ services:
       MYSQL_PASSWORD: 'npm'
     volumes:
       - mysql-data:/var/lib/mysql
+  # MongoDB runs WITHOUT authentication. This is intentional for this
+  # single-stack deployment: the service publishes no `ports:`, so it is only
+  # reachable by other containers on this Compose project's internal network
+  # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet, and it
+  # stores all firewall configs plus the session store.
+  #
+  # SECURITY NOTES:
+  #   - Do NOT add a `ports:` mapping (e.g. 27017:27017) — that would expose an
+  #     unauthenticated database to the host/network.
+  #   - For any shared/multi-tenant host or external access, enable auth:
+  #     set MONGO_INITDB_ROOT_USERNAME / MONGO_INITDB_ROOT_PASSWORD here and use
+  #     MONGODB_URI=mongodb://user:pass@mongodb:27017/ above. (Auth only
+  #     initializes on a fresh mongo-data volume; existing installs need a
+  #     one-time user-creation step.)
   mongodb:
     container_name: mongodb
     image: mongo:latest

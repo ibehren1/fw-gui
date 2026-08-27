@@ -3,6 +3,7 @@ Shared test fixtures for FW-GUI test suite.
 """
 
 import os
+import uuid
 
 # Set environment defaults before any imports could trigger app.py loading.
 os.environ.setdefault("APP_SECRET_KEY", "test-secret-key")
@@ -10,6 +11,21 @@ os.environ.setdefault("DISABLE_REGISTRATION", "False")
 os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017/")
 os.environ.setdefault("MONGODB_DATABASE", "test_db")
 os.environ.setdefault("SESSION_TIMEOUT", "120")
+# Use a local, offline session backend for tests (no live MongoDB required).
+os.environ.setdefault("SESSION_TYPE", "filesystem")
+
+# Bootstrap the data directories the app normally creates via
+# initialize_data_dir() at startup. pytest imports the app without running its
+# __main__ block, so on a fresh checkout (e.g. CI) these do not yet exist and
+# SQLite/telemetry would fail. Make the suite self-contained.
+os.makedirs("data/database", exist_ok=True)
+os.makedirs("data/tmp", exist_ok=True)
+# Pre-create the test user's data dir so the first login does not trigger the
+# example-config write to MongoDB (which is not available in the offline suite).
+os.makedirs("data/testuser", exist_ok=True)
+if not os.path.exists("data/database/instance.id"):
+    with open("data/database/instance.id", "w") as _f:
+        _f.write(str(uuid.uuid4()))
 
 import copy
 import json
@@ -149,6 +165,8 @@ def flask_app():
     from app import User
 
     flask_application.config["TESTING"] = True
+    # Disable CSRF validation so tests can POST to forms without a token.
+    flask_application.config["WTF_CSRF_ENABLED"] = False
 
     with flask_application.app_context():
         flask_db.create_all()

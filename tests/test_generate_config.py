@@ -12,7 +12,12 @@ import json
 
 import pytest
 
-from package.generate_config import download_json_data, generate_config
+from package.generate_config import (
+    _safe_name,
+    _vq,
+    download_json_data,
+    generate_config,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -756,3 +761,84 @@ def test_generate_config_full_example(mock_session, patch_read, example_user_dat
     assert "set firewall ipv6 input filter description 'Input Filter'" in config
     assert "set firewall ipv6 input filter rule 10 action 'jump'" in config
     assert "set firewall ipv6 input filter rule 10 jump-target 'WAN_LOCAL'" in config
+
+
+# ===========================================================================
+# Config injection: value quoting (_vq) and bareword name validation
+# ===========================================================================
+class TestVyosQuoting:
+    def test_plain_value_unchanged(self):
+        assert _vq("10.0.0.1") == "'10.0.0.1'"
+        assert _vq("80-443") == "'80-443'"
+
+    def test_single_quote_is_escaped(self):
+        # The '\'' technique prevents breaking out of the surrounding quotes.
+        assert _vq("a'b") == "'a'\\''b'"
+
+    def test_newlines_collapsed(self):
+        assert "\n" not in _vq("a\nb")
+        assert "\r" not in _vq("a\r\nb")
+
+    def test_non_string_coerced(self):
+        assert _vq(10) == "'10'"
+
+
+class TestSafeName:
+    def test_valid_identifiers(self):
+        assert _safe_name("WAN-IN")
+        assert _safe_name("LAN_LOCAL")
+        assert _safe_name("10")
+        assert _safe_name("address-group")
+
+    def test_invalid_identifiers(self):
+        assert not _safe_name("has space")
+        assert not _safe_name("a'b")
+        assert not _safe_name("../evil")
+        assert not _safe_name("a;b")
+        assert not _safe_name("")
+
+
+def test_group_value_with_quote_is_escaped(mock_session, patch_read):
+    """A group value containing a single quote cannot break out of quoting."""
+    data = {
+        "ipv4": {
+            "groups": {
+                "Servers": {
+                    "group_desc": "test",
+                    "group_type": "address-group",
+                    "group_value": ["1.1.1.1' delete firewall"],
+                }
+            }
+        }
+    }
+    patch_read(data)
+
+    _, config = generate_config(mock_session)
+
+    line = next(c for c in config if "1.1.1.1" in c)
+    # The escaped form is present; no raw breakout `1.1.1.1' delete`.
+    assert "'\\''" in line
+    assert "'1.1.1.1' delete firewall'" not in line
+
+
+def test_unsafe_chain_name_is_skipped(mock_session, patch_read):
+    """A chain whose name is not a valid identifier is skipped, not emitted."""
+    data = {
+        "ipv4": {
+            "chains": {
+                "bad name; delete firewall": {
+                    "default": {
+                        "description": "x",
+                        "default_action": "drop",
+                    },
+                    "rule-order": [],
+                }
+            }
+        }
+    }
+    patch_read(data)
+
+    _, config = generate_config(mock_session)
+
+    assert not any("delete firewall" in c and c.startswith("set ") for c in config)
+    assert any("Skipped chain with invalid name" in c for c in config)

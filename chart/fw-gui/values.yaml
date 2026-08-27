@@ -17,6 +17,9 @@ containers:
         containerPort: 8080
         protocol: TCP
     env:
+      # CHANGE THIS before any non-local use — reusing the default lets anyone
+      # forge session cookies. Set a unique random value, e.g.
+      # `python -c "import secrets; print(secrets.token_hex(32))"`.
       - name: APP_SECRET_KEY
         value: "This is the secret key."
       - name: DISABLE_REGISTRATION

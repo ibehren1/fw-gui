@@ -20,6 +20,7 @@
     
     {% if snapshot_list %}
     <form action="/snapshot_diff_display" method="post" target="_blank" class="diff-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="snapshot-selectors">
             <div class="selector-group">
                 <label for="snapshot_1" class="form-label">First Snapshot</label>

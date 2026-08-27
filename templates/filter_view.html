@@ -78,6 +78,7 @@
                         </div>
                         <div class="filter-actions">
                             <form action="/filter_rule_add" method="post" class="edit-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="type" value="edit">
                                 <input type="hidden" name="filter" value="ipv4,{{ key }}">
                                 <input type="hidden" name="name" value="{{ rule.number }}">
@@ -90,6 +91,7 @@
                                 <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
                             </form>
                             <form action="/filter_rule_delete" method="post" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small"
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
@@ -152,6 +154,7 @@
                         </div>
                         <div class="filter-actions">
                             <form action="/filter_rule_add" method="post" class="edit-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="type" value="edit">
                                 <input type="hidden" name="filter" value="ipv6,{{ key }}">
                                 <input type="hidden" name="name" value="{{ rule.number }}">
@@ -164,6 +167,7 @@
                                 <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
                             </form>
                             <form action="/filter_rule_delete" method="post" class="delete-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
                                 <button type="submit" class="btn btn-delete-small"
                                         onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>

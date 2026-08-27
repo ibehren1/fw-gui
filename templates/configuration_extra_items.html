@@ -20,6 +20,7 @@
     {% endwith %}
     
     <form action="/configuration_extra_items" method="post" class="extra-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <img src="{{ url_for('static', filename='extra-config-32-yellow.svg') }}" alt="" class="extra-config-icon">
         <div class="extra-form-content">
             <div class="form-group">

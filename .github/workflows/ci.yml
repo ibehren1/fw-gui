@@ -1,0 +1,39 @@
+name: CI
+
+# Validation only: run the test suite and the Bandit security scan on every
+# push and pull request. Does NOT build or publish the Docker image — that
+# stays in `make local|dev|pubdev|prod` (scripts/build.sh).
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Tests & security scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Must satisfy pyproject requires-python (>=3.12.8); uv fetches a
+          # managed build rather than relying on the runner's system Python.
+          python-version: "3.12.8"
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Seed CI instance id
+        # Identify telemetry from CI runs. conftest only writes a random id when
+        # this file is absent, so seeding it here makes the CI value stick.
+        run: |
+          mkdir -p data/database
+          printf 'github-actions-ci' > data/database/instance.id
+
+      - name: Run tests
+        run: uv run --extra test pytest
+
+      - name: Run Bandit security scan
+        run: uv run --extra test bandit -c pyproject.toml -r .

@@ -26,6 +26,11 @@ The web-based FW-GUI allows the user to visually:
 
 ![](images/fw-gui-usage-diagram.png)
 
+## Documentation
+
+- [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, SQLite auth, session store, filesystem layout, backups, and data flow (with diagrams).
+- [SSH, Password, Key & Cookie Handling](docs/ssh-credential-handling.md) — how SSH connectivity, passwords, keys, and cookies are stored, used, and disposed of (with diagrams).
+
 ## VyOS Release Support
 
 | VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
@@ -96,6 +101,7 @@ services:
 +    depends_on:
 +     - mongodb
     environment:
+      # Change this default to a unique random value before any non-local use.
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
       - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
@@ -164,6 +170,7 @@ services:
     depends_on:
       - mongodb
     environment:
+      # Change this default to a unique random value before any non-local use.
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
       - SESSION_TIMEOUT=120

@@ -28,6 +28,7 @@
                 <h3 class="flowtable-name">{{ flowtable.name }}{% if flowtable.description %}<span class="flowtable-desc-separator">—</span><span class="flowtable-description-inline">{{ flowtable.description }}</span>{% endif %}</h3>
                 <div class="card-actions">
                     <form action="/flowtable_add" method="post" class="edit-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="type" value="edit">
                         <input type="hidden" name="flowtable_name" value="{{ flowtable.name }}">
                         <input type="hidden" name="flowtable_desc" value="{{ flowtable.description }}">
@@ -37,6 +38,7 @@
                         <button type="submit" class="btn btn-secondary btn-sm" title="Edit flowtable">Edit</button>
                     </form>
                     <form action="/flowtable_delete" method="post" class="delete-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="flowtable" value="{{ flowtable.name }}">
                         <button type="submit" class="btn btn-delete-small" 
                                 onclick="return confirm('Delete flowtable {{ flowtable.name }}?')" 

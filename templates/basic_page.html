@@ -80,6 +80,7 @@
                             method="post"
                             class="config-form"
                         >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% for file in file_list %}
                             <button
                                 type="submit"
@@ -170,6 +171,7 @@
                                 method="post"
                                 enctype="multipart/form-data"
                             >
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input
                                     type="text"
                                     id="config_name"
@@ -192,6 +194,7 @@
                                 Delete Configuration
                             </h3>
                             <form action="/delete_config" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <select
                                     id="delete_config"
                                     name="delete_config"
@@ -222,6 +225,7 @@
                                 method="post"
                                 enctype="multipart/form-data"
                             >
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input
                                     type="file"
                                     name="file"

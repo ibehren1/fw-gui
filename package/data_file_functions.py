@@ -29,6 +29,7 @@ import bson
 import pymongo
 from cryptography.fernet import Fernet
 from flask import flash
+from werkzeug.utils import secure_filename
 
 # Shared MongoDB client — reused across calls to avoid connection leaks.
 _mongo_client = None
@@ -701,7 +702,12 @@ def process_upload(session, request, app):
             flash("No selected file", "danger")
             return
         # if file and allowed_file(file.filename):
-        filename = f"{file.filename}"
+        # Sanitize the client-supplied filename to strip any path components
+        # (e.g. "../../etc/x") before it is used to build a save path.
+        filename = secure_filename(file.filename)
+        if filename == "":
+            flash("Invalid file name.", "danger")
+            return
         if not allowed_file(filename):
             flash("Invalid file type, only .json and .key files are allowed.", "danger")
             return

@@ -938,3 +938,11 @@ class TestAdminRoutes:
         ):
             resp = auth_client.get("/snapshot_tag_create")
             assert resp.status_code == 200
+
+
+class TestSessionCookieHardening:
+    def test_cookie_flags(self, flask_app):
+        assert flask_app.config["SESSION_COOKIE_HTTPONLY"] is True
+        assert flask_app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+        # SESSION_COOKIE_SECURE is not set in the test env -> defaults False.
+        assert flask_app.config["SESSION_COOKIE_SECURE"] is False
