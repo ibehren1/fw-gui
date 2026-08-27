@@ -654,6 +654,9 @@ class TestConfigRoutes:
             resp = auth_client.get("/download_config")
             assert resp.status_code == 200
             assert b"line1\nline2" in resp.data
+            assert "attachment" in resp.headers.get("Content-Disposition", "")
+            assert resp.headers.get("Content-Disposition", "").endswith(".conf")
+            assert resp.mimetype == "text/plain"
 
     def test_download_json(self, auth_client):
         with patch(
@@ -662,6 +665,9 @@ class TestConfigRoutes:
         ):
             resp = auth_client.get("/download_json")
             assert resp.status_code == 200
+            assert b'{"test": "data"}' in resp.data
+            assert "attachment" in resp.headers.get("Content-Disposition", "")
+            assert resp.mimetype == "application/json"
 
     def test_create_config_valid(self, auth_client):
         with patch("app.write_user_data_file") as mock_write:

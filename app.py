@@ -1934,8 +1934,14 @@ def download_config():
         str: The configuration text with HTML line breaks converted to newlines
     """
     message, config = generate_config(session)
+    text = message.replace("<br>", "\n")
 
-    return message.replace("<br>", "\n")
+    return send_file(
+        BytesIO(text.encode("utf-8")),
+        mimetype="text/plain",
+        as_attachment=True,
+        download_name=f"{session['firewall_name']}.conf",
+    )
 
 
 @app.route("/download_json")
@@ -1950,7 +1956,12 @@ def download_json():
     """
     json_data = download_json_data(session)
 
-    return json_data
+    return send_file(
+        BytesIO(json_data.encode("utf-8")),
+        mimetype="application/json",
+        as_attachment=True,
+        download_name=f"{session['firewall_name']}.json",
+    )
 
 
 @app.route("/select_firewall_config", methods=["POST"])
