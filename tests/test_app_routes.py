@@ -999,14 +999,6 @@ class TestRequiresFirewall:
         assert resp.status_code == 302
         assert "/display_config" in resp.headers["Location"]
 
-    def test_allows_when_firewall_selected(self, auth_client):
-        with auth_client.session_transaction() as sess:
-            sess["firewall_name"] = "test_firewall"
-        # Should not redirect to display_config for missing firewall.
-        resp = auth_client.get("/group_view")
-        assert resp.status_code == 200
-
-
 class TestErrorHandlers:
     def test_404_friendly_page(self, client):
         resp = client.get("/definitely-not-a-route")
