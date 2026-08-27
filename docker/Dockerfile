@@ -13,15 +13,15 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Add application files
-ADD examples/.env.prod     /opt/fw-gui/.env
-ADD .version               /opt/fw-gui/.version
-ADD app.py                 /opt/fw-gui/app.py
-ADD examples/example.json  /opt/fw-gui/examples/
-ADD package/*              /opt/fw-gui/package/
-ADD pyproject.toml         /opt/fw-gui/pyproject.toml
-ADD uv.lock                /opt/fw-gui/uv.lock
-ADD static/*               /opt/fw-gui/static/
-ADD templates/*            /opt/fw-gui/templates/
+COPY examples/.env.prod     /opt/fw-gui/.env
+COPY .version               /opt/fw-gui/.version
+COPY app.py                 /opt/fw-gui/app.py
+COPY examples/example.json  /opt/fw-gui/examples/example.json
+COPY package/               /opt/fw-gui/package/
+COPY pyproject.toml         /opt/fw-gui/pyproject.toml
+COPY uv.lock                /opt/fw-gui/uv.lock
+COPY static/                /opt/fw-gui/static/
+COPY templates/             /opt/fw-gui/templates/
 RUN mkdir                  /opt/fw-gui/data
 RUN mkdir                  /opt/fw-gui/data/mongo_dumps
 
