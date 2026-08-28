@@ -48,6 +48,7 @@ def test_post_telemetry_success(mock_request):
         "https://telemetry.fw-gui.com/instance",
         headers={"Content-Type": "application/json"},
         body=body,
+        timeout=5.0,
     )
 
 

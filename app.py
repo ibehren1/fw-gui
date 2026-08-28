@@ -32,6 +32,7 @@ from io import BytesIO
 
 import base64
 import hashlib
+from functools import wraps
 
 import certifi
 from cryptography.fernet import Fernet
@@ -81,6 +82,7 @@ from package.data_file_functions import (
     list_user_keys,
     process_upload,
     read_user_data_file,
+    restore_snapshot,
     tag_snapshot,
     validate_mongodb_connection,
     write_user_command_conf_file,
@@ -143,7 +145,7 @@ handlers.append(stdout_handler)
 # Set logging level from environment variable if it exists and is valid
 # Otherwise default to INFO level
 if "LOG_LEVEL" in os.environ:
-    if os.environ.get("LOG_LEVEL") in logging._nameToLevel:
+    if os.environ.get("LOG_LEVEL") in logging.getLevelNamesMapping():
         log_level = os.environ.get("LOG_LEVEL")
     else:
         log_level = logging.INFO
@@ -166,8 +168,12 @@ logging.info(f"Logging Level: {log_level}")
 db_location = os.path.join(os.getcwd(), "data/database")
 
 # Load version from .version file into environment
-with open(".version", "r") as f:
-    os.environ["FWGUI_VERSION"] = f.read()
+try:
+    with open(".version", "r") as f:
+        os.environ["FWGUI_VERSION"] = f.read()
+except OSError:
+    logging.warning(".version file not found; defaulting version to 0.0.0.")
+    os.environ["FWGUI_VERSION"] = "0.0.0"
 
 # Get session timeout from environment or default to 120 minutes
 try:
@@ -258,6 +264,78 @@ def decrypt_secret(token):
         return _session_fernet().decrypt(token.encode("utf-8")).decode("utf-8")
     except Exception:
         return ""
+
+
+def registration_enabled():
+    """Whether new-user registration is allowed.
+
+    Registration is enabled unless DISABLE_REGISTRATION is a truthy value.
+    Parsing is case-insensitive and tolerant of an unset var (defaults to
+    enabled, matching the shipped configuration).
+    """
+    return os.environ.get("DISABLE_REGISTRATION", "False").strip().lower() not in (
+        "true",
+        "1",
+        "yes",
+    )
+
+
+def requires_firewall(view):
+    """Redirect to the config page (with a prompt) when no firewall is selected.
+
+    Routes that operate on the selected config read session["firewall_name"];
+    without a selection that would KeyError (500). This guards them uniformly.
+    """
+
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        if not session.get("firewall_name"):
+            flash("Select or create a firewall configuration first.", "warning")
+            return redirect(url_for("display_config"))
+        return view(*args, **kwargs)
+
+    return wrapper
+
+@app.after_request
+def set_security_headers(response):
+    """Add defense-in-depth security response headers.
+
+    HSTS is only emitted when the app is served over HTTPS (reusing the
+    SESSION_COOKIE_SECURE signal) so plain-HTTP deployments are not pinned to
+    HTTPS. CSP is intentionally not set here — a strict policy would break the
+    inline scripts/handlers in the templates and warrants a separate, tested
+    change.
+    """
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if app.config.get("SESSION_COOKIE_SECURE"):
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+    return response
+
+
+@app.errorhandler(404)
+def handle_404(error):
+    """Friendly 404 instead of a bare error page."""
+    return render_template("error.html", code=404, message="Page not found."), 404
+
+
+@app.errorhandler(500)
+def handle_500(error):
+    """Log the exception and show a friendly page instead of a stack trace.
+
+    Safety net for any unguarded session/dict access that would otherwise 500.
+    """
+    logging.exception("Unhandled server error")
+    return (
+        render_template(
+            "error.html", code=500, message="Something went wrong."
+        ),
+        500,
+    )
+
 
 # Configure login manager for user authentication
 login_manager = LoginManager()
@@ -501,9 +579,7 @@ def user_login():
         else:
             return redirect(url_for("user_login"))
     else:
-        registration = (
-            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
-        )
+        registration = registration_enabled()
         logging.debug(f"Registration Enabled: {registration}")
 
         return render_template(
@@ -571,9 +647,7 @@ def user_registration():
         None
     """
     if request.method == "POST":
-        registration = (
-            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
-        )
+        registration = registration_enabled()
 
         if registration:
             if register_user(bcrypt, db, request, User):
@@ -583,9 +657,7 @@ def user_registration():
         else:
             return redirect(url_for("user_login"))
     else:
-        registration = (
-            True if (os.environ["DISABLE_REGISTRATION"] == "False") else False
-        )
+        registration = registration_enabled()
 
         if registration:
             return render_template("user_registration_form.html")
@@ -597,6 +669,7 @@ def user_registration():
 # Groups
 @app.route("/group_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def group_add():
     """
     Handle group addition requests.
@@ -619,7 +692,6 @@ def group_add():
                  On GET - Rendered group add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_group_to_data(session, request)
 
@@ -655,6 +727,7 @@ def group_add():
 
 @app.route("/group_delete", methods=["POST"])
 @login_required
+@requires_firewall
 def group_delete():
     """
     Handle group deletion requests.
@@ -674,6 +747,7 @@ def group_delete():
 
 @app.route("/group_view")
 @login_required
+@requires_firewall
 def group_view():
     """
     Handle group view requests.
@@ -705,6 +779,7 @@ def group_view():
 # Interfaces
 @app.route("/interface_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def interface_add():
     """
     Handle interface addition requests.
@@ -727,7 +802,6 @@ def interface_add():
                  On GET - Rendered interface add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_interface_to_data(session, request)
 
@@ -763,6 +837,7 @@ def interface_add():
 
 @app.route("/interface_delete", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def interface_delete():
     """
     Handle interface deletion requests.
@@ -795,6 +870,7 @@ def interface_delete():
 
 @app.route("/interface_view")
 @login_required
+@requires_firewall
 def interface_view():
     """
     Handle interface view requests.
@@ -826,6 +902,7 @@ def interface_view():
 # Flowtables
 @app.route("/flowtable_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def flowtable_add():
     """
     Handle flowtable addition requests.
@@ -849,7 +926,6 @@ def flowtable_add():
                  On GET - Rendered flowtable add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_flowtable_to_data(session, request)
 
@@ -888,6 +964,7 @@ def flowtable_add():
 
 @app.route("/flowtable_delete", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def flowtable_delete():
     """
     Handle flowtable deletion requests.
@@ -920,6 +997,7 @@ def flowtable_delete():
 
 @app.route("/flowtable_view")
 @login_required
+@requires_firewall
 def flowtable_view():
     """
     Handle flowtable view requests.
@@ -951,6 +1029,7 @@ def flowtable_view():
 # Chains
 @app.route("/chain_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def chain_add():
     """
     Handle chain addition requests.
@@ -992,6 +1071,7 @@ def chain_add():
 
 @app.route("/chain_rule_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def chain_rule_add():
     """
     Handle chain rule addition requests.
@@ -1016,7 +1096,6 @@ def chain_rule_add():
                  On GET - Rendered rule add form template or redirect
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             if request.form["fw_chain"] == "":
                 return redirect(url_for("chain_view"))
@@ -1078,6 +1157,7 @@ def chain_rule_add():
 
 @app.route("/chain_rule_delete", methods=["POST"])
 @login_required
+@requires_firewall
 def chain_rule_delete():
     """
     Handle chain rule deletion requests.
@@ -1097,6 +1177,7 @@ def chain_rule_delete():
 
 @app.route("/chain_rule_reorder", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def chain_rule_reorder():
     """
     Handle chain rule reordering requests.
@@ -1126,6 +1207,7 @@ def chain_rule_reorder():
 
 @app.route("/chain_view")
 @login_required
+@requires_firewall
 def chain_view():
     """
     Handle chain view requests.
@@ -1161,6 +1243,7 @@ def chain_view():
 # Filters
 @app.route("/filter_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def filter_add():
     """
     Handle filter addition requests.
@@ -1202,6 +1285,7 @@ def filter_add():
 
 @app.route("/filter_rule_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def filter_rule_add():
     """
     Handle filter rule addition requests.
@@ -1224,7 +1308,6 @@ def filter_rule_add():
         Response: Redirect to filter view/add or rendered filter rule add form template
     """
     if request.method == "POST":
-        logging.debug(request.form)
         if request.form["type"] == "add":
             add_filter_rule_to_data(session, request)
 
@@ -1303,6 +1386,7 @@ def filter_rule_add():
 
 @app.route("/filter_rule_delete", methods=["POST"])
 @login_required
+@requires_firewall
 def filter_rule_delete():
     """
     Handle filter rule deletion requests.
@@ -1322,6 +1406,7 @@ def filter_rule_delete():
 
 @app.route("/filter_rule_reorder", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def filter_rule_reorder():
     """
     Handle filter rule reordering requests.
@@ -1351,6 +1436,7 @@ def filter_rule_reorder():
 
 @app.route("/filter_view")
 @login_required
+@requires_firewall
 def filter_view():
     """
     Handle filter view requests.
@@ -1386,6 +1472,7 @@ def filter_view():
 # Configuration
 @app.route("/configuration_extra_items", methods=["Get", "POST"])
 @login_required
+@requires_firewall
 def configuration_extra_items():
     """
     Handle configuration extra items requests.
@@ -1431,6 +1518,7 @@ def configuration_extra_items():
 
 @app.route("/configuration_hostname_add", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def configuration_hostname_add():
     """
     Handle hostname configuration requests.
@@ -1474,6 +1562,7 @@ def configuration_hostname_add():
 
 @app.route("/configuration_push", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def configuration_push():
     """
     Handle configuration push requests.
@@ -1676,52 +1765,41 @@ def display_config():
 
 @app.route("/snapshot_diff_choose")
 @login_required
+@requires_firewall
 def snapshot_diff_choose():
     """
     Display page for selecting snapshots to compare.
 
     Endpoint that shows interface for choosing two snapshots to diff.
-    Requires user to be logged in.
+    Requires user to be logged in and a firewall selected.
 
     Returns:
-        Response: Rendered template for snapshot selection or message if no firewall selected
+        Response: Rendered template for snapshot selection
     """
     file_list = list_user_files(session)
     snapshot_list = list_snapshots(session)
+    message, config = generate_config(session)
 
-    if "firewall_name" not in session:
-        message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
-
-        return render_template(
-            "configuration_display.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            message=message,
-            username=session["username"],
-        )
-
-    else:
-        snapshot_list = list_snapshots(session)
-        message, config = generate_config(session)
-
-        return render_template(
-            "snapshot_diff_choose.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            firewall_name=session["firewall_name"],
-            message=message,
-            username=session["username"],
-        )
+    return render_template(
+        "snapshot_diff_choose.html",
+        file_list=file_list,
+        snapshot_list=snapshot_list,
+        firewall_name=session["firewall_name"],
+        message=message,
+        username=session["username"],
+    )
 
 
 @app.route("/snapshot_diff_display", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def snapshot_diff_display():
     """
     Display diff between two snapshots.
 
     Endpoint that shows differences between two selected snapshots.
-    Requires user to be logged in. Validates snapshots are different and selected.
+    Requires user to be logged in and a firewall selected. Validates snapshots
+    are different and selected.
 
     Returns:
         Response: Rendered template showing diff or redirect back to selection on error
@@ -1744,17 +1822,6 @@ def snapshot_diff_display():
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
 
-        if "firewall_name" not in session:
-            message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
-
-            return render_template(
-                "configuration_display.html",
-                file_list=file_list,
-                snapshot_list=snapshot_list,
-                message=message,
-                username=session["username"],
-            )
-
         message, config = generate_config(session)
 
         return render_template(
@@ -1769,6 +1836,7 @@ def snapshot_diff_display():
 
 @app.route("/snapshot_tag_create", methods=["GET", "POST"])
 @login_required
+@requires_firewall
 def snapshot_tag_create():
     """
     Create tags for snapshots.
@@ -1780,7 +1848,6 @@ def snapshot_tag_create():
         Response: Redirect to tag creation page or rendered template for tag creation
     """
     if request.method == "POST":
-        logging.info(request.form)
 
         tag_snapshot(session, request)
 
@@ -1836,6 +1903,7 @@ def delete_config():
 
 @app.route("/download_config")
 @login_required
+@requires_firewall
 def download_config():
     """
     Download the current firewall configuration as a text file.
@@ -1844,12 +1912,19 @@ def download_config():
         str: The configuration text with HTML line breaks converted to newlines
     """
     message, config = generate_config(session)
+    text = message.replace("<br>", "\n")
 
-    return message.replace("<br>", "\n")
+    return send_file(
+        BytesIO(text.encode("utf-8")),
+        mimetype="text/plain",
+        as_attachment=True,
+        download_name=f"{session['firewall_name']}.conf",
+    )
 
 
 @app.route("/download_json")
 @login_required
+@requires_firewall
 def download_json():
     """
     Download the current firewall configuration as a JSON file.
@@ -1859,7 +1934,12 @@ def download_json():
     """
     json_data = download_json_data(session)
 
-    return json_data
+    return send_file(
+        BytesIO(json_data.encode("utf-8")),
+        mimetype="application/json",
+        as_attachment=True,
+        download_name=f"{session['firewall_name']}.json",
+    )
 
 
 @app.route("/select_firewall_config", methods=["POST"])
@@ -1904,8 +1984,12 @@ def select_firewall_config():
         session["firewall_name"] = request.form["file"]
         snapshot = "current"
 
-    # Execute a read to read the "snapshot" version into "current"
-    read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}", snapshot)
+    # Restore the selected snapshot into "current" (only for an actual
+    # snapshot; current/create/delete are handled below).
+    if snapshot not in ("current", "create", "delete"):
+        restore_snapshot(
+            f"{session['data_dir']}/{session['firewall_name']}", snapshot
+        )
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
     if snapshot == "create":
@@ -1958,23 +2042,27 @@ def upload_json():
 
 if __name__ == "__main__":
     # Read version from .version and display
-    with open(".version", "r") as f:
-        logging.info(
-            f"|---------------- FW-GUI version: {f.read().strip()} ----------------|"
-        )
-        logging.info("|                                                        |")
-        logging.info("|                                                        |")
-        logging.info("|            *** v1.4.0+ requires MongoDB ***            |")
-        logging.info("|                                                        |")
-        logging.info("|                                                        |")
-        logging.info("|         See https://github.com/ibehren1/fw-gui         |")
-        logging.info("|                            or                          |")
-        logging.info("|        https://hub.docker.com/r/ibehren1/fw-gui        |")
-        logging.info("|                                                        |")
-        logging.info("|       for recommended docker-compose.yml updates.      |")
-        logging.info("|                                                        |")
-        logging.info("|                                                        |")
-        logging.info("|--------------------------------------------------------|")
+    try:
+        with open(".version", "r") as f:
+            fwgui_version = f.read().strip()
+    except OSError:
+        fwgui_version = "unknown"
+    logging.info(
+        f"|---------------- FW-GUI version: {fwgui_version} ----------------|"
+    )
+    logging.info("|                                                        |")
+    logging.info("|                                                        |")
+    logging.info("|            *** v1.4.0+ requires MongoDB ***            |")
+    logging.info("|                                                        |")
+    logging.info("|                                                        |")
+    logging.info("|         See https://github.com/ibehren1/fw-gui         |")
+    logging.info("|                            or                          |")
+    logging.info("|        https://hub.docker.com/r/ibehren1/fw-gui        |")
+    logging.info("|                                                        |")
+    logging.info("|       for recommended docker-compose.yml updates.      |")
+    logging.info("|                                                        |")
+    logging.info("|                                                        |")
+    logging.info("|--------------------------------------------------------|")
 
     # Load environment variables from .env file
     load_dotenv()

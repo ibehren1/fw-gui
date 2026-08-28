@@ -1,10 +1,11 @@
 **/__pycache__/**
+.ipynb_checkpoints/
 app.log*
-data/*
-dump/*
-jupyter/*
-reference/*
-tmp/*
+data/
+dump/
+jupyter/
+reference/
+tmp/
 flask_session/
 CODE_REVIEW_TODO.md
 .coverage

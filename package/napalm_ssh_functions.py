@@ -96,7 +96,15 @@ def assemble_paramiko_driver_string(connection_string, session):
         key = connection_string["password"].encode("utf-8")
         key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
         tmp_key_name = decrypt_file(key_name, key)
-        ssh.connect(hostname, port=port, username=username, key_filename=tmp_key_name)
+        # If connect fails the caller never receives tmp_key_name, so remove
+        # the decrypted key here rather than leaving it staged on disk.
+        try:
+            ssh.connect(
+                hostname, port=port, username=username, key_filename=tmp_key_name
+            )
+        except Exception:
+            os.remove(tmp_key_name)
+            raise
     else:
         logging.info("no_key")
         tmp_key_name = None

@@ -1,6 +1,6 @@
 [project]
 name = "FW-GUI"
-version = "2.4.0"
+version = "2.4.1"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
@@ -19,7 +19,6 @@ dependencies = [
     "flask-wtf",
     "idna>=3.15",
     "Jinja2",
-    "logging>=0.4.9.6",
     "lxml>=6.1.0",
     "napalm==5.1.0",
     "napalm-vyos",
@@ -31,7 +30,6 @@ dependencies = [
     "requests>=2.33.0",
     "setuptools>=83.0.0",
     "urllib3>=2.7.0",
-    "uuid>=1.30",
     "waitress",
     "werkzeug>=3.1.6",
 ]

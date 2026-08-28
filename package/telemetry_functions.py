@@ -11,17 +11,24 @@ import urllib3
 
 
 def get_instance_id():
-    with open("data/database/instance.id") as f:
-        instance_id = f.read().strip()
-        logging.debug(f"Instance ID: {instance_id}")
+    try:
+        with open("data/database/instance.id") as f:
+            instance_id = f.read().strip()
+            logging.debug(f"Instance ID: {instance_id}")
+    except OSError:
+        logging.debug("instance.id not found; telemetry degraded.")
+        return ""
 
     return instance_id
 
 
 def get_version():
-    with open(".version", "r") as f:
-        local_version = f.read().replace("v", "")
-        logging.debug(f"Local version: {local_version}")
+    try:
+        with open(".version", "r") as f:
+            local_version = f.read().replace("v", "")
+            logging.debug(f"Local version: {local_version}")
+    except OSError:
+        return "0.0.0"
 
     return local_version
 
@@ -33,6 +40,7 @@ def post_telemetry(body, route):
             f"https://telemetry.fw-gui.com/{route}",
             headers={"Content-Type": "application/json"},
             body=body,
+            timeout=5.0,
         )
         logging.debug("Posted instance ID and version to https://telemetry.fw-gui.com.")
 

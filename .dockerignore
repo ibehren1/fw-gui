@@ -1,0 +1,37 @@
+# Build context is the repo root (docker buildx build ... .). Keep it small:
+# only app.py, .version, package/, static/, templates/, examples/, pyproject.toml
+# and uv.lock are needed by the Dockerfile.
+
+# Version control / local environments
+.git
+.gitignore
+.venv
+.vscode
+.pytest_cache
+.coverage
+.ipynb_checkpoints
+
+# Runtime / user data (large + sensitive; never needed to build)
+data
+dump
+tmp
+jupyter
+flask_session
+
+# Python caches
+**/__pycache__
+*.pyc
+
+# Dev artifacts / notes (not part of the image)
+flask-modernization
+MODERNIZATION_SUMMARY.md
+BUG_REPORT.md
+CODE_REVIEW_TODO.md
+
+# Not needed at runtime
+tests
+images
+docker
+chart
+scripts
+.github

@@ -654,6 +654,9 @@ class TestConfigRoutes:
             resp = auth_client.get("/download_config")
             assert resp.status_code == 200
             assert b"line1\nline2" in resp.data
+            assert "attachment" in resp.headers.get("Content-Disposition", "")
+            assert resp.headers.get("Content-Disposition", "").endswith(".conf")
+            assert resp.mimetype == "text/plain"
 
     def test_download_json(self, auth_client):
         with patch(
@@ -662,6 +665,9 @@ class TestConfigRoutes:
         ):
             resp = auth_client.get("/download_json")
             assert resp.status_code == 200
+            assert b'{"test": "data"}' in resp.data
+            assert "attachment" in resp.headers.get("Content-Disposition", "")
+            assert resp.mimetype == "application/json"
 
     def test_create_config_valid(self, auth_client):
         with patch("app.write_user_data_file") as mock_write:
@@ -946,3 +952,55 @@ class TestSessionCookieHardening:
         assert flask_app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
         # SESSION_COOKIE_SECURE is not set in the test env -> defaults False.
         assert flask_app.config["SESSION_COOKIE_SECURE"] is False
+
+
+class TestSecurityHeaders:
+    def test_headers_present_on_response(self, client):
+        resp = client.get("/user_login")
+        assert resp.headers.get("X-Frame-Options") == "SAMEORIGIN"
+        assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+        assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+
+    def test_hsts_absent_without_https(self, client):
+        # SESSION_COOKIE_SECURE is False in the test env -> no HSTS.
+        resp = client.get("/user_login")
+        assert "Strict-Transport-Security" not in resp.headers
+
+
+class TestRegistrationEnabled:
+    def test_parsing(self, monkeypatch):
+        import app
+
+        cases = {
+            "False": True,
+            "false": True,
+            "": True,
+            "True": False,
+            "true": False,
+            "1": False,
+            "yes": False,
+        }
+        for val, expected in cases.items():
+            monkeypatch.setenv("DISABLE_REGISTRATION", val)
+            assert app.registration_enabled() is expected
+
+    def test_unset_defaults_enabled(self, monkeypatch):
+        import app
+
+        monkeypatch.delenv("DISABLE_REGISTRATION", raising=False)
+        assert app.registration_enabled() is True
+
+
+class TestRequiresFirewall:
+    def test_redirects_when_no_firewall_selected(self, auth_client):
+        with auth_client.session_transaction() as sess:
+            sess.pop("firewall_name", None)
+        resp = auth_client.get("/group_view")
+        assert resp.status_code == 302
+        assert "/display_config" in resp.headers["Location"]
+
+class TestErrorHandlers:
+    def test_404_friendly_page(self, client):
+        resp = client.get("/definitely-not-a-route")
+        assert resp.status_code == 404
+        assert b"Error 404" in resp.data

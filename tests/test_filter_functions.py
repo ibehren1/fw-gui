@@ -202,6 +202,23 @@ class TestAddFilterRuleToData:
         assert rule["direction"] == "in"
         assert "10" in capture.written_data["ipv4"]["filters"]["input"]["rule-order"]
 
+    def test_rule_add_to_missing_filter_guard_creates(self, app, mock_session, mock_read_write):
+        # Adding a rule when the filter does not exist must not KeyError; it
+        # guard-creates the structure (mirrors the chain path).
+        capture = mock_read_write("package.filter_functions", _minimal_data())
+        req = make_request({
+            "filter": "ipv4,input",
+            "rule": "10",
+            "description": "First rule",
+            "action": "accept",
+        })
+        with app.test_request_context():
+            add_filter_rule_to_data(mock_session, req)
+
+        f = capture.written_data["ipv4"]["filters"]["input"]
+        assert f["rules"]["10"]["action"] == "accept"
+        assert "10" in f["rule-order"]
+
     def test_offload_action(self, app, mock_session, mock_read_write):
         data = _data_with_empty_filter()
         capture = mock_read_write("package.filter_functions", data)

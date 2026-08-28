@@ -16,10 +16,9 @@ import glob
 import json
 import logging
 import os
-import random
-import string
-import subprocess  # nosec B404
+import shutil
 import sys
+import tempfile
 import uuid
 import zipfile
 from datetime import datetime
@@ -218,8 +217,9 @@ def decrypt_file(filename, key):
     4. Writes the decrypted data to the temporary file
     5. Returns the path to the temporary decrypted file
 
-    Note: The temporary file is created in data/tmp/ directory with a
-    6-character random name using uppercase letters and digits
+    Note: The temporary file is created in data/tmp/ via tempfile.mkstemp,
+    which uses a cryptographically-random name and 0o600 (owner-only)
+    permissions so the plaintext key is not world-readable.
     """
     # using the key
     fernet = Fernet(key)
@@ -231,19 +231,14 @@ def decrypt_file(filename, key):
     # decrypting the file
     decrypted = fernet.decrypt(encrypted)
 
-    # B311 -- Use of pseudo-random generator is not for security purposes.
-    tmp_file_name = "data/tmp/" + "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=6)  # nosec
-    )
-
-    # opening the file in write mode and
-    # writing the decrypted data
-    with open(f"{tmp_file_name}", "wb") as dec_file:
+    # Stage the plaintext key in an owner-only temp file with an
+    # unpredictable name. mkstemp creates the file with mode 0o600.
+    fd, tmp_file_name = tempfile.mkstemp(dir="data/tmp")
+    with os.fdopen(fd, "wb") as dec_file:
         dec_file.write(decrypted)
-        logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
-        dec_file.close()
+    logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
 
-    return f"{tmp_file_name}"
+    return tmp_file_name
 
 
 def delete_user_data_file(filename):
@@ -423,9 +418,7 @@ def initialize_data_dir():
 
     if not os.path.exists("data/example.json"):
         logging.info(" |--> Example data file not found, copying...")
-        # B603 -- No untrusted input
-        # B607 -- Cmd is partial executable path for compatibility between OSes.
-        subprocess.run(["cp", "examples/example.json", "data/example.json"])  # nosec
+        shutil.copy("examples/example.json", "data/example.json")
 
     if not os.path.exists("./data/database/auth.db"):
         logging.info(" |--> Auth database not found, creating...")
@@ -814,15 +807,35 @@ def read_user_data_file(filename, snapshot="current", diff=False):
                 }
                 write_user_data_file(filename, user_data)
 
-            # If this was not a read of "current", then we want to immediately
-            #   write over current with the snapshot data.
-            if snapshot != "current" and not diff:
-                delete_user_data_file(filename)
-                write_user_data_file(filename, user_data)
             return user_data
 
-    except Exception:
-        return {}
+    except pymongo.errors.PyMongoError as e:
+        # Do NOT return {} on a DB error: callers treat {} as "empty config"
+        # and can overwrite real data. Fail loud instead, and let non-DB
+        # exceptions (real bugs) propagate rather than being swallowed.
+        logging.error(f"MongoDB read failed for {filename}: {e}")
+        raise
+
+
+def restore_snapshot(filename, snapshot):
+    """Overwrite the current config with the named snapshot's data.
+
+    This is the explicit, destructive counterpart to read_user_data_file:
+    it reads the snapshot (without side effects), deletes the current
+    document, and writes the snapshot's data back as current.
+
+    Args:
+        filename (str): 'data/<user>/<firewall_name>'
+        snapshot (str): snapshot name to restore
+
+    Returns:
+        dict: the restored data, or {} if the snapshot was not found
+    """
+    user_data = read_user_data_file(filename, snapshot, diff=True)
+    if user_data:
+        delete_user_data_file(filename)
+        write_user_data_file(filename, user_data)
+    return user_data or {}
 
 
 def tag_snapshot(session, request):

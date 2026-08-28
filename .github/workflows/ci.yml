@@ -4,7 +4,6 @@ name: CI
 # push and pull request. Does NOT build or publish the Docker image — that
 # stays in `make local|dev|pubdev|prod` (scripts/build.sh).
 on:
-  push:
   pull_request:
 
 jobs:

@@ -33,8 +33,8 @@ def test_change_password_success(app, bcrypt, db, user_model):
         class MockRequest:
             form = {
                 "current_password": "oldpass",
-                "new_password": "newpass",
-                "confirm_password": "newpass",
+                "new_password": "newpass123",
+                "confirm_password": "newpass123",
             }
 
         mock_user = user_model("testuser", "hashed_oldpass", "test@test.com")
@@ -43,7 +43,7 @@ def test_change_password_success(app, bcrypt, db, user_model):
         result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
 
         assert result is True
-        assert mock_user.password == "hashed_newpass"
+        assert mock_user.password == "hashed_newpass123"
 
 
 def test_change_password_mismatch(app, bcrypt, db, user_model):
@@ -251,8 +251,8 @@ def test_register_user_success(app, bcrypt, db, user_model):
             form = {
                 "username": "newuser",
                 "email": "new@test.com",
-                "password": "newpass",
-                "confirm_password": "newpass",
+                "password": "newpass123",
+                "confirm_password": "newpass123",
             }
 
         db.session.execute().scalar_one.side_effect = Exception()  # User doesn't exist
@@ -393,3 +393,46 @@ def test_change_password_wrong_current(app, bcrypt, db, user_model):
         result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
 
         assert result is False
+
+
+def test_register_user_short_password(app, bcrypt, db, user_model):
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "username": "newuser",
+                "email": "new@test.com",
+                "password": "short",
+                "confirm_password": "short",
+            }
+
+        db.session.execute().scalar_one.side_effect = Exception()
+        assert register_user(bcrypt, db, MockRequest(), user_model) is False
+
+
+def test_register_user_invalid_email(app, bcrypt, db, user_model):
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "username": "newuser",
+                "email": "not-an-email",
+                "password": "newpass123",
+                "confirm_password": "newpass123",
+            }
+
+        db.session.execute().scalar_one.side_effect = Exception()
+        assert register_user(bcrypt, db, MockRequest(), user_model) is False
+
+
+def test_change_password_short(app, bcrypt, db, user_model):
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "current_password": "oldpass",
+                "new_password": "short",
+                "confirm_password": "short",
+            }
+
+        assert change_password(bcrypt, db, user_model, "testuser", MockRequest()) is False
