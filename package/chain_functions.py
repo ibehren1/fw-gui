@@ -20,6 +20,13 @@ import logging
 from flask import flash
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
+from package.rule_order_functions import (
+    apply_renumber_map,
+    build_renumber_map,
+    build_resequence_map,
+    build_swap_map,
+    RESEQUENCE_STEP,
+)
 
 
 def add_rule_to_data(session, request):
@@ -520,8 +527,10 @@ def reorder_chain_rule_in_data(session, request):
     Validation:
     - Rule must have 3 components (ip_version, chain, old rule number)
     - New rule number must be different from old rule number
-    - New rule number must be a valid integer
-    - New rule number must not already exist in the chain
+    - New rule number must be a valid integer between 1 and 999999
+
+    If the new rule number is already in use, that rule — and any rules directly
+    following it with no gap in between — are each shifted up by one to make room.
     """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
@@ -537,44 +546,179 @@ def reorder_chain_rule_in_data(session, request):
         old_rule_number = rule[2]
         new_rule_number = request.form["new_rule_number"].strip()
 
-    # Get list of existing rules in chain
-    existing_rule_list = user_data[ip_version]["chains"][fw_chain]["rule-order"]
-
-    # Validate new rule number
-    if old_rule_number == new_rule_number:
-        flash("Old and new rule numbers must be different.", "danger")
+    chain = _get_chain(user_data, ip_version, fw_chain)
+    if chain is None:
         return None
 
+    # Build the map of rule number changes, shifting rules that are in the way
     try:
-        int(new_rule_number)
-    except Exception:
-        flash("New rule number must be an integer.", "danger")
+        renumber_map = build_renumber_map(
+            chain["rule-order"], old_rule_number, new_rule_number
+        )
+    except ValueError as e:
+        flash(str(e), "danger")
         return None
 
-    if new_rule_number in existing_rule_list:
-        flash("New rule number must not already exist in the chain.", "danger")
-        return None
-
-    # Add new rule to chain in user data
-    user_data[ip_version]["chains"][fw_chain][new_rule_number] = user_data[ip_version][
-        "chains"
-    ][fw_chain][old_rule_number]
-
-    # Add new rule to rule-order in user data
-    user_data[ip_version]["chains"][fw_chain]["rule-order"].append(new_rule_number)
-
-    # Remove Old Rule from user data
-    del user_data[ip_version]["chains"][fw_chain][old_rule_number]
-
-    # Remove Old Rule from rule-order in user data
-    user_data[ip_version]["chains"][fw_chain]["rule-order"].remove(old_rule_number)
-
-    # Sort rule-order in user data
-    user_data[ip_version]["chains"][fw_chain]["rule-order"] = sorted(
-        user_data[ip_version]["chains"][fw_chain]["rule-order"], key=int
-    )
+    # Apply the renumbering to the chain in user data
+    apply_renumber_map(chain, chain, renumber_map)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
+    flash(
+        f"Renumbered rule {old_rule_number} to {new_rule_number} "
+        f"in chain {ip_version}/{fw_chain}.",
+        "success",
+    )
+
     return f"{ip_version}{fw_chain}"
+
+
+def move_chain_rule_in_data(session, request):
+    """
+    Moves a rule up or down within a firewall chain by swapping rule numbers.
+
+    Args:
+        session: The current session containing data directory and firewall name
+        request: The HTTP request containing form data with the rule to move
+
+    Form Parameters:
+        move_rule: Comma-separated string containing "ip_version,chain,rule_number"
+        direction: Either "up" (towards a lower rule number) or "down"
+
+    Returns:
+        str: Concatenated ip_version and chain name on success
+        None: If validation fails
+
+    The moved rule and its neighbour exchange rule numbers, so no other rule in
+    the chain is affected.  Moving the first rule up, or the last rule down, does
+    nothing.
+    """
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Set local vars from posted form data
+    rule = request.form["move_rule"].split(",")
+
+    if len(rule) != 3:
+        return None
+    else:
+        ip_version = rule[0]
+        fw_chain = rule[1]
+        rule_number = rule[2]
+        direction = request.form["direction"].strip()
+
+    chain = _get_chain(user_data, ip_version, fw_chain)
+    if chain is None:
+        return None
+
+    # Build the map that swaps this rule with its neighbour
+    try:
+        renumber_map = build_swap_map(chain["rule-order"], rule_number, direction)
+    except ValueError as e:
+        flash(str(e), "danger")
+        return None
+
+    # Rule is already at the top or bottom of the chain
+    if not renumber_map:
+        return f"{ip_version}{fw_chain}"
+
+    # Apply the renumbering to the chain in user data
+    apply_renumber_map(chain, chain, renumber_map)
+
+    # Write user's data to file
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    flash(
+        f"Moved rule {rule_number} {direction} in chain {ip_version}/{fw_chain}.",
+        "success",
+    )
+
+    return f"{ip_version}{fw_chain}"
+
+
+def resequence_chain_rules_in_data(session, request):
+    """
+    Resequences every rule in a firewall chain to 10, 20, 30, ...
+
+    Args:
+        session: The current session containing data directory and firewall name
+        request: The HTTP request containing form data with the chain to resequence
+
+    Form Parameters:
+        chain: Comma-separated string containing "ip_version,chain"
+
+    Returns:
+        str: Concatenated ip_version and chain name on success
+        None: If validation fails
+
+    Relative rule order is preserved; only the rule numbers change.  This is used
+    to restore gaps in a chain whose rule numbers have been used up.
+    """
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Set local vars from posted form data
+    chain_parts = request.form["chain"].split(",")
+
+    if len(chain_parts) != 2:
+        return None
+    else:
+        ip_version = chain_parts[0]
+        fw_chain = chain_parts[1]
+
+    chain = _get_chain(user_data, ip_version, fw_chain)
+    if chain is None:
+        return None
+
+    # Build the map of rule number changes
+    try:
+        renumber_map = build_resequence_map(chain["rule-order"], RESEQUENCE_STEP)
+    except ValueError as e:
+        flash(str(e), "danger")
+        return None
+
+    # Rules are already sequenced
+    if not renumber_map:
+        flash(
+            f"Rules in chain {ip_version}/{fw_chain} are already sequenced by "
+            f"{RESEQUENCE_STEP}.",
+            "warning",
+        )
+        return f"{ip_version}{fw_chain}"
+
+    # Apply the renumbering to the chain in user data
+    apply_renumber_map(chain, chain, renumber_map)
+
+    # Write user's data to file
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    flash(
+        f"Resequenced rules in chain {ip_version}/{fw_chain} by {RESEQUENCE_STEP}.",
+        "success",
+    )
+
+    return f"{ip_version}{fw_chain}"
+
+
+def _get_chain(user_data, ip_version, fw_chain):
+    """
+    Returns the chain dict for the given ip version and chain name.
+
+    Args:
+        user_data: The user's firewall data
+        ip_version: Either "ipv4" or "ipv6"
+        fw_chain: Name of the chain
+
+    Returns:
+        dict: The chain, including its rule-order list
+        None: If the chain does not exist or has no rule-order list
+    """
+    try:
+        chain = user_data[ip_version]["chains"][fw_chain]
+        chain["rule-order"]
+    except (KeyError, TypeError):
+        flash(f"Chain {ip_version}/{fw_chain} does not exist.", "danger")
+        return None
+
+    return chain

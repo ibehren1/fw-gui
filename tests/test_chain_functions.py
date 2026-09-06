@@ -3,7 +3,8 @@ Tests for package.chain_functions module.
 
 Covers: add_chain_to_data, add_rule_to_data, assemble_detail_list_of_chains,
         assemble_list_of_rules, assemble_list_of_chains, delete_rule_from_data,
-        reorder_chain_rule_in_data, flash_ip_version_mismatch
+        reorder_chain_rule_in_data, move_chain_rule_in_data,
+        resequence_chain_rules_in_data, flash_ip_version_mismatch
 """
 
 import pytest
@@ -18,7 +19,9 @@ from package.chain_functions import (
     assemble_list_of_rules,
     delete_rule_from_data,
     flash_ip_version_mismatch,
+    move_chain_rule_in_data,
     reorder_chain_rule_in_data,
+    resequence_chain_rules_in_data,
 )
 
 
@@ -547,9 +550,11 @@ class TestReorderChainRuleInData:
 
         assert result is None
 
-    def test_duplicate_number_error(self, app, mock_session, mock_read_write):
+    def test_duplicate_number_shifts_occupant(
+        self, app, mock_session, mock_read_write
+    ):
         data = _data_with_two_rules()
-        mock_read_write("package.chain_functions", data)
+        capture = mock_read_write("package.chain_functions", data)
         req = make_request({
             "reorder_rule": "ipv4,OUTSIDE-IN,10",
             "new_rule_number": "20",
@@ -557,7 +562,65 @@ class TestReorderChainRuleInData:
         with app.test_request_context():
             result = reorder_chain_rule_in_data(mock_session, req)
 
+        assert result == "ipv4OUTSIDE-IN"
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["rule-order"] == ["20", "21"]
+        assert chain["20"]["description"] == "Allow SSH"
+        assert chain["21"]["description"] == "Allow HTTP"
+
+    def test_duplicate_number_cascade_stops_at_gap(
+        self, app, mock_session, mock_read_write
+    ):
+        data = _data_with_two_rules()
+        chain = data["ipv4"]["chains"]["OUTSIDE-IN"]
+        chain["rule-order"] = ["10", "20", "21", "30"]
+        chain["21"] = {"description": "Allow HTTPS", "action": "accept"}
+        chain["30"] = {"description": "Allow DNS", "action": "accept"}
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,OUTSIDE-IN,10",
+            "new_rule_number": "20",
+        })
+        with app.test_request_context():
+            result = reorder_chain_rule_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["rule-order"] == ["20", "21", "22", "30"]
+        assert chain["20"]["description"] == "Allow SSH"
+        assert chain["21"]["description"] == "Allow HTTP"
+        assert chain["22"]["description"] == "Allow HTTPS"
+        # Rule past the gap is untouched
+        assert chain["30"]["description"] == "Allow DNS"
+
+    def test_number_above_maximum_error(self, app, mock_session, mock_read_write):
+        data = _data_with_chain()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,OUTSIDE-IN,10",
+            "new_rule_number": "1000000",
+        })
+        with app.test_request_context():
+            result = reorder_chain_rule_in_data(mock_session, req)
+
         assert result is None
+        assert capture.written_data is None
+
+    def test_shift_past_maximum_error(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        chain = data["ipv4"]["chains"]["OUTSIDE-IN"]
+        chain["rule-order"] = ["10", "999999"]
+        chain["999999"] = chain.pop("20")
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,OUTSIDE-IN,10",
+            "new_rule_number": "999999",
+        })
+        with app.test_request_context():
+            result = reorder_chain_rule_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
 
     def test_malformed_rule_string(self, app, mock_session, mock_read_write):
         data = _data_with_chain()
@@ -568,6 +631,223 @@ class TestReorderChainRuleInData:
         })
         with app.test_request_context():
             result = reorder_chain_rule_in_data(mock_session, req)
+
+        assert result is None
+
+    def test_missing_chain_error(self, app, mock_session, mock_read_write):
+        data = _data_with_chain()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,NO-SUCH-CHAIN,10",
+            "new_rule_number": "50",
+        })
+        with app.test_request_context():
+            result = reorder_chain_rule_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_chain_default_preserved(self, app, mock_session, mock_read_write):
+        data = _data_with_chain()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,OUTSIDE-IN,10",
+            "new_rule_number": "50",
+        })
+        with app.test_request_context():
+            reorder_chain_rule_in_data(mock_session, req)
+
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["default"]["default_action"] == "drop"
+
+
+# ===================================================================
+# move_chain_rule_in_data
+# ===================================================================
+
+
+class TestMoveChainRuleInData:
+    def test_move_up_swaps_numbers(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN,20",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["rule-order"] == ["10", "20"]
+        assert chain["10"]["description"] == "Allow HTTP"
+        assert chain["20"]["description"] == "Allow SSH"
+
+    def test_move_down_swaps_numbers(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN,10",
+            "direction": "down",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["rule-order"] == ["10", "20"]
+        assert chain["10"]["description"] == "Allow HTTP"
+        assert chain["20"]["description"] == "Allow SSH"
+
+    def test_move_first_rule_up_is_noop(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN,10",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        assert capture.written_data is None
+
+    def test_move_last_rule_down_is_noop(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN,20",
+            "direction": "down",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        assert capture.written_data is None
+
+    def test_unknown_direction_error(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN,10",
+            "direction": "sideways",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_unknown_rule_error(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN,999",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_malformed_rule_string(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        mock_read_write("package.chain_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,OUTSIDE-IN",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_chain_rule_in_data(mock_session, req)
+
+        assert result is None
+
+
+# ===================================================================
+# resequence_chain_rules_in_data
+# ===================================================================
+
+
+class TestResequenceChainRulesInData:
+    def test_resequence_renumbers_by_ten(self, app, mock_session, mock_read_write):
+        data = _data_with_two_rules()
+        chain = data["ipv4"]["chains"]["OUTSIDE-IN"]
+        chain["rule-order"] = ["1", "2", "3"]
+        chain["1"] = chain.pop("10")
+        chain["2"] = chain.pop("20")
+        chain["3"] = {"description": "Allow DNS", "action": "accept"}
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({"chain": "ipv4,OUTSIDE-IN"})
+        with app.test_request_context():
+            result = resequence_chain_rules_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["rule-order"] == ["10", "20", "30"]
+        assert chain["10"]["description"] == "Allow SSH"
+        assert chain["20"]["description"] == "Allow HTTP"
+        assert chain["30"]["description"] == "Allow DNS"
+        assert chain["default"]["default_action"] == "drop"
+
+    def test_resequence_already_sequenced_does_not_write(
+        self, app, mock_session, mock_read_write
+    ):
+        data = _data_with_two_rules()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({"chain": "ipv4,OUTSIDE-IN"})
+        with app.test_request_context():
+            result = resequence_chain_rules_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        assert capture.written_data is None
+
+    def test_resequence_single_rule(self, app, mock_session, mock_read_write):
+        data = _data_with_chain()
+        chain = data["ipv4"]["chains"]["OUTSIDE-IN"]
+        chain["rule-order"] = ["7"]
+        chain["7"] = chain.pop("10")
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({"chain": "ipv4,OUTSIDE-IN"})
+        with app.test_request_context():
+            result = resequence_chain_rules_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        chain = capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]
+        assert chain["rule-order"] == ["10"]
+        assert chain["10"]["description"] == "Allow SSH"
+
+    def test_resequence_empty_chain(self, app, mock_session, mock_read_write):
+        data = _data_with_chain()
+        chain = data["ipv4"]["chains"]["OUTSIDE-IN"]
+        chain["rule-order"] = []
+        del chain["10"]
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({"chain": "ipv4,OUTSIDE-IN"})
+        with app.test_request_context():
+            result = resequence_chain_rules_in_data(mock_session, req)
+
+        assert result == "ipv4OUTSIDE-IN"
+        assert capture.written_data is None
+
+    def test_resequence_missing_chain_error(self, app, mock_session, mock_read_write):
+        data = _data_with_chain()
+        capture = mock_read_write("package.chain_functions", data)
+        req = make_request({"chain": "ipv4,NO-SUCH-CHAIN"})
+        with app.test_request_context():
+            result = resequence_chain_rules_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_resequence_malformed_chain_string(
+        self, app, mock_session, mock_read_write
+    ):
+        data = _data_with_chain()
+        mock_read_write("package.chain_functions", data)
+        req = make_request({"chain": "ipv4"})
+        with app.test_request_context():
+            result = resequence_chain_rules_in_data(mock_session, req)
 
         assert result is None
 

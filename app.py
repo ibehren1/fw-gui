@@ -66,7 +66,9 @@ from package.chain_functions import (
     assemble_detail_list_of_chains,
     assemble_list_of_chains,
     delete_rule_from_data,
+    move_chain_rule_in_data,
     reorder_chain_rule_in_data,
+    resequence_chain_rules_in_data,
 )
 from package.data_file_functions import (
     add_extra_items,
@@ -95,7 +97,9 @@ from package.filter_functions import (
     assemble_detail_list_of_filters,
     assemble_list_of_filters,
     delete_filter_rule_from_data,
+    move_filter_rule_in_data,
     reorder_filter_rule_in_data,
+    resequence_filter_rules_in_data,
 )
 from package.flowtable_functions import (
     add_flowtable_to_data,
@@ -1200,9 +1204,60 @@ def chain_rule_reorder():
     if request.method == "POST":
         anchor = reorder_chain_rule_in_data(session, request)
 
-        return redirect(url_for("chain_view", _anchor=anchor))
+        if anchor:
+            return redirect(url_for("chain_view", _anchor=anchor))
+
+        return redirect(url_for("chain_view"))
     else:
         return redirect(url_for("chain_view"))
+
+
+@app.route("/chain_rule_move", methods=["POST"])
+@login_required
+@requires_firewall
+def chain_rule_move():
+    """
+    Handle chain rule move up/down requests.
+
+    Endpoint that swaps a chain rule's number with its neighbor's. Supports POST
+    method only. Requires user to be logged in.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to chain view page (with optional anchor)
+    """
+    anchor = move_chain_rule_in_data(session, request)
+
+    if anchor:
+        return redirect(url_for("chain_view", _anchor=anchor))
+
+    return redirect(url_for("chain_view"))
+
+
+@app.route("/chain_rules_resequence", methods=["POST"])
+@login_required
+@requires_firewall
+def chain_rules_resequence():
+    """
+    Handle chain rule resequence requests.
+
+    Endpoint that renumbers all rules in a chain to 10, 20, 30, ... Supports POST
+    method only. Requires user to be logged in.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to chain view page (with optional anchor)
+    """
+    anchor = resequence_chain_rules_in_data(session, request)
+
+    if anchor:
+        return redirect(url_for("chain_view", _anchor=anchor))
+
+    return redirect(url_for("chain_view"))
 
 
 @app.route("/chain_view")
@@ -1429,9 +1484,60 @@ def filter_rule_reorder():
     if request.method == "POST":
         anchor = reorder_filter_rule_in_data(session, request)
 
-        return redirect(url_for("filter_view", _anchor=anchor))
+        if anchor:
+            return redirect(url_for("filter_view", _anchor=anchor))
+
+        return redirect(url_for("filter_view"))
     else:
         return redirect(url_for("filter_view"))
+
+
+@app.route("/filter_rule_move", methods=["POST"])
+@login_required
+@requires_firewall
+def filter_rule_move():
+    """
+    Handle filter rule move up/down requests.
+
+    Endpoint that swaps a filter rule's number with its neighbor's. Supports POST
+    method only. Requires user to be logged in.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to filter view page (with optional anchor)
+    """
+    anchor = move_filter_rule_in_data(session, request)
+
+    if anchor:
+        return redirect(url_for("filter_view", _anchor=anchor))
+
+    return redirect(url_for("filter_view"))
+
+
+@app.route("/filter_rules_resequence", methods=["POST"])
+@login_required
+@requires_firewall
+def filter_rules_resequence():
+    """
+    Handle filter rule resequence requests.
+
+    Endpoint that renumbers all rules in a filter to 10, 20, 30, ... Supports POST
+    method only. Requires user to be logged in.
+
+    Args:
+        None
+
+    Returns:
+        Response: Redirect to filter view page (with optional anchor)
+    """
+    anchor = resequence_filter_rules_in_data(session, request)
+
+    if anchor:
+        return redirect(url_for("filter_view", _anchor=anchor))
+
+    return redirect(url_for("filter_view"))
 
 
 @app.route("/filter_view")

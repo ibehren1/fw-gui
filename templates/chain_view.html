@@ -54,6 +54,12 @@
                 <h4 class="chain-group-title">{{ key }}</h4>
                 <div class="chain-group-actions">
                     <a href="{{ url_for('chain_rule_add') }}?fw_chain=ipv4,{{ key }}" class="btn btn-add btn-sm">Add Rule</a>
+                    <form action="/chain_rules_resequence" method="post" class="resequence-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="chain" value="ipv4,{{ key }}">
+                        <button type="submit" class="btn btn-secondary btn-sm"
+                                onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the chain.')">Resequence</button>
+                    </form>
                     <a href="#top" class="back-to-top">↑ Top</a>
                 </div>
             </div>
@@ -78,6 +84,36 @@
                             </div>
                         </div>
                         <div class="chain-actions">
+                            <div class="reorder-actions">
+                                {% if not loop.first %}
+                                <form action="/chain_rule_move" method="post" class="move-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="move_rule" value="ipv4,{{ key }},{{ rule.number }}">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} up">↑</button>
+                                </form>
+                                {% else %}
+                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↑</span>
+                                {% endif %}
+                                {% if not loop.last %}
+                                <form action="/chain_rule_move" method="post" class="move-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="move_rule" value="ipv4,{{ key }},{{ rule.number }}">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} down">↓</button>
+                                </form>
+                                {% else %}
+                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↓</span>
+                                {% endif %}
+                                <form action="/chain_rule_reorder" method="post" class="renumber-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="reorder_rule" value="ipv4,{{ key }},{{ rule.number }}">
+                                    <input type="number" name="new_rule_number" class="rule-number-input"
+                                           value="{{ rule.number }}" min="1" max="999999"
+                                           aria-label="New number for rule {{ rule.number }}">
+                                    <button type="submit" class="btn btn-move" title="Renumber rule {{ rule.number }}">#</button>
+                                </form>
+                            </div>
                             <form action="/chain_rule_add" method="post" class="edit-form">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="type" value="edit">
@@ -255,6 +291,12 @@
                 <h4 class="chain-group-title">{{ key }}</h4>
                 <div class="chain-group-actions">
                     <a href="{{ url_for('chain_rule_add') }}?fw_chain=ipv6,{{ key }}" class="btn btn-add btn-sm">Add Rule</a>
+                    <form action="/chain_rules_resequence" method="post" class="resequence-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="chain" value="ipv6,{{ key }}">
+                        <button type="submit" class="btn btn-secondary btn-sm"
+                                onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the chain.')">Resequence</button>
+                    </form>
                     <a href="#top" class="back-to-top">↑ Top</a>
                 </div>
             </div>
@@ -279,6 +321,36 @@
                             </div>
                         </div>
                         <div class="chain-actions">
+                            <div class="reorder-actions">
+                                {% if not loop.first %}
+                                <form action="/chain_rule_move" method="post" class="move-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="move_rule" value="ipv6,{{ key }},{{ rule.number }}">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} up">↑</button>
+                                </form>
+                                {% else %}
+                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↑</span>
+                                {% endif %}
+                                {% if not loop.last %}
+                                <form action="/chain_rule_move" method="post" class="move-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="move_rule" value="ipv6,{{ key }},{{ rule.number }}">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} down">↓</button>
+                                </form>
+                                {% else %}
+                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↓</span>
+                                {% endif %}
+                                <form action="/chain_rule_reorder" method="post" class="renumber-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="reorder_rule" value="ipv6,{{ key }},{{ rule.number }}">
+                                    <input type="number" name="new_rule_number" class="rule-number-input"
+                                           value="{{ rule.number }}" min="1" max="999999"
+                                           aria-label="New number for rule {{ rule.number }}">
+                                    <button type="submit" class="btn btn-move" title="Renumber rule {{ rule.number }}">#</button>
+                                </form>
+                            </div>
                             <form action="/chain_rule_add" method="post" class="edit-form">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="type" value="edit">
@@ -655,8 +727,49 @@
     align-items: center;
 }
 
-.edit-form, .delete-form {
+.edit-form, .delete-form, .move-form, .renumber-form, .resequence-form {
     margin: 0;
+}
+
+.reorder-actions {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.renumber-form {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.btn-move {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    min-width: auto;
+}
+
+.btn-move:hover {
+    background: var(--primary-color);
+    color: var(--text-dark);
+}
+
+.btn-move-disabled {
+    opacity: 0.25;
+    cursor: default;
+    pointer-events: none;
+}
+
+.rule-number-input {
+    width: 5.5rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    font-size: 0.8rem;
 }
 
 .chain-desc-separator {

@@ -3,7 +3,8 @@ Tests for package.filter_functions module.
 
 Covers: add_filter_to_data, add_filter_rule_to_data, assemble_detail_list_of_filters,
         assemble_list_of_filters, assemble_list_of_filter_rules,
-        delete_filter_rule_from_data, reorder_filter_rule_in_data
+        delete_filter_rule_from_data, reorder_filter_rule_in_data,
+        move_filter_rule_in_data, resequence_filter_rules_in_data
 """
 
 import pytest
@@ -17,7 +18,9 @@ from package.filter_functions import (
     assemble_list_of_filter_rules,
     assemble_list_of_filters,
     delete_filter_rule_from_data,
+    move_filter_rule_in_data,
     reorder_filter_rule_in_data,
+    resequence_filter_rules_in_data,
 )
 
 
@@ -499,9 +502,11 @@ class TestReorderFilterRuleInData:
 
         assert result is None
 
-    def test_duplicate_number_error(self, app, mock_session, mock_read_write):
+    def test_duplicate_number_shifts_occupant(
+        self, app, mock_session, mock_read_write
+    ):
         data = _data_with_two_filter_rules()
-        mock_read_write("package.filter_functions", data)
+        capture = mock_read_write("package.filter_functions", data)
         req = make_request({
             "reorder_rule": "ipv4,input,10",
             "new_rule_number": "20",
@@ -509,7 +514,11 @@ class TestReorderFilterRuleInData:
         with app.test_request_context():
             result = reorder_filter_rule_in_data(mock_session, req)
 
-        assert result is None
+        assert result == "ipv4input"
+        filt = capture.written_data["ipv4"]["filters"]["input"]
+        assert filt["rule-order"] == ["20", "21"]
+        assert filt["rules"]["20"]["description"] == "Allow established"
+        assert filt["rules"]["21"]["description"] == "Jump to chain"
 
     def test_malformed_rule_string(self, app, mock_session, mock_read_write):
         data = _data_with_filter()
@@ -520,5 +529,180 @@ class TestReorderFilterRuleInData:
         })
         with app.test_request_context():
             result = reorder_filter_rule_in_data(mock_session, req)
+
+        assert result is None
+
+    def test_missing_filter_error(self, app, mock_session, mock_read_write):
+        data = _data_with_filter()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,nosuchfilter,10",
+            "new_rule_number": "50",
+        })
+        with app.test_request_context():
+            result = reorder_filter_rule_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_filter_attributes_preserved(self, app, mock_session, mock_read_write):
+        data = _data_with_filter()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "reorder_rule": "ipv4,input,10",
+            "new_rule_number": "50",
+        })
+        with app.test_request_context():
+            reorder_filter_rule_in_data(mock_session, req)
+
+        filt = capture.written_data["ipv4"]["filters"]["input"]
+        assert filt["description"] == "Input filter"
+        assert filt["default-action"] == "drop"
+        assert "rules" in filt
+
+
+# ===================================================================
+# move_filter_rule_in_data
+# ===================================================================
+
+
+class TestMoveFilterRuleInData:
+    def test_move_up_swaps_numbers(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,input,20",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_filter_rule_in_data(mock_session, req)
+
+        assert result == "ipv4input"
+        filt = capture.written_data["ipv4"]["filters"]["input"]
+        assert filt["rule-order"] == ["10", "20"]
+        assert filt["rules"]["10"]["description"] == "Jump to chain"
+        assert filt["rules"]["20"]["description"] == "Allow established"
+
+    def test_move_down_swaps_numbers(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,input,10",
+            "direction": "down",
+        })
+        with app.test_request_context():
+            result = move_filter_rule_in_data(mock_session, req)
+
+        assert result == "ipv4input"
+        filt = capture.written_data["ipv4"]["filters"]["input"]
+        assert filt["rules"]["10"]["description"] == "Jump to chain"
+        assert filt["rules"]["20"]["description"] == "Allow established"
+
+    def test_move_first_rule_up_is_noop(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,input,10",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_filter_rule_in_data(mock_session, req)
+
+        assert result == "ipv4input"
+        assert capture.written_data is None
+
+    def test_move_last_rule_down_is_noop(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,input,20",
+            "direction": "down",
+        })
+        with app.test_request_context():
+            result = move_filter_rule_in_data(mock_session, req)
+
+        assert result == "ipv4input"
+        assert capture.written_data is None
+
+    def test_unknown_direction_error(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,input,10",
+            "direction": "sideways",
+        })
+        with app.test_request_context():
+            result = move_filter_rule_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_malformed_rule_string(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        mock_read_write("package.filter_functions", data)
+        req = make_request({
+            "move_rule": "ipv4,input",
+            "direction": "up",
+        })
+        with app.test_request_context():
+            result = move_filter_rule_in_data(mock_session, req)
+
+        assert result is None
+
+
+# ===================================================================
+# resequence_filter_rules_in_data
+# ===================================================================
+
+
+class TestResequenceFilterRulesInData:
+    def test_resequence_renumbers_by_ten(self, app, mock_session, mock_read_write):
+        data = _data_with_two_filter_rules()
+        filt = data["ipv4"]["filters"]["input"]
+        filt["rule-order"] = ["1", "2"]
+        filt["rules"]["1"] = filt["rules"].pop("10")
+        filt["rules"]["2"] = filt["rules"].pop("20")
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({"filter": "ipv4,input"})
+        with app.test_request_context():
+            result = resequence_filter_rules_in_data(mock_session, req)
+
+        assert result == "ipv4input"
+        filt = capture.written_data["ipv4"]["filters"]["input"]
+        assert filt["rule-order"] == ["10", "20"]
+        assert filt["rules"]["10"]["description"] == "Allow established"
+        assert filt["rules"]["20"]["description"] == "Jump to chain"
+        assert filt["description"] == "Input filter"
+
+    def test_resequence_already_sequenced_does_not_write(
+        self, app, mock_session, mock_read_write
+    ):
+        data = _data_with_two_filter_rules()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({"filter": "ipv4,input"})
+        with app.test_request_context():
+            result = resequence_filter_rules_in_data(mock_session, req)
+
+        assert result == "ipv4input"
+        assert capture.written_data is None
+
+    def test_resequence_missing_filter_error(self, app, mock_session, mock_read_write):
+        data = _data_with_filter()
+        capture = mock_read_write("package.filter_functions", data)
+        req = make_request({"filter": "ipv4,nosuchfilter"})
+        with app.test_request_context():
+            result = resequence_filter_rules_in_data(mock_session, req)
+
+        assert result is None
+        assert capture.written_data is None
+
+    def test_resequence_malformed_filter_string(
+        self, app, mock_session, mock_read_write
+    ):
+        data = _data_with_filter()
+        mock_read_write("package.filter_functions", data)
+        req = make_request({"filter": "ipv4"})
+        with app.test_request_context():
+            result = resequence_filter_rules_in_data(mock_session, req)
 
         assert result is None
