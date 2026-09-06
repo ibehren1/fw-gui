@@ -58,6 +58,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `data_file_functions.py` | MongoDB CRUD, backups (local + S3), file uploads, snapshots |
 | `chain_functions.py` | Chain and chain rule management (add/delete/reorder) |
 | `filter_functions.py` | Filter and filter rule management (parallel to chains) |
+| `rule_order_functions.py` | Shared rule renumbering logic (move up/down, renumber, resequence) used by chains and filters |
 | `group_funtions.py` | Address/network/port/domain/MAC/interface groups |
 | `interface_functions.py` | Network interface management |
 | `flowtable_functions.py` | Flowtable configuration |

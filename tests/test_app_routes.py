@@ -425,6 +425,40 @@ class TestChainRoutes:
         assert resp.status_code == 302
         assert "/chain_view" in resp.headers["Location"]
 
+    def test_chain_rule_move_post(self, auth_client):
+        with patch(
+            "app.move_chain_rule_in_data", return_value="ipv4test_chain"
+        ) as mock_move:
+            resp = auth_client.post(
+                "/chain_rule_move",
+                data={"move_rule": "ipv4,test_chain,10", "direction": "up"},
+            )
+            assert resp.status_code == 302
+            assert "/chain_view" in resp.headers["Location"]
+            assert "#ipv4test_chain" in resp.headers["Location"]
+            mock_move.assert_called_once()
+
+    def test_chain_rule_move_failure_has_no_anchor(self, auth_client):
+        with patch("app.move_chain_rule_in_data", return_value=None):
+            resp = auth_client.post(
+                "/chain_rule_move",
+                data={"move_rule": "ipv4,test_chain,10", "direction": "up"},
+            )
+            assert resp.status_code == 302
+            assert "#" not in resp.headers["Location"]
+
+    def test_chain_rules_resequence_post(self, auth_client):
+        with patch(
+            "app.resequence_chain_rules_in_data", return_value="ipv4test_chain"
+        ) as mock_resequence:
+            resp = auth_client.post(
+                "/chain_rules_resequence",
+                data={"chain": "ipv4,test_chain"},
+            )
+            assert resp.status_code == 302
+            assert "/chain_view" in resp.headers["Location"]
+            mock_resequence.assert_called_once()
+
     def test_chain_view_chains_exist(self, auth_client):
         with patch(
             "app.assemble_detail_list_of_chains",
@@ -591,6 +625,40 @@ class TestFilterRoutes:
         resp = auth_client.get("/filter_rule_reorder")
         assert resp.status_code == 302
         assert "/filter_view" in resp.headers["Location"]
+
+    def test_filter_rule_move_post(self, auth_client):
+        with patch(
+            "app.move_filter_rule_in_data", return_value="ipv4test_filter"
+        ) as mock_move:
+            resp = auth_client.post(
+                "/filter_rule_move",
+                data={"move_rule": "ipv4,test_filter,10", "direction": "down"},
+            )
+            assert resp.status_code == 302
+            assert "/filter_view" in resp.headers["Location"]
+            assert "#ipv4test_filter" in resp.headers["Location"]
+            mock_move.assert_called_once()
+
+    def test_filter_rule_move_failure_has_no_anchor(self, auth_client):
+        with patch("app.move_filter_rule_in_data", return_value=None):
+            resp = auth_client.post(
+                "/filter_rule_move",
+                data={"move_rule": "ipv4,test_filter,10", "direction": "down"},
+            )
+            assert resp.status_code == 302
+            assert "#" not in resp.headers["Location"]
+
+    def test_filter_rules_resequence_post(self, auth_client):
+        with patch(
+            "app.resequence_filter_rules_in_data", return_value="ipv4test_filter"
+        ) as mock_resequence:
+            resp = auth_client.post(
+                "/filter_rules_resequence",
+                data={"filter": "ipv4,test_filter"},
+            )
+            assert resp.status_code == 302
+            assert "/filter_view" in resp.headers["Location"]
+            mock_resequence.assert_called_once()
 
     def test_filter_view_filters_exist(self, auth_client):
         with patch(

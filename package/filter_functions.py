@@ -17,6 +17,13 @@ import logging
 from flask import flash
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
+from package.rule_order_functions import (
+    apply_renumber_map,
+    build_renumber_map,
+    build_resequence_map,
+    build_swap_map,
+    RESEQUENCE_STEP,
+)
 
 
 def add_filter_rule_to_data(session, request):
@@ -319,6 +326,9 @@ def reorder_filter_rule_in_data(session, request):
     - Validates the new rule number
     - Updates the rule ordering
     - Writes changes back to the data file
+
+    If the new rule number is already in use, that rule — and any rules directly
+    following it with no gap in between — are each shifted up by one to make room.
     """
     # Get user's data
     user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
@@ -334,44 +344,180 @@ def reorder_filter_rule_in_data(session, request):
         old_rule_number = rule[2]
         new_rule_number = request.form["new_rule_number"].strip()
 
-    # Get list of existing rules in chain
-    existing_rule_list = user_data[ip_version]["filters"][filter]["rule-order"]
-
-    # Validate new rule number
-    if old_rule_number == new_rule_number:
-        flash("Old and new rule numbers must be different.", "danger")
+    fw_filter = _get_filter(user_data, ip_version, filter)
+    if fw_filter is None:
         return None
 
+    # Build the map of rule number changes, shifting rules that are in the way
     try:
-        int(new_rule_number)
-    except Exception:
-        flash("New rule number must be an integer.", "danger")
+        renumber_map = build_renumber_map(
+            fw_filter["rule-order"], old_rule_number, new_rule_number
+        )
+    except ValueError as e:
+        flash(str(e), "danger")
         return None
 
-    if new_rule_number in existing_rule_list:
-        flash("New rule number must not already exist in the filter.", "danger")
-        return None
-
-    # Add new rule to chain in user data
-    user_data[ip_version]["filters"][filter]["rules"][new_rule_number] = user_data[
-        ip_version
-    ]["filters"][filter]["rules"][old_rule_number]
-
-    # Add new rule to rule-order in user data
-    user_data[ip_version]["filters"][filter]["rule-order"].append(new_rule_number)
-
-    # Remove Old Rule from user data
-    del user_data[ip_version]["filters"][filter]["rules"][old_rule_number]
-
-    # Remove Old Rule from rule-order in user data
-    user_data[ip_version]["filters"][filter]["rule-order"].remove(old_rule_number)
-
-    # Sort rule-order in user data
-    user_data[ip_version]["filters"][filter]["rule-order"] = sorted(
-        user_data[ip_version]["filters"][filter]["rule-order"], key=int
-    )
+    # Apply the renumbering to the filter in user data
+    apply_renumber_map(fw_filter["rules"], fw_filter, renumber_map)
 
     # Write user's data to file
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
+    flash(
+        f"Renumbered rule {old_rule_number} to {new_rule_number} "
+        f"in filter {ip_version}/{filter}.",
+        "success",
+    )
+
     return f"{ip_version}{filter}"
+
+
+def move_filter_rule_in_data(session, request):
+    """
+    Moves a rule up or down within a filter by swapping rule numbers.
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing the rule to move and the direction
+
+    Form Parameters:
+        move_rule: Comma-separated string containing "ip_version,filter,rule_number"
+        direction: Either "up" (towards a lower rule number) or "down"
+
+    Returns:
+        str: Concatenated ip_version and filter name on success
+        None: If validation fails
+
+    The moved rule and its neighbour exchange rule numbers, so no other rule in
+    the filter is affected.  Moving the first rule up, or the last rule down, does
+    nothing.
+    """
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Set local vars from posted form data
+    rule = request.form["move_rule"].split(",")
+
+    if len(rule) != 3:
+        return None
+    else:
+        ip_version = rule[0]
+        filter = rule[1]
+        rule_number = rule[2]
+        direction = request.form["direction"].strip()
+
+    fw_filter = _get_filter(user_data, ip_version, filter)
+    if fw_filter is None:
+        return None
+
+    # Build the map that swaps this rule with its neighbour
+    try:
+        renumber_map = build_swap_map(fw_filter["rule-order"], rule_number, direction)
+    except ValueError as e:
+        flash(str(e), "danger")
+        return None
+
+    # Rule is already at the top or bottom of the filter
+    if not renumber_map:
+        return f"{ip_version}{filter}"
+
+    # Apply the renumbering to the filter in user data
+    apply_renumber_map(fw_filter["rules"], fw_filter, renumber_map)
+
+    # Write user's data to file
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    flash(
+        f"Moved rule {rule_number} {direction} in filter {ip_version}/{filter}.",
+        "success",
+    )
+
+    return f"{ip_version}{filter}"
+
+
+def resequence_filter_rules_in_data(session, request):
+    """
+    Resequences every rule in a filter to 10, 20, 30, ...
+
+    Args:
+        session: Flask session object containing data directory and firewall name
+        request: Flask request object containing the filter to resequence
+
+    Form Parameters:
+        filter: Comma-separated string containing "ip_version,filter"
+
+    Returns:
+        str: Concatenated ip_version and filter name on success
+        None: If validation fails
+
+    Relative rule order is preserved; only the rule numbers change.  This is used
+    to restore gaps in a filter whose rule numbers have been used up.
+    """
+    # Get user's data
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    # Set local vars from posted form data
+    filter_parts = request.form["filter"].split(",")
+
+    if len(filter_parts) != 2:
+        return None
+    else:
+        ip_version = filter_parts[0]
+        filter = filter_parts[1]
+
+    fw_filter = _get_filter(user_data, ip_version, filter)
+    if fw_filter is None:
+        return None
+
+    # Build the map of rule number changes
+    try:
+        renumber_map = build_resequence_map(fw_filter["rule-order"], RESEQUENCE_STEP)
+    except ValueError as e:
+        flash(str(e), "danger")
+        return None
+
+    # Rules are already sequenced
+    if not renumber_map:
+        flash(
+            f"Rules in filter {ip_version}/{filter} are already sequenced by "
+            f"{RESEQUENCE_STEP}.",
+            "warning",
+        )
+        return f"{ip_version}{filter}"
+
+    # Apply the renumbering to the filter in user data
+    apply_renumber_map(fw_filter["rules"], fw_filter, renumber_map)
+
+    # Write user's data to file
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    flash(
+        f"Resequenced rules in filter {ip_version}/{filter} by {RESEQUENCE_STEP}.",
+        "success",
+    )
+
+    return f"{ip_version}{filter}"
+
+
+def _get_filter(user_data, ip_version, filter):
+    """
+    Returns the filter dict for the given ip version and filter name.
+
+    Args:
+        user_data: The user's firewall data
+        ip_version: Either "ipv4" or "ipv6"
+        filter: Name of the filter
+
+    Returns:
+        dict: The filter, including its rule-order list and rules
+        None: If the filter does not exist or is missing rule-order or rules
+    """
+    try:
+        fw_filter = user_data[ip_version]["filters"][filter]
+        fw_filter["rule-order"]
+        fw_filter["rules"]
+    except (KeyError, TypeError):
+        flash(f"Filter {ip_version}/{filter} does not exist.", "danger")
+        return None
+
+    return fw_filter
