@@ -55,13 +55,19 @@ class Store:
 
 
 def _patches(store):
+    """Patch every data access the reorder request path makes.
+
+    The view routes also call list_user_files and list_snapshots, which query
+    MongoDB directly, so those are stubbed to keep these tests hermetic.
+    """
     return [
         patch("package.chain_functions.read_user_data_file", store.read),
         patch("package.chain_functions.write_user_data_file", store.write),
         patch("package.filter_functions.read_user_data_file", store.read),
         patch("package.filter_functions.write_user_data_file", store.write),
-        patch("package.data_file_functions.read_user_data_file", store.read),
         patch("app.read_user_data_file", store.read),
+        patch("app.list_user_files", return_value=["testfirewall"]),
+        patch("app.list_snapshots", return_value=[]),
     ]
 
 
