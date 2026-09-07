@@ -71,9 +71,11 @@ from package.chain_functions import (
     resequence_chain_rules_in_data,
 )
 from package.data_file_functions import (
+    AUTO_SNAPSHOT_TAG,
     add_extra_items,
     add_hostname,
     create_backup,
+    create_snapshot,
     delete_user_data_file,
     get_extra_items,
     get_system_name,
@@ -1940,38 +1942,61 @@ def snapshot_diff_display():
         )
 
 
-@app.route("/snapshot_tag_create", methods=["GET", "POST"])
+@app.route("/snapshots")
 @login_required
 @requires_firewall
-def snapshot_tag_create():
+def snapshot_manage():
     """
-    Create tags for snapshots.
+    Manage the selected firewall's snapshots.
 
-    Endpoint that handles creating and applying tags to snapshots.
-    Requires user to be logged in.
+    Lists every snapshot with its tag and the actions that apply to it (tag,
+    load, diff against the working copy, delete). The load, diff and delete
+    actions post to their existing endpoints; only tagging is handled here.
 
     Returns:
-        Response: Redirect to tag creation page or rendered template for tag creation
+        Response: Rendered snapshot management page
     """
-    if request.method == "POST":
+    file_list = list_user_files(session)
+    snapshot_list = list_snapshots(session)
+    message, config = generate_config(session)
 
-        tag_snapshot(session, request)
+    return render_template(
+        "snapshot_manage.html",
+        file_list=file_list,
+        snapshot_list=snapshot_list,
+        firewall_name=session["firewall_name"],
+        message=message,
+        username=session["username"],
+    )
 
-        return redirect(url_for("snapshot_tag_create"))
 
-    else:
-        file_list = list_user_files(session)
-        snapshot_list = list_snapshots(session)
-        message, config = generate_config(session)
+@app.route("/snapshot_tag", methods=["POST"])
+@login_required
+@requires_firewall
+def snapshot_tag():
+    """
+    Set or clear the tag on one snapshot.
 
-        return render_template(
-            "snapshot_tag_create.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            firewall_name=session["firewall_name"],
-            message=message,
-            username=session["username"],
-        )
+    Returns:
+        Response: Redirect back to the snapshot management page
+    """
+    tag_snapshot(session, request)
+
+    return redirect(url_for("snapshot_manage"))
+
+
+@app.route("/snapshot_tag_create")
+@login_required
+def snapshot_tag_create():
+    """
+    Redirect the old tag-only page to the snapshot management page.
+
+    Kept so links and bookmarks to the previous URL keep working.
+
+    Returns:
+        Response: Redirect to snapshot_manage
+    """
+    return redirect(url_for("snapshot_manage"))
 
 
 @app.route("/delete_config", methods=["POST"])
@@ -2093,24 +2118,27 @@ def select_firewall_config():
     # Restore the selected snapshot into "current" (only for an actual
     # snapshot; current/create/delete are handled below).
     if snapshot not in ("current", "create", "delete"):
+        # Safety net: the restore overwrites the working copy, so snapshot the
+        # working copy first. Without this, loading a snapshot by mistake
+        # discards unsaved work with no way back.
+        auto_snapshot_name = create_snapshot(
+            f"{session['data_dir']}/{session['firewall_name']}",
+            AUTO_SNAPSHOT_TAG,
+        )
+        if auto_snapshot_name:
+            flash(
+                f"Working copy saved as snapshot {auto_snapshot_name}.",
+                "success",
+            )
+
         restore_snapshot(
             f"{session['data_dir']}/{session['firewall_name']}", snapshot
         )
+        flash(f"Loaded snapshot {snapshot}.", "success")
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
     if snapshot == "create":
-        snapshot_name = datetime.now().strftime("%m-%d-%Y %H:%M:%S")
-
-        user_data = read_user_data_file(
-            f"{session['data_dir']}/{session['firewall_name']}"
-        )
-        if "tag" in user_data:
-            del user_data["tag"]
-        write_user_data_file(
-            f"{session['data_dir']}/{session['firewall_name']}",
-            user_data,
-            snapshot_name,
-        )
+        create_snapshot(f"{session['data_dir']}/{session['firewall_name']}")
 
     # If snapshot name is "delete" then delete a snapshot
     if snapshot == "delete":

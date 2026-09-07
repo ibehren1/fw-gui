@@ -5,12 +5,14 @@ Covers: allowed_file, update_schema, get_extra_items, get_system_name,
         list_user_keys, list_full_backups, list_user_files, list_snapshots,
         read_user_data_file, write_user_data_file, delete_user_data_file,
         add_extra_items, add_hostname, write_user_command_conf_file,
-        tag_snapshot, validate_mongodb_connection, upload_backup_file.
+        set_snapshot_tag, tag_snapshot, validate_mongodb_connection,
+        upload_backup_file.
 """
 
 import copy
 import os
 import sys
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import mongomock
@@ -20,6 +22,7 @@ from package.data_file_functions import (
     add_extra_items,
     add_hostname,
     allowed_file,
+    create_snapshot,
     delete_user_data_file,
     get_extra_items,
     get_system_name,
@@ -29,6 +32,7 @@ from package.data_file_functions import (
     list_user_keys,
     read_user_data_file,
     restore_snapshot,
+    set_snapshot_tag,
     tag_snapshot,
     update_schema,
     upload_backup_file,
@@ -607,6 +611,81 @@ class TestRestoreSnapshot:
         # Current must be untouched.
         assert coll.find_one({"_id": "test_firewall"}) is not None
 
+    def test_restore_does_not_leak_tag_to_current(self, mock_mongo, sample_user_data):
+        """The snapshot's tag must not follow it onto the working copy."""
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        coll.insert_one({"_id": "test_firewall", **copy.deepcopy(sample_user_data)})
+        snap_data = copy.deepcopy(sample_user_data)
+        snap_data["firewall"] = "test_firewall"
+        snap_data["snapshot"] = "snap1"
+        snap_data["tag"] = "pre-upgrade"
+        coll.insert_one(snap_data)
+
+        restore_snapshot("data/testuser/test_firewall", "snap1")
+
+        assert "tag" not in coll.find_one({"_id": "test_firewall"})
+        # The snapshot keeps its own tag.
+        assert (
+            coll.find_one({"firewall": "test_firewall", "snapshot": "snap1"})["tag"]
+            == "pre-upgrade"
+        )
+
+
+class TestCreateSnapshot:
+    def test_copies_current_into_a_new_snapshot(self, mock_mongo, sample_user_data):
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        current = copy.deepcopy(sample_user_data)
+        current["extra-items"] = ["current item"]
+        coll.insert_one({"_id": "test_firewall", **current})
+
+        name = create_snapshot("data/testuser/test_firewall")
+
+        snap = coll.find_one({"firewall": "test_firewall", "snapshot": name})
+        assert snap["extra-items"] == ["current item"]
+        assert "tag" not in snap
+        # The working copy is left alone.
+        assert coll.find_one({"_id": "test_firewall"})["extra-items"] == ["current item"]
+
+    def test_applies_the_tag(self, mock_mongo, sample_user_data):
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        coll.insert_one({"_id": "test_firewall", **copy.deepcopy(sample_user_data)})
+
+        name = create_snapshot("data/testuser/test_firewall", "my-tag")
+
+        snap = coll.find_one({"firewall": "test_firewall", "snapshot": name})
+        assert snap["tag"] == "my-tag"
+
+    def test_no_current_config_creates_nothing(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+
+        assert create_snapshot("data/testuser/test_firewall") is None
+        assert coll.count_documents({}) == 0
+
+    def test_name_collision_steps_to_the_next_second(
+        self, mock_mongo, sample_user_data
+    ):
+        """A snapshot in the same second must not overwrite an existing one."""
+        db = mock_mongo["test_db"]
+        coll = db["testuser"]
+        coll.insert_one({"_id": "test_firewall", **copy.deepcopy(sample_user_data)})
+
+        first = create_snapshot("data/testuser/test_firewall", "first")
+        with patch("package.data_file_functions.datetime") as mock_datetime:
+            # Force the second create back onto the first one's timestamp.
+            mock_datetime.now.return_value = datetime.strptime(
+                first, "%m-%d-%Y %H:%M:%S"
+            )
+            second = create_snapshot("data/testuser/test_firewall", "second")
+
+        assert second != first
+        assert coll.count_documents({"firewall": "test_firewall"}) == 2
+        assert coll.find_one({"snapshot": first})["tag"] == "first"
+        assert coll.find_one({"snapshot": second})["tag"] == "second"
+
 
 # ===========================================================================
 # write_user_data_file (MongoDB)
@@ -643,6 +722,43 @@ class TestWriteUserDataFile:
         doc = db["testuser"].find_one({"_id": "myfirewall"})
         assert doc is not None
         assert doc["_id"] == "myfirewall"
+
+    def test_write_current_unsets_snapshot_only_keys(self, mock_mongo):
+        """$set alone would leave a previously leaked tag stored forever."""
+        db = mock_mongo["test_db"]
+        db["testuser"].insert_one(
+            {
+                "_id": "myfirewall",
+                "version": "1",
+                "tag": "leaked",
+                "firewall": "myfirewall",
+                "snapshot": "old-snap",
+            }
+        )
+
+        write_user_data_file("data/testuser/myfirewall", {"version": "1"})
+
+        doc = db["testuser"].find_one({"_id": "myfirewall"})
+        assert "tag" not in doc
+        assert "firewall" not in doc
+        assert "snapshot" not in doc
+
+    def test_write_current_strips_tag_from_input(self, mock_mongo):
+        write_user_data_file(
+            "data/testuser/myfirewall", {"version": "1", "tag": "should not persist"}
+        )
+        db = mock_mongo["test_db"]
+        assert "tag" not in db["testuser"].find_one({"_id": "myfirewall"})
+
+    def test_write_snapshot_keeps_tag(self, mock_mongo, sample_user_data):
+        data = copy.deepcopy(sample_user_data)
+        data["tag"] = "keep-me"
+        write_user_data_file("data/testuser/test_firewall", data, snapshot="snap_2024")
+        db = mock_mongo["test_db"]
+        doc = db["testuser"].find_one(
+            {"firewall": "test_firewall", "snapshot": "snap_2024"}
+        )
+        assert doc["tag"] == "keep-me"
 
     def test_write_snapshot(self, mock_mongo, sample_user_data):
         write_user_data_file(
@@ -833,20 +949,73 @@ class TestWriteUserCommandConfFile:
 
 
 # ===========================================================================
-# tag_snapshot
+# set_snapshot_tag / tag_snapshot
 # ===========================================================================
+
+
+def _insert_snapshot(coll, sample_user_data, snapshot="snap_2024", **extra):
+    """Insert a snapshot document for test_firewall and return it."""
+    snap_data = copy.deepcopy(sample_user_data)
+    snap_data["firewall"] = "test_firewall"
+    snap_data["snapshot"] = snapshot
+    snap_data.update(extra)
+    coll.insert_one(snap_data)
+    return snap_data
+
+
+class TestSetSnapshotTag:
+    def test_sets_tag(self, mock_mongo, sample_user_data):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+
+        assert (
+            set_snapshot_tag("data/testuser/test_firewall", "snap_2024", "pre-upgrade")
+            is True
+        )
+
+        doc = coll.find_one({"firewall": "test_firewall", "snapshot": "snap_2024"})
+        assert doc["tag"] == "pre-upgrade"
+
+    def test_empty_tag_removes_the_field(self, mock_mongo, sample_user_data):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data, tag="old-tag")
+
+        assert set_snapshot_tag("data/testuser/test_firewall", "snap_2024", "") is True
+
+        doc = coll.find_one({"firewall": "test_firewall", "snapshot": "snap_2024"})
+        assert "tag" not in doc
+
+    def test_unknown_snapshot_writes_nothing(self, mock_mongo, sample_user_data):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        before = coll.count_documents({})
+
+        assert (
+            set_snapshot_tag("data/testuser/test_firewall", "no_such_snap", "x") is False
+        )
+
+        # No upsert: a bad name must not create a ghost snapshot document.
+        assert coll.count_documents({}) == before
+
+    def test_does_not_rewrite_config_data(self, mock_mongo, sample_user_data):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        coll.update_one(
+            {"firewall": "test_firewall", "snapshot": "snap_2024"},
+            {"$set": {"ipv4": {"marker": True}}},
+        )
+
+        set_snapshot_tag("data/testuser/test_firewall", "snap_2024", "note")
+
+        doc = coll.find_one({"firewall": "test_firewall", "snapshot": "snap_2024"})
+        assert doc["ipv4"] == {"marker": True}
 
 
 class TestTagSnapshot:
     def test_tag_snapshot_updates_tag(self, app, mock_mongo, sample_user_data):
-        db = mock_mongo["test_db"]
-        coll = db["testuser"]
-        # Write a snapshot
-        snap_data = copy.deepcopy(sample_user_data)
-        snap_data["firewall"] = "test_firewall"
-        snap_data["snapshot"] = "snap_2024"
-        coll.insert_one(snap_data)
-        session = {"username": "testuser"}
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        session = {"username": "testuser", "data_dir": "data/testuser"}
         request = make_request(
             {
                 "firewall_name": "test_firewall",
@@ -855,18 +1024,14 @@ class TestTagSnapshot:
             }
         )
         with app.test_request_context():
-            tag_snapshot(session, request)
+            assert tag_snapshot(session, request) is True
         doc = coll.find_one({"firewall": "test_firewall", "snapshot": "snap_2024"})
         assert doc["tag"] == "pre-upgrade"
 
     def test_tag_snapshot_flashes_success(self, app, mock_mongo, sample_user_data):
-        db = mock_mongo["test_db"]
-        coll = db["testuser"]
-        snap_data = copy.deepcopy(sample_user_data)
-        snap_data["firewall"] = "test_firewall"
-        snap_data["snapshot"] = "snap_2024"
-        coll.insert_one(snap_data)
-        session = {"username": "testuser"}
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        session = {"username": "testuser", "data_dir": "data/testuser"}
         request = make_request(
             {
                 "firewall_name": "test_firewall",
@@ -880,6 +1045,81 @@ class TestTagSnapshot:
             tag_snapshot(session, request)
             messages = get_flashed_messages(with_categories=True)
         assert any("success" in cat for cat, msg in messages)
+
+    def test_tag_snapshot_trims_and_truncates(self, app, mock_mongo, sample_user_data):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        session = {"username": "testuser", "data_dir": "data/testuser"}
+        request = make_request(
+            {
+                "firewall_name": "test_firewall",
+                "snapshot_name": "snap_2024",
+                "snapshot_tag": "  " + "x" * 150 + "  ",
+            }
+        )
+        with app.test_request_context():
+            tag_snapshot(session, request)
+        doc = coll.find_one({"firewall": "test_firewall", "snapshot": "snap_2024"})
+        assert doc["tag"] == "x" * 100
+
+    def test_tag_snapshot_clears_tag(self, app, mock_mongo, sample_user_data):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data, tag="old-tag")
+        session = {"username": "testuser", "data_dir": "data/testuser"}
+        request = make_request(
+            {
+                "firewall_name": "test_firewall",
+                "snapshot_name": "snap_2024",
+                "snapshot_tag": "   ",
+            }
+        )
+        with app.test_request_context():
+            assert tag_snapshot(session, request) is True
+        doc = coll.find_one({"firewall": "test_firewall", "snapshot": "snap_2024"})
+        assert "tag" not in doc
+
+    @pytest.mark.parametrize(
+        "form",
+        [
+            {"firewall_name": "../escape", "snapshot_name": "snap_2024"},
+            {"firewall_name": "test_firewall", "snapshot_name": "a/b"},
+            {"firewall_name": "", "snapshot_name": "snap_2024"},
+        ],
+    )
+    def test_tag_snapshot_rejects_unsafe_names(
+        self, app, mock_mongo, sample_user_data, form
+    ):
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        session = {"username": "testuser", "data_dir": "data/testuser"}
+        request = make_request({**form, "snapshot_tag": "nope"})
+        with app.test_request_context():
+            from flask import get_flashed_messages
+
+            assert tag_snapshot(session, request) is False
+            messages = get_flashed_messages(with_categories=True)
+        assert any(cat == "danger" for cat, msg in messages)
+
+    def test_tag_snapshot_missing_snapshot_flashes_danger(
+        self, app, mock_mongo, sample_user_data
+    ):
+        """A name that does not resolve used to raise TypeError (an HTTP 500)."""
+        coll = mock_mongo["test_db"]["testuser"]
+        _insert_snapshot(coll, sample_user_data)
+        session = {"username": "testuser", "data_dir": "data/testuser"}
+        request = make_request(
+            {
+                "firewall_name": "test_firewall",
+                "snapshot_name": "no_such_snap",
+                "snapshot_tag": "nope",
+            }
+        )
+        with app.test_request_context():
+            from flask import get_flashed_messages
+
+            assert tag_snapshot(session, request) is False
+            messages = get_flashed_messages(with_categories=True)
+        assert any(cat == "danger" for cat, msg in messages)
 
 
 # ===========================================================================

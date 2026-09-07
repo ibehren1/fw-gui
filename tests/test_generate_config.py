@@ -842,3 +842,42 @@ def test_unsafe_chain_name_is_skipped(mock_session, patch_read):
 
     assert not any("delete firewall" in c and c.startswith("set ") for c in config)
     assert any("Skipped chain with invalid name" in c for c in config)
+
+
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "Added chains for VPN",
+        "reorder filters",
+        "new groups added",
+        "plain note",
+    ],
+)
+def test_snapshot_tag_does_not_break_generation(mock_session, patch_read, tag):
+    """A snapshot `tag` is not an IP version and must not be walked as config.
+
+    Snapshot documents carry a free-text `tag` alongside ipv4/ipv6. Iterating
+    every top-level key made `"chains" in user_data["tag"]` a substring test on
+    that text, so a tag mentioning chains/filters/groups then indexed a string
+    with a string.
+    """
+    data = {
+        "tag": tag,
+        "ipv4": {
+            "chains": {
+                "WAN_LOCAL": {
+                    "rule-order": [],
+                    "default": {
+                        "description": "WAN to local",
+                        "default_action": "drop",
+                    },
+                }
+            }
+        },
+    }
+    patch_read(data)
+
+    _, config = generate_config(mock_session, snapshot="01-01-2026 00:00:00", diff=True)
+
+    assert "set firewall ipv4 name WAN_LOCAL default-action 'drop'" in config
+    assert not any(tag in line for line in config)

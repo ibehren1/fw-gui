@@ -19,6 +19,8 @@ The web-based FW-GUI allows the user to visually:
 - Create and manage flowtables
 - Support for managing multiple firewall configurations
 - Create and compare (diff) snapshots of firewall configurations
+- Tag snapshots with a note describing why they were taken, and load or delete them from the Manage Snapshots page
+- Loading a snapshot automatically snapshots the working copy first (tagged "auto-snapshot before reloading snapshot"), so nothing is lost
 - Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface
 - Import/export a JSON file of the fw-gui configuration for backup and to move between instances of the GUI
 

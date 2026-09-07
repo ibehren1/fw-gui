@@ -1,0 +1,233 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<div class="snapshot-manage">
+    <h2 class="section-title">
+        <img src="{{ url_for('static', filename='tag-yellow.svg') }}" width="20" height="20" alt="" class="section-icon">
+        Manage Snapshots
+    </h2>
+    <p class="section-description">
+        Tag a snapshot to record why it was taken, or load, compare and delete
+        snapshots of <strong>{{ firewall_name }}</strong>. Saving an empty tag
+        removes the tag. Loading a snapshot overwrites the working copy, so the
+        working copy is saved as a new snapshot first, tagged
+        &ldquo;auto-snapshot before reloading snapshot&rdquo;.
+    </p>
+
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% if snapshot_list %}
+    <div class="snapshots-table">
+        <div class="table-header">
+            <div class="header-cell">Snapshot</div>
+            <div class="header-cell">Tag</div>
+            <div class="header-cell">Actions</div>
+        </div>
+
+        {#
+            One form per row. HTML forbids nested forms, so each button picks its
+            own endpoint with formaction: tagging is handled here, while load,
+            diff and delete post to the endpoints the sidebar already uses. Only
+            the clicked button's name/value is submitted, so the two name="file"
+            buttons do not collide, and fields the receiving endpoint does not
+            read are ignored.
+        #}
+        {% for snapshot in snapshot_list %}
+        <form method="post" class="snapshot-row">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="firewall_name" value="{{ snapshot.id }}">
+            <input type="hidden" name="snapshot_name" value="{{ snapshot.name }}">
+            <input type="hidden" name="snapshot_1" value="{{ snapshot.name }}">
+            <input type="hidden" name="snapshot_2" value="current">
+
+            <div class="row-cell snapshot-name">{{ snapshot.name }}</div>
+
+            <div class="row-cell">
+                <label for="snapshot_tag_{{ loop.index }}" class="visually-hidden">
+                    Tag for snapshot {{ snapshot.name }}
+                </label>
+                <input
+                    type="text"
+                    name="snapshot_tag"
+                    id="snapshot_tag_{{ loop.index }}"
+                    class="form-input tag-input"
+                    maxlength="100"
+                    placeholder="No tag"
+                    value="{{ snapshot.tag }}"
+                >
+            </div>
+
+            <div class="row-cell row-actions">
+                <button
+                    type="submit"
+                    formaction="{{ url_for('snapshot_tag') }}"
+                    class="btn btn-primary"
+                    title="Save this tag"
+                >
+                    Save Tag
+                </button>
+                <button
+                    type="submit"
+                    name="file"
+                    value="{{ snapshot.id }}/{{ snapshot.name }}"
+                    formaction="{{ url_for('select_firewall_config') }}"
+                    class="btn btn-secondary"
+                    title="Load this snapshot, overwriting the working copy"
+                    onclick="return confirm('Load snapshot {{ snapshot.name }}?\n\nThis overwrites your current working copy, which is saved as a new snapshot first.');"
+                >
+                    Load
+                </button>
+                <button
+                    type="submit"
+                    formaction="{{ url_for('snapshot_diff_display') }}"
+                    formtarget="_blank"
+                    class="btn btn-secondary"
+                    title="Compare this snapshot with the working copy"
+                >
+                    Diff vs Current
+                </button>
+                <button
+                    type="submit"
+                    name="file"
+                    value="{{ snapshot.id }}/delete/{{ snapshot.name }}"
+                    formaction="{{ url_for('select_firewall_config') }}"
+                    class="btn btn-delete"
+                    title="Delete this snapshot"
+                    onclick="return confirm('Delete snapshot {{ snapshot.name }}?\n\nThis cannot be undone.');"
+                >
+                    Delete
+                </button>
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+
+    <div class="form-actions">
+        <a href="{{ url_for('snapshot_diff_choose') }}" class="btn btn-secondary">Compare Any Two Snapshots</a>
+        <a href="{{ url_for('chain_view') }}" class="btn btn-secondary">Back to Configuration</a>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No snapshots yet. Use Create under Snapshots in the left sidebar.</p>
+        <a href="{{ url_for('chain_view') }}" class="btn btn-primary">Back to Configuration</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.snapshot-manage {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.section-icon {
+    vertical-align: -0.2rem;
+    margin-right: 0.25rem;
+}
+
+.snapshots-table {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.table-header,
+.snapshot-row {
+    display: grid;
+    grid-template-columns: 19% 26% 55%;
+    align-items: center;
+}
+
+.table-header {
+    background: var(--primary-color);
+    color: var(--text-dark);
+}
+
+.header-cell {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+}
+
+.snapshot-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.snapshot-row:last-of-type {
+    border-bottom: none;
+}
+
+.row-cell {
+    padding: 0.75rem 0.5rem;
+}
+
+.snapshot-name {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* The shared .form-input adds a bottom margin meant for stacked forms. */
+.tag-input {
+    margin-bottom: 0;
+}
+
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Label kept for screen readers; the column heading covers sighted users. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+}
+
+.empty-state p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+    .table-header {
+        display: none;
+    }
+
+    .snapshot-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .row-cell {
+        padding: 0.25rem 1rem;
+    }
+}
+</style>
+{% endblock body %}

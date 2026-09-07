@@ -189,20 +189,46 @@ flowchart TD
     Cur -->|"create snapshot (copy current to a new snapshot doc)"| Snap1
     Cur --> Snap2
     Snap2 -->|"RESTORE (destructive):<br/>overwrite current with snapshot data"| Cur
+    Cur -.->|"auto-snapshot taken first,<br/>tag='auto-snapshot before reloading snapshot'"| Snap3["Snapshot doc: firewall='home-fw', snapshot='09-06 09:15'"]
 ```
 
-- **Create** (`app.py select_firewall_config:1911-1923`): reads current, drops
-  `tag`, writes a new doc keyed `{firewall, snapshot=<timestamp>}`.
-- **List** (`list_snapshots:478-525`): `{"firewall": <name>, "snapshot": {"$exists": True}}`.
-- **Restore** (`read_user_data_file:817-821`): with a named snapshot and
-  `diff=False`, it **deletes and rewrites the current document** from the
-  snapshot — restore is **destructive to current**. `select_firewall_config`
-  triggers this at `:1908`.
-- **Delete** (`delete_user_data_file:279-281`, via the 4th path segment).
-- **Tag** (`tag_snapshot:828-865`): reads snapshot with `diff=True` (non-destructive)
-  and writes back a `tag`.
+- **Create** (`create_snapshot`, called by `app.py select_firewall_config`):
+  reads current, writes a new doc keyed `{firewall, snapshot=<timestamp>}`.
+  Names have one-second granularity and are the only thing identifying a
+  snapshot, so `_unique_snapshot_name` steps the timestamp forward a second at a
+  time until the name is unused — otherwise the upsert in `write_user_data_file`
+  would silently overwrite a snapshot taken in the same second.
+- **List** (`list_snapshots`): `{"firewall": <name>, "snapshot": {"$exists": True}}`,
+  projected to `snapshot`/`firewall`/`tag` and sorted by `_id` **ascending**
+  (creation order, oldest first). The `MM-DD-YYYY HH:MM:SS` name does not sort
+  lexicographically, so the name is not usable as a sort key.
+- **Restore** (`restore_snapshot`): reads the snapshot non-destructively, then
+  **deletes and rewrites the current document** from it — restore is
+  **destructive to current**. `select_firewall_config` triggers this, and first
+  calls `create_snapshot(..., AUTO_SNAPSHOT_TAG)` so the working copy about to be
+  overwritten survives as a snapshot tagged `auto-snapshot before reloading snapshot`.
+  Restores are therefore recoverable: load the auto-snapshot to get back.
+- **Delete** (`delete_user_data_file`, via the 4th path segment).
+- **Tag** (`set_snapshot_tag`, called by `tag_snapshot` from the
+  `POST /snapshot_tag` route): a targeted `update_one` on the snapshot document
+  that touches **only** the `tag` field — the configuration data is neither read
+  nor rewritten, and there is no `upsert`, so a name that does not resolve is a
+  no-op. An empty tag `$unset`s the field; "untagged" is the absence of the key,
+  never `""`.
 - **Diff** reads a snapshot with `diff=True` so current is untouched
-  (`package/diff_functions.py:51-54`).
+  (`package/diff_functions.py`).
+
+### Snapshot-only keys must never reach a current document
+
+`firewall`, `snapshot` and `tag` exist only on snapshot documents
+(`_SNAPSHOT_ONLY_KEYS` in `package/data_file_functions.py`). When
+`write_user_data_file` writes a `current` document it pops them from the data
+**and** `$unset`s them on the stored document; `$set` alone would leave a key
+that had already leaked in place permanently. This matters because
+`generate_config` walks the document's top-level keys: a `tag` string sitting
+next to `ipv4`/`ipv6` used to be treated as an IP version and crashed config
+generation with `TypeError: string indices must be integers`. `generate_config`
+now also allow-lists `ipv4`/`ipv6` as a second line of defence.
 
 ---
 
