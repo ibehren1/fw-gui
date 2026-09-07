@@ -21,7 +21,7 @@ import sys
 import tempfile
 import uuid
 import zipfile
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import boto3
 import bson
@@ -30,8 +30,29 @@ from cryptography.fernet import Fernet
 from flask import flash
 from werkzeug.utils import secure_filename
 
+from package.validators import is_safe_name
+
 # Shared MongoDB client — reused across calls to avoid connection leaks.
 _mongo_client = None
+
+# Keys that exist only on snapshot documents. A "current" document must never
+# carry them: generate_config walks the document's top-level keys, and a stray
+# `tag` string there previously crashed config generation.
+_SNAPSHOT_ONLY_KEYS = ("firewall", "snapshot", "tag")
+
+# Snapshot tags are free-text labels; cap them so a pasted config cannot become
+# a tag. Mirrored by maxlength on the input in templates/snapshot_manage.html.
+_MAX_TAG_LENGTH = 100
+
+# Tag put on the snapshot taken automatically just before a snapshot is
+# restored, so the working copy that the restore overwrites is recoverable.
+AUTO_SNAPSHOT_TAG = "auto-snapshot before reloading snapshot"
+
+# Snapshot names are timestamps, and the name is the only thing identifying a
+# snapshot of a config -- two snapshots taken in the same second would collide,
+# and write_user_data_file upserts, so the second would silently overwrite the
+# first.
+_SNAPSHOT_NAME_FORMAT = "%m-%d-%Y %H:%M:%S"
 
 
 def _get_mongo_client():
@@ -39,6 +60,39 @@ def _get_mongo_client():
     if _mongo_client is None:
         _mongo_client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
     return _mongo_client
+
+
+def _unique_snapshot_name(filename):
+    """
+    Builds a timestamp snapshot name that is not already used by this config.
+
+    Args:
+        filename (str): Path in format 'data/<user>/<firewall_name>'
+
+    Returns:
+        str: A snapshot name in _SNAPSHOT_NAME_FORMAT
+
+    Names have one-second granularity, so creating a snapshot and then loading
+    another one within the same second would otherwise reuse a name and
+    overwrite the existing snapshot document. Step forward a second at a time
+    until the name is free.
+    """
+    # filename format:  data/<user>/<firewall_name>
+    collection_name = filename.split("/")[1]
+    firewall = filename.split("/")[2]
+
+    client = _get_mongo_client()
+    db = client[os.environ.get("MONGODB_DATABASE")]
+    collection = db[collection_name]
+
+    timestamp = datetime.now()
+    while collection.count_documents(
+        {"firewall": firewall, "snapshot": timestamp.strftime(_SNAPSHOT_NAME_FORMAT)},
+        limit=1,
+    ):
+        timestamp += timedelta(seconds=1)
+
+    return timestamp.strftime(_SNAPSHOT_NAME_FORMAT)
 
 
 def add_extra_items(session, request):
@@ -197,6 +251,42 @@ def create_backup(session, user=False):
             flash("Backup failed.", "critical")
 
     return
+
+
+def create_snapshot(filename, tag=""):
+    """
+    Copies the current config of a firewall into a new snapshot document.
+
+    Args:
+        filename (str): Path in format 'data/<user>/<firewall_name>'
+        tag (str, optional): Tag to put on the new snapshot. Defaults to no tag.
+
+    Returns:
+        str: Name of the snapshot created, or None if there was nothing to copy
+
+    The function:
+    1. Reads the current config
+    2. Picks a timestamp name that no existing snapshot of this config uses
+    3. Writes the config as a snapshot document
+    4. Tags the new snapshot if a tag was given
+    """
+    user_data = read_user_data_file(filename)
+
+    # No current document means there is nothing to snapshot; writing anyway
+    # would create an empty snapshot that only gets in the way.
+    if not user_data:
+        return None
+
+    snapshot_name = _unique_snapshot_name(filename)
+
+    # write_user_data_file mutates the dict it is handed (pops _id, sets
+    # firewall/snapshot), so it gets the read data last.
+    write_user_data_file(filename, user_data, snapshot_name)
+
+    if tag:
+        set_snapshot_tag(filename, snapshot_name, tag)
+
+    return snapshot_name
 
 
 def decrypt_file(filename, key):
@@ -488,7 +578,9 @@ def list_snapshots(session):
     2. Checks if a firewall is currently selected in the session
     3. Connects to MongoDB using environment variables for connection details
     4. Queries the user's collection for documents containing snapshots of the selected firewall
-    5. Sorts results by snapshot timestamp in descending order
+    5. Sorts results oldest first, by _id (creation order). Snapshot names are
+       formatted MM-DD-YYYY HH:MM:SS, which does not sort lexicographically, so
+       the name is not usable as a sort key.
     6. Extracts snapshot details and optional tags into formatted dictionaries
     7. Returns the list of snapshot dictionaries
     """
@@ -504,13 +596,16 @@ def list_snapshots(session):
         query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
 
         logging.debug("Reading data from Mongo.")
-        for doc in collection.find(query).sort("_id", pymongo.ASCENDING):
-            if "tag" in doc:
-                tag = doc["tag"]
-            else:
-                tag = ""
+        # Project just the three fields used below; this runs on nearly every
+        # page render, and the documents hold entire firewall configurations.
+        projection = {"snapshot": 1, "firewall": 1, "tag": 1}
+        for doc in collection.find(query, projection).sort("_id", pymongo.ASCENDING):
             snapshot_list.append(
-                {"name": doc["snapshot"], "id": doc["firewall"], "tag": tag}
+                {
+                    "name": doc["snapshot"],
+                    "id": doc["firewall"],
+                    "tag": doc.get("tag", ""),
+                }
             )
 
     logging.debug("Snapshot List: " + str(snapshot_list))
@@ -838,44 +933,88 @@ def restore_snapshot(filename, snapshot):
     return user_data or {}
 
 
-def tag_snapshot(session, request):
+def set_snapshot_tag(filename, snapshot, tag):
     """
-    Updates the tag for a firewall configuration snapshot.
+    Sets or clears the tag on a single snapshot document.
+
+    Only the `tag` field is touched -- the configuration data is neither read
+    nor rewritten, so tagging cannot disturb the config (and cannot create a
+    document: there is deliberately no upsert here, so a name that does not
+    resolve is a no-op rather than a ghost snapshot).
 
     Args:
-        session: The current user session containing username and other data
+        filename (str): Path in format 'data/<user>/<firewall_name>'
+        snapshot (str): Name of the snapshot to tag
+        tag (str): Tag value; an empty value removes the field entirely
+
+    Returns:
+        bool: True if the snapshot document existed, False otherwise
+    """
+    # filename format:  data/<user>/<firewall_name>
+    collection_name = filename.split("/")[1]
+    firewall = filename.split("/")[2]
+
+    logging.debug("Prepping Mongo query.")
+    client = _get_mongo_client()
+    db = client[os.environ.get("MONGODB_DATABASE")]
+    collection = db[collection_name]
+
+    query = {"firewall": firewall, "snapshot": snapshot}
+    # An empty tag means "untagged", which is the absence of the key. Storing ""
+    # instead would make "never tagged" and "tag cleared" indistinguishable.
+    if tag:
+        update = {"$set": {"tag": tag}}
+    else:
+        update = {"$unset": {"tag": ""}}
+
+    logging.debug("Writing snapshot tag to Mongo.")
+    result = collection.update_one(query, update)
+
+    return result.matched_count == 1
+
+
+def tag_snapshot(session, request):
+    """
+    Updates the tag for a firewall configuration snapshot from a form post.
+
+    Args:
+        session: The current user session containing data_dir and other data
         request: The HTTP request containing form data with:
             - firewall_name: Name of the firewall configuration
             - snapshot_name: Name of the snapshot to tag
-            - snapshot_tag: Tag value to apply to the snapshot
+            - snapshot_tag: Tag value to apply (empty clears the tag)
 
     The function:
     1. Extracts firewall name, snapshot name and tag from the request form
-    2. Reads the snapshot data for the specified firewall/snapshot
-    3. Updates the tag field in the snapshot data
-    4. Writes the updated data back to storage
-    5. Displays a success message
+    2. Validates the names, which address a MongoDB document
+    3. Trims the tag and truncates it to _MAX_TAG_LENGTH
+    4. Writes just the tag field to the snapshot document
+    5. Displays a success or failure message
 
     Returns:
-        None
+        bool: True if the tag was written, False if the request was rejected
     """
-    firewall_name = request.form["firewall_name"]
-    snapshot_name = request.form["snapshot_name"]
-    snapshot_tag = request.form["snapshot_tag"]
-    user_data = read_user_data_file(
-        f"data/{session['username']}/{firewall_name}",
-        snapshot=snapshot_name,
-        diff=True,
-    )
+    firewall_name = request.form.get("firewall_name", "")
+    snapshot_name = request.form.get("snapshot_name", "")
+    snapshot_tag = request.form.get("snapshot_tag", "").strip()[:_MAX_TAG_LENGTH]
 
-    user_data["tag"] = snapshot_tag
-    write_user_data_file(
-        f"data/{session['username']}/{firewall_name}", user_data, snapshot=snapshot_name
-    )
+    # Both names address a MongoDB document and are supplied by the client.
+    if not is_safe_name(firewall_name) or not is_safe_name(snapshot_name):
+        flash("Invalid snapshot selection.", "danger")
+        return False
 
-    flash(f"Tag updated for snapshot {snapshot_name}.", "success")
+    if not set_snapshot_tag(
+        f"{session['data_dir']}/{firewall_name}", snapshot_name, snapshot_tag
+    ):
+        flash(f"Snapshot {snapshot_name} not found.", "danger")
+        return False
 
-    return
+    if snapshot_tag:
+        flash(f"Tag updated for snapshot {snapshot_name}.", "success")
+    else:
+        flash(f"Tag cleared for snapshot {snapshot_name}.", "success")
+
+    return True
 
 
 def update_schema(user_data):
@@ -1087,7 +1226,8 @@ def write_user_data_file(filename, data, snapshot="current"):
     1. Extracts collection name (user) and firewall name from filename path
     2. Connects to MongoDB using environment variables for URI and database name
     3. For current snapshots:
-        - Removes _id, firewall and snapshot fields from data
+        - Removes _id and the snapshot-only fields (firewall, snapshot, tag)
+          from data, and $unsets them on the stored document
         - Uses firewall name as document _id
     4. For named snapshots:
         - Removes _id field
@@ -1112,22 +1252,27 @@ def write_user_data_file(filename, data, snapshot="current"):
     collection = db[collection_name]
 
     if snapshot == "current":
-        # Remove items that should not be in a "current" config.
-        if "_id" in data:
-            del data["_id"]
-        if "firewall" in data:
-            del data["firewall"]
-        if "snapshot" in data:
-            del data["snapshot"]
+        # Remove items that should not be in a "current" config. Dropping them
+        # from `data` is not enough: $set leaves anything already stored in
+        # place, so a document that picked up a snapshot-only key (restoring a
+        # tagged snapshot used to leak `tag`) would keep it forever. $unset
+        # clears it. Safe to combine with $set because the keys are popped
+        # first, so no field appears in both operators.
+        data.pop("_id", None)
+        for key in _SNAPSHOT_ONLY_KEYS:
+            data.pop(key, None)
         query = {"_id": firewall}
+        values = {
+            "$set": data,
+            "$unset": {key: "" for key in _SNAPSHOT_ONLY_KEYS},
+        }
     else:
-        if "_id" in data:
-            del data["_id"]
+        data.pop("_id", None)
         # Add snapshot and firewall to the data.
         data["firewall"] = firewall
         data["snapshot"] = snapshot
         query = {"firewall": firewall, "snapshot": snapshot}
-    values = {"$set": data}
+        values = {"$set": data}
 
     logging.debug("Writing data to Mongo.")
     logging.debug(query)

@@ -765,9 +765,7 @@ class TestConfigRoutes:
             assert "/display_config" in resp.headers["Location"]
 
     def test_select_firewall_config_snapshot_create(self, auth_client):
-        with patch(
-            "app.read_user_data_file", return_value={"test": "data"}
-        ), patch("app.write_user_data_file") as mock_write, patch(
+        with patch("app.create_snapshot") as mock_create, patch(
             "app.get_system_name", return_value=("192.168.1.1", "22")
         ):
             resp = auth_client.post(
@@ -775,7 +773,35 @@ class TestConfigRoutes:
                 data={"file": "my_fw/create"},
             )
             assert resp.status_code == 302
-            mock_write.assert_called_once()
+            mock_create.assert_called_once_with("data/testuser/my_fw")
+
+    def test_select_firewall_config_snapshot_load_auto_snapshots_first(
+        self, auth_client
+    ):
+        """Loading a snapshot must save the working copy it overwrites."""
+        call_order = []
+
+        def fake_create(*args, **kwargs):
+            call_order.append("create")
+            return "09-06-2026 12:00:00"
+
+        with patch("app.create_snapshot", side_effect=fake_create) as mock_create, patch(
+            "app.restore_snapshot",
+            side_effect=lambda *a, **k: call_order.append("restore"),
+        ) as mock_restore, patch(
+            "app.get_system_name", return_value=("192.168.1.1", "22")
+        ):
+            resp = auth_client.post(
+                "/select_firewall_config",
+                data={"file": "my_fw/snap1"},
+            )
+
+        assert resp.status_code == 302
+        assert call_order == ["create", "restore"]
+        mock_create.assert_called_once_with(
+            "data/testuser/my_fw", "auto-snapshot before reloading snapshot"
+        )
+        mock_restore.assert_called_once_with("data/testuser/my_fw", "snap1")
 
     def test_select_firewall_config_snapshot_delete(self, auth_client):
         with patch("app.read_user_data_file"), patch(
@@ -954,6 +980,55 @@ class TestConfigRoutes:
         assert resp.status_code == 302
         assert "/snapshot_diff_choose" in resp.headers["Location"]
 
+    def test_snapshot_diff_choose_shows_tags(self, auth_client):
+        """The chooser must distinguish snapshots by tag, not timestamp alone."""
+        with patch("app.generate_config", return_value=("config", ["line"])), patch(
+            "app.list_snapshots",
+            return_value=[
+                {"name": "snap1", "id": "test_firewall", "tag": "pre-upgrade"},
+                {"name": "snap2", "id": "test_firewall", "tag": ""},
+            ],
+        ):
+            resp = auth_client.get("/snapshot_diff_choose")
+            body = resp.data.decode()
+
+        assert resp.status_code == 200
+        assert "pre-upgrade" in body
+        # An untagged snapshot shows only its name.
+        assert ">snap2</option>" in body
+
+    def test_snapshot_manage_get_shows_tag(self, auth_client):
+        with patch("app.generate_config", return_value=("config", ["line"])), patch(
+            "app.list_snapshots",
+            return_value=[{"name": "snap1", "id": "test_firewall", "tag": "my-tag"}],
+        ):
+            resp = auth_client.get("/snapshots")
+            body = resp.data.decode()
+
+        assert resp.status_code == 200
+        assert 'value="my-tag"' in body
+
+    def test_snapshot_tag_post_updates_and_redirects(self, auth_client):
+        with patch("app.tag_snapshot", return_value=True) as mock_tag:
+            resp = auth_client.post(
+                "/snapshot_tag",
+                data={
+                    "firewall_name": "test_firewall",
+                    "snapshot_name": "snap1",
+                    "snapshot_tag": "my-tag",
+                },
+            )
+
+        assert resp.status_code == 302
+        assert "/snapshots" in resp.headers["Location"]
+        mock_tag.assert_called_once()
+
+    def test_snapshot_tag_create_redirects_to_manage(self, auth_client):
+        """The old tag-only URL is kept as a redirect for existing links."""
+        resp = auth_client.get("/snapshot_tag_create")
+        assert resp.status_code == 302
+        assert "/snapshots" in resp.headers["Location"]
+
 
 # ---------------------------------------------------------------------------
 # Admin routes
@@ -1004,14 +1079,6 @@ class TestAdminRoutes:
             data={"path": "../", "filename": "etc/passwd"},
         )
         assert resp.status_code == 302
-
-    def test_snapshot_tag_create_get(self, auth_client):
-        with patch(
-            "app.generate_config",
-            return_value=("config", ["line"]),
-        ):
-            resp = auth_client.get("/snapshot_tag_create")
-            assert resp.status_code == 200
 
 
 class TestSessionCookieHardening:

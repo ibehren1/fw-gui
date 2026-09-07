@@ -115,42 +115,48 @@
                                 <div class="snapshot-list">
                                     {% for snapshot in snapshot_list %}
                                     <div class="snapshot-item">
-                                        <button
-                                            type="submit"
-                                            name="file"
-                                            value="{{snapshot.id}}/delete/{{snapshot.name}}"
-                                            class="btn btn-delete-small"
-                                            title="Delete snapshot {{snapshot.name}}"
-                                        >
-                                            ×
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            name="file"
-                                            value="{{snapshot.id}}/{{snapshot.name}}"
-                                            class="btn btn-snapshot"
-                                            title="Load snapshot {{snapshot.name}}"
-                                        >
-                                            {{snapshot.name}}
-                                        </button>
-                                        <div class="tooltip">
-                                            <a
-                                                href="{{url_for('snapshot_tag_create')}}"
+                                        <div class="snapshot-item-row">
+                                            <button
+                                                type="submit"
+                                                name="file"
+                                                value="{{snapshot.id}}/delete/{{snapshot.name}}"
+                                                class="btn btn-delete-small"
+                                                title="Delete snapshot {{snapshot.name}}"
                                             >
-                                                <img
-                                                    src="{{ url_for('static', filename='tag-yellow.svg') }}"
-                                                    width="16"
-                                                    height="16"
-                                                    alt="Tag"
-                                                />
-                                            </a>
-                                            <span class="tooltiptext"
-                                                >Tag: {{snapshot.tag}}</span
+                                                ×
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                name="file"
+                                                value="{{snapshot.id}}/{{snapshot.name}}"
+                                                class="btn btn-snapshot"
+                                                title="Load snapshot {{snapshot.name}}"
                                             >
+                                                {{snapshot.name}}
+                                            </button>
                                         </div>
+                                        {% if snapshot.tag %}
+                                        <div
+                                            class="snapshot-tag-text"
+                                            title="Tag: {{snapshot.tag}}"
+                                        >
+                                            {{snapshot.tag}}
+                                        </div>
+                                        {% else %}
+                                        <div
+                                            class="snapshot-tag-text snapshot-tag-empty"
+                                        >
+                                            (no tag)
+                                        </div>
+                                        {% endif %}
                                     </div>
                                     {% endfor %}
                                 </div>
+                                <a
+                                    href="{{url_for('snapshot_manage')}}"
+                                    class="btn btn-secondary full-width"
+                                    >Manage Snapshots</a
+                                >
                                 <a
                                     href="{{url_for('snapshot_diff_choose')}}"
                                     class="btn btn-secondary full-width"

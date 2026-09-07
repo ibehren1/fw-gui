@@ -349,10 +349,29 @@ body {
 }
 
 .snapshot-item {
+    margin-bottom: 0.75rem;
+}
+
+.snapshot-item-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
+}
+
+/* The tag is read at a glance here, so truncate rather than wrap or overflow
+   the sidebar; the full value is in the title attribute. */
+.snapshot-tag-text {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    padding: 0.15rem 0 0 1.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.snapshot-tag-empty {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
 }
 
 /* Configuration Display */
@@ -443,35 +462,6 @@ body {
 
 .groups_table tbody tr:nth-child(even) {
     background: rgba(255, 255, 255, 0.03);
-}
-
-/* Tooltips */
-.tooltip {
-    position: relative;
-    display: inline-block;
-}
-
-.tooltip .tooltiptext {
-    visibility: hidden;
-    background-color: var(--primary-color);
-    color: var(--text-dark);
-    text-align: center;
-    border-radius: var(--border-radius);
-    padding: 0.5rem;
-    position: absolute;
-    z-index: 1000;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 0.8rem;
-    white-space: nowrap;
-}
-
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-    opacity: 1;
 }
 
 /* Footer */

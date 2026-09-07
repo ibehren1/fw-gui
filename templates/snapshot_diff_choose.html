@@ -26,8 +26,11 @@
                 <label for="snapshot_1" class="form-label">First Snapshot</label>
                 <select name="snapshot_1" id="snapshot_1" class="form-select" required>
                     {% for snapshot in snapshot_list %}
-                    <option value="{{ snapshot.name }}">{{ snapshot.name }}</option>
+                    <option value="{{ snapshot.name }}">{{ snapshot.name }}{% if snapshot.tag %} &mdash; {{ snapshot.tag }}{% endif %}</option>
                     {% endfor %}
+                    {# Last so this list defaults to a snapshot, not the same
+                       "current" that snapshot_2 defaults to. #}
+                    <option value="current">Current (working copy)</option>
                 </select>
             </div>
             
@@ -40,12 +43,12 @@
                 <select name="snapshot_2" id="snapshot_2" class="form-select" required>
                     <option value="current">Current (working copy)</option>
                     {% for snapshot in snapshot_list %}
-                    <option value="{{ snapshot.name }}">{{ snapshot.name }}</option>
+                    <option value="{{ snapshot.name }}">{{ snapshot.name }}{% if snapshot.tag %} &mdash; {{ snapshot.tag }}{% endif %}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
-        
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">View Diff</button>
             <a href="{{ url_for('chain_view') }}" class="btn btn-secondary">Cancel</a>
