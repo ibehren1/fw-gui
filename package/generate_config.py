@@ -129,353 +129,351 @@ def generate_config(session, snapshot="current", diff=False):
             )
             config.append("")
 
-    for ip_version in user_data:
-        if (
-            ip_version != "extra-items"
-            and ip_version != "_id"
-            and ip_version != "firewall"
-            and ip_version != "flowtables"
-            and ip_version != "snapshot"
-            and ip_version != "interfaces"
-            and ip_version != "system"
-            and ip_version != "version"
-        ):
-            if ip_version == "ipv4":
-                config.append("#\n#\n# IPv4\n#\n#\n")
-            if ip_version == "ipv6":
-                config.append("#\n#\n# IPv6\n#\n#\n")
+    # Only the IP-version keys hold firewall config; every other top-level
+    # key (_id, firewall, snapshot, tag, version, system, interfaces,
+    # flowtables, extra-items) is handled elsewhere or not at all. An
+    # allow-list keeps a non-dict value (e.g. the snapshot `tag` string) from
+    # reaching the dict lookups below.
+    for ip_version in ("ipv4", "ipv6"):
+        if ip_version not in user_data:
+            continue
 
-            if "groups" in user_data[ip_version]:
-                config.append("#\n# Groups\n#")
-                for group_name in user_data[ip_version]["groups"]:
-                    # Get Values
-                    group_desc = user_data[ip_version]["groups"][group_name][
-                        "group_desc"
-                    ]
-                    group_type = user_data[ip_version]["groups"][group_name][
-                        "group_type"
-                    ]
-                    if not _safe_name(group_name) or not _safe_name(group_type):
-                        logging.warning(f"Skipping group with unsafe name/type: {group_name!r}/{group_type!r}")
-                        config.append(f"# Skipped group with invalid name: {group_name}")
-                        continue
-                    group_value = user_data[ip_version]["groups"][group_name][
-                        "group_value"
-                    ]
+        if ip_version == "ipv4":
+            config.append("#\n#\n# IPv4\n#\n#\n")
+        if ip_version == "ipv6":
+            config.append("#\n#\n# IPv6\n#\n#\n")
 
-                    if group_type == "address-group":
-                        value_type = "address"
-                    elif group_type == "domain-group":
-                        value_type = "address"
-                    elif group_type == "interface-group":
-                        value_type = "interface"
-                    elif group_type == "mac-group":
-                        value_type = "mac-address"
-                    elif group_type == "network-group":
-                        value_type = "network"
-                    elif group_type == "port-group":
-                        value_type = "port"
-                    else:
-                        value_type = "address"
+        if "groups" in user_data[ip_version]:
+            config.append("#\n# Groups\n#")
+            for group_name in user_data[ip_version]["groups"]:
+                # Get Values
+                group_desc = user_data[ip_version]["groups"][group_name][
+                    "group_desc"
+                ]
+                group_type = user_data[ip_version]["groups"][group_name][
+                    "group_type"
+                ]
+                if not _safe_name(group_name) or not _safe_name(group_type):
+                    logging.warning(f"Skipping group with unsafe name/type: {group_name!r}/{group_type!r}")
+                    config.append(f"# Skipped group with invalid name: {group_name}")
+                    continue
+                group_value = user_data[ip_version]["groups"][group_name][
+                    "group_value"
+                ]
 
-                    config.append(f"\n# Group: {group_name}")
+                if group_type == "address-group":
+                    value_type = "address"
+                elif group_type == "domain-group":
+                    value_type = "address"
+                elif group_type == "interface-group":
+                    value_type = "interface"
+                elif group_type == "mac-group":
+                    value_type = "mac-address"
+                elif group_type == "network-group":
+                    value_type = "network"
+                elif group_type == "port-group":
+                    value_type = "port"
+                else:
+                    value_type = "address"
 
-                    # Write Config Statements
-                    if ip_version == "ipv4":
-                        if group_desc != "":
-                            config.append(
-                                f"set firewall group {group_type} {group_name} description {_vq(group_desc)}"
-                            )
-                        for value in group_value:
-                            if value != "":
-                                config.append(
-                                    f"set firewall group {group_type} {group_name} {value_type} {_vq(value)}"
-                                )
+                config.append(f"\n# Group: {group_name}")
 
-                    if ip_version == "ipv6":
-                        if group_desc != "":
-                            config.append(
-                                f"set firewall group {ip_version}-{group_type} {group_name} description {_vq(group_desc)}"
-                            )
-                        for value in group_value:
-                            if value != "":
-                                config.append(
-                                    f"set firewall group {ip_version}-{group_type} {group_name} {value_type} {_vq(value)}"
-                                )
-
-                config.append("")
-
-            if "filters" in user_data[ip_version]:
-                for filter_name in user_data[ip_version]["filters"]:
-                    if not _safe_name(filter_name):
-                        logging.warning(f"Skipping filter with unsafe name: {filter_name!r}")
-                        config.append(f"# Skipped filter with invalid name: {filter_name}")
-                        continue
-                    # Get Values
-                    filter_desc = user_data[ip_version]["filters"][filter_name][
-                        "description"
-                    ]
-                    filter_action = user_data[ip_version]["filters"][filter_name][
-                        "default-action"
-                    ]
-                    filter_log = user_data[ip_version]["filters"][filter_name]["log"]
-
-                    # Write Config Statements
-                    config.append(f"#\n# Filter: {filter_name}\n#")
-                    config.append(
-                        f"set firewall {ip_version} {filter_name} filter description {_vq(filter_desc)}"
-                    )
-                    config.append(
-                        f"set firewall {ip_version} {filter_name} filter default-action {filter_action}"
-                    )
-                    if filter_log:
+                # Write Config Statements
+                if ip_version == "ipv4":
+                    if group_desc != "":
                         config.append(
-                            f"set firewall {ip_version} {filter_name} filter enable-default-log"
+                            f"set firewall group {group_type} {group_name} description {_vq(group_desc)}"
+                        )
+                    for value in group_value:
+                        if value != "":
+                            config.append(
+                                f"set firewall group {group_type} {group_name} {value_type} {_vq(value)}"
+                            )
+
+                if ip_version == "ipv6":
+                    if group_desc != "":
+                        config.append(
+                            f"set firewall group {ip_version}-{group_type} {group_name} description {_vq(group_desc)}"
+                        )
+                    for value in group_value:
+                        if value != "":
+                            config.append(
+                                f"set firewall group {ip_version}-{group_type} {group_name} {value_type} {_vq(value)}"
+                            )
+
+            config.append("")
+
+        if "filters" in user_data[ip_version]:
+            for filter_name in user_data[ip_version]["filters"]:
+                if not _safe_name(filter_name):
+                    logging.warning(f"Skipping filter with unsafe name: {filter_name!r}")
+                    config.append(f"# Skipped filter with invalid name: {filter_name}")
+                    continue
+                # Get Values
+                filter_desc = user_data[ip_version]["filters"][filter_name][
+                    "description"
+                ]
+                filter_action = user_data[ip_version]["filters"][filter_name][
+                    "default-action"
+                ]
+                filter_log = user_data[ip_version]["filters"][filter_name]["log"]
+
+                # Write Config Statements
+                config.append(f"#\n# Filter: {filter_name}\n#")
+                config.append(
+                    f"set firewall {ip_version} {filter_name} filter description {_vq(filter_desc)}"
+                )
+                config.append(
+                    f"set firewall {ip_version} {filter_name} filter default-action {filter_action}"
+                )
+                if filter_log:
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter enable-default-log"
+                    )
+                config.append("\n")
+
+                for rule in user_data[ip_version]["filters"][filter_name][
+                    "rule-order"
+                ]:
+                    if not _safe_name(rule):
+                        logging.warning(f"Skipping filter rule with unsafe id: {rule!r}")
+                        continue
+                    # Get Values
+                    rule_data = user_data[ip_version]["filters"][filter_name][
+                        "rules"
+                    ][rule]
+                    description = rule_data["description"]
+                    log = "log" in rule_data
+                    rule_disable = "rule_disable" in rule_data
+                    action = rule_data["action"]
+                    if action == "jump":
+                        interface = rule_data["interface"]
+                        direction = rule_data["direction"]
+                        jump_target = rule_data["fw_chain"]
+                    if action == "offload":
+                        offload_target = rule_data["fw_chain"]
+
+                    # Write Config Statements
+                    config.append(f"# Rule {rule}")
+
+                    # Description
+                    if description != "":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} description {_vq(description)}"
+                        )
+
+                    # Action
+                    config.append(
+                        f"set firewall {ip_version} {filter_name} filter rule {rule} action {_vq(action)}"
+                    )
+                    if action == "offload":
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} offload-target {_vq(offload_target)}"
+                        )
+
+                    # Interface / Directions
+                    if action == "jump":
+                        if direction == "inbound":
+                            config.append(
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface name {_vq(interface)}"
+                            )
+                        if direction == "outbound":
+                            config.append(
+                                f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface name {_vq(interface)}"
+                            )
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target {_vq(jump_target)}"
+                        )
+
+                    # Disable
+                    if rule_disable:
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} disable"
+                        )
+
+                    # Log
+                    if log:
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} log"
                         )
                     config.append("\n")
 
-                    for rule in user_data[ip_version]["filters"][filter_name][
-                        "rule-order"
-                    ]:
-                        if not _safe_name(rule):
-                            logging.warning(f"Skipping filter rule with unsafe id: {rule!r}")
-                            continue
-                        # Get Values
-                        rule_data = user_data[ip_version]["filters"][filter_name][
-                            "rules"
-                        ][rule]
-                        description = rule_data["description"]
-                        log = "log" in rule_data
-                        rule_disable = "rule_disable" in rule_data
-                        action = rule_data["action"]
-                        if action == "jump":
-                            interface = rule_data["interface"]
-                            direction = rule_data["direction"]
-                            jump_target = rule_data["fw_chain"]
-                        if action == "offload":
-                            offload_target = rule_data["fw_chain"]
+        if "chains" in user_data[ip_version]:
+            for fw_chain in user_data[ip_version]["chains"]:
+                if not _safe_name(fw_chain):
+                    logging.warning(f"Skipping chain with unsafe name: {fw_chain!r}")
+                    config.append(f"# Skipped chain with invalid name: {fw_chain}")
+                    continue
+                config.append(f"#\n# Chain: {fw_chain}\n#")
 
-                        # Write Config Statements
-                        config.append(f"# Rule {rule}")
-
-                        # Description
-                        if description != "":
-                            config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} description {_vq(description)}"
-                            )
-
-                        # Action
+                if "default" in user_data[ip_version]["chains"][fw_chain]:
+                    description = user_data[ip_version]["chains"][fw_chain][
+                        "default"
+                    ]["description"]
+                    if (
+                        "default_logging"
+                        in user_data[ip_version]["chains"][fw_chain]["default"]
+                    ):
+                        default_logging = user_data[ip_version]["chains"][fw_chain][
+                            "default"
+                        ]["default_logging"]
+                    else:
+                        default_logging = False
+                    default_action = user_data[ip_version]["chains"][fw_chain][
+                        "default"
+                    ]["default_action"]
+                    config.append(
+                        f"set firewall {ip_version} name {fw_chain} description {_vq(description)}"
+                    )
+                    config.append(
+                        f"set firewall {ip_version} name {fw_chain} default-action {_vq(default_action)}"
+                    )
+                    if default_logging:
                         config.append(
-                            f"set firewall {ip_version} {filter_name} filter rule {rule} action {_vq(action)}"
+                            f"set firewall {ip_version} name {fw_chain} default-log"
                         )
-                        if action == "offload":
-                            config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} offload-target {_vq(offload_target)}"
-                            )
+                    config.append("\n")
 
-                        # Interface / Directions
-                        if action == "jump":
-                            if direction == "inbound":
-                                config.append(
-                                    f"set firewall {ip_version} {filter_name} filter rule {rule} inbound-interface name {_vq(interface)}"
-                                )
-                            if direction == "outbound":
-                                config.append(
-                                    f"set firewall {ip_version} {filter_name} filter rule {rule} outbound-interface name {_vq(interface)}"
-                                )
-                            config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} jump-target {_vq(jump_target)}"
-                            )
-
-                        # Disable
-                        if rule_disable:
-                            config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} disable"
-                            )
-
-                        # Log
-                        if log:
-                            config.append(
-                                f"set firewall {ip_version} {filter_name} filter rule {rule} log"
-                            )
-                        config.append("\n")
-
-            if "chains" in user_data[ip_version]:
-                for fw_chain in user_data[ip_version]["chains"]:
-                    if not _safe_name(fw_chain):
-                        logging.warning(f"Skipping chain with unsafe name: {fw_chain!r}")
-                        config.append(f"# Skipped chain with invalid name: {fw_chain}")
+                for rule in user_data[ip_version]["chains"][fw_chain]["rule-order"]:
+                    if not _safe_name(rule):
+                        logging.warning(f"Skipping chain rule with unsafe id: {rule!r}")
                         continue
-                    config.append(f"#\n# Chain: {fw_chain}\n#")
+                    # Get Values
+                    rule_data = user_data[ip_version]["chains"][fw_chain][rule]
+                    description = rule_data["description"]
+                    rule_disable = "rule_disable" in rule_data
+                    rule_logging = "logging" in rule_data
+                    action = rule_data["action"]
+                    dest_address = rule_data["dest_address"]
+                    dest_address_type = rule_data["dest_address_type"]
+                    dest_port = rule_data["dest_port"]
+                    dest_port_type = rule_data["dest_port_type"]
+                    source_address = rule_data["source_address"]
+                    source_address_type = rule_data["source_address_type"]
+                    source_port = rule_data["source_port"]
+                    source_port_type = rule_data["source_port_type"]
+                    protocol = rule_data["protocol"]
+                    state_est = "state_est" in rule_data
+                    state_inv = "state_inv" in rule_data
+                    state_new = "state_new" in rule_data
+                    state_rel = "state_rel" in rule_data
 
-                    if "default" in user_data[ip_version]["chains"][fw_chain]:
-                        description = user_data[ip_version]["chains"][fw_chain][
-                            "default"
-                        ]["description"]
-                        if (
-                            "default_logging"
-                            in user_data[ip_version]["chains"][fw_chain]["default"]
-                        ):
-                            default_logging = user_data[ip_version]["chains"][fw_chain][
-                                "default"
-                            ]["default_logging"]
-                        else:
-                            default_logging = False
-                        default_action = user_data[ip_version]["chains"][fw_chain][
-                            "default"
-                        ]["default_action"]
+                    # Write Config Statements
+                    config.append(f"# Rule {rule}")
+
+                    # Disable
+                    if rule_disable:
                         config.append(
-                            f"set firewall {ip_version} name {fw_chain} description {_vq(description)}"
-                        )
-                        config.append(
-                            f"set firewall {ip_version} name {fw_chain} default-action {_vq(default_action)}"
-                        )
-                        if default_logging:
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} default-log"
-                            )
-                        config.append("\n")
-
-                    for rule in user_data[ip_version]["chains"][fw_chain]["rule-order"]:
-                        if not _safe_name(rule):
-                            logging.warning(f"Skipping chain rule with unsafe id: {rule!r}")
-                            continue
-                        # Get Values
-                        rule_data = user_data[ip_version]["chains"][fw_chain][rule]
-                        description = rule_data["description"]
-                        rule_disable = "rule_disable" in rule_data
-                        rule_logging = "logging" in rule_data
-                        action = rule_data["action"]
-                        dest_address = rule_data["dest_address"]
-                        dest_address_type = rule_data["dest_address_type"]
-                        dest_port = rule_data["dest_port"]
-                        dest_port_type = rule_data["dest_port_type"]
-                        source_address = rule_data["source_address"]
-                        source_address_type = rule_data["source_address_type"]
-                        source_port = rule_data["source_port"]
-                        source_port_type = rule_data["source_port_type"]
-                        protocol = rule_data["protocol"]
-                        state_est = "state_est" in rule_data
-                        state_inv = "state_inv" in rule_data
-                        state_new = "state_new" in rule_data
-                        state_rel = "state_rel" in rule_data
-
-                        # Write Config Statements
-                        config.append(f"# Rule {rule}")
-
-                        # Disable
-                        if rule_disable:
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} disable"
-                            )
-
-                        # Description
-                        if description != "":
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} description {_vq(description)}"
-                            )
-
-                        # Action
-                        config.append(
-                            f"set firewall {ip_version} name {fw_chain} rule {rule} action {_vq(action)}"
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} disable"
                         )
 
-                        # Destination
-                        if dest_address != "":
-                            if dest_address_type == "address":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination address {_vq(dest_address)}"
-                                )
-                            elif dest_address_type == "address_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group address-group {_vq(dest_address)}"
-                                )
-                            elif dest_address_type == "domain_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group domain-group {_vq(dest_address)}"
-                                )
-                            elif dest_address_type == "mac_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group mac-group {_vq(dest_address)}"
-                                )
-                            elif dest_address_type == "network_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group network-group {_vq(dest_address)}"
-                                )
-                        if dest_port != "":
-                            if dest_port_type == "port":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination port {_vq(dest_port)}"
-                                )
-                            elif dest_port_type == "port_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} destination group port-group {_vq(dest_port)}"
-                                )
+                    # Description
+                    if description != "":
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} description {_vq(description)}"
+                        )
 
-                        # Source
-                        if source_address != "":
-                            if source_address_type == "address":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source address {_vq(source_address)}"
-                                )
-                            elif source_address_type == "address_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source group address-group {_vq(source_address)}"
-                                )
-                            elif source_address_type == "domain_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source group domain-group {_vq(source_address)}"
-                                )
-                            elif source_address_type == "mac_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source group mac-group {_vq(source_address)}"
-                                )
-                            elif source_address_type == "network_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source group network-group {_vq(source_address)}"
-                                )
-                        if source_port != "":
-                            if source_port_type == "port":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source port {_vq(source_port)}"
-                                )
-                            elif source_port_type == "port_group":
-                                config.append(
-                                    f"set firewall {ip_version} name {fw_chain} rule {rule} source group port-group {_vq(source_port)}"
-                                )
+                    # Action
+                    config.append(
+                        f"set firewall {ip_version} name {fw_chain} rule {rule} action {_vq(action)}"
+                    )
 
-                        # Protocol
-                        if protocol != "":
-                            if ip_version == "ipv6" and protocol == "icmp":
-                                protocol = "ipv6-icmp"
+                    # Destination
+                    if dest_address != "":
+                        if dest_address_type == "address":
                             config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} protocol {_vq(protocol)}"
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination address {_vq(dest_address)}"
+                            )
+                        elif dest_address_type == "address_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination group address-group {_vq(dest_address)}"
+                            )
+                        elif dest_address_type == "domain_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination group domain-group {_vq(dest_address)}"
+                            )
+                        elif dest_address_type == "mac_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination group mac-group {_vq(dest_address)}"
+                            )
+                        elif dest_address_type == "network_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination group network-group {_vq(dest_address)}"
+                            )
+                    if dest_port != "":
+                        if dest_port_type == "port":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination port {_vq(dest_port)}"
+                            )
+                        elif dest_port_type == "port_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} destination group port-group {_vq(dest_port)}"
                             )
 
-                        # Logging
-                        if rule_logging:
+                    # Source
+                    if source_address != "":
+                        if source_address_type == "address":
                             config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} log"
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source address {_vq(source_address)}"
+                            )
+                        elif source_address_type == "address_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source group address-group {_vq(source_address)}"
+                            )
+                        elif source_address_type == "domain_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source group domain-group {_vq(source_address)}"
+                            )
+                        elif source_address_type == "mac_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source group mac-group {_vq(source_address)}"
+                            )
+                        elif source_address_type == "network_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source group network-group {_vq(source_address)}"
+                            )
+                    if source_port != "":
+                        if source_port_type == "port":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source port {_vq(source_port)}"
+                            )
+                        elif source_port_type == "port_group":
+                            config.append(
+                                f"set firewall {ip_version} name {fw_chain} rule {rule} source group port-group {_vq(source_port)}"
                             )
 
-                        # States
-                        if state_est:
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} state 'established'"
-                            )
-                        if state_inv:
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} state 'invalid'"
-                            )
-                        if state_new:
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} state 'new'"
-                            )
-                        if state_rel:
-                            config.append(
-                                f"set firewall {ip_version} name {fw_chain} rule {rule} state 'related'"
-                            )
-                        config.append("")
+                    # Protocol
+                    if protocol != "":
+                        if ip_version == "ipv6" and protocol == "icmp":
+                            protocol = "ipv6-icmp"
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} protocol {_vq(protocol)}"
+                        )
+
+                    # Logging
+                    if rule_logging:
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} log"
+                        )
+
+                    # States
+                    if state_est:
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} state 'established'"
+                        )
+                    if state_inv:
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} state 'invalid'"
+                        )
+                    if state_new:
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} state 'new'"
+                        )
+                    if state_rel:
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} state 'related'"
+                        )
+                    config.append("")
 
     # If this is a Diff, just return the config
     if diff:
