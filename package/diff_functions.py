@@ -4,8 +4,39 @@ Contains functions for processing configuration lists and creating styled HTML d
 """
 
 import difflib
+import re
 
 from package.generate_config import generate_config
+
+# difflib puts its navigation links in an unlabeled column and writes them as
+# bare single letters -- "f" (first change), "n" (next change), "t" (top) --
+# which are easy to miss in a long config diff. Spell the links out and give
+# the column a heading. difflib's own legend explaining "(f)irst change" is
+# dropped (see _LabeledHtmlDiff._legend); snapshot_diff_display.html carries a
+# legend that matches these labels.
+_NAV_LABELS = {"f": "First change", "n": "Next change", "t": "Back to top"}
+_NAV_LINK_RE = re.compile(r'(<a href="#difflib_chg_[^"]+">)([fnt])(</a>)')
+_BLANK_NAV_HEADER = '<th class="diff_next"><br /></th>'
+_NAV_HEADER = '<th class="diff_next">Jump</th>'
+
+
+class _LabeledHtmlDiff(difflib.HtmlDiff):
+    """HtmlDiff whose change-navigation links are worded, not single letters."""
+
+    # Suppress difflib's built-in legend; it documents the "f"/"n"/"t" wording.
+    _legend = ""
+
+    def _convert_flags(self, *args, **kwargs):
+        """Relabel the next/first/top anchors difflib builds for each row."""
+        fromlist, tolist, flaglist, next_href, next_id = super()._convert_flags(
+            *args, **kwargs
+        )
+        next_href = [
+            _NAV_LINK_RE.sub(lambda m: f"{m[1]}{_NAV_LABELS[m[2]]}{m[3]}", href)
+            for href in next_href
+        ]
+
+        return fromlist, tolist, flaglist, next_href, next_id
 
 
 def fix_list(config_lines):
@@ -55,7 +86,7 @@ def process_diff(session, request):
     )
 
     # Create Diff and return html page as string
-    diff = difflib.HtmlDiff()
+    diff = _LabeledHtmlDiff()
     html = diff.make_file(
         snapshot_1_list,
         snapshot_2_list,
@@ -63,5 +94,8 @@ def process_diff(session, request):
         todesc=f"Snapshot: {snapshot_2}",
         context=False,
     )
+
+    # Label the two navigation columns; difflib leaves their headers blank.
+    html = html.replace(_BLANK_NAV_HEADER, _NAV_HEADER)
 
     return html

@@ -24,10 +24,18 @@
                     <span class="legend-color unchanged"> </span>
                     <span class="legend-text">Unchanged lines</span>
                 </div>
+                <div class="legend-item">
+                    <span class="legend-color jump">&#8594;</span>
+                    <span class="legend-text">
+                        The <strong>Jump</strong> columns link to the first
+                        change, the next change, and back to the top
+                    </span>
+                </div>
             </div>
-            
+
             <div class="diff-content">
                 <div class="diff-toolbar">
+                    <button onclick="jumpToChange()" class="btn btn-primary">Jump to First Change</button>
                     <button onclick="copyDiff()" class="btn btn-secondary">Copy Diff</button>
                     <button onclick="window.close()" class="btn btn-secondary">Close Window</button>
                 </div>
@@ -38,6 +46,16 @@
     </div>
 
     <script>
+    // The anchor prefix difflib generates ("difflib_chg_to0__0") changes per
+    // request, so follow the first Jump link in the table rather than a
+    // hard-coded href.
+    function jumpToChange() {
+        const link = document.querySelector('#diff-content td.diff_next a');
+        if (link) {
+            link.click();
+        }
+    }
+
     function copyDiff() {
         const text = document.getElementById('diff-content').textContent;
         navigator.clipboard.writeText(text).then(function() {
@@ -105,6 +123,11 @@
     .legend-color.unchanged {
         background: rgba(255, 255, 255, 0.1);
         color: rgba(255, 255, 255, 0.7);
+    }
+
+    .legend-color.jump {
+        background: var(--primary-color);
+        color: var(--text-dark);
     }
 
     .legend-text {
@@ -182,6 +205,39 @@
 
     .diff-html-content .diff_header {
         background: var(--secondary-color) !important;
+        color: var(--text-light) !important;
+    }
+
+    /* Navigation columns. difflib emits one per side; the links are worded by
+       _LabeledHtmlDiff in package/diff_functions.py. Keep the columns as narrow
+       as the text allows and render the links as pills so they stand out
+       against the config lines. */
+    .diff-html-content th.diff_next,
+    .diff-html-content td.diff_next {
+        width: 1%;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    /* Replaces difflib's own grey `.diff_next` background. */
+    .diff-html-content td.diff_next {
+        background: rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .diff-html-content td.diff_next a {
+        display: inline-block;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: var(--primary-color);
+        color: var(--text-dark) !important;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .diff-html-content td.diff_next a:hover,
+    .diff-html-content td.diff_next a:focus {
+        background: var(--secondary-color);
         color: var(--text-light) !important;
     }
     </style>
