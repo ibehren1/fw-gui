@@ -607,10 +607,12 @@ flowchart LR
   the MongoDB dump and that encrypted SSH keys are in it. It previously claimed
   keys were *excluded* — true of the on-disk `.key` files the zip walk skips, but
   wrong once the ciphertext moved into `keys.bson`.
-- Neither dumps nor zips are pruned. `data/mongo_dumps/` keeps a timestamped
+- **A manual backup prunes nothing.** `data/mongo_dumps/` keeps a timestamped
   directory per backup **and every zip re-archives all of them**, so both the
-  directory count and each successive archive grow without bound. Housekeeping is
-  an operator task; nothing in the app deletes them.
+  directory count and each successive archive grow without bound. A real install
+  reached 944 MB of archives across 18 zips and 119 dump directories this way.
+  The scheduled backup (§7.1) is what bounds this; for manual-only use,
+  housekeeping remains an operator task.
 - S3 (`upload_backup_file:1133-1193`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
   `AWS_SECRET_ACCESS_KEY`; skipped if `BUCKET_NAME` unset; key prefix
   `fw-gui/backups/`.
@@ -618,6 +620,119 @@ flowchart LR
   backup zip is an out-of-band operation (filesystem or S3) — as of 2.5.0 there
   is no in-app download for it — and there is no automated restore path in the
   code.
+
+### 7.1 Scheduled backups (`backup_scheduler.py`, 2.5.0)
+
+```mermaid
+flowchart TD
+    A["Admin Settings form:<br/>enabled / day / hour / retention"] --> D[("instance collection<br/>_id: backup_schedule")]
+    S["app.py __main__:<br/>start_backup_scheduler()"] --> E["ensure_schedule_document()<br/>(main thread, seeds a FUTURE slot)"]
+    E --> D
+    D --> T["daemon thread:<br/>wait(poll_seconds)"]
+    T --> C{"_claim_run():<br/>enabled AND next_run &lt;= now<br/>AND claim free or lease expired"}
+    C -->|no| T
+    C -->|"yes (exactly one caller)"| P1["prune_mongo_dumps(retention - 1)"]
+    P1 --> B["perform_full_backup(actor='scheduler')"]
+    B --> P2["prune_backup_zips(retention)"]
+    P2 --> R["_release_run(): clear claim,<br/>record result, next_run += 1 week"]
+    R --> T
+```
+
+**The document is the only configuration.** There are no environment variables;
+the Admin Settings page writes `enabled`, `day_of_week`, `hour` and `retention`,
+and every read goes through `settings_from_document()`, which defaults and clamps
+each field. That is deliberate on two counts: one source of truth needs no
+precedence rule between a variable and a stored value, and a setting that lives in
+the database takes effect without a restart and survives a container replacement.
+`poll_seconds` and `lease_seconds` are stored too but kept off the form — tuning
+with no user-visible effect, and a field inviting a 30-second poll would only add
+load.
+
+- **The claim, not the thread, provides the safety.** `app.run(debug=True)` runs
+  `__main__` in both the reloader parent and the child, and the Helm chart can
+  scale past one replica, so "one thread per process" is not "one backup per
+  week". `_claim_run()` is a single `find_one_and_update`; MongoDB applies updates
+  to one document serially, so exactly one caller's filter matches and the rest
+  get `None`.
+- **The claim does not advance `next_run`; `_release_run()` does.** If claiming
+  consumed the week, a process killed mid-zip would silently skip the backup
+  entirely. Instead the claim is recovered by the lease (`lease_seconds`, default
+  1 h): `claimed_at` stays set and `next_run` stays due, so after the lease expires
+  whoever next polls retries the same window. The lease must exceed the longest
+  plausible backup.
+- **`next_run` advances on failure too.** A failing backup that kept its slot
+  would retry every poll interval, writing and deleting archives every five
+  minutes. One attempt per week, with `last_result`/`last_error` visible on the
+  Admin page, is the intended cadence.
+- **Catch-up coalesces.** `next_run` is an absolute timestamp compared with
+  `$lte`, so an instance down for three weeks finds one overdue slot, backs up
+  once, and jumps to the next future slot — `_release_run()` computes it from
+  `max(now, stored next_run)`. Three identical stale backups would be waste.
+- **First boot never backs up.** `ensure_schedule_document()` seeds `next_run` to
+  a future slot and uses `$setOnInsert`, so a restart cannot re-seed it. Adding a
+  multi-GB zip to the boot that already runs four migrations (§8) would make an
+  upgrade look hung, and it would prune a never-pruned install at the worst
+  moment.
+- **Startup never overwrites a saved setting.** `ensure_schedule_document()` writes
+  every field with `$setOnInsert`, so it seeds a fresh install and is otherwise a
+  no-op — a restart cannot undo what an administrator chose. `$setOnInsert` rather
+  than find-then-insert so two processes starting together converge on one document
+  instead of racing.
+- **`update_settings()` recomputes `next_run` when the day or hour moves, and also
+  when the schedule is switched on.** The second half matters as much as the first:
+  a schedule left off for a month holds a long-past `next_run`, so without
+  recomputing, enabling it would fire a backup — and a prune — seconds after the
+  click rather than at the hour just chosen. Re-saving an unchanged schedule leaves
+  the slot alone, so it does not drift a week later each time someone hits Save.
+- **Form values are clamped, not rejected.** They arrive from a `<select>` and a
+  number input, so anything out of range is a hand-made POST or a browser quirk;
+  there is no useful error to show for it, and refusing the whole save would
+  discard the fields that were fine. A value that cannot be parsed at all keeps
+  the stored one, so a mangled field cannot silently move the schedule.
+- **Retention prunes at both ends, for different reasons.** Dumps are pruned to
+  `retention - 1` *before* `mongo_dump()`, because every zip re-archives whatever
+  is in `data/mongo_dumps` — pruning first is what actually bounds the new
+  archive's size, and the fresh dump then brings the count to exactly `retention`.
+  Archives are pruned to `retention` *after* the zip is in place, so a failed
+  backup does not leave the set one short.
+- **Pruning sorts by mtime, not by the timestamp in the name.** The names come
+  from `str(datetime.now())`, which is naive *local* time: at the end of DST a
+  genuinely newer directory gets a name that sorts earlier, and pruning by name
+  would delete the newest backup. `mongo_dump()` and `perform_full_backup()` also
+  compute their timestamps independently, so a zip and its own dump can straddle a
+  second boundary. The basename is only a tiebreaker.
+- **Archives are matched with `endswith(".zip")`**, deliberately unlike
+  `list_full_backups()`'s `".zip" in file`: the pruner deletes what it matches, and
+  the looser test also matches names like `notes.zip.bak`. A `realpath`
+  containment check guards the `shutil.rmtree`, so a symlinked dump directory
+  cannot redirect a recursive delete out of `data/mongo_dumps`.
+- **S3 is never pruned.** Offsite copies exist to survive mistakes made on this
+  host, so the app must not be able to delete its own offsite history; it would
+  also need a wider IAM grant than put-only. Decisively, the key is
+  `fw-gui/backups/<filename>` with **no instance identifier**, so two instances
+  sharing a bucket share the prefix and a per-instance prune would delete the
+  other's archives. Operators should use an S3 lifecycle rule.
+- **`perform_full_backup()` is the request-free core.** `create_backup()` remains
+  the wrapper that turns the outcome into flash messages; the scheduler cannot
+  use it because `flash()` and `session` need a request. The zip is staged in
+  `data/tmp` and moved with `os.replace`, so a process killed mid-zip cannot leave
+  a truncated `full-backup-*.zip` that `list_full_backups()` would report as real.
+  `upload_backup_file()`'s success flash is guarded with `has_request_context()`
+  for the same reason.
+- **Upgrade impact.** A new schedule is seeded disabled, so an upgrade changes
+  nothing but the Admin Settings page. Enabling it on an install that has never
+  pruned would delete hundreds of dumps hours later in a background thread, so
+  saving the form reports the exact counts `prune_preview()` computes at the moment
+  of consent, and the same counts are logged before the first deletion. Setting
+  **Backups to keep** to `0` schedules backups with no deletion at all. On such an
+  install the *first* scheduled archive is already the small one, because dumps are
+  pruned before the dump runs.
+- **The thread starts regardless of `enabled`**, provided MongoDB is reachable;
+  `enabled` is enforced in the claim filter so the toggle needs no restart. It is
+  started from `__main__` only — never at module scope, which would spawn a thread
+  in every pytest run and in any WSGI import of `app`. It is a daemon thread with
+  an `atexit` stop hook: the event makes a normal shutdown prompt, and the daemon
+  flag guarantees a container SIGTERM is not blocked by an in-progress zip.
 
 ---
 
@@ -796,6 +911,11 @@ transmitted, and every failure is swallowed.
 {"_id": "instance_id", "value": "<uuid4>", "created": ISODate(...)}
 ```
 
+Since 2.5.0 that collection also holds the weekly backup schedule as a second
+fixed document, `_id: "backup_schedule"` (§7.1). The two do not interact:
+`instance_id` looks its value up by `_id`, so the schedule document is invisible
+to it, and neither is a new reserved username.
+
 `get_or_create_instance_id()` resolves in order:
 
 1. **`FWGUI_INSTANCE_ID`**, if set — returned immediately, without touching
@@ -858,6 +978,15 @@ later read, so a read-only data directory costs a leftover file, not the id.
 | `SESSION_TIMEOUT` | Session lifetime in minutes (default 120) |
 | `SESSION_COOKIE_SECURE` | Send session cookie over HTTPS only (opt-in) |
 | `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Optional S3 backup upload |
+
+**The scheduled backup has no environment variables** (§7.1). Its enabled state,
+day, hour, retention, poll interval and claim lease all live on the
+`backup_schedule` document and are edited on the Admin Settings page. That is one
+source of truth rather than two: a variable and a stored value that disagreed
+would need a precedence rule, and whichever lost would look like a bug to whoever
+set it. It also means the settings survive a container replacement and take effect
+without a restart — the opposite trade-off from `SESSION_TIMEOUT` and friends,
+which are process configuration read once at start.
 
 **Only the accounts collection is renameable.** `keys`, `instance` and `sessions`
 are fixed (`validators.KEYS_COLLECTION`, `INSTANCE_COLLECTION`, and

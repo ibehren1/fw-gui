@@ -30,16 +30,18 @@ _RESERVED_USERNAMES = frozenset({"users", "sessions", "instance", "keys"})
 # the session store and the encrypted SSH keys, so a user owning one could read
 # and delete other users' accounts, sessions or key material. A collision here
 # aborts the startup migration rather than being worked around. "instance" is
-# deliberately absent -- it holds only the telemetry id, and refusing to boot over
-# that would be disproportionate; the collision degrades telemetry instead (see
-# package/instance_id.py).
+# deliberately absent -- it holds only the telemetry id and the weekly backup
+# schedule, and refusing to boot over that would be disproportionate; the
+# collision degrades telemetry and the schedule instead (see
+# package/instance_id.py and package/backup_scheduler.py).
 _AUTH_CRITICAL_RESERVED = frozenset({"users", "sessions", "keys"})
 
 # Collection holding user accounts. Overridable so an install that already has a
 # user named "users" has somewhere to go.
 DEFAULT_USERS_COLLECTION = "users"
 
-# Collection holding the telemetry instance id.
+# Collection holding the telemetry instance id and the weekly backup schedule,
+# one fixed document each.
 INSTANCE_COLLECTION = "instance"
 
 # Collection holding users' Fernet-encrypted SSH private keys.

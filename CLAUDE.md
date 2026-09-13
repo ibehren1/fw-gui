@@ -59,6 +59,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `instance_id.py` | MongoDB `instance` collection: telemetry instance id, incl. adoption of the pre-2.5.0 `instance.id` file |
 | `ssh_key_store.py` | MongoDB `keys` collection: Fernet-encrypted SSH keys, decrypt-and-stage, adoption of pre-2.5.0 `.key` files |
 | `data_file_functions.py` | MongoDB CRUD, backups (local + S3), file uploads, snapshots |
+| `backup_scheduler.py` | Automatic weekly full backup: schedule document in the `instance` collection, atomic run claim, daemon thread, retention pruning |
 | `chain_functions.py` | Chain and chain rule management (add/delete/reorder) |
 | `filter_functions.py` | Filter and filter rule management (parallel to chains) |
 | `rule_order_functions.py` | Shared rule renumbering logic (move up/down, renumber, resequence) used by chains and filters |
@@ -87,7 +88,7 @@ HTTP Request → Flask route (app.py) → package function
 
 - **MongoDB:** One collection per user/firewall config. Documents contain complete firewall configuration (chains, filters, groups, etc.) with IPv4/IPv6 root keys.
 - **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`. Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-2.5.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
-- **MongoDB `instance` collection:** a single document `{_id: "instance_id", value: <uuid4>}` holding the anonymous telemetry id. Pre-2.5.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `users`, `sessions` and `instance` are all rejected as usernames, since a username is also a collection name.
+- **MongoDB `instance` collection:** two fixed documents. `{_id: "instance_id", value: <uuid4>}` holds the anonymous telemetry id — pre-2.5.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `{_id: "backup_schedule", ...}` holds the automatic weekly backup's **entire configuration and state** (`enabled`, `day_of_week`, `hour`, `retention`, `poll_seconds`, `lease_seconds`, `next_run`, the claim fields and the last result) — there are no environment variables for it. The schedule shares this collection deliberately: a username is also a collection name, so a new collection would mean reserving another username. `users`, `sessions`, `instance` and `keys` are all rejected as usernames for that reason.
 - **MongoDB `keys` collection:** one document per SSH key, `_id` = `"<user>/<name>"`, ciphertext as BSON Binary. The Fernet key is generated at upload, shown to the user once and **never stored**, so the server holds a blob it cannot read. Decrypted keys are staged in the system temp dir, never under `data/`.
 - **Filesystem:** outputs only as of 2.5.0 — `data/log/app.log`, `data/backups/`, `data/mongo_dumps/` — plus retained pre-2.5.0 artifacts (`auth.db.migrated`, `instance.id.migrated`, `*.key.migrated`). No durable state and no secrets.
 
@@ -107,6 +108,8 @@ Configured via `.env` file (loaded by python-dotenv). Key variables:
 - `DISABLE_REGISTRATION` — Boolean to lock out new users
 - `LOG_LEVEL` — DEBUG, INFO, WARNING, ERROR
 - `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` — S3 backup config
+
+The automatic weekly backup has **no environment variables** — enabled state, day, hour, retention, poll interval and claim lease all live on the `backup_schedule` document and are edited on the Admin Settings page. One source of truth on purpose: an env var and a stored value that disagreed would need a precedence rule, and whichever lost would look like a bug.
 
 ### Deployment
 

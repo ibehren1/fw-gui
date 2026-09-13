@@ -7,7 +7,7 @@ Covers: allowed_file, update_schema, gather_instance_stats, get_extra_items,
         read_user_data_file, write_user_data_file, delete_user_data_file,
         add_extra_items, add_hostname, sweep_legacy_user_files,
         set_snapshot_tag, tag_snapshot, validate_mongodb_connection,
-        upload_backup_file.
+        upload_backup_file, create_backup, perform_full_backup.
 """
 
 import copy
@@ -35,6 +35,7 @@ from package.data_file_functions import (
     list_snapshots,
     list_user_files,
     list_user_keys,
+    perform_full_backup,
     read_user_data_file,
     restore_snapshot,
     set_snapshot_tag,
@@ -1318,6 +1319,26 @@ class TestUploadBackupFile:
         # Should not raise
         upload_backup_file("data/backups/test.zip")
 
+    def test_successful_upload_without_request_context(self, monkeypatch):
+        """The weekly scheduler uploads from a thread, with no request to flash into."""
+        monkeypatch.setenv("BUCKET_NAME", "my-bucket")
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+        mock_s3 = MagicMock()
+        mock_boto3 = MagicMock()
+        mock_boto3.client.return_value = mock_s3
+        monkeypatch.setattr("package.data_file_functions.boto3", mock_boto3)
+
+        # Deliberately no test_request_context(): an unguarded flash() would
+        # raise RuntimeError here.
+        upload_backup_file("data/backups/full-backup-2024.zip")
+
+        mock_s3.upload_file.assert_called_once_with(
+            "data/backups/full-backup-2024.zip",
+            "my-bucket",
+            "fw-gui/backups/full-backup-2024.zip",
+        )
+
 
 # ---------------------------------------------------------------------------
 # create_backup
@@ -1377,6 +1398,112 @@ class TestCreateBackup:
         # dump already carries -- endswith(".key") does not match it.
         assert not any(n.endswith(".key.migrated") for n in names)
         assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
+
+    def test_full_backup_flashes_critical_on_failure(self, data_tree, monkeypatch):
+        def boom():
+            raise RuntimeError("mongo is down")
+
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", boom)
+        from flask import Flask, get_flashed_messages
+
+        test_app = Flask(__name__)
+        test_app.config["SECRET_KEY"] = "test"
+        with test_app.test_request_context():
+            create_backup({"username": "myuser"}, user=False)
+            categories = [c for c, _ in get_flashed_messages(with_categories=True)]
+
+        assert "critical" in categories
+
+
+# ---------------------------------------------------------------------------
+# perform_full_backup
+# ---------------------------------------------------------------------------
+
+
+class TestPerformFullBackup:
+    """The request-context-free core the weekly scheduler calls."""
+
+    @pytest.fixture
+    def data_tree(self, tmp_path, monkeypatch):
+        data = tmp_path / "data"
+        (data / "backups").mkdir(parents=True)
+        (data / "database").mkdir()
+        (data / "tmp").mkdir()
+        (data / "uploads").mkdir()
+        (data / "myuser").mkdir()
+        (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
+        (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
+        (data / "myuser" / "firewall.json").write_text("{}")
+        (data / "uploads" / "upload.json").write_text("{}")
+        monkeypatch.chdir(tmp_path)
+        return data
+
+    def test_runs_without_request_context(self, data_tree, monkeypatch):
+        """No test_request_context(): an unguarded flash() would raise here."""
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+        monkeypatch.setattr(
+            "package.data_file_functions.upload_backup_file", lambda path: None
+        )
+
+        backup_path = perform_full_backup(actor="scheduler")
+
+        assert backup_path.startswith("data/backups/full-backup-")
+        assert os.path.exists(backup_path)
+        with zipfile.ZipFile(backup_path) as zf:
+            names = set(zf.namelist())
+        # Every exclusion the request-driven path enforced still applies.
+        assert "myuser/firewall.json" in names
+        assert not any(n.startswith("database/auth.db") for n in names)
+        assert not any(n.endswith(".key") for n in names)
+        assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
+
+    def test_uploads_the_zip_it_wrote(self, data_tree, monkeypatch):
+        uploaded = []
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+        monkeypatch.setattr(
+            "package.data_file_functions.upload_backup_file", uploaded.append
+        )
+
+        backup_path = perform_full_backup(actor="scheduler")
+
+        assert uploaded == [backup_path]
+
+    def test_propagates_failure_and_leaves_no_partial_zip(
+        self, data_tree, monkeypatch
+    ):
+        """Staging in data/tmp is what keeps a failed run out of data/backups."""
+
+        def boom():
+            raise RuntimeError("mongo is down")
+
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", boom)
+
+        with pytest.raises(RuntimeError):
+            perform_full_backup(actor="scheduler")
+
+        # Nothing that list_full_backups() would report as a backup.
+        assert list((data_tree / "backups").glob("*")) == []
+
+    def test_zip_failure_leaves_no_partial_zip_in_backups(
+        self, data_tree, monkeypatch
+    ):
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+
+        real_walk = os.walk
+
+        def exploding_walk(path):
+            # Yield one entry so the archive is opened and partly written, then
+            # fail -- the case that used to leave a truncated zip behind.
+            for item in real_walk(path):
+                yield item
+                raise RuntimeError("walk blew up")
+
+        monkeypatch.setattr("package.data_file_functions.os.walk", exploding_walk)
+
+        with pytest.raises(RuntimeError):
+            perform_full_backup(actor="scheduler")
+
+        assert list((data_tree / "backups").glob("*")) == []
 
 
 # ---------------------------------------------------------------------------

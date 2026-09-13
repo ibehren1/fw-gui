@@ -58,6 +58,12 @@ from package.auth_functions import (
     process_login,
     register_user,
 )
+from package.backup_scheduler import (
+    describe_schedule,
+    prune_preview,
+    start_backup_scheduler,
+    update_settings,
+)
 from package.chain_functions import (
     add_chain_to_data,
     add_rule_to_data,
@@ -416,6 +422,7 @@ def admin_settings():
             - snapshot_list: List of system snapshots
             - full_backup_list: List of full system backups
             - stats: Instance-wide account, configuration and snapshot counts
+            - schedule: Automatic weekly backup state, or None if unavailable
             - username: Current user's username
     """
     if request.method == "POST":
@@ -423,34 +430,70 @@ def admin_settings():
             if request.form["backup"] == "full_backup":
                 create_backup(session)
 
-        file_list = list_user_files(session)
-        full_backup_list = list_full_backups(session)
-        snapshot_list = list_snapshots(session)
-        stats = gather_instance_stats()
+        # The weekly schedule settings. A separate form from the backup above, so
+        # the two can never arrive together. The hidden marker is what makes the
+        # absent "schedule_enabled" checkbox mean "off" rather than "not
+        # submitted" -- without it, an unchecked box is indistinguishable from a
+        # POST that never carried the field.
+        elif "schedule_form" in request.form:
+            enabled = "schedule_enabled" in request.form
+            schedule = update_settings(
+                enabled,
+                day_of_week=request.form.get("schedule_day_of_week"),
+                hour=request.form.get("schedule_hour"),
+                retention=request.form.get("schedule_retention"),
+            )
 
-        return render_template(
-            "admin_settings_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            full_backup_list=full_backup_list,
-            stats=stats,
-            username=session["username"],
-        )
+            if schedule is None:
+                flash("Could not update the backup schedule.", "critical")
+            else:
+                logging.info(
+                    f"User <{session['username']}> saved the automatic weekly "
+                    f"backup settings: enabled={schedule['enabled']}, "
+                    f"day={schedule['day_of_week']}, hour={schedule['hour']}, "
+                    f"retention={schedule['retention']}."
+                )
+                if enabled:
+                    # Say what the next run will delete, at the moment of
+                    # consent. Nothing in the app pruned before 2.5.0, so an
+                    # existing install can be holding hundreds of dumps, and the
+                    # deletion would otherwise happen hours later in a thread.
+                    retention = schedule["retention"]
+                    preview = prune_preview(retention)
+                    if retention:
+                        message = (
+                            "Automatic weekly backup saved. Keeping the "
+                            f"{retention} newest archives and MongoDB dumps."
+                        )
+                    else:
+                        message = (
+                            "Automatic weekly backup saved. Nothing will be "
+                            "deleted, so the data directory is not bounded."
+                        )
+                    if preview["dumps"] or preview["zips"]:
+                        message += (
+                            f" The next run will remove {preview['dumps']} older "
+                            f"MongoDB dump(s) and {preview['zips']} older archive(s)."
+                        )
+                    flash(message, "success")
+                else:
+                    flash("Automatic weekly backup disabled.", "success")
 
-    else:
-        file_list = list_user_files(session)
-        full_backup_list = list_full_backups(session)
-        snapshot_list = list_snapshots(session)
-        stats = gather_instance_stats()
+    file_list = list_user_files(session)
+    full_backup_list = list_full_backups(session)
+    snapshot_list = list_snapshots(session)
+    stats = gather_instance_stats()
+    schedule = describe_schedule()
 
-        return render_template(
-            "admin_settings_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            full_backup_list=full_backup_list,
-            stats=stats,
-            username=session["username"],
-        )
+    return render_template(
+        "admin_settings_form.html",
+        file_list=file_list,
+        snapshot_list=snapshot_list,
+        full_backup_list=full_backup_list,
+        stats=stats,
+        schedule=schedule,
+        username=session["username"],
+    )
 
 
 #
@@ -2178,6 +2221,13 @@ if __name__ == "__main__":
         migrate_legacy_key_files(accounts)
         sweep_legacy_user_files(accounts)
         mongo_converter()
+        # Automatic weekly backup. Last in the block on purpose: it needs a
+        # reachable database for its schedule document, and starting it after the
+        # migrations means the thread cannot claim a run while accounts are still
+        # moving or mongo_converter() is still writing. The thread starts whether
+        # or not the schedule is enabled -- "enabled" is enforced when a run is
+        # claimed, so the Admin Settings toggle works without a restart.
+        start_backup_scheduler()
 
     # Post instance telemetry. Deliberately after the MongoDB check: the instance
     # id now lives in MongoDB, so running this first would mean waiting on the

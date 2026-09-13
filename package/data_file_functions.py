@@ -25,7 +25,7 @@ import boto3
 import bson
 import pymongo
 from cryptography.fernet import Fernet
-from flask import flash
+from flask import flash, has_request_context
 from werkzeug.utils import secure_filename
 
 from package.validators import is_safe_name
@@ -222,6 +222,71 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ["json", "key"]
 
 
+def perform_full_backup(actor="scheduler"):
+    """
+    Creates a full backup: a MongoDB dump plus a zip of the data directory.
+
+    Args:
+        actor (str): Who asked for the backup, used in the log line. A username
+                     when a request triggered it, "scheduler" for the weekly run.
+
+    Returns:
+        str: Path of the zip that was written.
+
+    Raises:
+        Whatever mongo_dump(), zipfile or os raise. Callers decide what a failure
+        means: create_backup() flashes it, the weekly scheduler records it on the
+        schedule document.
+
+    Deliberately free of Flask request context. The weekly backup runs on a
+    background thread, where flash() and session are unavailable; everything
+    needing a request stays in create_backup() below.
+
+    The zip is built in data/tmp and moved into place with os.replace, which is
+    atomic within a filesystem (both directories are under the same data/ mount).
+    Writing straight into data/backups means a process killed mid-zip leaves a
+    truncated full-backup-*.zip that list_full_backups() then reports as a real
+    backup. data/tmp is both skipped by the walk below and cleared by
+    initialize_data_dir(), so the debris of a killed run is removed on the next
+    start. Staging inside data/backups as *.zip.part would not do:
+    list_full_backups() matches ".zip" anywhere in the name, so it would list the
+    partial file too.
+    """
+    timestamp = str(datetime.now()).replace(" ", "-")
+    filename = f"full-backup-{timestamp}.zip"
+    staging_path = f"data/tmp/{filename}"
+    backup_path = f"data/backups/{filename}"
+
+    mongo_dump()
+
+    with zipfile.ZipFile(staging_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk("data/"):
+            if root.startswith(("data/backups", "data/tmp", "data/uploads")):
+                continue
+            for file in files:
+                # Key material. The live ciphertext now arrives via the
+                # Mongo dump, so a retained .key.migrated on disk is a
+                # redundant second copy of the same secret -- same
+                # reasoning as auth.db below.
+                if file.endswith((".key", ".key.migrated")):
+                    continue
+                # The retained pre-2.5.0 auth database is a full set of
+                # bcrypt hashes that nothing reads any more. Current
+                # accounts are already in the Mongo dump; there is no
+                # reason to ship the legacy copy off the host as well.
+                if file.startswith("auth.db"):
+                    continue
+                file_path = os.path.join(root, file)
+                zipf.write(file_path, os.path.relpath(file_path, "data/"))
+
+    os.replace(staging_path, backup_path)
+
+    logging.info(f"Full backup created by <{actor}>: {backup_path}")
+    upload_backup_file(backup_path)
+
+    return backup_path
+
+
 def create_backup(session, user=False):
     """
     Creates a backup of either the full data directory or a specific user's directory.
@@ -233,11 +298,8 @@ def create_backup(session, user=False):
     The function:
     1. Generates timestamp for backup filename
     2. For full backup (user=False):
-        - Creates MongoDB dump
-        - Zips entire data directory excluding backups/tmp/uploads, key files,
-          and the retained pre-2.5.0 auth.db*
-        - Logs backup creation and shows success message
-        - Uploads backup file
+        - Delegates to perform_full_backup(), which does the MongoDB dump and the
+          zip, and turns the outcome into a flash message
     3. For user backup (user=True):
         - Zips user's directory excluding existing zips and key files
         - Logs backup creation and shows success message
@@ -251,30 +313,8 @@ def create_backup(session, user=False):
     timestamp = str(datetime.now()).replace(" ", "-")
     if user is False:
         try:
-            mongo_dump()
-            backup_path = f"data/backups/full-backup-{timestamp}.zip"
-            with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk("data/"):
-                    if root.startswith(("data/backups", "data/tmp", "data/uploads")):
-                        continue
-                    for file in files:
-                        # Key material. The live ciphertext now arrives via the
-                        # Mongo dump, so a retained .key.migrated on disk is a
-                        # redundant second copy of the same secret -- same
-                        # reasoning as auth.db below.
-                        if file.endswith((".key", ".key.migrated")):
-                            continue
-                        # The retained pre-2.5.0 auth database is a full set of
-                        # bcrypt hashes that nothing reads any more. Current
-                        # accounts are already in the Mongo dump; there is no
-                        # reason to ship the legacy copy off the host as well.
-                        if file.startswith("auth.db"):
-                            continue
-                        file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, "data/"))
-            logging.info(f"User <{session['username']}> created a full backup.")
+            backup_path = perform_full_backup(actor=session["username"])
             flash(f"Backup created: {backup_path}", "success")
-            upload_backup_file(backup_path)
         except Exception as e:
             logging.info(e)
             flash("Backup failed.", "critical")
@@ -1227,7 +1267,11 @@ def upload_backup_file(backup_file):
             )
             s3.upload_file(backup_file, bucket_name, key)
 
-            flash("Backup file uploaded to S3.", "success")
+            # The weekly scheduler calls this from a background thread, where
+            # there is no request to flash into. The log line is the record in
+            # that case.
+            if has_request_context():
+                flash("Backup file uploaded to S3.", "success")
             logging.info("Backup file uploaded to S3.")
 
             return

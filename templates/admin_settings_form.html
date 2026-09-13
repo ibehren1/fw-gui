@@ -30,6 +30,90 @@
                 <button type="submit" class="btn btn-primary full-width">Create Full Backup</button>
             </form>
             
+            <div class="backup-list">
+                <h4 class="backup-list-title">Automatic Weekly Backup</h4>
+                {% if schedule %}
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value">{{ 'Enabled' if schedule['enabled'] else 'Disabled' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Schedule:</span>
+                        <span class="info-value">{{ schedule['schedule_text'] }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Last run:</span>
+                        <span class="info-value">{{ schedule['last_run_text'] }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Next run:</span>
+                        <span class="info-value">{{ schedule['next_run_text'] }}</span>
+                    </div>
+                </div>
+
+                <form action="/admin_settings" method="post" class="schedule-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="schedule_form" value="save">
+
+                    <label class="schedule-check">
+                        <input type="checkbox" name="schedule_enabled" value="true"
+                               {% if schedule['enabled'] %}checked{% endif %}>
+                        Run a full backup automatically every week
+                    </label>
+
+                    <div class="schedule-field">
+                        <label for="schedule_day_of_week">Day</label>
+                        <select id="schedule_day_of_week" name="schedule_day_of_week">
+                            {% for value, label in schedule['day_choices'] %}
+                            <option value="{{ value }}" {% if value == schedule['day_of_week'] %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="schedule-field">
+                        <label for="schedule_hour">Hour (UTC)</label>
+                        <select id="schedule_hour" name="schedule_hour">
+                            {% for value in schedule['hour_choices'] %}
+                            <option value="{{ value }}" {% if value == schedule['hour'] %}selected{% endif %}>{{ '%02d:00'|format(value) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="schedule-field">
+                        <label for="schedule_retention">Backups to keep</label>
+                        <input type="number" id="schedule_retention" name="schedule_retention"
+                               min="0" max="1000" step="1" value="{{ schedule['retention'] }}">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary full-width">Save Schedule</button>
+                </form>
+
+                <p class="settings-description info-note">
+                    {% if schedule['retention'] %}
+                    After each automatic run only the {{ schedule['retention'] }} newest archives and
+                    MongoDB dumps are kept; older ones are deleted. Set it to 0 to never delete
+                    anything &mdash; nothing then bounds the size of the data directory, because
+                    every archive also contains the retained dumps.
+                    {% else %}
+                    Nothing is ever deleted, so nothing bounds the size of the data directory:
+                    every archive also contains the retained MongoDB dumps. Set a number above 0
+                    to keep only that many.
+                    {% endif %}
+                    Times are UTC. Manual backups above never delete anything.
+                </p>
+                {% if schedule['last_error'] %}
+                <p class="settings-description info-note">
+                    Last error: {{ schedule['last_error'] }}
+                </p>
+                {% endif %}
+                {% else %}
+                <p class="settings-description">
+                    Schedule unavailable &mdash; MongoDB could not be reached.
+                </p>
+                {% endif %}
+            </div>
+
             {% if full_backup_list %}
             <div class="backup-list">
                 <h4 class="backup-list-title">Existing Full Backups</h4>
@@ -145,6 +229,37 @@
     list-style: none;
     padding: 0;
     margin: 0;
+}
+
+.schedule-form {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.schedule-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.schedule-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.schedule-field select,
+.schedule-field input {
+    flex: 0 0 10rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    color: inherit;
+    font-size: 0.9rem;
 }
 
 .backup-file {

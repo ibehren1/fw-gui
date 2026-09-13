@@ -80,6 +80,27 @@ You can provide an Amazon S3 bucket name and user credentials as environment var
 
 Access to the backup files is not provided via the web interface as it contains configurations of all users.  Access to the backup is on the Docker host in the FW-GUI volume or via the S3 bucket (if configured).
 
+### Automatic weekly backups
+
+As of 2.5.0 FW-GUI can take the full backup on its own, once a week, without anyone clicking the button.  It is **off until you switch it on**, and everything about it is configured on the Admin Settings page:
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| Run a full backup automatically every week | off | Whether the schedule runs at all. |
+| Day | Sundays | Day of the run. |
+| Hour (UTC) | 03:00 | Hour of the run.  **UTC**, so it does not shift with daylight saving. |
+| Backups to keep | 4 | How many archives and MongoDB dumps to keep.  Four *weekly* backups, so about a month.  `0` never deletes anything. |
+
+**There are no environment variables for any of this.**  The settings are stored in MongoDB, so they survive a restart, a container replacement and a redeploy, and a change takes effect immediately without one.  The same page shows the current schedule, the last run and its result, and the next run.
+
+**Scheduled runs delete old backups; manual ones never do.**  This is deliberate: before 2.5.0 nothing in FW-GUI removed a backup or a MongoDB dump, and because every archive re-includes every retained dump, the archives grew without bound.  After each scheduled run only the newest N archives and dumps are kept.  When you save the settings the page tells you exactly how many old files the next run will remove, so an install that has accumulated years of them is not surprised.  Set **Backups to keep** to `0` to schedule backups without ever deleting anything — but note that nothing then bounds the size of the data directory.
+
+Nothing is ever deleted from S3.  Offsite copies exist to survive mistakes made on the host, so the app does not prune them — use an [S3 lifecycle rule](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html) on the `fw-gui/backups/` prefix if you want them expired.
+
+A missed window is caught up once, not once per week missed: an instance that was switched off for a month takes one backup shortly after it starts again, then returns to its normal schedule.  Running more than one replica is safe — each claims the run atomically in MongoDB, so exactly one of them backs up.
+
+There is still no automated restore.  Retrieving an archive, and restoring a MongoDB dump from it, remains a manual operation on the host or from S3.
+
 ## Deployment
 
 ### Breaking Upgrade for version v1.4.0+

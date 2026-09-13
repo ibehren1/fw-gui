@@ -1152,11 +1152,39 @@ class TestConfigRoutes:
 # Admin routes
 # ---------------------------------------------------------------------------
 class TestAdminRoutes:
+    SCHEDULE = {
+        "enabled": False,
+        "day_of_week": 6,
+        "hour": 3,
+        "retention": 4,
+        "day_choices": list(
+            enumerate(
+                (
+                    "Mondays",
+                    "Tuesdays",
+                    "Wednesdays",
+                    "Thursdays",
+                    "Fridays",
+                    "Saturdays",
+                    "Sundays",
+                )
+            )
+        ),
+        "hour_choices": list(range(24)),
+        "running": False,
+        "schedule_text": "Sundays at 03:00 UTC",
+        "last_run_text": "Never",
+        "next_run_text": "Not scheduled",
+        "last_error": None,
+    }
+
     @pytest.fixture(autouse=True)
     def setup_mocks(self):
         with patch("app.list_user_files", return_value=["test_firewall"]), patch(
             "app.list_snapshots", return_value=[]
-        ), patch("app.list_full_backups", return_value=[]):
+        ), patch("app.list_full_backups", return_value=[]), patch(
+            "app.describe_schedule", return_value=dict(self.SCHEDULE)
+        ):
             yield
 
     def test_admin_settings_get(self, auth_client):
@@ -1217,6 +1245,135 @@ class TestAdminRoutes:
             )
             assert resp.status_code == 200
             mock_backup.assert_called_once()
+
+    def test_admin_settings_shows_the_weekly_schedule(self, auth_client):
+        resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "Automatic Weekly Backup" in body
+        assert "Sundays at 03:00 UTC" in body
+        assert "Not scheduled" in body
+        assert "Save Schedule" in body
+
+    def test_admin_settings_form_preselects_the_stored_settings(self, auth_client):
+        """The document is the only place these live, so the form must reflect it."""
+        stored = dict(
+            self.SCHEDULE,
+            enabled=True,
+            day_of_week=2,
+            hour=5,
+            retention=9,
+            next_run_text="2026-09-16 05:00 UTC",
+        )
+        with patch("app.describe_schedule", return_value=stored):
+            resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert 'value="2" selected' in body
+        assert 'value="5" selected' in body
+        assert 'value="9"' in body
+        assert "checked" in body
+        assert "2026-09-16 05:00 UTC" in body
+
+    def test_admin_settings_checkbox_is_unchecked_when_disabled(self, auth_client):
+        resp = auth_client.get("/admin_settings")
+        assert "checked" not in resp.data.decode()
+
+    def test_admin_settings_survives_an_unavailable_schedule(self, auth_client):
+        """A database blip must degrade the card, not 500 the whole page."""
+        with patch("app.describe_schedule", return_value=None):
+            resp = auth_client.get("/admin_settings")
+
+        assert resp.status_code == 200
+        assert "Schedule unavailable" in resp.data.decode()
+
+    def test_admin_settings_form_carries_a_csrf_token(self, auth_client):
+        """CSRF is disabled in the suite, so assert the token is rendered."""
+        resp = auth_client.get("/admin_settings")
+        assert "csrf_token" in resp.data.decode()
+
+    def test_admin_settings_post_saves_the_schedule(self, auth_client):
+        with patch("app.update_settings") as mock_update, patch(
+            "app.prune_preview", return_value={"dumps": 212, "zips": 47}
+        ), patch("app.create_backup") as mock_backup:
+            mock_update.return_value = dict(
+                self.SCHEDULE, enabled=True, day_of_week=2, hour=5, retention=9
+            )
+            resp = auth_client.post(
+                "/admin_settings",
+                data={
+                    "schedule_form": "save",
+                    "schedule_enabled": "true",
+                    "schedule_day_of_week": "2",
+                    "schedule_hour": "5",
+                    "schedule_retention": "9",
+                },
+            )
+
+        assert resp.status_code == 200
+        mock_update.assert_called_once_with(
+            True, day_of_week="2", hour="5", retention="9"
+        )
+        # The two POST branches must not collide.
+        mock_backup.assert_not_called()
+        # The operator is told what the next run will delete.
+        body = resp.data.decode()
+        assert "212" in body
+        assert "47" in body
+
+    def test_admin_settings_missing_checkbox_means_disabled(self, auth_client):
+        """An unchecked box sends nothing; the hidden marker is what disambiguates."""
+        with patch("app.update_settings") as mock_update:
+            mock_update.return_value = dict(self.SCHEDULE, enabled=False)
+            resp = auth_client.post(
+                "/admin_settings",
+                data={
+                    "schedule_form": "save",
+                    "schedule_day_of_week": "6",
+                    "schedule_hour": "3",
+                    "schedule_retention": "4",
+                },
+            )
+
+        assert resp.status_code == 200
+        assert mock_update.call_args.args[0] is False
+        assert "disabled" in resp.data.decode().lower()
+
+    def test_admin_settings_warns_when_retention_is_zero(self, auth_client):
+        with patch("app.update_settings") as mock_update, patch(
+            "app.prune_preview", return_value={"dumps": 0, "zips": 0}
+        ):
+            mock_update.return_value = dict(self.SCHEDULE, enabled=True, retention=0)
+            resp = auth_client.post(
+                "/admin_settings",
+                data={"schedule_form": "save", "schedule_enabled": "true"},
+            )
+
+        assert "Nothing will be deleted" in resp.data.decode()
+
+    def test_admin_settings_flashes_when_the_save_fails(self, auth_client):
+        with patch("app.update_settings", return_value=None):
+            resp = auth_client.post(
+                "/admin_settings",
+                data={"schedule_form": "save", "schedule_enabled": "true"},
+            )
+
+        assert resp.status_code == 200
+        assert "Could not update the backup schedule." in resp.data.decode()
+
+    def test_admin_settings_post_full_backup_does_not_touch_the_schedule(
+        self, auth_client
+    ):
+        with patch("app.create_backup") as mock_backup, patch(
+            "app.update_settings"
+        ) as mock_update:
+            resp = auth_client.post(
+                "/admin_settings", data={"backup": "full_backup"}
+            )
+
+        assert resp.status_code == 200
+        mock_backup.assert_called_once()
+        mock_update.assert_not_called()
 
     def test_download_route_is_gone(self, auth_client):
         """Removed in 2.5.0: it read any file under data/ for any logged-in user."""

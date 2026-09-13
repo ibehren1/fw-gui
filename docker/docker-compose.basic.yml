@@ -16,6 +16,9 @@ services:
       - BUCKET_NAME=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
+      # The automatic weekly backup has no environment variables. It is off until
+      # switched on, and its day, hour and retention are set on the Admin Settings
+      # page and stored in MongoDB.
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
