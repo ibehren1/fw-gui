@@ -9,7 +9,7 @@ FW-GUI is a Flask web application for visually creating and managing VyOS firewa
 ## Tech Stack
 
 - **Backend:** Python 3.12+ / Flask / Waitress (WSGI)
-- **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users` collection, 2.5.0+), and server-side sessions
+- **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), the telemetry instance id (`instance`), and server-side sessions (all as of 2.5.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
 - **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
 - **Frontend:** Jinja2 templates + jQuery + CSS Grid/Flexbox
@@ -56,6 +56,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `auth_functions.py` | Login, registration, password change, version checking |
 | `user_store.py` | MongoDB `users` collection: account lookup/create, password set, Flask-Login `User` |
 | `user_migration.py` | One-shot pre-2.5.0 SQLite `auth.db` → MongoDB account migration (runs at startup) |
+| `instance_id.py` | MongoDB `instance` collection: telemetry instance id, incl. adoption of the pre-2.5.0 `instance.id` file |
 | `data_file_functions.py` | MongoDB CRUD, backups (local + S3), file uploads, snapshots |
 | `chain_functions.py` | Chain and chain rule management (add/delete/reorder) |
 | `filter_functions.py` | Filter and filter rule management (parallel to chains) |
@@ -67,7 +68,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `napalm_ssh_functions.py` | SSH connectivity, config push, diffs, operational commands |
 | `diff_functions.py` | Configuration diff generation |
 | `mongo_converter.py` | Legacy pre-1.4.0 JSON-to-MongoDB config migration (runs at startup) |
-| `telemetry_functions.py` | Anonymous usage telemetry |
+| `telemetry_functions.py` | Anonymous usage telemetry (UUID + version only; never raises, so it cannot break a config push) |
 
 Note: `group_funtions.py` has a typo in the filename — this is intentional/historical.
 
@@ -85,7 +86,8 @@ HTTP Request → Flask route (app.py) → package function
 
 - **MongoDB:** One collection per user/firewall config. Documents contain complete firewall configuration (chains, filters, groups, etc.) with IPv4/IPv6 root keys.
 - **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`. Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-2.5.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
-- **Filesystem:** `data/[username]/` directories for per-user config references; `data/log/app.log` for logs; `data/mongo_dumps/` for backups.
+- **MongoDB `instance` collection:** a single document `{_id: "instance_id", value: <uuid4>}` holding the anonymous telemetry id. Pre-2.5.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `users`, `sessions` and `instance` are all rejected as usernames, since a username is also a collection name.
+- **Filesystem:** `data/[username]/` directories for per-user config references and encrypted SSH keys; `data/log/app.log` for logs; `data/mongo_dumps/` for backups. `data/database/` now holds only retained pre-2.5.0 artifacts.
 
 ### Session State
 
@@ -96,7 +98,8 @@ Flask session stores `data_dir`, `firewall_name`, and `username`. Each user has 
 Configured via `.env` file (loaded by python-dotenv). Key variables:
 - `FLASK_ENV` — "Development" (debug) or "Production"
 - `MONGODB_URI` / `MONGODB_DATABASE` — MongoDB connection (`MONGODB_DATABASE` defaults to `fwgui_database`)
-- `MONGODB_USERS_COLLECTION` — Collection holding accounts (default `users`); `users` and `sessions` are rejected as usernames because a username is also a collection name
+- `MONGODB_USERS_COLLECTION` — Collection holding accounts (default `users`)
+- `FWGUI_INSTANCE_ID` — Pins the telemetry instance id instead of reading it from MongoDB; used by CI
 - `APP_SECRET_KEY` — Flask session secret
 - `SESSION_TIMEOUT` — Minutes (default 120)
 - `DISABLE_REGISTRATION` — Boolean to lock out new users

@@ -8,11 +8,12 @@ references — with diagrams for a quick mental model.
 Related: `docs/ssh-credential-handling.md` covers SSH credentials/keys/cookies
 in depth; this document covers the overall data model.
 
-**Version note.** The authentication store moved in **2.5.0**: user accounts
-live in MongoDB from 2.5.0 onward, and in a SQLite file (`data/database/auth.db`,
-via Flask-SQLAlchemy) before it. Both are documented — §1 and §4 each carry a
-`2.5.0+` and a `Pre-2.5.0` subsection — so this document is usable while running
-either. Upgrading is automatic and needs no operator action; see §8.
+**Version note.** Two stores moved into MongoDB in **2.5.0**: user accounts,
+previously a SQLite file (`data/database/auth.db`, via Flask-SQLAlchemy), and the
+telemetry instance id, previously `data/database/instance.id`. Both eras are
+documented — §1, §4 and §10 each carry a `2.5.0+` and a `Pre-2.5.0` subsection —
+so this document is usable while running either. Upgrading is automatic and needs
+no operator action; see §8 and §10.
 
 ---
 
@@ -25,16 +26,16 @@ store:
 
 | Store | Technology | Holds |
 |-------|-----------|-------|
-| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots, one collection per user, **plus the `users` collection holding accounts** |
+| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots (one collection per user), **plus `users` (accounts) and `instance` (telemetry id)** |
 | Session store | **MongoDB** (`sessions` collection, via Flask-Session) | Per-session state; browser holds only an opaque id |
-| Filesystem (`data/`) | Local volume | Encrypted SSH keys, generated `.conf` files, backups, logs, Mongo dumps, instance id |
+| Filesystem (`data/`) | Local volume | Encrypted SSH keys, generated `.conf` files, backups, logs, Mongo dumps |
 
 ```mermaid
 flowchart TD
     Browser(["Browser"]) -->|"session cookie = opaque id"| App["Flask app (app.py)"]
 
     App -->|"firewall configs + snapshots (PyMongo)"| Mongo[("MongoDB (MONGODB_DATABASE)")]
-    App -->|"user accounts (users collection)"| Mongo
+    App -->|"user accounts + telemetry id"| Mongo
     App -->|"session state (Flask-Session)"| Sessions[("Mongo sessions")]
     App -->|"keys / .conf / backups / logs"| FS[/"Filesystem data dir"/]
 
@@ -43,8 +44,9 @@ flowchart TD
     App -.->|"UUID + version only"| Tele[("telemetry.fw-gui.com")]
 ```
 
-Neither configuration data nor accounts live on disk — the per-user filesystem
-directory holds only keys, generated command files, and backups.
+Configuration data, accounts and the telemetry id are all in MongoDB — the
+filesystem holds only keys, generated command files, backups and logs. Those SSH
+keys are why the volume is still required.
 
 Consequence worth stating plainly: **MongoDB now holds the credential store.**
 The shipped compose files leave MongoDB authentication commented out, justified
@@ -444,6 +446,16 @@ taken after the cutover exclude `auth.db*` and carry `mongo_dumps/.../users.bson
 instead, so they cannot serve a downgrade. If the volume's `auth.db.migrated` is
 gone, there is no rollback path.
 
+**Rename `instance.id.migrated` back too.** 2.5.0 also moved the telemetry
+instance id into MongoDB (§10) and retired `data/database/instance.id` the same
+way. A downgrade that leaves the file renamed will have the old code mint a fresh
+UUID, so the install reports to telemetry as a brand new one. Harmless to the
+application either way, but it breaks continuity in the maintainer's counts:
+
+```bash
+mv data/database/instance.id.migrated data/database/instance.id
+```
+
 ---
 
 ## 5. Session store
@@ -473,12 +485,12 @@ only an opaque, signed session id (`app.py:221-245`).
 
 ## 6. Filesystem layout (`data/`)
 
-Created by `initialize_data_dir()` (`data_file_functions.py:464-537`):
+Created by `initialize_data_dir()` (`data_file_functions.py:470-542`):
 
 ```mermaid
 flowchart TD
     data["data/"]
-    data --> db["database/<br/>instance.id (telemetry UUID)<br/>auth.db.migrated (pre-2.5.0 SQLite, retained)"]
+    data --> db["database/<br/>auth.db.migrated + instance.id.migrated<br/>(pre-2.5.0, retained for downgrade)"]
     data --> log["log/<br/>app.log"]
     data --> backups["backups/<br/>full-backup-&lt;timestamp&gt;.zip"]
     data --> dumps["mongo_dumps/<br/>&lt;timestamp&gt;/&lt;db&gt;/&lt;collection&gt;.bson"]
@@ -500,10 +512,11 @@ flowchart TD
   in 2.5.0; it had no caller in the UI. The two real download endpoints,
   `/download_config` and `/download_json`, build their response from the
   session's own config and take no caller-supplied path.
-- **Neither firewall config data nor user accounts are here** — both are in
-  MongoDB (accounts since 2.5.0). The per-user dir holds only keys, generated
-  `.conf` files, and user backup zips; `database/` holds the telemetry instance
-  id and, on an upgraded install, the retained `auth.db.migrated`.
+- **Neither firewall config data, user accounts, nor the telemetry id are here**
+  — all three are in MongoDB as of 2.5.0. The per-user dir holds only keys,
+  generated `.conf` files and user backup zips; `database/` holds nothing that
+  current code writes, only the retained `auth.db.migrated` and
+  `instance.id.migrated` on an upgraded install.
 
 ---
 
@@ -640,12 +653,65 @@ Matches the documented flow in `CLAUDE.md`: HTTP → route → package function 
 
 ## 10. Telemetry
 
-- `data/database/instance.id` — a random `uuid.uuid4()` created once
-  (`data_file_functions.py:530-533`), read by `get_instance_id()`.
-- Sends **only** the instance UUID and app version to
-  `https://telemetry.fw-gui.com/<route>` (`/instance`, `/commit`, `/diff`,
-  `/rule_usage`) via urllib3 (`telemetry_functions.py`). No config or user data
-  is transmitted; failures are silently debug-logged.
+Sends **only** an instance UUID and the app version to
+`https://telemetry.fw-gui.com/<route>` (`/instance`, `/commit`, `/diff`,
+`/rule_usage`) via urllib3 (`telemetry_functions.py`). No config or user data is
+transmitted, and every failure is swallowed.
+
+### 2.5.0+ — the `instance` collection
+
+`package/instance_id.py` owns the id. One document, in the collection named by
+`validators.INSTANCE_COLLECTION`:
+
+```
+{"_id": "instance_id", "value": "<uuid4>", "created": ISODate(...)}
+```
+
+`get_or_create_instance_id()` resolves in order:
+
+1. **`FWGUI_INSTANCE_ID`**, if set — returned immediately, without touching
+   MongoDB. Used by CI to tag its runs, and available to pin one identity across
+   a blue/green replacement.
+2. **A process-level cache.** `get_instance_id()` fires on every telemetry event
+   — login, commit, diff, rule usage — and used to be a free file read; without
+   the cache each event would be a round trip. Only a non-empty value is cached,
+   so a transient outage does not pin `""` for the life of the process.
+3. **MongoDB**, seeded lazily on first use with `$setOnInsert` + a read-back, so
+   two concurrent callers converge on one value rather than racing.
+
+Seeding lives in the getter rather than in `initialize_data_dir()` on purpose: it
+removes any startup-ordering coupling and works under a WSGI entrypoint that
+never runs `app.py`'s `__main__`.
+
+`instance` is a reserved username (§4) — a username is also a collection name, so
+otherwise a user could be handed this collection as their config collection. The
+collision is *not* auth-critical, so unlike `users`/`sessions` it does not abort
+the startup migration; `instance_id.py` logs an ERROR and telemetry degrades.
+
+**Two invariants, both mutation-tested:**
+
+- **Nothing in `instance_id.py` raises.** `telemetry_commit()` and
+  `telemetry_diff()` are called from `napalm_ssh_functions.py:128` and `:199`
+  *outside* the try blocks that guard a firewall push, so an escaping exception
+  would turn a telemetry lookup into a failed commit. An unavailable id is `""`.
+- **The lookup is time-bounded** by `pymongo.timeout(2.0)`. The shared client sets
+  no `serverSelectionTimeoutMS`, so pymongo's 30 s default applied per event: four
+  telemetry calls against an unreachable database measured 121 s before the bound,
+  8 s after. `telemetry_instance()` is in the login path.
+
+`telemetry_instance()` runs *after* `validate_mongodb_connection()` in `app.py`'s
+`__main__`, so it has a real id and cannot stall the boot. Consequence: an install
+that cannot reach MongoDB used to post here and then exit, so it reported; it now
+dies silently.
+
+### Pre-2.5.0 — `data/database/instance.id`
+
+A random `uuid.uuid4()` written once by `initialize_data_dir()` and read back with
+a plain `open()`. On upgrade the value is **adopted** so the install keeps its
+telemetry identity, then the file is renamed to `instance.id.migrated` — retained
+for the same reason as `auth.db.migrated`, and cleaned up with it. Retiring the
+file is best effort: the id is already stored and the stored value wins on every
+later read, so a read-only data directory costs a leftover file, not the id.
 
 ---
 
@@ -656,6 +722,7 @@ Matches the documented flow in `CLAUDE.md`: HTTP → route → package function 
 | `MONGODB_URI` | MongoDB connection string (configs, accounts, sessions) |
 | `MONGODB_DATABASE` | Mongo database name (default `fwgui_database`) |
 | `MONGODB_USERS_COLLECTION` | Collection holding user accounts (default `users`, 2.5.0+). Escape hatch for an install that already has a user of that name |
+| `FWGUI_INSTANCE_ID` | Pins the telemetry instance id instead of reading it from MongoDB (2.5.0+). Unset for normal use |
 | `APP_SECRET_KEY` | Signs the session id; derives the cached-secret encryption key |
 | `SESSION_TYPE` | Session backend (`mongodb` default; `filesystem` for tests) |
 | `SESSION_TIMEOUT` | Session lifetime in minutes (default 120) |
