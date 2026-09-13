@@ -455,7 +455,7 @@ def admin_settings():
                 )
                 if enabled:
                     # Say what the next run will delete, at the moment of
-                    # consent. Nothing in the app pruned before 2.5.0, so an
+                    # consent. Nothing in the app pruned before 3.0.0, so an
                     # existing install can be holding hundreds of dumps, and the
                     # deletion would otherwise happen hours later in a thread.
                     retention = schedule["retention"]
@@ -1701,7 +1701,7 @@ def configuration_push():
         }
 
         # Keys are addressed in MongoDB by their bare name (ssh_key_store uses
-        # _id = "<user>/<name>"). Pre-2.5.0 the form carried a trailing ".key"
+        # _id = "<user>/<name>"). Pre-3.0.0 the form carried a trailing ".key"
         # because the name was used to build an on-disk path, so strip it here as
         # well as in the template: a browser still holding a cached copy of the
         # old form would otherwise submit a name that cannot resolve. removesuffix
@@ -2209,14 +2209,14 @@ if __name__ == "__main__":
         migrate_sqlite_users()
         # Removes per-user files earlier releases left behind (.conf, .old).
         # Position is deliberate: after migrate_sqlite_users() because
-        # list_usernames() needs the accounts in MongoDB -- on a pre-2.5.0
+        # list_usernames() needs the accounts in MongoDB -- on a pre-3.0.0
         # upgrade it would otherwise return nothing and sweep nothing -- and
         # before mongo_converter() because that is what creates the .old files,
         # so running it after would delete a file created seconds earlier. It
         # cannot live in initialize_data_dir() above either; that runs before
         # MongoDB is known to be reachable.
         accounts = list_usernames()
-        # Adopts pre-2.5.0 data/<user>/*.key files into MongoDB. Same position
+        # Adopts pre-3.0.0 data/<user>/*.key files into MongoDB. Same position
         # requirement as the sweep below: it needs the migrated account list.
         migrate_legacy_key_files(accounts)
         sweep_legacy_user_files(accounts)

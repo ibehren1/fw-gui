@@ -914,9 +914,9 @@ class TestConfigRoutes:
     def test_configuration_push_renders_bare_key_names(self, auth_client):
         """The radio value must be the bare key name, with no .key suffix.
 
-        SSH keys moved into MongoDB in 2.5.0, addressed by bare name
+        SSH keys moved into MongoDB in 3.0.0, addressed by bare name
         (ssh_key_store._document_id -> "<user>/<name>"). The template kept
-        appending ".key" -- which the pre-2.5.0 on-disk path needed -- so every
+        appending ".key" -- which the pre-3.0.0 on-disk path needed -- so every
         lookup missed and all key-based auth failed with "No stored SSH key
         named 'x.key'".
         """
@@ -1192,7 +1192,7 @@ class TestAdminRoutes:
         assert resp.status_code == 200
 
     def test_admin_settings_does_not_claim_keys_are_excluded(self, auth_client):
-        """Backups DO contain SSH keys as of 2.5.0.
+        """Backups DO contain SSH keys as of 3.0.0.
 
         The zip walk skips the on-disk .key files, but the ciphertext arrives via
         keys.bson in the Mongo dump, so telling the operator keys are excluded
@@ -1376,7 +1376,7 @@ class TestAdminRoutes:
         mock_update.assert_not_called()
 
     def test_download_route_is_gone(self, auth_client):
-        """Removed in 2.5.0: it read any file under data/ for any logged-in user."""
+        """Removed in 3.0.0: it read any file under data/ for any logged-in user."""
         resp = auth_client.post(
             "/download",
             data={"path": "data/testuser/", "filename": "anything.txt"},

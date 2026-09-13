@@ -1,7 +1,7 @@
 """
 Tests for package/instance_id.py
 
-Covers: MongoDB-backed creation, the process cache, adoption of the pre-2.5.0
+Covers: MongoDB-backed creation, the process cache, adoption of the pre-3.0.0
         data/database/instance.id file and its retirement, the FWGUI_INSTANCE_ID
         override, and the guarantee that nothing here ever raises.
 """
@@ -35,7 +35,7 @@ def collection(monkeypatch):
 
 @pytest.fixture
 def legacy_file(tmp_path, monkeypatch):
-    """Redirect the pre-2.5.0 file paths into tmp_path and return a writer."""
+    """Redirect the pre-3.0.0 file paths into tmp_path and return a writer."""
     legacy = tmp_path / "instance.id"
     monkeypatch.setattr(instance_id, "LEGACY_INSTANCE_FILE", str(legacy))
     monkeypatch.setattr(
@@ -113,7 +113,7 @@ class TestCaching:
 
 
 # ---------------------------------------------------------------------------
-# Adoption of the pre-2.5.0 file
+# Adoption of the pre-3.0.0 file
 # ---------------------------------------------------------------------------
 
 

@@ -16,7 +16,7 @@ def get_instance_id():
     """Returns the install's telemetry id, or "" if unavailable.
 
     Thin delegate to package.instance_id, which stores the id in MongoDB as of
-    2.5.0. Contract unchanged: this never raises. The callers below sit outside
+    3.0.0. Contract unchanged: this never raises. The callers below sit outside
     the try blocks that guard a firewall push, so an exception here would turn a
     telemetry lookup into a failed commit.
     """

@@ -1,8 +1,8 @@
 """
 Legacy SQLite user migration.
 
-Pre-2.5.0 installs kept user accounts in ``data/database/auth.db``, a SQLite
-file behind Flask-SQLAlchemy. 2.5.0 keeps them in MongoDB. This module copies
+Pre-3.0.0 installs kept user accounts in ``data/database/auth.db``, a SQLite
+file behind Flask-SQLAlchemy. 3.0.0 keeps them in MongoDB. This module copies
 the accounts across once, at startup, with no operator action required.
 
 The migration is idempotent in two independent ways, because the file marker
@@ -34,7 +34,7 @@ from pymongo.errors import DuplicateKeyError
 from package import user_store
 from package.validators import is_auth_critical_username
 
-# Pre-2.5.0 authentication database, and the name it is renamed to once its
+# Pre-3.0.0 authentication database, and the name it is renamed to once its
 # accounts are in MongoDB. The rename doubles as the "already migrated" marker.
 LEGACY_AUTH_DB = "data/database/auth.db"
 MIGRATED_AUTH_DB = "data/database/auth.db.migrated"
@@ -45,7 +45,7 @@ MIGRATED_AUTH_DB = "data/database/auth.db.migrated"
 _LEGACY_USER_QUERY = "SELECT id, username, email, password FROM user"  # nosec B608
 
 # Server-side session store. Purged at cutover so nobody carries a session
-# holding a pre-2.5.0 _user_id.
+# holding a pre-3.0.0 _user_id.
 _SESSIONS_COLLECTION = "sessions"
 _FILESYSTEM_SESSION_DIR = "flask_session"
 
@@ -54,7 +54,7 @@ def _decode_hash(password, uid):
     """Normalises a stored bcrypt hash to str, or returns None if unusable.
 
     The legacy column holds a mix of TEXT and BLOB: generate_password_hash
-    returns bytes and the pre-2.5.0 write paths stored it unconverted. bcrypt
+    returns bytes and the pre-3.0.0 write paths stored it unconverted. bcrypt
     hashes are ASCII, so decoding is lossless.
     """
     if isinstance(password, (bytes, bytearray, memoryview)):
@@ -121,7 +121,7 @@ def _check_no_reserved_usernames(rows):
 def _purge_sessions():
     """Clears the server-side session store.
 
-    Flask-Login session tokens changed format at 2.5.0 (see
+    Flask-Login session tokens changed format at 3.0.0 (see
     user_store.SESSION_ID_PREFIX), so every existing session is stale. Deleting
     them logs everyone out at the cutover rather than leaving tokens that fail
     to resolve.
@@ -161,7 +161,7 @@ def _retire_legacy_db():
 
 
 def migrate_sqlite_users():
-    """Copies pre-2.5.0 SQLite accounts into MongoDB. Safe to call repeatedly."""
+    """Copies pre-3.0.0 SQLite accounts into MongoDB. Safe to call repeatedly."""
     if not os.path.exists(LEGACY_AUTH_DB):
         return
 
@@ -238,7 +238,7 @@ def migrate_sqlite_users():
             f"MongoDB and were left untouched: {already_present}. The MongoDB "
             "copy wins, so any password change or disable held there is "
             "preserved and the SQLite values are discarded. If this is a "
-            "re-upgrade after a downgrade to pre-2.5.0, changes made while "
+            "re-upgrade after a downgrade to pre-3.0.0, changes made while "
             "downgraded are being dropped -- see 'Downgrading and re-upgrading' "
             "in docs/data-architecture.md."
         )

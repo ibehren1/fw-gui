@@ -36,7 +36,7 @@ from package.validators import DEFAULT_USERS_COLLECTION
 # Flask-Login stores get_id() in the session as "_user_id". Namespacing the
 # token keeps it out of the plain-username space: usernames may be all digits,
 # so a bare username would be indistinguishable from the integer primary key
-# that pre-2.5.0 sessions carry, and a stale session could resolve to the
+# that pre-3.0.0 sessions carry, and a stale session could resolve to the
 # account *named* "1".
 SESSION_ID_PREFIX = "u:"
 

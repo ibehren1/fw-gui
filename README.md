@@ -30,7 +30,7 @@ The web-based FW-GUI allows the user to visually:
 
 ## Documentation
 
-- [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, MongoDB-backed authentication (SQLite before 2.5.0), session store, filesystem layout, backups, and data flow (with diagrams).
+- [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, MongoDB-backed authentication (SQLite before 3.0.0), session store, filesystem layout, backups, and data flow (with diagrams).
 - [SSH, Password, Key & Cookie Handling](docs/ssh-credential-handling.md) — how SSH connectivity, passwords, keys, and cookies are stored, used, and disposed of (with diagrams).
 
 ## VyOS Release Support
@@ -82,7 +82,7 @@ Access to the backup files is not provided via the web interface as it contains 
 
 ### Automatic weekly backups
 
-As of 2.5.0 FW-GUI can take the full backup on its own, once a week, without anyone clicking the button.  It is **off until you switch it on**, and everything about it is configured on the Admin Settings page:
+As of 3.0.0 FW-GUI can take the full backup on its own, once a week, without anyone clicking the button.  It is **off until you switch it on**, and everything about it is configured on the Admin Settings page:
 
 | Setting | Default | Purpose |
 |---------|---------|---------|
@@ -93,7 +93,7 @@ As of 2.5.0 FW-GUI can take the full backup on its own, once a week, without any
 
 **There are no environment variables for any of this.**  The settings are stored in MongoDB, so they survive a restart, a container replacement and a redeploy, and a change takes effect immediately without one.  The same page shows the current schedule, the last run and its result, and the next run.
 
-**Scheduled runs delete old backups; manual ones never do.**  This is deliberate: before 2.5.0 nothing in FW-GUI removed a backup or a MongoDB dump, and because every archive re-includes every retained dump, the archives grew without bound.  After each scheduled run only the newest N archives and dumps are kept.  When you save the settings the page tells you exactly how many old files the next run will remove, so an install that has accumulated years of them is not surprised.  Set **Backups to keep** to `0` to schedule backups without ever deleting anything — but note that nothing then bounds the size of the data directory.
+**Scheduled runs delete old backups; manual ones never do.**  This is deliberate: before 3.0.0 nothing in FW-GUI removed a backup or a MongoDB dump, and because every archive re-includes every retained dump, the archives grew without bound.  After each scheduled run only the newest N archives and dumps are kept.  When you save the settings the page tells you exactly how many old files the next run will remove, so an install that has accumulated years of them is not surprised.  Set **Backups to keep** to `0` to schedule backups without ever deleting anything — but note that nothing then bounds the size of the data directory.
 
 Nothing is ever deleted from S3.  Offsite copies exist to survive mistakes made on the host, so the app does not prune them — use an [S3 lifecycle rule](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html) on the `fw-gui/backups/` prefix if you want them expired.
 

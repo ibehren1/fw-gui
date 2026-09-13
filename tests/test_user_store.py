@@ -81,7 +81,7 @@ class TestUser:
 
     def test_get_id_namespaces_all_digit_usernames(self):
         # The whole point of the prefix: "1" must not collide with the integer
-        # primary key that pre-2.5.0 sessions carry.
+        # primary key that pre-3.0.0 sessions carry.
         assert User({"_id": "1"}).get_id() == "u:1"
 
     def test_missing_disabled_field_means_active(self):
@@ -141,7 +141,7 @@ class TestGetUserBySessionId:
         assert get_user_by_session_id("alice") is None
 
     def test_rejects_legacy_integer_token(self, users):
-        """A pre-2.5.0 session id must not authenticate as anyone."""
+        """A pre-3.0.0 session id must not authenticate as anyone."""
         seed(users, "1")
         assert get_user_by_session_id("1") is None
 
@@ -217,7 +217,7 @@ class TestCountUsers:
         assert count_users() == {"total": 3, "disabled": 1}
 
     def test_document_without_disabled_field_counts_as_enabled(self, users):
-        """Pre-2.5.0 and hand-written documents may omit the field."""
+        """Pre-3.0.0 and hand-written documents may omit the field."""
         users.insert_one({"_id": "legacy", "password": "hash"})
         assert count_users() == {"total": 1, "disabled": 0}
 

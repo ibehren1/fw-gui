@@ -62,7 +62,7 @@ DEFAULT_HOUR_UTC = 3
 # Kept archives and Mongo dumps. Four *weekly* backups, so roughly a month.
 #
 # Retention is not a nicety here. Every zip re-archives whatever is in
-# data/mongo_dumps, and before 2.5.0 nothing ever pruned either one, so archive
+# data/mongo_dumps, and before 3.0.0 nothing ever pruned either one, so archive
 # size grew quadratically -- a real install reached 944 MB of zips and 119 dump
 # directories. Automating backups without a bound would add gigabytes a year.
 DEFAULT_RETENTION = 4

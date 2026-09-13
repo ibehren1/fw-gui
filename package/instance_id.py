@@ -2,12 +2,12 @@
 Telemetry Instance Id
 
 The instance id is a random UUID identifying this install to the telemetry
-endpoint. It lives in MongoDB from 2.5.0 onward, in the collection named by
+endpoint. It lives in MongoDB from 3.0.0 onward, in the collection named by
 ``INSTANCE_COLLECTION``:
 
     {"_id": "instance_id", "value": "<uuid4>", "created": datetime}
 
-Pre-2.5.0 it was ``data/database/instance.id``. That file is adopted on first
+Pre-3.0.0 it was ``data/database/instance.id``. That file is adopted on first
 read so an upgraded install keeps its identity, then renamed to
 ``instance.id.migrated`` -- retained, like ``auth.db.migrated``, so a downgrade
 still has it.
@@ -36,7 +36,7 @@ from package.validators import INSTANCE_COLLECTION
 # other reasons; telemetry must not add to the wait.
 _LOOKUP_TIMEOUT_SECONDS = 2.0
 
-# Pre-2.5.0 location, and the name it is renamed to once its value is in
+# Pre-3.0.0 location, and the name it is renamed to once its value is in
 # MongoDB. As with auth.db.migrated, the rename is the "already migrated" marker
 # and the retained file is the downgrade path.
 LEGACY_INSTANCE_FILE = "data/database/instance.id"
@@ -61,7 +61,7 @@ def _collection():
 
 
 def _read_legacy_file():
-    """Returns the pre-2.5.0 file's id, or None if there isn't a usable one."""
+    """Returns the pre-3.0.0 file's id, or None if there isn't a usable one."""
     try:
         with open(LEGACY_INSTANCE_FILE) as f:
             value = f.read().strip()
@@ -120,7 +120,7 @@ def _resolve_from_mongo():
         )
         return ""
 
-    # Nothing stored yet. Adopt the pre-2.5.0 file if there is one so the install
+    # Nothing stored yet. Adopt the pre-3.0.0 file if there is one so the install
     # keeps its identity, otherwise mint a new id.
     legacy = _read_legacy_file()
     candidate = legacy or str(uuid.uuid4())

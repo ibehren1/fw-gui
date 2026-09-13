@@ -3,7 +3,7 @@ Tests for package/ssh_key_store.py
 
 Covers: storing and listing encrypted SSH keys, the decrypt-and-stage path and
         its security properties (0600, outside data/, wrong key rejected), and
-        adoption of pre-2.5.0 data/<user>/*.key files.
+        adoption of pre-3.0.0 data/<user>/*.key files.
 """
 
 import os
@@ -146,7 +146,7 @@ class TestDecryptSshKey:
         assert mode == 0o600
 
     def test_staged_file_is_outside_the_data_volume(self, keys, fernet_key, staged):
-        """2.5.0 moved staging to TMPDIR so data/ holds no secrets."""
+        """3.0.0 moved staging to TMPDIR so data/ holds no secrets."""
         store_key("alice", "id_rsa", Fernet(fernet_key).encrypt(PLAINTEXT_KEY))
 
         path = decrypt_ssh_key("alice", "id_rsa", fernet_key)

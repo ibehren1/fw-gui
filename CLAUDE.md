@@ -9,7 +9,7 @@ FW-GUI is a Flask web application for visually creating and managing VyOS firewa
 ## Tech Stack
 
 - **Backend:** Python 3.12+ / Flask / Waitress (WSGI)
-- **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 2.5.0)
+- **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 3.0.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
 - **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
 - **Frontend:** Jinja2 templates + jQuery + CSS Grid/Flexbox
@@ -55,9 +55,9 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 |--------|---------|
 | `auth_functions.py` | Login, registration, password change, version checking |
 | `user_store.py` | MongoDB `users` collection: account lookup/create, password set, Flask-Login `User` |
-| `user_migration.py` | One-shot pre-2.5.0 SQLite `auth.db` → MongoDB account migration (runs at startup) |
-| `instance_id.py` | MongoDB `instance` collection: telemetry instance id, incl. adoption of the pre-2.5.0 `instance.id` file |
-| `ssh_key_store.py` | MongoDB `keys` collection: Fernet-encrypted SSH keys, decrypt-and-stage, adoption of pre-2.5.0 `.key` files |
+| `user_migration.py` | One-shot pre-3.0.0 SQLite `auth.db` → MongoDB account migration (runs at startup) |
+| `instance_id.py` | MongoDB `instance` collection: telemetry instance id, incl. adoption of the pre-3.0.0 `instance.id` file |
+| `ssh_key_store.py` | MongoDB `keys` collection: Fernet-encrypted SSH keys, decrypt-and-stage, adoption of pre-3.0.0 `.key` files |
 | `data_file_functions.py` | MongoDB CRUD, backups (local + S3), file uploads, snapshots |
 | `backup_scheduler.py` | Automatic weekly full backup: schedule document in the `instance` collection, atomic run claim, daemon thread, retention pruning |
 | `chain_functions.py` | Chain and chain rule management (add/delete/reorder) |
@@ -87,10 +87,10 @@ HTTP Request → Flask route (app.py) → package function
 ### Data Storage
 
 - **MongoDB:** One collection per user/firewall config. Documents contain complete firewall configuration (chains, filters, groups, etc.) with IPv4/IPv6 root keys.
-- **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`. Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-2.5.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
-- **MongoDB `instance` collection:** two fixed documents. `{_id: "instance_id", value: <uuid4>}` holds the anonymous telemetry id — pre-2.5.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `{_id: "backup_schedule", ...}` holds the automatic weekly backup's **entire configuration and state** (`enabled`, `day_of_week`, `hour`, `retention`, `poll_seconds`, `lease_seconds`, `next_run`, the claim fields and the last result) — there are no environment variables for it. The schedule shares this collection deliberately: a username is also a collection name, so a new collection would mean reserving another username. `users`, `sessions`, `instance` and `keys` are all rejected as usernames for that reason.
+- **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`. Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-3.0.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
+- **MongoDB `instance` collection:** two fixed documents. `{_id: "instance_id", value: <uuid4>}` holds the anonymous telemetry id — pre-3.0.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `{_id: "backup_schedule", ...}` holds the automatic weekly backup's **entire configuration and state** (`enabled`, `day_of_week`, `hour`, `retention`, `poll_seconds`, `lease_seconds`, `next_run`, the claim fields and the last result) — there are no environment variables for it. The schedule shares this collection deliberately: a username is also a collection name, so a new collection would mean reserving another username. `users`, `sessions`, `instance` and `keys` are all rejected as usernames for that reason.
 - **MongoDB `keys` collection:** one document per SSH key, `_id` = `"<user>/<name>"`, ciphertext as BSON Binary. The Fernet key is generated at upload, shown to the user once and **never stored**, so the server holds a blob it cannot read. Decrypted keys are staged in the system temp dir, never under `data/`.
-- **Filesystem:** outputs only as of 2.5.0 — `data/log/app.log`, `data/backups/`, `data/mongo_dumps/` — plus retained pre-2.5.0 artifacts (`auth.db.migrated`, `instance.id.migrated`, `*.key.migrated`). No durable state and no secrets.
+- **Filesystem:** outputs only as of 3.0.0 — `data/log/app.log`, `data/backups/`, `data/mongo_dumps/` — plus retained pre-3.0.0 artifacts (`auth.db.migrated`, `instance.id.migrated`, `*.key.migrated`). No durable state and no secrets.
 
 ### Session State
 

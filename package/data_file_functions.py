@@ -270,7 +270,7 @@ def perform_full_backup(actor="scheduler"):
                 # reasoning as auth.db below.
                 if file.endswith((".key", ".key.migrated")):
                     continue
-                # The retained pre-2.5.0 auth database is a full set of
+                # The retained pre-3.0.0 auth database is a full set of
                 # bcrypt hashes that nothing reads any more. Current
                 # accounts are already in the Mongo dump; there is no
                 # reason to ship the legacy copy off the host as well.
@@ -546,7 +546,7 @@ def initialize_data_dir():
        - backups/: For storing backup files
        - log/: For application logs
        - mongo_dumps/: For MongoDB database dumps
-       - database/: For retained pre-2.5.0 artifacts (the SQLite auth database
+       - database/: For retained pre-3.0.0 artifacts (the SQLite auth database
          and the telemetry instance id file); nothing current is written here
        - tmp/: Legacy scratch, no longer written to (contents cleared on startup)
        - uploads/: For user uploaded files
@@ -580,14 +580,14 @@ def initialize_data_dir():
         logging.info(" |--> MongoDB directory not found, creating...")
         os.makedirs("data/mongo_dumps")
 
-    # Holds the retained pre-2.5.0 artifacts on an upgraded install
+    # Holds the retained pre-3.0.0 artifacts on an upgraded install
     # (auth.db.migrated, instance.id.migrated). Nothing is written here by
     # current code -- accounts and the telemetry id both live in MongoDB.
     if not os.path.exists("data/database"):
         logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
 
-    # Nothing writes to data/tmp as of 2.5.0 -- decrypted SSH keys are now staged
+    # Nothing writes to data/tmp as of 3.0.0 -- decrypted SSH keys are now staged
     # in the system temp directory. The wipe below is kept as legacy cleanup: on
     # an install upgrading from a version that crashed mid-operation, it is what
     # removes a stale *plaintext* private key left staged there.
@@ -625,7 +625,7 @@ def sweep_legacy_user_files(usernames):
 
     Two kinds, both listed in _LEGACY_USER_FILE_SUFFIXES:
 
-    ``.conf`` -- before 2.5.0 every configuration push wrote
+    ``.conf`` -- before 3.0.0 every configuration push wrote
     data/<username>/<firewall_name>.conf purely to hand the commands to NAPALM,
     and nothing ever deleted them. They accumulated per firewall name and
     outlived the configs they were generated from. NAPALM is now given the
@@ -839,7 +839,7 @@ def list_user_keys(session):
     Returns:
         list: A sorted list of key names, without the .key extension
 
-    Keys live in MongoDB as of 2.5.0 (see package/ssh_key_store.py); this used to
+    Keys live in MongoDB as of 3.0.0 (see package/ssh_key_store.py); this used to
     scan data/<username>/*.key. The name and the sorted-list contract are kept so
     the push-form template and its callers are unaffected.
 

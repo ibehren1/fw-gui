@@ -304,7 +304,7 @@ class TestGetSystemName:
 
 
 class TestListUserKeys:
-    """Keys come from MongoDB as of 2.5.0, not from scanning the user's dir."""
+    """Keys come from MongoDB as of 3.0.0, not from scanning the user's dir."""
 
     @pytest.fixture
     def keys(self, mock_mongo):

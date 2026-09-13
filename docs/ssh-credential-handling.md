@@ -68,7 +68,7 @@ flowchart TD
 | Key storage (MongoDB `keys` collection) | `package/ssh_key_store.py` → `store_key()` / `get_ciphertext()` |
 | Key decryption (temp staging) | `package/ssh_key_store.py` → `decrypt_ssh_key()` |
 | List uploaded keys | `package/data_file_functions.py` → `list_user_keys()` (delegates to `ssh_key_store.list_key_names()`) |
-| Adoption of pre-2.5.0 key files | `package/ssh_key_store.py` → `migrate_legacy_key_files()` |
+| Adoption of pre-3.0.0 key files | `package/ssh_key_store.py` → `migrate_legacy_key_files()` |
 | Push form template | `templates/configuration_push.html` |
 
 ---
@@ -105,9 +105,9 @@ Key facts for auditors:
 - **The generated Fernet key is displayed to the user once** (`flash(..., "key")`,
   `data_file_functions.py:746-749`) and is **not** persisted by FW-GUI. Losing it
   means the stored key file cannot be decrypted — the user must re-upload.
-- **Storage location (2.5.0+):** the encrypted blob is a document in the MongoDB
+- **Storage location (3.0.0+):** the encrypted blob is a document in the MongoDB
   `keys` collection, `_id` = `"<username>/<name>"`, with the ciphertext as BSON
-  Binary. Pre-2.5.0 it was `data/<username>/<name>.key`;
+  Binary. Pre-3.0.0 it was `data/<username>/<name>.key`;
   `migrate_legacy_key_files()` adopts those at startup and renames the file to
   `.key.migrated`, retained for downgrade and never deleted — that ciphertext is
   the user's only copy.
@@ -115,7 +115,7 @@ Key facts for auditors:
   a username is also a collection name, so an account called `keys` would own
   every other user's key ciphertext. A legacy account of that name aborts startup
   until it is renamed.
-- **Key material is in full backups as of 2.5.0.** `mongo_dump()` sweeps every
+- **Key material is in full backups as of 3.0.0.** `mongo_dump()` sweeps every
   collection, so `keys.bson` is in the zip and any S3 upload. This is a deliberate
   change from the previous "`.key` excluded" posture, and it is only defensible
   because the Fernet key is never stored server-side: a leaked archive yields
@@ -168,7 +168,7 @@ flowchart TD
 3. Writes the **plaintext** private key to a `tempfile.mkstemp()` file — a
    cryptographically-random name with **`0o600` (owner-only)** permissions.
    **No `dir=`**, so it lands in the system temp directory, *not* the mounted data
-   volume: as of 2.5.0 `data/` holds no secrets at all. Decryption happens before
+   volume: as of 3.0.0 `data/` holds no secrets at all. Decryption happens before
    the file is created, so a wrong Fernet key leaves nothing staged.
 4. Returns that path; NAPALM/Paramiko use it as `key_file` / `key_filename`.
 5. The caller deletes it in a `finally` block:
@@ -302,7 +302,7 @@ flowchart LR
 |--------|-------------------|--------------|-----------------|-----------|
 | Device SSH password | User types on push form | Server-side session (`ssh_pass`), **Fernet-encrypted at rest** | Yes, as SSH login password | On config switch, logout, or session timeout |
 | Fernet encryption key (for uploaded key) | Generated at upload, shown once | **Not stored** by FW-GUI; user keeps it. Cached in server-side session (`ssh_pass`) **encrypted** after entry, for the session | No | Cache cleared on config switch / logout / timeout |
-| Encrypted private key | Encrypted at upload | MongoDB `keys` collection, ciphertext as BSON Binary (2.5.0+; previously `data/<username>/<name>.key`) | No (only its decrypted form is used) | Replaced on re-upload; there is no delete-key feature |
+| Encrypted private key | Encrypted at upload | MongoDB `keys` collection, ciphertext as BSON Binary (3.0.0+; previously `data/<username>/<name>.key`) | No (only its decrypted form is used) | Replaced on re-upload; there is no delete-key feature |
 | Decrypted private key (temp) | Per action, by `decrypt_ssh_key()` | System temp dir via `mkstemp` (plaintext, `0o600`) | Used as `key_file` for the SSH login | Removed in the action's `finally` (and on connect failure) |
 | Session id | On login | Signed cookie in browser | No | Cookie expiry / logout / timeout |
 
@@ -333,7 +333,7 @@ flowchart LR
 | 4 | Cached secret at rest in the Mongo `sessions` collection | **Mitigated** — the cached secret is Fernet-encrypted before storage (§10). Residual: the derivation key comes from `APP_SECRET_KEY`, so a host/app compromise that exposes that key defeats it; still lock down DB access. |
 | 5 | `paramiko.AutoAddPolicy()` trusts unknown host keys | **Residual** — MITM exposure; intentional today. Consider `RejectPolicy` + known-hosts. |
 | 6 | `run_operational_command()` sends arbitrary `op_command` to the device with no allowlist | **Residual** — authenticated users can run any operational command. |
-| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 2.5.0, and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
+| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 3.0.0, and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
 | 8 | Uploaded `.key` content is not validated as a real SSH key | **Residual** — see `# TODO` at `data_file_functions.py:730`. |
 
 ---

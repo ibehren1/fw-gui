@@ -1,7 +1,7 @@
 """
 Tests for package/user_migration.py
 
-Covers: the pre-2.5.0 SQLite -> MongoDB account migration, its idempotency,
+Covers: the pre-3.0.0 SQLite -> MongoDB account migration, its idempotency,
         the TEXT/BLOB password-hash mix, the reserved-username and
         config-collection abort paths, session purging, and the rename that
         acts as the "already migrated" marker.

@@ -8,11 +8,11 @@ references — with diagrams for a quick mental model.
 Related: `docs/ssh-credential-handling.md` covers SSH credentials/keys/cookies
 in depth; this document covers the overall data model.
 
-**Version note.** Three stores moved into MongoDB in **2.5.0**: user accounts,
+**Version note.** Three stores moved into MongoDB in **3.0.0**: user accounts,
 previously a SQLite file (`data/database/auth.db`, via Flask-SQLAlchemy);
 encrypted SSH keys, previously `data/<user>/<name>.key`; and the telemetry
 instance id, previously `data/database/instance.id`. Both eras are documented —
-§1, §4 and §10 each carry a `2.5.0+` and a `Pre-2.5.0` subsection — so this
+§1, §4 and §10 each carry a `3.0.0+` and a `Pre-3.0.0` subsection — so this
 document is usable while running either. Upgrading is automatic and needs no
 operator action; see §8 and §10.
 
@@ -25,7 +25,7 @@ still works (§4, "Downgrading and re-upgrading").
 
 ## 1. Overview
 
-### 2.5.0+
+### 3.0.0+
 
 **Two persistent stores**, one of which also backs the server-side session
 store:
@@ -52,17 +52,17 @@ flowchart TD
 
 Configuration data, accounts, SSH keys and the telemetry id are all in MongoDB.
 The filesystem holds only outputs — backups, logs and Mongo dumps — plus the
-retained pre-2.5.0 artifacts on an upgraded install. Decrypted SSH keys are staged
+retained pre-3.0.0 artifacts on an upgraded install. Decrypted SSH keys are staged
 in the system temp directory rather than here, so `data/` holds no secrets.
 
 Consequence worth stating plainly: **MongoDB now holds the credential store.**
 The shipped compose files leave MongoDB authentication commented out, justified
 by the fact that no port is published and only the fw-gui container shares the
-network. Post-2.5.0 anything else attached to that network can read every bcrypt
+network. Post-3.0.0 anything else attached to that network can read every bcrypt
 hash, where previously it would have needed filesystem access inside the fw-gui
 container. Enabling MongoDB authentication is correspondingly more worthwhile.
 
-### Pre-2.5.0
+### Pre-3.0.0
 
 **Three persistent stores**, plus a server-side session store:
 
@@ -115,7 +115,7 @@ flowchart TD
   `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"` (`:38`), matching the
   session-store default at `app.py:246-248`. The default matters: pymongo raises
   `TypeError: name must be an instance of str` on `client[None]`, and since
-  2.5.0 accounts live here too, an unset variable would take the login page down
+  3.0.0 accounts live here too, an unset variable would take the login page down
   rather than only the config routes.
 - `validate_mongodb_connection()` (`:1196-1236`) probes at startup and
   `sys.exit()`s on failure, using the same `SERVER_SELECTION_TIMEOUT_MS`. It used
@@ -307,7 +307,7 @@ now also allow-lists `ipv4`/`ipv6` as a second line of defence.
 
 ## 4. Authentication store
 
-### 2.5.0+ — MongoDB `users` collection
+### 3.0.0+ — MongoDB `users` collection
 
 Accounts live in the collection named by `MONGODB_USERS_COLLECTION` (default
 `users`) inside `MONGODB_DATABASE`. Access goes through `package/user_store.py`;
@@ -327,7 +327,7 @@ Accounts live in the collection named by `MONGODB_USERS_COLLECTION` (default
 - Uniqueness is free. No index is created at startup, so there is no index build
   to fail, and `register_user` does not pre-check the name — `create_user()`
   inserts and `DuplicateKeyError` *is* the duplicate check
-  (`auth_functions.py:294-306`). The pre-2.5.0 query-then-insert had a window in
+  (`auth_functions.py:294-306`). The pre-3.0.0 query-then-insert had a window in
   which two simultaneous registrations of one name could both succeed.
 - `_id` matching is binary, which preserves exactly the case-sensitive
   uniqueness the SQLite `unique` column gave: `Bob` and `bob` are distinct. No
@@ -370,7 +370,7 @@ hand out account enumeration — and logs a WARNING with the username.
 **Session token.** `get_id()` returns `u:<username>`
 (`user_store.SESSION_ID_PREFIX`), not the bare name: `is_valid_username` permits
 all-digit usernames, so an unprefixed token would be indistinguishable from the
-integer primary key that pre-2.5.0 sessions carry, and a stale session holding
+integer primary key that pre-3.0.0 sessions carry, and a stale session holding
 `"1"` could resolve to the account *named* `1`.
 
 Passwords are hashed with Flask-Bcrypt and stored as `str` — both write paths
@@ -382,7 +382,7 @@ account fails its login instead of 500ing the login page.
 Queries deliberately do not swallow exceptions: a MongoDB outage must not be
 rendered as "no such user".
 
-### Pre-2.5.0 — SQLite `auth.db` (historical)
+### Pre-3.0.0 — SQLite `auth.db` (historical)
 
 `User` model in `app.py`, a Flask-SQLAlchemy + Flask-Login `UserMixin`:
 
@@ -401,7 +401,7 @@ erDiagram
   Created via `db.create_all()` if missing, from `initialize_data_dir()`.
 - The `password` column holds a **mix of TEXT and BLOB**:
   `generate_password_hash()` returns bytes and neither write path decoded it, so
-  what a row contains depends on which code path created it. The 2.5.0 migration
+  what a row contains depends on which code path created it. The 3.0.0 migration
   normalises both to `str`.
 
 After upgrading, the file is retained as `data/database/auth.db.migrated` (see
@@ -411,7 +411,7 @@ hashes that would otherwise travel to S3.
 
 ### Downgrading and re-upgrading
 
-**Procedure.** Stop the app, rename the file back, then start the pre-2.5.0
+**Procedure.** Stop the app, rename the file back, then start the pre-3.0.0
 image:
 
 ```bash
@@ -421,17 +421,17 @@ mv data/database/auth.db.migrated data/database/auth.db
 docker compose up -d fw-gui
 ```
 
-The order matters. Pre-2.5.0 `initialize_data_dir()` runs `db.create_all()` when
+The order matters. Pre-3.0.0 `initialize_data_dir()` runs `db.create_all()` when
 `auth.db` is absent, so starting the old image first leaves you with an empty
 database — no accounts and an open registration page — which then has to be
 overwritten and the container restarted.
 
 **What the downgrade costs.** `auth.db.migrated` is a point-in-time snapshot
-taken at the cutover, and the old code knows nothing about the fields 2.5.0
+taken at the cutover, and the old code knows nothing about the fields 3.0.0
 added:
 
-- **Disabled accounts become active again.** Pre-2.5.0 has no `disabled`
-  concept and never reads the field, so anyone disabled in 2.5.0 regains access.
+- **Disabled accounts become active again.** Pre-3.0.0 has no `disabled`
+  concept and never reads the field, so anyone disabled in 3.0.0 regains access.
 - Accounts created after the cutover are **not in the file at all** — those users
   lose access entirely.
 - Passwords changed after the cutover **revert to their pre-cutover value**,
@@ -471,7 +471,7 @@ taken after the cutover exclude `auth.db*` and carry `mongo_dumps/.../users.bson
 instead, so they cannot serve a downgrade. If the volume's `auth.db.migrated` is
 gone, there is no rollback path.
 
-**Rename `<name>.key.migrated` back too.** 2.5.0 also moved encrypted SSH keys
+**Rename `<name>.key.migrated` back too.** 3.0.0 also moved encrypted SSH keys
 into MongoDB (`docs/ssh-credential-handling.md` §3) and retired `data/<user>/<name>.key` the same way. Without the
 rename the old code finds no keys and the user must re-upload, getting a new
 Fernet key:
@@ -480,7 +480,7 @@ Fernet key:
 for f in data/*/*.key.migrated; do mv "$f" "${f%.migrated}"; done
 ```
 
-**Rename `instance.id.migrated` back too.** 2.5.0 also moved the telemetry
+**Rename `instance.id.migrated` back too.** 3.0.0 also moved the telemetry
 instance id into MongoDB (§10) and retired `data/database/instance.id` the same
 way. A downgrade that leaves the file renamed will have the old code mint a fresh
 UUID, so the install reports to telemetry as a brand new one. Harmless to the
@@ -502,7 +502,7 @@ only an opaque, signed session id (`app.py:221-245`).
 - Keys: `data_dir`, `username`, `firewall_name`, `hostname`, `port`, `ssh_user`,
   `ssh_pass` (**Fernet-encrypted at rest**, `encrypt_secret`/`decrypt_secret`,
   `app.py:248-274`), `ssh_keyname`, `_user_id`.
-- `_user_id` is Flask-Login's token. **2.5.0+:** `u:<username>`. **Pre-2.5.0:**
+- `_user_id` is Flask-Login's token. **3.0.0+:** `u:<username>`. **Pre-3.0.0:**
   the SQLite integer primary key as a string. The formats are disjoint on
   purpose (§4).
 - Cookie hardening: `HTTPONLY=True`, `SAMESITE=Lax`, `SECURE` opt-in via env.
@@ -510,7 +510,7 @@ only an opaque, signed session id (`app.py:221-245`).
   (from `SESSION_TIMEOUT`, default 120 min). Logout deletes the session doc; a
   TTL index on `expiration` reaps expired ones. (Details in
   `docs/ssh-credential-handling.md`.)
-- **The 2.5.0 upgrade clears the session store once** — every document in the
+- **The 3.0.0 upgrade clears the session store once** — every document in the
   `sessions` collection and every file in `flask_session/` — because the
   `_user_id` format changed. Everyone is logged out at the cutover instead of
   holding a token that cannot resolve.
@@ -524,7 +524,7 @@ Created by `initialize_data_dir()` (`data_file_functions.py:452-526`):
 ```mermaid
 flowchart TD
     data["data/"]
-    data --> db["database/<br/>auth.db.migrated + instance.id.migrated<br/>(pre-2.5.0, retained for downgrade)"]
+    data --> db["database/<br/>auth.db.migrated + instance.id.migrated<br/>(pre-3.0.0, retained for downgrade)"]
     data --> log["log/<br/>app.log"]
     data --> backups["backups/<br/>full-backup-&lt;timestamp&gt;.zip"]
     data --> dumps["mongo_dumps/<br/>&lt;timestamp&gt;/&lt;db&gt;/&lt;collection&gt;.bson"]
@@ -532,24 +532,24 @@ flowchart TD
     data --> tmp["tmp/<br/>(legacy scratch, no longer written;<br/>wiped on startup)"]
     data --> ex["example.json (reference copy)"]
     data --> userdir["&lt;username&gt;/"]
-    userdir --> keys["&lt;name&gt;.key.migrated<br/>(pre-2.5.0, retained for downgrade)"]
+    userdir --> keys["&lt;name&gt;.key.migrated<br/>(pre-3.0.0, retained for downgrade)"]
     userdir --> ubk["user-&lt;user&gt;-backup-&lt;timestamp&gt;.zip"]
 ```
 
 - Per-user dir `data/<username>/` created on first login (`auth_functions.py:218-233`);
   path stored in the session as `data_dir`.
 - `data/tmp/` is created and cleared on every startup (`:507-514`), but **nothing
-  writes to it as of 2.5.0** — decrypted SSH keys are staged in the system temp
+  writes to it as of 3.0.0** — decrypted SSH keys are staged in the system temp
   directory instead (see below). The wipe is kept so an upgraded install does not
-  keep a pre-2.5.0 plaintext key that a hard kill left behind.
+  keep a pre-3.0.0 plaintext key that a hard kill left behind.
 - Nothing in the app serves arbitrary files out of `data/`. The `POST /download`
   route, which read any path under `data/` for any logged-in user, was removed
-  in 2.5.0; it had no caller in the UI. The two real download endpoints,
+  in 3.0.0; it had no caller in the UI. The two real download endpoints,
   `/download_config` and `/download_json`, build their response from the
   session's own config and take no caller-supplied path.
-- **No durable state and no secrets are here as of 2.5.0.** Firewall configs, user
+- **No durable state and no secrets are here as of 3.0.0.** Firewall configs, user
   accounts, SSH keys and the telemetry id are all in MongoDB. What remains is
-  outputs — `backups/`, `log/`, `mongo_dumps/` — plus the retained pre-2.5.0
+  outputs — `backups/`, `log/`, `mongo_dumps/` — plus the retained pre-3.0.0
   artifacts on an upgraded install (`auth.db.migrated`, `instance.id.migrated`,
   `<name>.key.migrated`) and a per-user dir that now holds only user backup zips.
 - Decrypted SSH keys are staged in the **system temp directory**, not under
@@ -591,14 +591,14 @@ flowchart LR
   `mongo_dump()` (`:767-798`), zips `data/` **excluding** `backups/`, `tmp/`,
   `uploads/`, any `*.key` or `*.key.migrated`, and `auth.db*` (`:257-274`), then
   `upload_backup_file()`.
-- `mongo_dump()` sweeps `list_collection_names()`, so since 2.5.0 every dump
+- `mongo_dump()` sweeps `list_collection_names()`, so since 3.0.0 every dump
   includes `users.bson` — the full bcrypt hash set — and `keys.bson`, every user's
   Fernet-encrypted SSH key. Both are deliberate: a backup that restored neither
   accounts nor keys would be of limited use. The key blobs are defensible in an
   archive only because the Fernet passphrase is never stored server-side
   (`docs/ssh-credential-handling.md` §3), so a leaked zip yields ciphertext nobody
   can decrypt.
-- The same reasoning drives two exclusions. The retained pre-2.5.0 `auth.db*` and
+- The same reasoning drives two exclusions. The retained pre-3.0.0 `auth.db*` and
   `*.key.migrated` files are skipped because the live copy of each secret already
   arrives via the dump, and a second copy on the way off the host buys nothing.
   It is also why the `POST /download` route was removed (§6): the zips were
@@ -617,11 +617,11 @@ flowchart LR
   `AWS_SECRET_ACCESS_KEY`; skipped if `BUCKET_NAME` unset; key prefix
   `fw-gui/backups/`.
 - **No in-app restore**: backups are created/uploaded/listed only. Retrieving a
-  backup zip is an out-of-band operation (filesystem or S3) — as of 2.5.0 there
+  backup zip is an out-of-band operation (filesystem or S3) — as of 3.0.0 there
   is no in-app download for it — and there is no automated restore path in the
   code.
 
-### 7.1 Scheduled backups (`backup_scheduler.py`, 2.5.0)
+### 7.1 Scheduled backups (`backup_scheduler.py`, 3.0.0)
 
 ```mermaid
 flowchart TD
@@ -753,7 +753,7 @@ if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
 **The order is load-bearing, in both directions.**
 
 - `migrate_sqlite_users()` is first because everything after it is driven by
-  `list_usernames()`. On a pre-2.5.0 upgrade the accounts are still in SQLite at
+  `list_usernames()`. On a pre-3.0.0 upgrade the accounts are still in SQLite at
   this point, so calling it earlier would return an empty list and silently adopt
   no keys and sweep no files.
 - `sweep_legacy_user_files()` runs **before** `mongo_converter()`, not after,
@@ -768,7 +768,7 @@ On a database that cannot be reached, every step is skipped and retried on the
 next successful boot. `initialize_data_dir()` still runs, so the directory
 structure exists either way.
 
-### 8.1 SQLite accounts → MongoDB (`user_migration.py`, 2.5.0)
+### 8.1 SQLite accounts → MongoDB (`user_migration.py`, 3.0.0)
 
 No operator action required.
 
@@ -810,9 +810,9 @@ exactly as they are (that is `$setOnInsert`), so this recovers accounts that
 failed to migrate rather than re-syncing the ones that succeeded. See
 "Downgrading and re-upgrading" in §4.
 
-### 8.2 On-disk SSH keys → MongoDB (`ssh_key_store.py`, 2.5.0)
+### 8.2 On-disk SSH keys → MongoDB (`ssh_key_store.py`, 3.0.0)
 
-`migrate_legacy_key_files(usernames)` adopts pre-2.5.0 `data/<user>/*.key` files.
+`migrate_legacy_key_files(usernames)` adopts pre-3.0.0 `data/<user>/*.key` files.
 No operator action required. `docs/ssh-credential-handling.md` §3 covers the key
 lifecycle; this is the migration mechanics only.
 
@@ -837,7 +837,7 @@ A failure anywhere in the loop is logged and leaves the file unrenamed, so the
 next boot retries it; the migration never raises, because a key that will not
 adopt must not stop the application from starting.
 
-**Only accounts in the `users` collection are visited.** A pre-2.5.0 user whose
+**Only accounts in the `users` collection are visited.** A pre-3.0.0 user whose
 account never reached MongoDB — not present in `auth.db` at migration time, so
 never created — keeps its `.key` files on disk unadopted and cannot use key
 authentication until the account exists. The files are untouched, so this is
@@ -848,7 +848,7 @@ recoverable: create the account, restart, and they are adopted.
 One-shot startup migration of pre-1.4.0 on-disk JSON configs:
 
 1. Get the user list from `user_store.list_usernames()` (disabled accounts
-   included, so their leftover JSON still imports). Pre-2.5.0 this was
+   included, so their leftover JSON still imports). Pre-3.0.0 this was
    `SELECT username FROM User` against `auth.db`.
 2. For each user, find `data/<user>/*.json`.
 3. `json.loads` each, drop `_id`, `write_user_data_file(...)` (inserts a current
@@ -902,7 +902,7 @@ Sends **only** an instance UUID and the app version to
 `/rule_usage`) via urllib3 (`telemetry_functions.py`). No config or user data is
 transmitted, and every failure is swallowed.
 
-### 2.5.0+ — the `instance` collection
+### 3.0.0+ — the `instance` collection
 
 `package/instance_id.py` owns the id. One document, in the collection named by
 `validators.INSTANCE_COLLECTION`:
@@ -911,7 +911,7 @@ transmitted, and every failure is swallowed.
 {"_id": "instance_id", "value": "<uuid4>", "created": ISODate(...)}
 ```
 
-Since 2.5.0 that collection also holds the weekly backup schedule as a second
+Since 3.0.0 that collection also holds the weekly backup schedule as a second
 fixed document, `_id: "backup_schedule"` (§7.1). The two do not interact:
 `instance_id` looks its value up by `_id`, so the schedule document is invisible
 to it, and neither is a new reserved username.
@@ -954,7 +954,7 @@ the startup migration; `instance_id.py` logs an ERROR and telemetry degrades.
 that cannot reach MongoDB used to post here and then exit, so it reported; it now
 dies silently.
 
-### Pre-2.5.0 — `data/database/instance.id`
+### Pre-3.0.0 — `data/database/instance.id`
 
 A random `uuid.uuid4()` written once by `initialize_data_dir()` and read back with
 a plain `open()`. On upgrade the value is **adopted** so the install keeps its
@@ -971,8 +971,8 @@ later read, so a read-only data directory costs a leftover file, not the id.
 |----------|---------|
 | `MONGODB_URI` | MongoDB connection string (configs, accounts, SSH keys, telemetry id, sessions) |
 | `MONGODB_DATABASE` | Mongo database name (default `fwgui_database`) |
-| `MONGODB_USERS_COLLECTION` | Collection holding user accounts (default `users`, 2.5.0+). Escape hatch for an install that already has a user of that name |
-| `FWGUI_INSTANCE_ID` | Pins the telemetry instance id instead of reading it from MongoDB (2.5.0+). Unset for normal use |
+| `MONGODB_USERS_COLLECTION` | Collection holding user accounts (default `users`, 3.0.0+). Escape hatch for an install that already has a user of that name |
+| `FWGUI_INSTANCE_ID` | Pins the telemetry instance id instead of reading it from MongoDB (3.0.0+). Unset for normal use |
 | `APP_SECRET_KEY` | Signs the session id; derives the cached-secret encryption key |
 | `SESSION_TYPE` | Session backend (`mongodb` default; `filesystem` for tests) |
 | `SESSION_TIMEOUT` | Session lifetime in minutes (default 120) |
@@ -994,6 +994,6 @@ are fixed (`validators.KEYS_COLLECTION`, `INSTANCE_COLLECTION`, and
 an install upgrading from SQLite could already have a *user* named `users`, whose
 config collection would then be the account store. All four names are rejected as
 usernames (§4), so the collision cannot be created after the fact — the escape
-hatch is only for one that predates 2.5.0. `MONGODB_USERS_COLLECTION` is honoured
+hatch is only for one that predates 3.0.0. `MONGODB_USERS_COLLECTION` is honoured
 *in addition to* the hardcoded names, never instead of them, so pointing it
 elsewhere does not make `users` claimable.

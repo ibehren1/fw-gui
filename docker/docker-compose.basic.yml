@@ -29,11 +29,11 @@ services:
   # reachable by other containers on this Compose project's internal network
   # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet.
   #
-  # As of FW-GUI 2.5.0 this database also holds the CREDENTIAL STORE (the
+  # As of FW-GUI 3.0.0 this database also holds the CREDENTIAL STORE (the
   # `users` collection: usernames, emails, bcrypt password hashes) and every
   # user's ENCRYPTED SSH KEY (the `keys` collection), alongside all firewall
   # configs and the session store. Anything attached to this network can read
-  # both; before 2.5.0 they were files that needed filesystem access inside the
+  # both; before 3.0.0 they were files that needed filesystem access inside the
   # fw-gui container. The SSH keys are Fernet ciphertext whose key FW-GUI never
   # stores, so they are not directly usable, but the bcrypt hashes are a real
   # offline target. Enabling auth is correspondingly more worthwhile.

@@ -25,7 +25,7 @@ def mongo_converter():
     4. Renames processed files with .old extension
 
     Must run after migrate_sqlite_users() on an install upgrading from
-    pre-2.5.0, since that is what puts the accounts in MongoDB.
+    pre-3.0.0, since that is what puts the accounts in MongoDB.
     """
     logging.info("*** Starting MongoDB Converter ***")
 

@@ -1,7 +1,7 @@
 """
 SSH Key Store
 
-Users' SSH private keys live in MongoDB from 2.5.0 onward, in the collection
+Users' SSH private keys live in MongoDB from 3.0.0 onward, in the collection
 named by ``KEYS_COLLECTION``:
 
     {"_id":     "alice/id_rsa",      # f"{user}/{name}"
@@ -10,7 +10,7 @@ named by ``KEYS_COLLECTION``:
      "key":     Binary(<fernet ciphertext>),
      "created": datetime}
 
-Pre-2.5.0 they were ``data/<username>/<name>.key``. Those files are adopted at
+Pre-3.0.0 they were ``data/<username>/<name>.key``. Those files are adopted at
 startup by :func:`migrate_legacy_key_files` and renamed to ``.key.migrated`` --
 never deleted, because that ciphertext is the user's only copy.
 
@@ -39,7 +39,7 @@ from cryptography.fernet import Fernet
 from package import data_file_functions
 from package.validators import KEYS_COLLECTION
 
-# Pre-2.5.0 on-disk location, and the suffix the file is renamed to once its
+# Pre-3.0.0 on-disk location, and the suffix the file is renamed to once its
 # ciphertext is in MongoDB. As with auth.db.migrated, the rename is the "already
 # migrated" marker and the retained file is the downgrade path.
 LEGACY_KEY_SUFFIX = ".key"
@@ -142,7 +142,7 @@ def decrypt_ssh_key(user, name, fernet_key):
 
 def migrate_legacy_key_files(usernames):
     """
-    Adopts pre-2.5.0 data/<user>/*.key files into MongoDB.
+    Adopts pre-3.0.0 data/<user>/*.key files into MongoDB.
 
     Args:
         usernames (list): Account names, from user_store.list_usernames()

@@ -25,7 +25,7 @@ jobs:
         run: uv sync --extra test
 
       - name: Run tests
-        # FWGUI_INSTANCE_ID tags any telemetry a CI run might emit. As of 2.5.0
+        # FWGUI_INSTANCE_ID tags any telemetry a CI run might emit. As of 3.0.0
         # the instance id lives in MongoDB, so the env var replaces the
         # data/database/instance.id file this step used to seed; it short-circuits
         # the lookup without touching a database.
