@@ -28,7 +28,7 @@ store:
 |-------|-----------|-------|
 | Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots (one collection per user), **plus `users` (accounts) and `instance` (telemetry id)** |
 | Session store | **MongoDB** (`sessions` collection, via Flask-Session) | Per-session state; browser holds only an opaque id |
-| Filesystem (`data/`) | Local volume | Encrypted SSH keys, generated `.conf` files, backups, logs, Mongo dumps |
+| Filesystem (`data/`) | Local volume | Encrypted SSH keys, backups, logs, Mongo dumps |
 
 ```mermaid
 flowchart TD
@@ -37,7 +37,7 @@ flowchart TD
     App -->|"firewall configs + snapshots (PyMongo)"| Mongo[("MongoDB (MONGODB_DATABASE)")]
     App -->|"user accounts + telemetry id"| Mongo
     App -->|"session state (Flask-Session)"| Sessions[("Mongo sessions")]
-    App -->|"keys / .conf / backups / logs"| FS[/"Filesystem data dir"/]
+    App -->|"keys / backups / logs"| FS[/"Filesystem data dir"/]
 
     App -->|"generated set commands via SSH"| VyOS[("VyOS device")]
     FS -.->|"optional backup upload"| S3[("AWS S3 (BUCKET_NAME)")]
@@ -503,7 +503,7 @@ only an opaque, signed session id (`app.py:221-245`).
 
 ## 6. Filesystem layout (`data/`)
 
-Created by `initialize_data_dir()` (`data_file_functions.py:470-542`):
+Created by `initialize_data_dir()` (`data_file_functions.py:484-554`):
 
 ```mermaid
 flowchart TD
@@ -517,13 +517,12 @@ flowchart TD
     data --> ex["example.json (reference copy)"]
     data --> userdir["&lt;username&gt;/"]
     userdir --> keys["&lt;name&gt;.key (Fernet-encrypted SSH keys)"]
-    userdir --> conf["&lt;firewall_name&gt;.conf (generated set commands)"]
     userdir --> ubk["user-&lt;user&gt;-backup-&lt;timestamp&gt;.zip"]
 ```
 
 - Per-user dir `data/<username>/` created on first login (`auth_functions.py:218-233`);
   path stored in the session as `data_dir`.
-- `data/tmp/` is cleared on every startup (`:410-418`); it stages decrypted SSH
+- `data/tmp/` is cleared on every startup (`:539-543`); it stages decrypted SSH
   keys per-operation (see the SSH doc).
 - Nothing in the app serves arbitrary files out of `data/`. The `POST /download`
   route, which read any path under `data/` for any logged-in user, was removed
@@ -531,10 +530,15 @@ flowchart TD
   `/download_config` and `/download_json`, build their response from the
   session's own config and take no caller-supplied path.
 - **Neither firewall config data, user accounts, nor the telemetry id are here**
-  — all three are in MongoDB as of 2.5.0. The per-user dir holds only keys,
-  generated `.conf` files and user backup zips; `database/` holds nothing that
-  current code writes, only the retained `auth.db.migrated` and
-  `instance.id.migrated` on an upgraded install.
+  — all three are in MongoDB as of 2.5.0. The per-user dir holds only keys and
+  user backup zips; `database/` holds nothing that current code writes, only the
+  retained `auth.db.migrated` and `instance.id.migrated` on an upgraded install.
+- Pre-2.5.0 the per-user dir also held a generated `<firewall_name>.conf` per
+  config: the set commands, written on every push purely to give NAPALM a file
+  path, and never deleted. NAPALM is now handed the commands as a string
+  (`build_merge_config`), so the files are no longer written, and
+  `sweep_legacy_conf_files()` (`:557-599`) removes the leftovers on the first
+  startup after upgrade.
 
 ---
 

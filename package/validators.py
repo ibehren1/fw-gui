@@ -5,7 +5,7 @@ addressing.
 Config data is addressed as ``data/<username>/<config>[/<snapshot>]`` and the
 data layer splits that string on ``/`` to derive the MongoDB collection
 (username) and document (config). The same names are also used to build
-filesystem paths (``.conf`` command files, uploaded ``.key`` files). A name
+filesystem paths (uploaded ``.key`` files). A name
 containing a path separator or ``..`` could therefore either traverse the
 filesystem or shift the collection/document addressing. These helpers reject
 such names.

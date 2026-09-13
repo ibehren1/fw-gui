@@ -60,11 +60,11 @@ flowchart TD
 | Session lifetime | `app.py:169-183` (`SESSION_TIMEOUT` → `PERMANENT_SESSION_LIFETIME`, `SESSION_PERMANENT`) |
 | Cached-secret encryption helpers | `app.py` → `_session_fernet()` / `encrypt_secret()` / `decrypt_secret()` (after `Session(app)`) |
 | Logout (clears + deletes session record) | `app.py` → `user_logout()` (`:457`) |
-| NAPALM driver assembly (View Diffs / Commit) | `package/napalm_ssh_functions.py` → `assemble_napalm_driver_string()` (`:25`) |
-| Paramiko client assembly (Run Command) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` (`:68`) |
-| Commit / diff / operational actions | `commit_to_firewall()` (`:107`), `get_diffs_from_firewall()` (`:178`), `run_operational_command()` (`:239`) |
-| TCP reachability check | `test_connection()` (`:295`) |
-| Key upload + encryption | `package/data_file_functions.py` → `process_upload()` (`:697`) |
+| NAPALM driver assembly (View Diffs / Commit) | `package/napalm_ssh_functions.py` → `assemble_napalm_driver_string()` (`:26`) |
+| Paramiko client assembly (Run Command) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` (`:69`) |
+| Commit / diff / operational actions | `commit_to_firewall()` (`:116`), `get_diffs_from_firewall()` (`:198`) — both take the candidate configuration as a `merge_config` string — and `run_operational_command()` (`:265`) |
+| TCP reachability check | `test_connection()` (`:333`) |
+| Key upload + encryption | `package/data_file_functions.py` → `process_upload()` (`:824`) |
 | Key decryption (temp staging) | `package/data_file_functions.py` → `decrypt_file()` (`:202`) |
 | List uploaded keys | `package/data_file_functions.py` → `list_user_keys()` (`:597`) |
 | Push form template | `templates/configuration_push.html` |
@@ -136,7 +136,7 @@ flowchart TD
     NDEC --> RUN
     PPW --> RUN
     PDEC --> RUN
-    RUN --> FIN["finally: if tmp file exists, os.remove(tmp)<br/>commit:170-175 / diff same pattern / op:287-292"]
+    RUN --> FIN["finally: if tmp file exists, os.remove(tmp)<br/>commit:190-195 / diff same pattern / op:325-330"]
     FIN --> DONE([Return result to route])
 ```
 

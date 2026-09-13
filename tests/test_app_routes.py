@@ -915,7 +915,7 @@ class TestConfigRoutes:
         with patch(
             "app.generate_config",
             return_value=("config", ["line"]),
-        ), patch("app.write_user_command_conf_file"), patch(
+        ), patch(
             "app.commit_to_firewall",
             return_value="Commit successful",
         ) as mock_commit, patch(
@@ -931,12 +931,14 @@ class TestConfigRoutes:
             )
             assert resp.status_code == 200
             mock_commit.assert_called_once()
+            # The rendered command string is forwarded, not a file path.
+            assert mock_commit.call_args[0][2] == "line"
 
     def test_configuration_push_post_view_diffs(self, auth_client):
         with patch(
             "app.generate_config",
             return_value=("config", ["line"]),
-        ), patch("app.write_user_command_conf_file"), patch(
+        ), patch(
             "app.get_diffs_from_firewall",
             return_value="diff output",
         ) as mock_diffs, patch(
@@ -952,6 +954,56 @@ class TestConfigRoutes:
             )
             assert resp.status_code == 200
             mock_diffs.assert_called_once()
+            assert mock_diffs.call_args[0][2] == "line"
+
+    def test_configuration_push_post_commit_delete_before_set(self, auth_client):
+        """The delete_before_set checkbox prepends the teardown command."""
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="Commit successful",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": "Commit",
+                    "delete_before_set": "true",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][2] == "delete firewall\nline"
+
+    def test_configuration_push_post_commit_all_comments(self, auth_client):
+        """A config of only banners and blanks forwards an empty string.
+
+        commit_to_firewall guards on that rather than handing NAPALM a falsy
+        config, which would raise MergeConfigException.
+        """
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["# banner", ""]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="No configuration commands to send.",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": "Commit",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][2] == ""
 
     def test_snapshot_diff_choose(self, auth_client):
         with patch(

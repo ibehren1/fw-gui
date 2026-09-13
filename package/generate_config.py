@@ -489,3 +489,55 @@ def generate_config(session, snapshot="current", diff=False):
 
     # Return message of config commands
     return message, config
+
+
+def build_merge_config(command_list, delete=False):
+    """
+    Renders a command list into the configuration string handed to NAPALM.
+
+    Args:
+        command_list (list): Commands from generate_config()
+        delete (bool): If True, prepend 'delete firewall' to tear down the
+            existing ruleset before the set commands
+
+    Returns:
+        str: Newline-joined commands, comments and blank lines removed. Empty
+            when nothing survives the filter -- callers MUST guard on that,
+            because napalm-vyos raises MergeConfigException for a falsy config
+            (see commit_to_firewall / get_diffs_from_firewall).
+
+    Comments and blanks are dropped here rather than in generate_config because
+    the same command list feeds the human-facing views: the snapshot diff
+    (diff_functions.process_diff) renders the "# Extra Configuration Items" /
+    "# FLOW TABLES" banners as section headings and wants them. The
+    device does not: VyOS rejects a '#' line as an invalid command, and
+    napalm-vyos only greps its output for "Set failed" / "Delete failed", so the
+    rejection is swallowed silently. Every push used to ship those lines.
+
+    The list is joined *before* it is split, not filtered element by element.
+    Elements can hold several lines: generate_config appends multi-line banners,
+    and add_extra_items splits the textarea on "\\r" alone, so an LF-only POST
+    collapses a user's typed lines into one element such as
+    "# comment\\nset firewall ...". Filtering per element would discard the set
+    command along with the comment.
+
+    Not filtered: the "Empty rule set." sentinel generate_config emits for a
+    config with no rules. It is neither blank nor a comment, so it still reaches
+    the device and is still rejected there, exactly as before this function
+    existed. Restricting the output to 'set'/'delete' lines would fix that but
+    would also silently swallow the other config-mode verbs (comment, rename,
+    copy, load, edit) that users legitimately put in extra-items, which is the
+    worse failure.
+    """
+    blob = "\n".join(command_list)
+
+    lines = [
+        line
+        for line in blob.split("\n")
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+    if delete:
+        lines.insert(0, "delete firewall")
+
+    return "\n".join(lines)

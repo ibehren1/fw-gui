@@ -554,6 +554,51 @@ def initialize_data_dir():
     return
 
 
+def sweep_legacy_conf_files(usernames):
+    """
+    Removes the generated .conf command files left behind by pre-2.5.0 releases.
+
+    Args:
+        usernames (list): Account names, from user_store.list_usernames()
+
+    Returns:
+        None
+
+    Before 2.5.0 every configuration push wrote
+    data/<username>/<firewall_name>.conf purely to hand the commands to NAPALM,
+    and nothing ever deleted them. They accumulated per firewall name, outlived
+    the configs they were generated from, and were swept into every full backup
+    zip. NAPALM is now given the commands as a string, so nothing reads or writes
+    them.
+
+    The account list is passed in rather than looked up here for two reasons: it
+    keeps this module from importing user_store, which imports this one, and it
+    lets the caller decide whether MongoDB is reachable. It also bounds the
+    deletions to real per-user directories -- a data/*/*.conf glob would also
+    match stray directories under data/ that never belonged to a user.
+
+    Self-limiting rather than one-shot: after the first run the glob is empty, so
+    no marker file is needed. Never raises -- housekeeping must not stop startup.
+    """
+    logging.info("Sweeping legacy .conf command files...")
+
+    removed = 0
+    try:
+        for username in usernames:
+            # glob.escape: usernames pass a strict allowlist today, but a name
+            # with a glob metacharacter must not widen the match.
+            pattern = os.path.join("data", glob.escape(str(username)), "*.conf")
+            for path in glob.glob(pattern):
+                os.remove(path)
+                removed += 1
+                logging.info(f" |--> Removed legacy command file: {path}")
+    except Exception as e:
+        logging.warning(f" |--X Error sweeping legacy .conf files: {e}")
+
+    logging.info(f" |--> Legacy command files removed: {removed}")
+    return
+
+
 def list_full_backups(session):
     """
     Lists all backup files with .zip extension in the data/backups directory.
@@ -1207,40 +1252,6 @@ def validate_mongodb_connection(mongodb_uri):
     finally:
         if client is not None:
             client.close()
-
-
-def write_user_command_conf_file(session, command_list, delete=False):
-    """
-    Writes firewall commands to a configuration file.
-
-    Args:
-        session (dict): Session dictionary containing data_dir and firewall_name
-        command_list (list): List of firewall commands to write to file
-        delete (bool): If True, adds command to delete existing firewall first
-
-    The function:
-    1. Opens a .conf file using the firewall name from the session
-    2. If delete=True:
-        - Writes a comment and delete command at the start
-        - Writes all commands from command_list
-    3. If delete=False:
-        - Only writes the commands from command_list
-    4. File is written in the data_dir specified in session
-
-    Returns:
-        None
-    """
-    with open(f"{session['data_dir']}/{session['firewall_name']}.conf", "w") as f:
-        if delete is True:
-            f.write(
-                "#\n# Delete all firewall before setting new values\ndelete firewall\n"
-            )
-            for line in command_list:
-                f.write(f"{line}\n")
-        if delete is False:
-            for line in command_list:
-                f.write(f"{line}\n")
-    return
 
 
 def write_user_data_file(filename, data, snapshot="current"):

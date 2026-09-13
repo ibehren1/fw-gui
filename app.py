@@ -86,9 +86,9 @@ from package.data_file_functions import (
     process_upload,
     read_user_data_file,
     restore_snapshot,
+    sweep_legacy_conf_files,
     tag_snapshot,
     validate_mongodb_connection,
-    write_user_command_conf_file,
     write_user_data_file,
 )
 from package.diff_functions import process_diff
@@ -107,7 +107,11 @@ from package.flowtable_functions import (
     delete_flowtable_from_data,
     list_flowtables,
 )
-from package.generate_config import download_json_data, generate_config
+from package.generate_config import (
+    build_merge_config,
+    download_json_data,
+    generate_config,
+)
 from package.group_funtions import (
     add_group_to_data,
     assemble_detail_list_of_groups,
@@ -127,7 +131,7 @@ from package.napalm_ssh_functions import (
 )
 from package.telemetry_functions import telemetry_instance
 from package.user_migration import migrate_sqlite_users
-from package.user_store import get_user_by_session_id
+from package.user_store import get_user_by_session_id, list_usernames
 from package.validators import is_safe_name
 
 # Set SSL certificate file path
@@ -1657,21 +1661,24 @@ def configuration_push():
         if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
             session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
 
-        # Include 'delete firewall' before set commands
+        # generate_config() also supplies the message rendered when the action is
+        # unrecognized, so it stays outside the branches below. build_merge_config
+        # optionally includes 'delete firewall' before the set commands; it is
+        # pure string work, so computing it up front costs nothing even for the
+        # operational-command action that does not use it.
         message, config = generate_config(session)
-        if "delete_before_set" in request.form:
-            write_user_command_conf_file(session, config, delete=True)
-        else:
-            write_user_command_conf_file(session, config, delete=False)
+        merge_config = build_merge_config(
+            config, delete="delete_before_set" in request.form
+        )
 
         if request.form["action"] == "Run Operational Command":
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
         elif request.form["action"] == "View Diffs":
-            message = get_diffs_from_firewall(connection_string, session)
+            message = get_diffs_from_firewall(connection_string, session, merge_config)
         elif request.form["action"] == "Commit":
-            message = commit_to_firewall(connection_string, session)
+            message = commit_to_firewall(connection_string, session, merge_config)
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
         snapshot_list = list_snapshots(session)
@@ -2143,6 +2150,10 @@ if __name__ == "__main__":
     if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
         migrate_sqlite_users()
         mongo_converter()
+        # Removes the generated .conf command files left behind by pre-2.5.0.
+        # Needs the account list, so it cannot run in initialize_data_dir()
+        # above -- that happens before MongoDB is known to be reachable.
+        sweep_legacy_conf_files(list_usernames())
 
     # Post instance telemetry. Deliberately after the MongoDB check: the instance
     # id now lives in MongoDB, so running this first would mean waiting on the

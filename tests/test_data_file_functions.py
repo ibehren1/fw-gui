@@ -4,12 +4,13 @@ Tests for package/data_file_functions.py
 Covers: allowed_file, update_schema, get_extra_items, get_system_name,
         list_user_keys, list_full_backups, list_user_files, list_snapshots,
         read_user_data_file, write_user_data_file, delete_user_data_file,
-        add_extra_items, add_hostname, write_user_command_conf_file,
+        add_extra_items, add_hostname, sweep_legacy_conf_files,
         set_snapshot_tag, tag_snapshot, validate_mongodb_connection,
         upload_backup_file.
 """
 
 import copy
+import logging
 import os
 import sys
 import zipfile
@@ -36,10 +37,10 @@ from package.data_file_functions import (
     restore_snapshot,
     set_snapshot_tag,
     tag_snapshot,
+    sweep_legacy_conf_files,
     update_schema,
     upload_backup_file,
     validate_mongodb_connection,
-    write_user_command_conf_file,
     write_user_data_file,
 )
 # Captured at import time on purpose: conftest's session-scoped mongo_client
@@ -903,58 +904,6 @@ class TestAddHostname:
 
 
 # ===========================================================================
-# write_user_command_conf_file
-# ===========================================================================
-
-
-class TestWriteUserCommandConfFile:
-    def test_write_without_delete(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        commands = ["set firewall name WAN_LOCAL", "set firewall name WAN_IN"]
-        write_user_command_conf_file(session, commands)
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert "set firewall name WAN_LOCAL\n" in content
-        assert "set firewall name WAN_IN\n" in content
-        assert "delete firewall" not in content
-
-    def test_write_with_delete(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        commands = ["set firewall name WAN_LOCAL"]
-        write_user_command_conf_file(session, commands, delete=True)
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert content.startswith("#\n# Delete all firewall before setting new values\ndelete firewall\n")
-        assert "set firewall name WAN_LOCAL\n" in content
-
-    def test_empty_command_list(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        write_user_command_conf_file(session, [])
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert content == ""
-
-    def test_empty_command_list_with_delete(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        write_user_command_conf_file(session, [], delete=True)
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert "delete firewall" in content
-
-
-# ===========================================================================
 # set_snapshot_tag / tag_snapshot
 # ===========================================================================
 
@@ -1312,7 +1261,7 @@ class TestCreateBackup:
         (data / "database" / "instance.id.migrated").write_text("abc")
         (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
         (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
-        (data / "myuser" / "firewall.conf").write_text("set firewall")
+        (data / "myuser" / "firewall.json").write_text("{}")
         (data / "tmp" / "scratch").write_text("x")
         (data / "uploads" / "upload.json").write_text("{}")
         monkeypatch.chdir(tmp_path)
@@ -1339,7 +1288,8 @@ class TestCreateBackup:
             create_backup({"username": "myuser"}, user=False)
 
         names = self._zip_names(data_tree)
-        assert "myuser/firewall.conf" in names
+        # Ordinary per-user files are still archived.
+        assert "myuser/firewall.json" in names
         # The retired instance id is not a secret, so unlike auth.db* it is kept.
         assert "database/instance.id.migrated" in names
         # Legacy bcrypt hashes must not leave the host in a backup zip.
@@ -1347,3 +1297,80 @@ class TestCreateBackup:
         # Pre-existing exclusions still hold.
         assert not any(n.endswith(".key") for n in names)
         assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
+
+
+# ---------------------------------------------------------------------------
+# sweep_legacy_conf_files
+# ---------------------------------------------------------------------------
+
+
+class TestSweepLegacyConfFiles:
+    @pytest.fixture
+    def data_tree(self, tmp_path, monkeypatch):
+        """Build a data/ tree in a temp cwd and return its root."""
+        data = tmp_path / "data"
+        (data / "alice").mkdir(parents=True)
+        (data / "other_tmp").mkdir()
+        monkeypatch.chdir(tmp_path)
+        return data
+
+    def test_removes_conf_and_keeps_everything_else(self, data_tree):
+        (data_tree / "alice" / "fw.conf").write_text("set firewall")
+        (data_tree / "alice" / "fw.json").write_text("{}")
+        (data_tree / "alice" / "id_rsa.key").write_bytes(b"encrypted key")
+
+        sweep_legacy_conf_files(["alice"])
+
+        assert not (data_tree / "alice" / "fw.conf").exists()
+        assert (data_tree / "alice" / "fw.json").exists()
+        assert (data_tree / "alice" / "id_rsa.key").exists()
+
+    def test_leaves_non_user_directories_alone(self, data_tree):
+        """The sweep is bounded to account directories.
+
+        A data/*/*.conf glob would also delete from stray directories that never
+        belonged to a user.
+        """
+        (data_tree / "other_tmp" / "firewall.conf").write_text("set firewall")
+
+        sweep_legacy_conf_files(["alice"])
+
+        assert (data_tree / "other_tmp" / "firewall.conf").exists()
+
+    def test_removes_conf_with_spaces_and_parens_in_name(self, data_tree):
+        """Firewall names allow spaces and parentheses, so filenames do too."""
+        target = data_tree / "alice" / "vyos-ue-1 (AWS).conf"
+        target.write_text("set firewall")
+
+        sweep_legacy_conf_files(["alice"])
+
+        assert not target.exists()
+
+    def test_username_without_directory_is_not_an_error(self, data_tree):
+        sweep_legacy_conf_files(["alice", "nonexistent-user"])
+
+    def test_remove_failure_does_not_raise(self, data_tree, monkeypatch, caplog):
+        """Housekeeping must never stop startup."""
+        (data_tree / "alice" / "fw.conf").write_text("set firewall")
+
+        def boom(path):
+            raise OSError("permission denied")
+
+        monkeypatch.setattr("package.data_file_functions.os.remove", boom)
+
+        with caplog.at_level(logging.WARNING):
+            sweep_legacy_conf_files(["alice"])
+
+        assert any("Error sweeping legacy" in r.message for r in caplog.records)
+
+    def test_list_usernames_failure_does_not_raise(self, data_tree, caplog):
+        """A MongoDB failure mid-iteration is swallowed too."""
+
+        def exploding_usernames():
+            yield "alice"
+            raise RuntimeError("mongo went away")
+
+        with caplog.at_level(logging.WARNING):
+            sweep_legacy_conf_files(exploding_usernames())
+
+        assert any("Error sweeping legacy" in r.message for r in caplog.records)

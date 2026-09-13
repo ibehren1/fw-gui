@@ -4,7 +4,7 @@ Tests for package/generate_config.py
 Covers download_json_data, generate_config with empty data, extra items,
 flowtables, IPv4/IPv6 groups, filters (jump/offload/disable/log),
 chains (addresses, ports, protocol, states, logging, disable),
-IPv6 icmp conversion, diff mode, and full example data.
+IPv6 icmp conversion, diff mode, full example data, and build_merge_config.
 """
 
 import copy
@@ -15,6 +15,7 @@ import pytest
 from package.generate_config import (
     _safe_name,
     _vq,
+    build_merge_config,
     download_json_data,
     generate_config,
 )
@@ -881,3 +882,100 @@ def test_snapshot_tag_does_not_break_generation(mock_session, patch_read, tag):
 
     assert "set firewall ipv4 name WAN_LOCAL default-action 'drop'" in config
     assert not any(tag in line for line in config)
+
+
+# ---------------------------------------------------------------------------
+# build_merge_config
+# ---------------------------------------------------------------------------
+class TestBuildMergeConfig:
+    """The command list is rendered into the string handed to NAPALM.
+
+    generate_config emits comment banners and blank separators for the humans
+    reading the download and the snapshot diff. Those must not reach the device:
+    VyOS rejects them and napalm-vyos only greps its output for "Set failed" /
+    "Delete failed", so the rejection is swallowed silently.
+    """
+
+    SET_CMD = "set firewall ipv4 name FOO rule 10 action accept"
+
+    def test_plain_commands_joined_with_newlines(self):
+        result = build_merge_config(["set one", "set two"])
+
+        assert result == "set one\nset two"
+
+    def test_no_trailing_newline(self):
+        assert not build_merge_config(["set one"]).endswith("\n")
+
+    def test_delete_prepends_single_delete_firewall(self):
+        result = build_merge_config(["set one"], delete=True)
+
+        assert result.startswith("delete firewall\n")
+        assert result.split("\n").count("delete firewall") == 1
+
+    def test_comment_elements_dropped(self):
+        result = build_merge_config(["# a comment", self.SET_CMD])
+
+        assert result == self.SET_CMD
+
+    def test_blank_and_whitespace_only_elements_dropped(self):
+        result = build_merge_config(["", "   ", "\t", self.SET_CMD])
+
+        assert result == self.SET_CMD
+
+    def test_indented_comment_dropped(self):
+        result = build_merge_config(["  # indented comment", self.SET_CMD])
+
+        assert result == self.SET_CMD
+
+    def test_embedded_newline_keeps_command_drops_comment(self):
+        """A single element may hold both a comment and a real command.
+
+        add_extra_items splits the textarea on "\\r" only, so an LF-only POST
+        (curl, an API client) collapses several typed lines into one element.
+        Filtering per element instead of per line would discard the set command
+        along with the comment.
+        """
+        result = build_merge_config([f"# comment\n{self.SET_CMD}"])
+
+        assert result == self.SET_CMD
+
+    def test_multiline_banner_element_dropped_entirely(self):
+        result = build_merge_config(
+            ["#\n#\n# Extra Configuration Items\n#\n#", self.SET_CMD]
+        )
+
+        assert result == self.SET_CMD
+
+    def test_empty_list_returns_empty_string(self):
+        assert build_merge_config([]) == ""
+
+    def test_empty_list_with_delete(self):
+        assert build_merge_config([], delete=True) == "delete firewall"
+
+    def test_all_comments_returns_empty_string(self):
+        """The seeded extra-items placeholder is three comment lines.
+
+        Callers must guard on this: napalm-vyos raises MergeConfigException for
+        a falsy config.
+        """
+        assert build_merge_config(["# one", "# two", ""]) == ""
+
+    def test_all_comments_with_delete_keeps_delete(self):
+        assert build_merge_config(["# one"], delete=True) == "delete firewall"
+
+    def test_order_preserved(self):
+        result = build_merge_config(
+            ["set one", "# banner", "", "set two", "   ", "set three"]
+        )
+
+        assert result == "set one\nset two\nset three"
+
+    def test_hash_inside_quoted_value_survives(self):
+        command = "set firewall ipv4 name FOO rule 10 description '#1 rule'"
+
+        assert build_merge_config([command]) == command
+
+    def test_user_typed_delete_firewall_survives_in_place(self):
+        result = build_merge_config(["delete firewall", "set one"])
+
+        assert result == "delete firewall\nset one"
