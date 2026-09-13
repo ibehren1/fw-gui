@@ -5,7 +5,7 @@ Templates render for real to catch variable mismatches.
 """
 
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -124,10 +124,9 @@ class TestAuthRoutes:
             assert "/user_login" in resp.headers["Location"]
 
     def test_logout(self, auth_client):
-        mock_user = Mock(username="testuser")
-        with patch("app.query_user_by_id", return_value=mock_user):
-            resp = auth_client.get("/user_logout")
-            assert resp.status_code == 302
+        # Logout takes the name straight from the session; no user lookup.
+        resp = auth_client.get("/user_logout")
+        assert resp.status_code == 302
 
     def test_change_password_get(self, auth_client):
         with patch("app.list_user_files", return_value=[]), patch(

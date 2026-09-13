@@ -18,7 +18,7 @@ Features:
 Requirements:
 - Python 3.x
 - Flask web framework
-- SQLAlchemy database
+- MongoDB
 - VyOS compatible device
 """
 
@@ -48,16 +48,14 @@ from flask import (
     url_for,
 )
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, UserMixin, login_required, logout_user
+from flask_login import LoginManager, login_required, logout_user
 from flask_session import Session
-from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from waitress import serve
 
 from package.auth_functions import (
     change_password,
     process_login,
-    query_user_by_id,
     register_user,
 )
 from package.chain_functions import (
@@ -127,6 +125,7 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.telemetry_functions import telemetry_instance
+from package.user_store import get_user_by_session_id
 from package.validators import is_safe_name
 
 # Set SSL certificate file path
@@ -169,10 +168,7 @@ logging.basicConfig(
 logging.info(f"Logging Level: {log_level}")
 
 #
-# Initialize Flask application and database
-# Set database location to data/database directory
-db_location = os.path.join(os.getcwd(), "data/database")
-
+# Initialize Flask application
 # Load version from .version file into environment
 try:
     with open(".version", "r") as f:
@@ -202,8 +198,6 @@ if not app.secret_key:
     )
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
 # Session cookie hardening. HttpOnly blocks JavaScript from reading the cookie;
@@ -217,8 +211,7 @@ app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("SESSION_COOKIE_SECURE", "False").strip().lower() == "true"
 )
 
-# Initialize database and encryption
-db = SQLAlchemy(app)
+# Initialize password hashing
 bcrypt = Bcrypt(app)
 
 # Enable CSRF protection for all state-changing POST requests. Every rendered
@@ -349,48 +342,24 @@ login_manager.init_app(app)
 login_manager.login_view = "user_login"
 
 
-#
-# Database User Table Model
-class User(db.Model, UserMixin):
-    """
-    User model for authentication database.
-
-    This class defines the database schema for storing user account information.
-    It inherits from SQLAlchemy's Model class and Flask-Login's UserMixin.
-
-    Attributes:
-        id (int): Primary key for uniquely identifying users
-        username (str): Unique username, max length 20 characters, required
-        email (str): User's email address, max length 40 characters, required
-        password (str): Hashed password, max length 80 characters, required
-    """
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(40), nullable=False)
-    password = db.Column(db.String(80), nullable=False)
-
-
 @login_manager.user_loader
 def load_user(user_id):
     """
-    Load a user from the database by their user ID.
+    Load a user from MongoDB by their Flask-Login session token.
 
-    This function is used by Flask-Login to load a user object from the database
-    given their user ID. It is required for the login manager to function.
+    Runs on every authenticated request. Returns None for an unknown or
+    disabled account, so disabling a user takes effect on their next request
+    rather than at their next login.
 
     Args:
-        user_id: The ID of the user to load from the database
+        user_id: The "_user_id" value Flask-Login stored in the session,
+                 which is "u:<username>" (see user_store.SESSION_ID_PREFIX)
 
     Returns:
-        User: The User object if found, or None if not found
-
-    Raises:
-        NoResultFound: If no user with the given ID exists
+        User: The user_store.User if the account exists and is enabled,
+              otherwise None
     """
-    return db.session.execute(
-        db.select(User).filter_by(id=user_id)
-    ).scalar_one_or_none()
+    return get_user_by_session_id(user_id)
 
 
 #
@@ -531,7 +500,7 @@ def user_change_password():
         None
     """
     if request.method == "POST":
-        result = change_password(bcrypt, db, User, session["username"], request)
+        result = change_password(bcrypt, session["username"], request)
 
         if result:
             return redirect(url_for("index"))
@@ -577,9 +546,7 @@ def user_login():
         None
     """
     if request.method == "POST":
-        login, session["data_dir"], session["username"] = process_login(
-            bcrypt, db, request, User
-        )
+        login, session["data_dir"], session["username"] = process_login(bcrypt, request)
         if login:
             return redirect(url_for("index"))
         else:
@@ -613,12 +580,7 @@ def user_logout():
     Raises:
         None
     """
-    user_id = session.get("_user_id")
-    if user_id:
-        user = query_user_by_id(db, User, user_id)
-        username = user.username if user else "Unknown"
-    else:
-        username = "Unknown"
+    username = session.get("username", "Unknown")
     logging.info(f"{datetime.now()} User <{username}> logged out.")
     logout_user()
     session.clear()
@@ -656,7 +618,7 @@ def user_registration():
         registration = registration_enabled()
 
         if registration:
-            if register_user(bcrypt, db, request, User):
+            if register_user(bcrypt, request):
                 return redirect(url_for("user_login"))
             else:
                 return redirect(url_for("user_registration"))

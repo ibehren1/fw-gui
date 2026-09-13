@@ -471,11 +471,12 @@ def initialize_data_dir():
        - backups/: For storing backup files
        - log/: For application logs
        - mongo_dumps/: For MongoDB database dumps
-       - database/: For SQLite database files
+       - database/: For the telemetry instance id (and, pre-2.5.0, the SQLite
+         auth database)
        - tmp/: For temporary files (contents cleared on startup)
        - uploads/: For user uploaded files
     3. Copies example.json from examples/ if not present
-    4. Creates SQLite auth database if not present
+    4. Creates the telemetry instance id if not present
 
     The function checks for each directory's existence before creating it and logs the initialization
     process using the logging module.
@@ -505,6 +506,8 @@ def initialize_data_dir():
         logging.info(" |--> MongoDB directory not found, creating...")
         os.makedirs("data/mongo_dumps")
 
+    # Holds the telemetry instance id, and on installs upgraded from pre-2.5.0
+    # the retained auth.db.migrated.
     if not os.path.exists("data/database"):
         logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
@@ -526,13 +529,6 @@ def initialize_data_dir():
     if not os.path.exists("data/example.json"):
         logging.info(" |--> Example data file not found, copying...")
         shutil.copy("examples/example.json", "data/example.json")
-
-    if not os.path.exists("./data/database/auth.db"):
-        logging.info(" |--> Auth database not found, creating...")
-        from app import app, db
-
-        with app.app_context():
-            db.create_all()
 
     if not os.path.exists("data/database/instance.id"):
         logging.info(" |--> Instance ID file not found, creating...")
