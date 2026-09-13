@@ -19,7 +19,10 @@
         <div class="settings-card">
             <h3 class="subsection-title">Create Backup</h3>
             <p class="settings-description">
-                Create a backup of all configurations and user data.  SSH keys are excluded from backups for security.
+                Create a backup of all configurations and user data, including a full MongoDB dump.
+                Uploaded to S3 for offsite storage if a bucket and credentials are configured.
+                Encrypted SSH keys are included in the dump; the passphrase that decrypts them is
+                never stored on the server, so a backup on its own cannot unlock them.
             </p>
             <form action="/admin_settings" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

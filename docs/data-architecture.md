@@ -8,12 +8,18 @@ references — with diagrams for a quick mental model.
 Related: `docs/ssh-credential-handling.md` covers SSH credentials/keys/cookies
 in depth; this document covers the overall data model.
 
-**Version note.** Two stores moved into MongoDB in **2.5.0**: user accounts,
-previously a SQLite file (`data/database/auth.db`, via Flask-SQLAlchemy), and the
-telemetry instance id, previously `data/database/instance.id`. Both eras are
-documented — §1, §4 and §10 each carry a `2.5.0+` and a `Pre-2.5.0` subsection —
-so this document is usable while running either. Upgrading is automatic and needs
-no operator action; see §8 and §10.
+**Version note.** Three stores moved into MongoDB in **2.5.0**: user accounts,
+previously a SQLite file (`data/database/auth.db`, via Flask-SQLAlchemy);
+encrypted SSH keys, previously `data/<user>/<name>.key`; and the telemetry
+instance id, previously `data/database/instance.id`. Both eras are documented —
+§1, §4 and §10 each carry a `2.5.0+` and a `Pre-2.5.0` subsection — so this
+document is usable while running either. Upgrading is automatic and needs no
+operator action; see §8 and §10.
+
+The net effect is that `data/` no longer holds durable state or secrets, only
+outputs (§6). Each move has its own startup migration (§8.1–8.3), and each
+retains the file it replaced rather than deleting it, so downgrading the image
+still works (§4, "Downgrading and re-upgrading").
 
 ---
 
@@ -89,10 +95,10 @@ flowchart TD
 
 - Single shared client, lazily created and reused: `_mongo_client` /
   `_get_mongo_client()` → `pymongo.MongoClient(os.environ.get("MONGODB_URI"))`
-  (`package/data_file_functions.py:36,72-79`).
+  (`package/data_file_functions.py:34,78-85`).
 - **`serverSelectionTimeoutMS` is 5 s**, not pymongo's 30 s default
-  (`SERVER_SELECTION_TIMEOUT_MS`, `:50`), and the Flask-Session client in
-  `app.py:236-240` carries the same bound. A database on the same Docker network
+  (`SERVER_SELECTION_TIMEOUT_MS`, `:49`), and the Flask-Session client in
+  `app.py:242-245` carries the same bound. A database on the same Docker network
   either answers in milliseconds or is not coming, and every stalled request
   holds a waitress thread — a handful of retrying browsers during an outage would
   wedge a finite pool. Measured against a killed MongoDB with the app already
@@ -104,14 +110,14 @@ flowchart TD
   imported: Flask-Session's `MongoDBSessionInterface` creates the `expiration` TTL
   index in its constructor. Long-standing behaviour, now surfacing in ~6 s rather
   than ~31 s.
-- Database handle from `_get_mongo_db()` (`:69-81`), which every call site uses
-  (`:103,378,610,689,762,897,972,1263`). `MONGODB_DATABASE` defaults to
-  `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"` (`:40`), matching the
-  session-store default at `app.py:240`. The default matters: pymongo raises
+- Database handle from `_get_mongo_db()` (`:88-100`), which every call site uses
+  (`:122,366,653,732,788,933,1008,1273`). `MONGODB_DATABASE` defaults to
+  `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"` (`:38`), matching the
+  session-store default at `app.py:246-248`. The default matters: pymongo raises
   `TypeError: name must be an instance of str` on `client[None]`, and since
   2.5.0 accounts live here too, an unset variable would take the login page down
   rather than only the config routes.
-- `validate_mongodb_connection()` (`:1169-1208`) probes at startup and
+- `validate_mongodb_connection()` (`:1196-1236`) probes at startup and
   `sys.exit()`s on failure, using the same `SERVER_SELECTION_TIMEOUT_MS`. It used
   to pass `serverSelectionTimeoutMS=1`, which is shorter than a real connection
   takes: a mongod that is up but still starting — the normal case behind Compose's
@@ -130,8 +136,8 @@ Throughout the data layer a config is referenced by the string
 - `split("/")[2]` → **document = config (firewall) name**
 - `split("/")[3]` (delete only) → **snapshot name**
 
-(`read_user_data_file:790-801`, `write_user_data_file:1093-1116`,
-`delete_user_data_file:271-287`.)
+(`read_user_data_file:929-930`, `write_user_data_file:1269-1270`,
+`delete_user_data_file:362-370`.)
 
 ```mermaid
 flowchart LR
@@ -159,9 +165,9 @@ flowchart LR
 
 ### Config document schema
 
-`version` is a schema version (`"0"` legacy → `"1"`; `update_schema:868-929`
+`version` is a schema version (`"0"` legacy → `"1"`; `update_schema:1069-1130`
 renamed legacy `tables`→`chains` and `fw_table`→`fw_chain`). `system` is
-auto-added on read if missing (`read_user_data_file:810-815`).
+auto-added on read if missing (`read_user_data_file:948-953`).
 
 ```mermaid
 erDiagram
@@ -369,7 +375,7 @@ integer primary key that pre-2.5.0 sessions carry, and a stale session holding
 
 Passwords are hashed with Flask-Bcrypt and stored as `str` — both write paths
 `.decode("utf-8")` the bytes `generate_password_hash()` returns
-(`auth_functions.py:97,297`). `_password_matches()` (`:35-49`) traps the
+(`auth_functions.py:113,213`). `_password_matches()` (`:38-52`) traps the
 `ValueError` bcrypt raises on an empty or malformed stored hash, so such an
 account fails its login instead of 500ing the login page.
 
@@ -513,7 +519,7 @@ only an opaque, signed session id (`app.py:221-245`).
 
 ## 6. Filesystem layout (`data/`)
 
-Created by `initialize_data_dir()` (`data_file_functions.py:484-554`):
+Created by `initialize_data_dir()` (`data_file_functions.py:452-526`):
 
 ```mermaid
 flowchart TD
@@ -532,8 +538,10 @@ flowchart TD
 
 - Per-user dir `data/<username>/` created on first login (`auth_functions.py:218-233`);
   path stored in the session as `data_dir`.
-- `data/tmp/` is cleared on every startup (`:539-543`); it stages decrypted SSH
-  keys per-operation (see the SSH doc).
+- `data/tmp/` is created and cleared on every startup (`:507-514`), but **nothing
+  writes to it as of 2.5.0** — decrypted SSH keys are staged in the system temp
+  directory instead (see below). The wipe is kept so an upgraded install does not
+  keep a pre-2.5.0 plaintext key that a hard kill left behind.
 - Nothing in the app serves arbitrary files out of `data/`. The `POST /download`
   route, which read any path under `data/` for any logged-in user, was removed
   in 2.5.0; it had no caller in the UI. The two real download endpoints,
@@ -550,14 +558,14 @@ flowchart TD
 - The `<name>.key.migrated` files are excluded from backups: the live ciphertext
   already arrives via `keys.bson` in the Mongo dump, so the on-disk copy would be
   a redundant second copy of the same secret.
-- `sweep_legacy_user_files()` (`:564-620`) removes two kinds of leftover from the
+- `sweep_legacy_user_files()` (`:529-586`) removes two kinds of leftover from the
   per-user dir on the first startup after upgrade, both of which earlier releases
   created and never deleted, and both of which shipped in every full-backup zip:
   - `<firewall_name>.conf` — the generated set commands, written on every push
     purely to give NAPALM a file path. NAPALM is now handed the commands as a
     string (`build_merge_config`), so nothing writes or reads them.
   - `<name>.old` — a JSON config already imported into MongoDB by
-    `mongo_converter` (§8.2). Safe to delete because the rename happens only
+    `mongo_converter` (§8.3). Safe to delete because the rename happens only
     after the write succeeds, so a `.old` file means that config *is* in
     MongoDB.
 
@@ -573,27 +581,37 @@ flowchart TD
 ```mermaid
 flowchart LR
     A["Admin: Create Full Backup"] --> MD["mongo_dump() writes<br/>data/mongo_dumps/ts/db/coll.bson"]
-    MD --> Z["zip to data/backups/full-backup-ts.zip<br/>(excludes backups/, tmp/, uploads/, *.key, auth.db*)"]
+    MD --> Z["zip to data/backups/full-backup-ts.zip<br/>(excludes backups/, tmp/, uploads/,<br/>*.key, *.key.migrated, auth.db*)"]
     Z --> U{"BUCKET_NAME set?"}
     U -->|yes| S3["boto3 upload to<br/>s3 BUCKET/fw-gui/backups/file"]
     U -->|no| Skip["skip upload (logged)"]
 ```
 
-- `create_backup(session, user=False)` (`data_file_functions.py:206-270`): runs
-  `mongo_dump()` (`:731-770`), zips `data/` **excluding** `backups/`, `tmp/`,
-  `uploads/`, any `*.key`, and `auth.db*` (`:237-250`), then
+- `create_backup(session, user=False)` (`data_file_functions.py:225-301`): runs
+  `mongo_dump()` (`:767-798`), zips `data/` **excluding** `backups/`, `tmp/`,
+  `uploads/`, any `*.key` or `*.key.migrated`, and `auth.db*` (`:257-274`), then
   `upload_backup_file()`.
 - `mongo_dump()` sweeps `list_collection_names()`, so since 2.5.0 every dump
   includes `users.bson` — the full bcrypt hash set — and `keys.bson`, every user's
-  Fernet-encrypted SSH key. The key blobs are only defensible in a backup because
-  the Fernet key is never stored server-side (`docs/ssh-credential-handling.md`
-  §3), so a leaked archive yields ciphertext nobody can decrypt. That is intentional: a backup
-  without accounts would be of limited use. It is also why the retained
-  pre-2.5.0 `auth.db*` is excluded (a second, redundant copy of the same
-  secrets) and why the `POST /download` route was removed (§6): the zips were
-  in-app readable by any logged-in user. Dumps are timestamped and never pruned,
-  so the number of copies on the volume grows with each backup.
-- S3 (`upload_backup_file:932-992`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
+  Fernet-encrypted SSH key. Both are deliberate: a backup that restored neither
+  accounts nor keys would be of limited use. The key blobs are defensible in an
+  archive only because the Fernet passphrase is never stored server-side
+  (`docs/ssh-credential-handling.md` §3), so a leaked zip yields ciphertext nobody
+  can decrypt.
+- The same reasoning drives two exclusions. The retained pre-2.5.0 `auth.db*` and
+  `*.key.migrated` files are skipped because the live copy of each secret already
+  arrives via the dump, and a second copy on the way off the host buys nothing.
+  It is also why the `POST /download` route was removed (§6): the zips were
+  in-app readable by any logged-in user.
+- **The admin page states this.** "Create Full Backup" says the archive includes
+  the MongoDB dump and that encrypted SSH keys are in it. It previously claimed
+  keys were *excluded* — true of the on-disk `.key` files the zip walk skips, but
+  wrong once the ciphertext moved into `keys.bson`.
+- Neither dumps nor zips are pruned. `data/mongo_dumps/` keeps a timestamped
+  directory per backup **and every zip re-archives all of them**, so both the
+  directory count and each successive archive grow without bound. Housekeeping is
+  an operator task; nothing in the app deletes them.
+- S3 (`upload_backup_file:1133-1193`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
   `AWS_SECRET_ACCESS_KEY`; skipped if `BUCKET_NAME` unset; key prefix
   `fw-gui/backups/`.
 - **No in-app restore**: backups are created/uploaded/listed only. Retrieving a
@@ -605,15 +623,35 @@ flowchart LR
 
 ## 8. Startup migrations
 
-Both run from `app.py`'s `__main__` block after the MongoDB connection check,
-users first — `mongo_converter()` takes its user list from the `users`
-collection, so the accounts have to be there already:
+Four steps run from `app.py`'s `__main__` block, all inside the MongoDB
+connection check:
 
 ```python
 if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
     migrate_sqlite_users()
+    accounts = list_usernames()
+    migrate_legacy_key_files(accounts)
+    sweep_legacy_user_files(accounts)
     mongo_converter()
 ```
+
+**The order is load-bearing, in both directions.**
+
+- `migrate_sqlite_users()` is first because everything after it is driven by
+  `list_usernames()`. On a pre-2.5.0 upgrade the accounts are still in SQLite at
+  this point, so calling it earlier would return an empty list and silently adopt
+  no keys and sweep no files.
+- `sweep_legacy_user_files()` runs **before** `mongo_converter()`, not after,
+  because the converter is what *creates* the `.old` files (§8.3). Reversing them
+  would delete a file written seconds earlier, discarding the one-restart safety
+  net it exists to provide.
+- None of it can move into `initialize_data_dir()`, which runs earlier — that is
+  before MongoDB is known to be reachable, and all three of these need the
+  account list.
+
+On a database that cannot be reached, every step is skipped and retried on the
+next successful boot. `initialize_data_dir()` still runs, so the directory
+structure exists either way.
 
 ### 8.1 SQLite accounts → MongoDB (`user_migration.py`, 2.5.0)
 
@@ -657,7 +695,40 @@ exactly as they are (that is `$setOnInsert`), so this recovers accounts that
 failed to migrate rather than re-syncing the ones that succeeded. See
 "Downgrading and re-upgrading" in §4.
 
-### 8.2 On-disk JSON configs → MongoDB (`mongo_converter.py`, 1.4.0)
+### 8.2 On-disk SSH keys → MongoDB (`ssh_key_store.py`, 2.5.0)
+
+`migrate_legacy_key_files(usernames)` adopts pre-2.5.0 `data/<user>/*.key` files.
+No operator action required. `docs/ssh-credential-handling.md` §3 covers the key
+lifecycle; this is the migration mechanics only.
+
+1. For each account, glob `data/<user>/*.key` (`glob.escape` on the username, so a
+   name with a glob metacharacter cannot widen the match).
+2. Read the ciphertext. An empty file is skipped with a warning — storing a zero
+   byte blob would mask the loss behind a key that exists but cannot decrypt.
+3. Upsert with **`$setOnInsert`** under `_id` = `"<user>/<name>"`, `name` being the
+   filename with `.key` removed, plus `migrated_from_file: True` as a provenance
+   marker.
+4. Rename the file to `<name>.key.migrated`. An existing `.migrated` is never
+   overwritten; the new one gets a timestamp suffix, exactly as with `auth.db`.
+
+Same `$setOnInsert` reasoning as §8.1, and it matters more here: on a re-run
+against a restored `data/` volume, `$set` would overwrite a key the user has since
+re-uploaded — replacing a working key with ciphertext whose passphrase they no
+longer have, unrecoverably, since the server never held it.
+
+The file is **renamed, never deleted**. That ciphertext is the user's only copy,
+and the retained file is the downgrade path (§4, "Downgrading and re-upgrading").
+A failure anywhere in the loop is logged and leaves the file unrenamed, so the
+next boot retries it; the migration never raises, because a key that will not
+adopt must not stop the application from starting.
+
+**Only accounts in the `users` collection are visited.** A pre-2.5.0 user whose
+account never reached MongoDB — not present in `auth.db` at migration time, so
+never created — keeps its `.key` files on disk unadopted and cannot use key
+authentication until the account exists. The files are untouched, so this is
+recoverable: create the account, restart, and they are adopted.
+
+### 8.3 On-disk JSON configs → MongoDB (`mongo_converter.py`, 1.4.0)
 
 One-shot startup migration of pre-1.4.0 on-disk JSON configs:
 
@@ -778,7 +849,7 @@ later read, so a read-only data directory costs a leftover file, not the id.
 
 | Variable | Purpose |
 |----------|---------|
-| `MONGODB_URI` | MongoDB connection string (configs, accounts, sessions) |
+| `MONGODB_URI` | MongoDB connection string (configs, accounts, SSH keys, telemetry id, sessions) |
 | `MONGODB_DATABASE` | Mongo database name (default `fwgui_database`) |
 | `MONGODB_USERS_COLLECTION` | Collection holding user accounts (default `users`, 2.5.0+). Escape hatch for an install that already has a user of that name |
 | `FWGUI_INSTANCE_ID` | Pins the telemetry instance id instead of reading it from MongoDB (2.5.0+). Unset for normal use |
@@ -787,3 +858,13 @@ later read, so a read-only data directory costs a leftover file, not the id.
 | `SESSION_TIMEOUT` | Session lifetime in minutes (default 120) |
 | `SESSION_COOKIE_SECURE` | Send session cookie over HTTPS only (opt-in) |
 | `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Optional S3 backup upload |
+
+**Only the accounts collection is renameable.** `keys`, `instance` and `sessions`
+are fixed (`validators.KEYS_COLLECTION`, `INSTANCE_COLLECTION`, and
+`SESSION_MONGODB_COLLECT` in `app.py`); `MONGODB_USERS_COLLECTION` exists because
+an install upgrading from SQLite could already have a *user* named `users`, whose
+config collection would then be the account store. All four names are rejected as
+usernames (§4), so the collision cannot be created after the fact — the escape
+hatch is only for one that predates 2.5.0. `MONGODB_USERS_COLLECTION` is honoured
+*in addition to* the hardcoded names, never instead of them, so pointing it
+elsewhere does not make `users` claimable.

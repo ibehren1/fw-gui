@@ -1163,6 +1163,19 @@ class TestAdminRoutes:
         resp = auth_client.get("/admin_settings")
         assert resp.status_code == 200
 
+    def test_admin_settings_does_not_claim_keys_are_excluded(self, auth_client):
+        """Backups DO contain SSH keys as of 2.5.0.
+
+        The zip walk skips the on-disk .key files, but the ciphertext arrives via
+        keys.bson in the Mongo dump, so telling the operator keys are excluded
+        would misrepresent what leaves the host in an archive.
+        """
+        resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "excluded from backups" not in body
+        assert "MongoDB dump" in body
+
     def test_admin_settings_post_full_backup(self, auth_client):
         with patch("app.create_backup") as mock_backup:
             resp = auth_client.post(
