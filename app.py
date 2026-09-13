@@ -86,7 +86,7 @@ from package.data_file_functions import (
     process_upload,
     read_user_data_file,
     restore_snapshot,
-    sweep_legacy_conf_files,
+    sweep_legacy_user_files,
     tag_snapshot,
     validate_mongodb_connection,
     write_user_data_file,
@@ -2149,11 +2149,16 @@ if __name__ == "__main__":
     # first: mongo_converter() gets its user list from the users collection.
     if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
         migrate_sqlite_users()
+        # Removes per-user files earlier releases left behind (.conf, .old).
+        # Position is deliberate: after migrate_sqlite_users() because
+        # list_usernames() needs the accounts in MongoDB -- on a pre-2.5.0
+        # upgrade it would otherwise return nothing and sweep nothing -- and
+        # before mongo_converter() because that is what creates the .old files,
+        # so running it after would delete a file created seconds earlier. It
+        # cannot live in initialize_data_dir() above either; that runs before
+        # MongoDB is known to be reachable.
+        sweep_legacy_user_files(list_usernames())
         mongo_converter()
-        # Removes the generated .conf command files left behind by pre-2.5.0.
-        # Needs the account list, so it cannot run in initialize_data_dir()
-        # above -- that happens before MongoDB is known to be reachable.
-        sweep_legacy_conf_files(list_usernames())
 
     # Post instance telemetry. Deliberately after the MongoDB check: the instance
     # id now lives in MongoDB, so running this first would mean waiting on the

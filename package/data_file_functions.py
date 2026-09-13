@@ -62,6 +62,13 @@ _MAX_TAG_LENGTH = 100
 # restored, so the working copy that the restore overwrites is recoverable.
 AUTO_SNAPSHOT_TAG = "auto-snapshot before reloading snapshot"
 
+# Per-user files written by releases that no longer produce them. Nothing reads
+# either one, and both were swept into full-backup zips.
+#   conf -- generated command files; NAPALM now takes the commands as a string
+#   old  -- JSON configs already imported into MongoDB by mongo_converter
+# "json" must never be added here: mongo_converter still imports those.
+_LEGACY_USER_FILE_SUFFIXES = ("conf", "old")
+
 # Snapshot names are timestamps, and the name is the only thing identifying a
 # snapshot of a config -- two snapshots taken in the same second would collide,
 # and write_user_data_file upserts, so the second would silently overwrite the
@@ -554,9 +561,9 @@ def initialize_data_dir():
     return
 
 
-def sweep_legacy_conf_files(usernames):
+def sweep_legacy_user_files(usernames):
     """
-    Removes the generated .conf command files left behind by pre-2.5.0 releases.
+    Removes per-user files that earlier releases left behind and nothing reads.
 
     Args:
         usernames (list): Account names, from user_store.list_usernames()
@@ -564,38 +571,53 @@ def sweep_legacy_conf_files(usernames):
     Returns:
         None
 
-    Before 2.5.0 every configuration push wrote
+    Two kinds, both listed in _LEGACY_USER_FILE_SUFFIXES:
+
+    ``.conf`` -- before 2.5.0 every configuration push wrote
     data/<username>/<firewall_name>.conf purely to hand the commands to NAPALM,
-    and nothing ever deleted them. They accumulated per firewall name, outlived
-    the configs they were generated from, and were swept into every full backup
-    zip. NAPALM is now given the commands as a string, so nothing reads or writes
-    them.
+    and nothing ever deleted them. They accumulated per firewall name and
+    outlived the configs they were generated from. NAPALM is now given the
+    commands as a string, so nothing reads or writes them.
+
+    ``.old`` -- mongo_converter renames each imported data/<username>/*.json to
+    <name>.old so it is not re-imported. Safe to delete because the rename
+    happens only after write_user_data_file() returns, so the presence of a .old
+    file means that config is already in MongoDB; a failed import leaves the
+    file as .json to be retried.
+
+    Both were swept into every full backup zip and S3 upload. ``.json`` is
+    deliberately *not* in the list -- mongo_converter still needs to import
+    those.
 
     The account list is passed in rather than looked up here for two reasons: it
     keeps this module from importing user_store, which imports this one, and it
     lets the caller decide whether MongoDB is reachable. It also bounds the
-    deletions to real per-user directories -- a data/*/*.conf glob would also
-    match stray directories under data/ that never belonged to a user.
+    deletions to real per-user directories -- a data/*/* glob would also match
+    stray directories under data/ that never belonged to a user.
 
-    Self-limiting rather than one-shot: after the first run the glob is empty, so
-    no marker file is needed. Never raises -- housekeeping must not stop startup.
+    Self-limiting rather than one-shot: after the first run the globs are empty,
+    so no marker file is needed. Never raises -- housekeeping must not stop
+    startup.
     """
-    logging.info("Sweeping legacy .conf command files...")
+    logging.info("Sweeping legacy per-user files...")
 
     removed = 0
     try:
         for username in usernames:
-            # glob.escape: usernames pass a strict allowlist today, but a name
-            # with a glob metacharacter must not widen the match.
-            pattern = os.path.join("data", glob.escape(str(username)), "*.conf")
-            for path in glob.glob(pattern):
-                os.remove(path)
-                removed += 1
-                logging.info(f" |--> Removed legacy command file: {path}")
+            for suffix in _LEGACY_USER_FILE_SUFFIXES:
+                # glob.escape: usernames pass a strict allowlist today, but a
+                # name with a glob metacharacter must not widen the match.
+                pattern = os.path.join(
+                    "data", glob.escape(str(username)), f"*.{suffix}"
+                )
+                for path in glob.glob(pattern):
+                    os.remove(path)
+                    removed += 1
+                    logging.info(f" |--> Removed legacy file: {path}")
     except Exception as e:
-        logging.warning(f" |--X Error sweeping legacy .conf files: {e}")
+        logging.warning(f" |--X Error sweeping legacy per-user files: {e}")
 
-    logging.info(f" |--> Legacy command files removed: {removed}")
+    logging.info(f" |--> Legacy per-user files removed: {removed}")
     return
 
 

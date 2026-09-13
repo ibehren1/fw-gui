@@ -533,12 +533,21 @@ flowchart TD
   — all three are in MongoDB as of 2.5.0. The per-user dir holds only keys and
   user backup zips; `database/` holds nothing that current code writes, only the
   retained `auth.db.migrated` and `instance.id.migrated` on an upgraded install.
-- Pre-2.5.0 the per-user dir also held a generated `<firewall_name>.conf` per
-  config: the set commands, written on every push purely to give NAPALM a file
-  path, and never deleted. NAPALM is now handed the commands as a string
-  (`build_merge_config`), so the files are no longer written, and
-  `sweep_legacy_conf_files()` (`:557-599`) removes the leftovers on the first
-  startup after upgrade.
+- `sweep_legacy_user_files()` (`:564-620`) removes two kinds of leftover from the
+  per-user dir on the first startup after upgrade, both of which earlier releases
+  created and never deleted, and both of which shipped in every full-backup zip:
+  - `<firewall_name>.conf` — the generated set commands, written on every push
+    purely to give NAPALM a file path. NAPALM is now handed the commands as a
+    string (`build_merge_config`), so nothing writes or reads them.
+  - `<name>.old` — a JSON config already imported into MongoDB by
+    `mongo_converter` (§8.2). Safe to delete because the rename happens only
+    after the write succeeds, so a `.old` file means that config *is* in
+    MongoDB.
+
+  `.json` is deliberately not swept: `mongo_converter` still imports those. The
+  sweep is bounded to real account directories rather than a `data/*/*` glob, and
+  is self-limiting — after the first run the globs are empty, so there is no
+  marker file.
 
 ---
 
@@ -638,10 +647,17 @@ One-shot startup migration of pre-1.4.0 on-disk JSON configs:
 2. For each user, find `data/<user>/*.json`.
 3. `json.loads` each, drop `_id`, `write_user_data_file(...)` (inserts a current
    config doc).
-4. Rename the file to `<name>.old` so it isn't re-imported.
+4. Rename the file to `<name>.old` so it isn't re-imported. Note the ordering:
+   the rename is *after* the write, so a `.old` file always means the config
+   reached MongoDB — a failed write leaves the file as `.json` to be retried on
+   the next boot.
 
 No-op when no leftover `.json` files exist. Uploaded JSON takes the same
 `write_user_data_file` path via `process_upload`.
+
+The `.old` file is a one-restart safety net, not a permanent copy:
+`sweep_legacy_user_files()` (§6) deletes it, and runs *before* this converter on
+each startup so that a file created by this boot survives until the next one.
 
 It walks per-user directories rather than globbing `data/*/*.json` on purpose:
 the glob would match `data/uploads/*.json`, the transient upload staging area,
