@@ -14,7 +14,7 @@ import paramiko
 from flask import flash
 from napalm import get_network_driver
 
-from package.data_file_functions import decrypt_file
+from package.ssh_key_store import decrypt_ssh_key
 from package.telemetry_functions import (
     telemetry_commit,
     telemetry_diff,
@@ -38,9 +38,12 @@ def assemble_napalm_driver_string(connection_string, session):
     optional_args = {"port": connection_string["port"], "conn_timeout": 120}
 
     if "ssh_key_name" in connection_string:
+        # The "password" field carries the user's Fernet key on this path, not a
+        # login password.
         key = connection_string["password"].encode("utf-8")
-        key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
-        tmp_key_name = decrypt_file(key_name, key)
+        tmp_key_name = decrypt_ssh_key(
+            session["username"], connection_string["ssh_key_name"], key
+        )
         optional_args["key_file"] = tmp_key_name
 
         return (
@@ -93,9 +96,12 @@ def assemble_paramiko_driver_string(connection_string, session):
 
     if "ssh_key_name" in connection_string:
         logging.info("key")
+        # The "password" field carries the user's Fernet key on this path, not a
+        # login password.
         key = connection_string["password"].encode("utf-8")
-        key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
-        tmp_key_name = decrypt_file(key_name, key)
+        tmp_key_name = decrypt_ssh_key(
+            session["username"], connection_string["ssh_key_name"], key
+        )
         # If connect fails the caller never receives tmp_key_name, so remove
         # the decrypted key here rather than leaving it staged on disk.
         try:

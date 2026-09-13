@@ -24,15 +24,16 @@ _USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 # Collections owned by the application, never by a user. Hardcoded on purpose --
 # see is_reserved_username.
-_RESERVED_USERNAMES = frozenset({"users", "sessions", "instance"})
+_RESERVED_USERNAMES = frozenset({"users", "sessions", "instance", "keys"})
 
-# The subset whose collision is not survivable: these hold the credential store
-# and the session store, so a user owning one could read and delete other users'
-# accounts or sessions. A collision here aborts the startup migration rather than
-# being worked around. "instance" is deliberately absent -- it holds only the
-# telemetry id, and refusing to boot over that would be disproportionate; the
-# collision degrades telemetry instead (see package/instance_id.py).
-_AUTH_CRITICAL_RESERVED = frozenset({"users", "sessions"})
+# The subset whose collision is not survivable: these hold the credential store,
+# the session store and the encrypted SSH keys, so a user owning one could read
+# and delete other users' accounts, sessions or key material. A collision here
+# aborts the startup migration rather than being worked around. "instance" is
+# deliberately absent -- it holds only the telemetry id, and refusing to boot over
+# that would be disproportionate; the collision degrades telemetry instead (see
+# package/instance_id.py).
+_AUTH_CRITICAL_RESERVED = frozenset({"users", "sessions", "keys"})
 
 # Collection holding user accounts. Overridable so an install that already has a
 # user named "users" has somewhere to go.
@@ -40,6 +41,9 @@ DEFAULT_USERS_COLLECTION = "users"
 
 # Collection holding the telemetry instance id.
 INSTANCE_COLLECTION = "instance"
+
+# Collection holding users' Fernet-encrypted SSH private keys.
+KEYS_COLLECTION = "keys"
 
 
 def is_safe_name(name):
@@ -90,8 +94,8 @@ def is_reserved_username(name):
     A username is also a MongoDB collection name, so a user holding one of these
     would be handed an application collection as their "config" collection: the
     normal config routes would let them list, read and delete other users'
-    accounts (``users``), session documents (``sessions``), or the telemetry id
-    (``instance``).
+    accounts (``users``), session documents (``sessions``), encrypted SSH keys
+    (``keys``), or the telemetry id (``instance``).
 
     ``MONGODB_USERS_COLLECTION`` is honoured in addition to -- never instead of
     -- the hardcoded names, because an install that renamed the collection may
@@ -107,7 +111,7 @@ def is_reserved_username(name):
 
 
 def is_auth_critical_username(name):
-    """Return True if ``name`` collides with the account or session store.
+    """Return True if ``name`` collides with a store holding credentials or keys.
 
     Narrower than :func:`is_reserved_username`: only the collisions that cannot
     be worked around, and so are worth refusing to start over. Used by the

@@ -317,6 +317,17 @@ class TestAborts:
         assert sorted(user_store.list_usernames()) == ["alice", "instance"]
         assert not os.path.exists(legacy_db.path)
 
+    @pytest.mark.parametrize("name", ["users", "sessions", "keys"])
+    def test_auth_critical_username_aborts_startup(self, users, legacy_db, name):
+        """keys holds every user's SSH key ciphertext, so it aborts like users."""
+        legacy_db([("alice", "a@b.c", "hash"), (name, "x@b.c", "hash")])
+
+        with pytest.raises(SystemExit):
+            migrate_sqlite_users()
+
+        assert users.count_documents({}) == 0
+        assert os.path.exists(legacy_db.path)
+
     def test_config_collection_collision_aborts_startup(self, users, legacy_db):
         """A user named "users" already owns the target collection."""
         users.insert_one({"_id": "example", "ipv4": {}, "ipv6": {}})

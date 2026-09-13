@@ -301,35 +301,42 @@ class TestGetSystemName:
 
 
 class TestListUserKeys:
-    def test_with_keys(self, monkeypatch):
-        monkeypatch.setattr(
-            "os.listdir",
-            lambda path: ["server1.key", "server2.key", "config.json"],
-        )
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == ["server1", "server2"]
+    """Keys come from MongoDB as of 2.5.0, not from scanning the user's dir."""
 
-    def test_empty_dir(self, monkeypatch):
-        monkeypatch.setattr("os.listdir", lambda path: [])
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == []
+    @pytest.fixture
+    def keys(self, mock_mongo):
+        from package import ssh_key_store
 
-    def test_no_key_files(self, monkeypatch):
-        monkeypatch.setattr("os.listdir", lambda path: ["config.json", "backup.zip"])
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == []
+        return ssh_key_store.collection()
 
-    def test_keys_are_sorted(self, monkeypatch):
-        monkeypatch.setattr(
-            "os.listdir",
-            lambda path: ["zebra.key", "alpha.key", "middle.key"],
-        )
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == ["alpha", "middle", "zebra"]
+    def _store(self, keys, user, *names):
+        for name in names:
+            keys.insert_one({"_id": f"{user}/{name}", "user": user, "name": name})
+
+    def test_with_keys(self, keys):
+        self._store(keys, "testuser", "server1", "server2")
+        assert list_user_keys({"username": "testuser"}) == ["server1", "server2"]
+
+    def test_no_keys(self, keys):
+        assert list_user_keys({"username": "testuser"}) == []
+
+    def test_scoped_to_the_session_user(self, keys):
+        """Another user's keys must not be listed, let alone offered."""
+        self._store(keys, "testuser", "mine")
+        self._store(keys, "someone-else", "theirs")
+
+        assert list_user_keys({"username": "testuser"}) == ["mine"]
+
+    def test_keys_are_sorted(self, keys):
+        self._store(keys, "testuser", "zebra", "alpha", "middle")
+        assert list_user_keys({"username": "testuser"}) == ["alpha", "middle", "zebra"]
+
+    def test_two_users_may_share_a_key_name(self, keys):
+        self._store(keys, "testuser", "id_rsa")
+        self._store(keys, "someone-else", "id_rsa")
+
+        assert list_user_keys({"username": "testuser"}) == ["id_rsa"]
+        assert list_user_keys({"username": "someone-else"}) == ["id_rsa"]
 
 
 # ===========================================================================
@@ -1260,6 +1267,7 @@ class TestCreateBackup:
         (data / "myuser").mkdir()
         (data / "database" / "instance.id.migrated").write_text("abc")
         (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
+        (data / "myuser" / "old_rsa.key.migrated").write_bytes(b"retired ciphertext")
         (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
         (data / "myuser" / "firewall.json").write_text("{}")
         (data / "tmp" / "scratch").write_text("x")
@@ -1296,6 +1304,9 @@ class TestCreateBackup:
         assert not any(n.startswith("database/auth.db") for n in names)
         # Pre-existing exclusions still hold.
         assert not any(n.endswith(".key") for n in names)
+        # The retained key file is a redundant second copy of a secret the Mongo
+        # dump already carries -- endswith(".key") does not match it.
+        assert not any(n.endswith(".key.migrated") for n in names)
         assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
 
 
@@ -1324,6 +1335,7 @@ class TestSweepLegacyUserFiles:
         (data_tree / "alice" / "fw.old").write_text('{"version": "1"}')
         (data_tree / "alice" / "fw.json").write_text("{}")
         (data_tree / "alice" / "id_rsa.key").write_bytes(b"encrypted key")
+        (data_tree / "alice" / "id_rsa.key.migrated").write_bytes(b"retired")
         (data_tree / "alice" / "user-alice-backup-2026.zip").write_bytes(b"PK")
 
         sweep_legacy_user_files(["alice"])
@@ -1332,6 +1344,8 @@ class TestSweepLegacyUserFiles:
         assert not (data_tree / "alice" / "fw.old").exists()
         assert (data_tree / "alice" / "fw.json").exists()
         assert (data_tree / "alice" / "id_rsa.key").exists()
+        # .key.migrated is the SSH-key rollback copy; the sweep must never take it.
+        assert (data_tree / "alice" / "id_rsa.key.migrated").exists()
         assert (data_tree / "alice" / "user-alice-backup-2026.zip").exists()
 
     def test_leaves_non_user_directories_alone(self, data_tree):

@@ -5,7 +5,7 @@ This module provides utility functions for handling data files in a firewall con
 It includes functions for:
 - Managing user configuration data (add_extra_items, add_hostname)
 - File validation and backup operations (allowed_file, create_backup)
-- Encryption/decryption of sensitive files (decrypt_file)
+- Encryption of uploaded SSH keys (process_upload; storage in ssh_key_store)
 - Database operations for user data (delete_user_data_file)
 
 The module uses MongoDB for data persistence and Fernet for symmetric encryption.
@@ -18,7 +18,6 @@ import logging
 import os
 import shutil
 import sys
-import tempfile
 import zipfile
 from datetime import datetime, timedelta
 
@@ -259,7 +258,11 @@ def create_backup(session, user=False):
                     if root.startswith(("data/backups", "data/tmp", "data/uploads")):
                         continue
                     for file in files:
-                        if file.endswith(".key"):
+                        # Key material. The live ciphertext now arrives via the
+                        # Mongo dump, so a retained .key.migrated on disk is a
+                        # redundant second copy of the same secret -- same
+                        # reasoning as auth.db below.
+                        if file.endswith((".key", ".key.migrated")):
                             continue
                         # The retained pre-2.5.0 auth database is a full set of
                         # bcrypt hashes that nothing reads any more. Current
@@ -282,7 +285,7 @@ def create_backup(session, user=False):
             with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk(f"data/{user}"):
                     for file in files:
-                        if file.endswith((".zip", ".key")):
+                        if file.endswith((".zip", ".key", ".key.migrated")):
                             continue
                         file_path = os.path.join(root, file)
                         zipf.write(
@@ -332,48 +335,6 @@ def create_snapshot(filename, tag=""):
         set_snapshot_tag(filename, snapshot_name, tag)
 
     return snapshot_name
-
-
-def decrypt_file(filename, key):
-    """
-    Decrypts an encrypted file using Fernet symmetric encryption and saves to a temporary file.
-
-    Args:
-        filename (str): Path to the encrypted file to decrypt
-        key (bytes): Encryption key to use for decryption
-
-    Returns:
-        str: Path to the temporary decrypted file
-
-    The function:
-    1. Creates a Fernet instance with the provided key
-    2. Reads and decrypts the encrypted file contents
-    3. Generates a random temporary filename
-    4. Writes the decrypted data to the temporary file
-    5. Returns the path to the temporary decrypted file
-
-    Note: The temporary file is created in data/tmp/ via tempfile.mkstemp,
-    which uses a cryptographically-random name and 0o600 (owner-only)
-    permissions so the plaintext key is not world-readable.
-    """
-    # using the key
-    fernet = Fernet(key)
-
-    # opening the encrypted file
-    with open(filename, "rb") as enc_file:
-        encrypted = enc_file.read()
-
-    # decrypting the file
-    decrypted = fernet.decrypt(encrypted)
-
-    # Stage the plaintext key in an owner-only temp file with an
-    # unpredictable name. mkstemp creates the file with mode 0o600.
-    fd, tmp_file_name = tempfile.mkstemp(dir="data/tmp")
-    with os.fdopen(fd, "wb") as dec_file:
-        dec_file.write(decrypted)
-    logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
-
-    return tmp_file_name
 
 
 def delete_user_data_file(filename):
@@ -500,7 +461,7 @@ def initialize_data_dir():
        - mongo_dumps/: For MongoDB database dumps
        - database/: For retained pre-2.5.0 artifacts (the SQLite auth database
          and the telemetry instance id file); nothing current is written here
-       - tmp/: For temporary files (contents cleared on startup)
+       - tmp/: Legacy scratch, no longer written to (contents cleared on startup)
        - uploads/: For user uploaded files
     3. Copies example.json from examples/ if not present
 
@@ -539,6 +500,10 @@ def initialize_data_dir():
         logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
 
+    # Nothing writes to data/tmp as of 2.5.0 -- decrypted SSH keys are now staged
+    # in the system temp directory. The wipe below is kept as legacy cleanup: on
+    # an install upgrading from a version that crashed mid-operation, it is what
+    # removes a stale *plaintext* private key left staged there.
     if not os.path.exists("data/tmp"):
         logging.info(" |--> Tmp directory not found, creating...")
         os.makedirs("data/tmp")
@@ -778,35 +743,25 @@ def list_user_files(session):
 
 def list_user_keys(session):
     """
-    Lists all SSH key files in the user's data directory, removing the .key extension.
+    Lists the names of the user's stored SSH keys.
 
     Args:
         session (dict): Session dictionary containing user session information including:
-                       - data_dir: Path to the user's data directory
+                       - username: The account whose keys to list
 
     Returns:
-        list: A sorted list of key filenames (strings) with .key extension removed,
-              found in the user's data directory
+        list: A sorted list of key names, without the .key extension
 
-    The function:
-    1. Creates an empty list to store key filenames
-    2. Lists all files in the user's data directory specified in session['data_dir']
-    3. Filters for files containing .key extension
-    4. Removes the .key extension from the filenames
-    5. Sorts the list alphabetically
-    6. Returns the sorted list of key filenames
+    Keys live in MongoDB as of 2.5.0 (see package/ssh_key_store.py); this used to
+    scan data/<username>/*.key. The name and the sorted-list contract are kept so
+    the push-form template and its callers are unaffected.
+
+    Imported here rather than at module scope because ssh_key_store imports this
+    module for its database handle.
     """
-    key_list = []
+    from package.ssh_key_store import list_key_names
 
-    files = os.listdir(f"{session['data_dir']}")
-
-    for file in files:
-        if ".key" in file:
-            key_list.append(file.replace(".key", ""))
-
-    key_list.sort()
-
-    return key_list
+    return list_key_names(session["username"])
 
 
 def mongo_dump():
@@ -911,32 +866,37 @@ def process_upload(session, request, app):
             flash("File is not valid JSON", "danger")
 
     if filetype == "key":
+        # Imported here rather than at module scope because ssh_key_store imports
+        # this module for its database handle.
+        from package.ssh_key_store import store_key
+
         try:
             # TODO -- validate key is a valid ssh key
             with open(f"data/uploads/{filename}", "rb") as f:
                 data = f.read()
 
-                # Generate a key
-                key = Fernet.generate_key()
+            # Generate a key
+            key = Fernet.generate_key()
 
-                # using the generated key
-                fernet = Fernet(key)
+            # using the generated key
+            fernet = Fernet(key)
 
-                # encrypting the file
-                encrypted = fernet.encrypt(data)
+            # encrypting the file
+            encrypted = fernet.encrypt(data)
 
-                # writing the encrypted data
-                with open(f"{session['data_dir']}/{filename}", "wb") as encrypted_file:
-                    encrypted_file.write(encrypted)
-                    flash(
-                        f"Your encryption key for this file is: {key.decode('utf-8')}",
-                        "key",
-                    )
-                os.remove(f"data/uploads/{filename}")
-                flash(
-                    "SSH key has been uploaded and encrypted.  To use the SSH Key you will have to provide the encryption key.",
-                    "success",
-                )
+            # Store the ciphertext in MongoDB. The Fernet key is shown to the user
+            # once here and never persisted, so what is stored is a blob the
+            # server cannot read.
+            store_key(session["username"], filename.replace(".key", ""), encrypted)
+            flash(
+                f"Your encryption key for this file is: {key.decode('utf-8')}",
+                "key",
+            )
+            os.remove(f"data/uploads/{filename}")
+            flash(
+                "SSH key has been uploaded and encrypted.  To use the SSH Key you will have to provide the encryption key.",
+                "success",
+            )
         except Exception:
             flash("File is not valid key", "danger")
 

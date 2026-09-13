@@ -49,6 +49,7 @@ def op_command():
 def session():
     return {
         "data_dir": "/tmp/test",
+        "username": "testuser",
         "hostname": "192.168.1.1",
         "port": 22,
         "firewall_name": "test_fw",
@@ -76,7 +77,7 @@ def test_assemble_paramiko_driver_string_password(connection_string, session):
 def test_assemble_paramiko_driver_string_with_key(connection_string_with_key, session):
     with (
         patch("paramiko.SSHClient") as mock_ssh,
-        patch("package.napalm_ssh_functions.decrypt_file") as mock_decrypt,
+        patch("package.napalm_ssh_functions.decrypt_ssh_key") as mock_decrypt,
     ):
         ssh_instance = Mock()
         mock_ssh.return_value = ssh_instance
@@ -211,7 +212,7 @@ def test_assemble_napalm_driver_string_password(connection_string, session):
 def test_assemble_napalm_driver_string_with_key(connection_string_with_key, session):
     with (
         patch("package.napalm_ssh_functions.get_network_driver") as mock_get_driver,
-        patch("package.napalm_ssh_functions.decrypt_file") as mock_decrypt,
+        patch("package.napalm_ssh_functions.decrypt_ssh_key") as mock_decrypt,
     ):
         mock_driver_class = Mock()
         mock_get_driver.return_value = mock_driver_class
@@ -224,7 +225,10 @@ def test_assemble_napalm_driver_string_with_key(connection_string_with_key, sess
         )
 
         assert tmp_key == "/tmp/decrypted_key"
-        mock_decrypt.assert_called_once()
+        # Looked up by account and key name, not by a data_dir path.
+        mock_decrypt.assert_called_once_with(
+            "testuser", "test_key.pem", b"keypassphrase"
+        )
         mock_driver_class.assert_called_with(
             hostname="192.168.1.1",
             username="admin",

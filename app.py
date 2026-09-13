@@ -129,6 +129,7 @@ from package.napalm_ssh_functions import (
     run_operational_command,
     test_connection,
 )
+from package.ssh_key_store import migrate_legacy_key_files
 from package.telemetry_functions import telemetry_instance
 from package.user_migration import migrate_sqlite_users
 from package.user_store import get_user_by_session_id, list_usernames
@@ -2157,7 +2158,11 @@ if __name__ == "__main__":
         # so running it after would delete a file created seconds earlier. It
         # cannot live in initialize_data_dir() above either; that runs before
         # MongoDB is known to be reachable.
-        sweep_legacy_user_files(list_usernames())
+        accounts = list_usernames()
+        # Adopts pre-2.5.0 data/<user>/*.key files into MongoDB. Same position
+        # requirement as the sweep below: it needs the migrated account list.
+        migrate_legacy_key_files(accounts)
+        sweep_legacy_user_files(accounts)
         mongo_converter()
 
     # Post instance telemetry. Deliberately after the MongoDB check: the instance
