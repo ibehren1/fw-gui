@@ -1231,7 +1231,7 @@ class TestCreateBackup:
         (data / "tmp").mkdir()
         (data / "uploads").mkdir()
         (data / "myuser").mkdir()
-        (data / "database" / "instance.id").write_text("abc")
+        (data / "database" / "instance.id.migrated").write_text("abc")
         (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
         (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
         (data / "myuser" / "firewall.conf").write_text("set firewall")
@@ -1261,8 +1261,9 @@ class TestCreateBackup:
             create_backup({"username": "myuser"}, user=False)
 
         names = self._zip_names(data_tree)
-        assert "database/instance.id" in names
         assert "myuser/firewall.conf" in names
+        # The retired instance id is not a secret, so unlike auth.db* it is kept.
+        assert "database/instance.id.migrated" in names
         # Legacy bcrypt hashes must not leave the host in a backup zip.
         assert not any(n.startswith("database/auth.db") for n in names)
         # Pre-existing exclusions still hold.

@@ -32,7 +32,7 @@ from datetime import datetime
 from pymongo.errors import DuplicateKeyError
 
 from package import user_store
-from package.validators import is_reserved_username
+from package.validators import is_auth_critical_username
 
 # Pre-2.5.0 authentication database, and the name it is renamed to once its
 # accounts are in MongoDB. The rename doubles as the "already migrated" marker.
@@ -93,14 +93,20 @@ def _check_collection_is_not_a_config_collection(collection):
 
 
 def _check_no_reserved_usernames(rows):
-    """Aborts startup if a legacy account holds a name the application owns.
+    """Aborts startup if a legacy account collides with the account/session store.
 
     Migrating it would hand that user the accounts or session collection as
     their config collection. Refusing to boot is the honest outcome: the
     operator has to rename the account.
+
+    Deliberately narrower than is_reserved_username(): a legacy account named
+    "instance" collides only with the telemetry id, which is not worth refusing
+    to start over. That collision degrades telemetry instead (see
+    package/instance_id.py). New registrations of any reserved name are still
+    blocked.
     """
     reserved = [
-        username for _, username, _, _ in rows if is_reserved_username(username)
+        username for _, username, _, _ in rows if is_auth_critical_username(username)
     ]
     if reserved:
         logging.critical(

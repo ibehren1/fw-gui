@@ -19,7 +19,6 @@ import os
 import shutil
 import sys
 import tempfile
-import uuid
 import zipfile
 from datetime import datetime, timedelta
 
@@ -478,12 +477,11 @@ def initialize_data_dir():
        - backups/: For storing backup files
        - log/: For application logs
        - mongo_dumps/: For MongoDB database dumps
-       - database/: For the telemetry instance id (and, pre-2.5.0, the SQLite
-         auth database)
+       - database/: For retained pre-2.5.0 artifacts (the SQLite auth database
+         and the telemetry instance id file); nothing current is written here
        - tmp/: For temporary files (contents cleared on startup)
        - uploads/: For user uploaded files
     3. Copies example.json from examples/ if not present
-    4. Creates the telemetry instance id if not present
 
     The function checks for each directory's existence before creating it and logs the initialization
     process using the logging module.
@@ -513,8 +511,9 @@ def initialize_data_dir():
         logging.info(" |--> MongoDB directory not found, creating...")
         os.makedirs("data/mongo_dumps")
 
-    # Holds the telemetry instance id, and on installs upgraded from pre-2.5.0
-    # the retained auth.db.migrated.
+    # Holds the retained pre-2.5.0 artifacts on an upgraded install
+    # (auth.db.migrated, instance.id.migrated). Nothing is written here by
+    # current code -- accounts and the telemetry id both live in MongoDB.
     if not os.path.exists("data/database"):
         logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
@@ -536,11 +535,6 @@ def initialize_data_dir():
     if not os.path.exists("data/example.json"):
         logging.info(" |--> Example data file not found, copying...")
         shutil.copy("examples/example.json", "data/example.json")
-
-    if not os.path.exists("data/database/instance.id"):
-        logging.info(" |--> Instance ID file not found, creating...")
-        with open("data/database/instance.id", "w") as f:
-            f.write(str(uuid.uuid4()))
 
     logging.info(" |--> Data directory initialized.")
     return

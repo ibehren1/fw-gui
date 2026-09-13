@@ -24,11 +24,22 @@ _USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 # Collections owned by the application, never by a user. Hardcoded on purpose --
 # see is_reserved_username.
-_RESERVED_USERNAMES = frozenset({"users", "sessions"})
+_RESERVED_USERNAMES = frozenset({"users", "sessions", "instance"})
+
+# The subset whose collision is not survivable: these hold the credential store
+# and the session store, so a user owning one could read and delete other users'
+# accounts or sessions. A collision here aborts the startup migration rather than
+# being worked around. "instance" is deliberately absent -- it holds only the
+# telemetry id, and refusing to boot over that would be disproportionate; the
+# collision degrades telemetry instead (see package/instance_id.py).
+_AUTH_CRITICAL_RESERVED = frozenset({"users", "sessions"})
 
 # Collection holding user accounts. Overridable so an install that already has a
 # user named "users" has somewhere to go.
 DEFAULT_USERS_COLLECTION = "users"
+
+# Collection holding the telemetry instance id.
+INSTANCE_COLLECTION = "instance"
 
 
 def is_safe_name(name):
@@ -79,15 +90,32 @@ def is_reserved_username(name):
     A username is also a MongoDB collection name, so a user holding one of these
     would be handed an application collection as their "config" collection: the
     normal config routes would let them list, read and delete other users'
-    accounts (``users``) or session documents (``sessions``).
+    accounts (``users``), session documents (``sessions``), or the telemetry id
+    (``instance``).
 
     ``MONGODB_USERS_COLLECTION`` is honoured in addition to -- never instead of
-    -- the hardcoded pair, because an install that renamed the collection may
+    -- the hardcoded names, because an install that renamed the collection may
     still have a ``users``-named leftover from before the rename.
     """
     if not isinstance(name, str):
         return False
     reserved = set(_RESERVED_USERNAMES)
+    reserved.add(
+        os.environ.get("MONGODB_USERS_COLLECTION", DEFAULT_USERS_COLLECTION).lower()
+    )
+    return name.strip().lower() in reserved
+
+
+def is_auth_critical_username(name):
+    """Return True if ``name`` collides with the account or session store.
+
+    Narrower than :func:`is_reserved_username`: only the collisions that cannot
+    be worked around, and so are worth refusing to start over. Used by the
+    startup user migration.
+    """
+    if not isinstance(name, str):
+        return False
+    reserved = set(_AUTH_CRITICAL_RESERVED)
     reserved.add(
         os.environ.get("MONGODB_USERS_COLLECTION", DEFAULT_USERS_COLLECTION).lower()
     )

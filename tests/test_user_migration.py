@@ -304,6 +304,19 @@ class TestAborts:
         assert users.count_documents({}) == 0
         assert os.path.exists(legacy_db.path)
 
+    def test_instance_username_does_not_abort(self, users, legacy_db):
+        """Reserved for new registrations, but not worth refusing to boot over.
+
+        A legacy account named "instance" collides only with the telemetry id, so
+        it migrates and telemetry degrades instead (see package/instance_id.py).
+        """
+        legacy_db([("alice", "a@b.c", "hash"), ("instance", "i@b.c", "hash")])
+
+        migrate_sqlite_users()
+
+        assert sorted(user_store.list_usernames()) == ["alice", "instance"]
+        assert not os.path.exists(legacy_db.path)
+
     def test_config_collection_collision_aborts_startup(self, users, legacy_db):
         """A user named "users" already owns the target collection."""
         users.insert_one({"_id": "example", "ipv4": {}, "ipv6": {}})

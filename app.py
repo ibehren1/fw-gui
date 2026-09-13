@@ -2129,9 +2129,6 @@ if __name__ == "__main__":
     # Create and initialize the data directory for storing firewall configurations
     initialize_data_dir()
 
-    # Post instance telemetry
-    telemetry_instance()
-
     # Check if MongoDB connection is valid using URI from environment variables
     # If connection is successful, run the startup migrations. Users must move
     # first: mongo_converter() gets its user list from the users collection.
@@ -2139,7 +2136,13 @@ if __name__ == "__main__":
         migrate_sqlite_users()
         mongo_converter()
 
-    # Convert all existing JSON config files to MongoDB format
+    # Post instance telemetry. Deliberately after the MongoDB check: the instance
+    # id now lives in MongoDB, and the shared client sets no
+    # serverSelectionTimeoutMS, so reading it before the check would stall the
+    # boot for pymongo's 30s default on an unreachable database. The trade-off is
+    # that an install which cannot reach MongoDB no longer reports at all -- it
+    # used to post here and then exit in the check above.
+    telemetry_instance()
 
     # Check if running in development environment
     if os.environ.get("FLASK_ENV") == "Development":

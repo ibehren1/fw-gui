@@ -2,6 +2,7 @@
 
 from package.validators import (
     is_allowed_op_command,
+    is_auth_critical_username,
     is_reserved_username,
     is_safe_name,
     is_valid_username,
@@ -59,12 +60,14 @@ class TestIsValidUsername:
     def test_rejects_reserved_names(self):
         assert not is_valid_username("users")
         assert not is_valid_username("sessions")
+        assert not is_valid_username("instance")
 
 
 class TestIsReservedUsername:
     def test_rejects_application_collections(self):
         assert is_reserved_username("users")
         assert is_reserved_username("sessions")
+        assert is_reserved_username("instance")
 
     def test_matching_ignores_case_and_surrounding_space(self):
         assert is_reserved_username("Users")
@@ -75,6 +78,7 @@ class TestIsReservedUsername:
         assert not is_reserved_username("alice")
         assert not is_reserved_username("user")
         assert not is_reserved_username("session")
+        assert not is_reserved_username("instances")
 
     def test_rejects_non_strings(self):
         assert not is_reserved_username(None)
@@ -87,6 +91,29 @@ class TestIsReservedUsername:
         # renamed the collection may still hold a "users"-named leftover.
         assert is_reserved_username("users")
         assert is_reserved_username("sessions")
+
+
+class TestIsAuthCriticalUsername:
+    """Narrower than is_reserved_username: only collisions worth aborting for."""
+
+    def test_covers_the_account_and_session_stores(self):
+        assert is_auth_critical_username("users")
+        assert is_auth_critical_username("sessions")
+        assert is_auth_critical_username("SESSIONS")
+
+    def test_excludes_the_telemetry_collection(self):
+        # Reserved for new registrations, but a pre-existing account of this name
+        # must not stop the app from starting -- telemetry degrades instead.
+        assert is_reserved_username("instance")
+        assert not is_auth_critical_username("instance")
+
+    def test_accepts_ordinary_names(self):
+        assert not is_auth_critical_username("alice")
+        assert not is_auth_critical_username(None)
+
+    def test_custom_users_collection_is_auth_critical(self, monkeypatch):
+        monkeypatch.setenv("MONGODB_USERS_COLLECTION", "fwgui_accounts")
+        assert is_auth_critical_username("fwgui_accounts")
 
 
 class TestIsAllowedOpCommand:
