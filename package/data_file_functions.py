@@ -5,7 +5,7 @@ This module provides utility functions for handling data files in a firewall con
 It includes functions for:
 - Managing user configuration data (add_extra_items, add_hostname)
 - File validation and backup operations (allowed_file, create_backup)
-- Encryption/decryption of sensitive files (decrypt_file)
+- Encryption of uploaded SSH keys (process_upload; storage in ssh_key_store)
 - Database operations for user data (delete_user_data_file)
 
 The module uses MongoDB for data persistence and Fernet for symmetric encryption.
@@ -18,8 +18,6 @@ import logging
 import os
 import shutil
 import sys
-import tempfile
-import uuid
 import zipfile
 from datetime import datetime, timedelta
 
@@ -27,13 +25,28 @@ import boto3
 import bson
 import pymongo
 from cryptography.fernet import Fernet
-from flask import flash
+from flask import flash, has_request_context
 from werkzeug.utils import secure_filename
 
 from package.validators import is_safe_name
 
 # Shared MongoDB client — reused across calls to avoid connection leaks.
 _mongo_client = None
+
+# Fallback database name, used when MONGODB_DATABASE is unset. Kept in sync with
+# the SESSION_MONGODB_DB default in app.py.
+DEFAULT_MONGODB_DATABASE = "fwgui_database"
+
+# How long pymongo may spend looking for a reachable server before giving up.
+# pymongo's default is 30 seconds, which is not a useful wait: a database on the
+# same Docker network either answers in milliseconds or is not coming. Meanwhile
+# every stalled request holds a waitress thread (the pool is finite), so a
+# handful of retrying browsers during an outage wedges the server instead of
+# failing fast. Applied to the shared client here and to the Flask-Session client
+# in app.py, which is the one every single request touches.
+#
+# Deliberately not socketTimeoutMS: that would cap legitimately long queries.
+SERVER_SELECTION_TIMEOUT_MS = 5000
 
 # Keys that exist only on snapshot documents. A "current" document must never
 # carry them: generate_config walks the document's top-level keys, and a stray
@@ -48,6 +61,13 @@ _MAX_TAG_LENGTH = 100
 # restored, so the working copy that the restore overwrites is recoverable.
 AUTO_SNAPSHOT_TAG = "auto-snapshot before reloading snapshot"
 
+# Per-user files written by releases that no longer produce them. Nothing reads
+# either one, and both were swept into full-backup zips.
+#   conf -- generated command files; NAPALM now takes the commands as a string
+#   old  -- JSON configs already imported into MongoDB by mongo_converter
+# "json" must never be added here: mongo_converter still imports those.
+_LEGACY_USER_FILE_SUFFIXES = ("conf", "old")
+
 # Snapshot names are timestamps, and the name is the only thing identifying a
 # snapshot of a config -- two snapshots taken in the same second would collide,
 # and write_user_data_file upserts, so the second would silently overwrite the
@@ -58,8 +78,26 @@ _SNAPSHOT_NAME_FORMAT = "%m-%d-%Y %H:%M:%S"
 def _get_mongo_client():
     global _mongo_client
     if _mongo_client is None:
-        _mongo_client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        _mongo_client = pymongo.MongoClient(
+            os.environ.get("MONGODB_URI"),
+            serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
+        )
     return _mongo_client
+
+
+def _get_mongo_db():
+    """
+    Returns the application database handle.
+
+    MONGODB_DATABASE has a default because pymongo raises
+    ``TypeError: name must be an instance of str`` on ``client[None]``. User
+    accounts live in this database too, so an unset variable would otherwise
+    take the login page down rather than just the config routes. The default
+    matches the one used for the session store in app.py.
+    """
+    return _get_mongo_client()[
+        os.environ.get("MONGODB_DATABASE", DEFAULT_MONGODB_DATABASE)
+    ]
 
 
 def _unique_snapshot_name(filename):
@@ -81,8 +119,7 @@ def _unique_snapshot_name(filename):
     collection_name = filename.split("/")[1]
     firewall = filename.split("/")[2]
 
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     timestamp = datetime.now()
@@ -185,6 +222,71 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ["json", "key"]
 
 
+def perform_full_backup(actor="scheduler"):
+    """
+    Creates a full backup: a MongoDB dump plus a zip of the data directory.
+
+    Args:
+        actor (str): Who asked for the backup, used in the log line. A username
+                     when a request triggered it, "scheduler" for the weekly run.
+
+    Returns:
+        str: Path of the zip that was written.
+
+    Raises:
+        Whatever mongo_dump(), zipfile or os raise. Callers decide what a failure
+        means: create_backup() flashes it, the weekly scheduler records it on the
+        schedule document.
+
+    Deliberately free of Flask request context. The weekly backup runs on a
+    background thread, where flash() and session are unavailable; everything
+    needing a request stays in create_backup() below.
+
+    The zip is built in data/tmp and moved into place with os.replace, which is
+    atomic within a filesystem (both directories are under the same data/ mount).
+    Writing straight into data/backups means a process killed mid-zip leaves a
+    truncated full-backup-*.zip that list_full_backups() then reports as a real
+    backup. data/tmp is both skipped by the walk below and cleared by
+    initialize_data_dir(), so the debris of a killed run is removed on the next
+    start. Staging inside data/backups as *.zip.part would not do:
+    list_full_backups() matches ".zip" anywhere in the name, so it would list the
+    partial file too.
+    """
+    timestamp = str(datetime.now()).replace(" ", "-")
+    filename = f"full-backup-{timestamp}.zip"
+    staging_path = f"data/tmp/{filename}"
+    backup_path = f"data/backups/{filename}"
+
+    mongo_dump()
+
+    with zipfile.ZipFile(staging_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk("data/"):
+            if root.startswith(("data/backups", "data/tmp", "data/uploads")):
+                continue
+            for file in files:
+                # Key material. The live ciphertext now arrives via the
+                # Mongo dump, so a retained .key.migrated on disk is a
+                # redundant second copy of the same secret -- same
+                # reasoning as auth.db below.
+                if file.endswith((".key", ".key.migrated")):
+                    continue
+                # The retained pre-3.0.0 auth database is a full set of
+                # bcrypt hashes that nothing reads any more. Current
+                # accounts are already in the Mongo dump; there is no
+                # reason to ship the legacy copy off the host as well.
+                if file.startswith("auth.db"):
+                    continue
+                file_path = os.path.join(root, file)
+                zipf.write(file_path, os.path.relpath(file_path, "data/"))
+
+    os.replace(staging_path, backup_path)
+
+    logging.info(f"Full backup created by <{actor}>: {backup_path}")
+    upload_backup_file(backup_path)
+
+    return backup_path
+
+
 def create_backup(session, user=False):
     """
     Creates a backup of either the full data directory or a specific user's directory.
@@ -196,10 +298,8 @@ def create_backup(session, user=False):
     The function:
     1. Generates timestamp for backup filename
     2. For full backup (user=False):
-        - Creates MongoDB dump
-        - Zips entire data directory excluding backups/tmp/uploads/key files
-        - Logs backup creation and shows success message
-        - Uploads backup file
+        - Delegates to perform_full_backup(), which does the MongoDB dump and the
+          zip, and turns the outcome into a flash message
     3. For user backup (user=True):
         - Zips user's directory excluding existing zips and key files
         - Logs backup creation and shows success message
@@ -213,20 +313,8 @@ def create_backup(session, user=False):
     timestamp = str(datetime.now()).replace(" ", "-")
     if user is False:
         try:
-            mongo_dump()
-            backup_path = f"data/backups/full-backup-{timestamp}.zip"
-            with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk("data/"):
-                    if root.startswith(("data/backups", "data/tmp", "data/uploads")):
-                        continue
-                    for file in files:
-                        if file.endswith(".key"):
-                            continue
-                        file_path = os.path.join(root, file)
-                        zipf.write(file_path, os.path.relpath(file_path, "data/"))
-            logging.info(f"User <{session['username']}> created a full backup.")
+            backup_path = perform_full_backup(actor=session["username"])
             flash(f"Backup created: {backup_path}", "success")
-            upload_backup_file(backup_path)
         except Exception as e:
             logging.info(e)
             flash("Backup failed.", "critical")
@@ -237,7 +325,7 @@ def create_backup(session, user=False):
             with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zipf:
                 for root, dirs, files in os.walk(f"data/{user}"):
                     for file in files:
-                        if file.endswith((".zip", ".key")):
+                        if file.endswith((".zip", ".key", ".key.migrated")):
                             continue
                         file_path = os.path.join(root, file)
                         zipf.write(
@@ -289,48 +377,6 @@ def create_snapshot(filename, tag=""):
     return snapshot_name
 
 
-def decrypt_file(filename, key):
-    """
-    Decrypts an encrypted file using Fernet symmetric encryption and saves to a temporary file.
-
-    Args:
-        filename (str): Path to the encrypted file to decrypt
-        key (bytes): Encryption key to use for decryption
-
-    Returns:
-        str: Path to the temporary decrypted file
-
-    The function:
-    1. Creates a Fernet instance with the provided key
-    2. Reads and decrypts the encrypted file contents
-    3. Generates a random temporary filename
-    4. Writes the decrypted data to the temporary file
-    5. Returns the path to the temporary decrypted file
-
-    Note: The temporary file is created in data/tmp/ via tempfile.mkstemp,
-    which uses a cryptographically-random name and 0o600 (owner-only)
-    permissions so the plaintext key is not world-readable.
-    """
-    # using the key
-    fernet = Fernet(key)
-
-    # opening the encrypted file
-    with open(filename, "rb") as enc_file:
-        encrypted = enc_file.read()
-
-    # decrypting the file
-    decrypted = fernet.decrypt(encrypted)
-
-    # Stage the plaintext key in an owner-only temp file with an
-    # unpredictable name. mkstemp creates the file with mode 0o600.
-    fd, tmp_file_name = tempfile.mkstemp(dir="data/tmp")
-    with os.fdopen(fd, "wb") as dec_file:
-        dec_file.write(decrypted)
-    logging.debug(f" |--> Decrypted key temporarily staged as: {tmp_file_name}")
-
-    return tmp_file_name
-
-
 def delete_user_data_file(filename):
     """
     Deletes a user data file from MongoDB based on the provided filename path.
@@ -357,8 +403,7 @@ def delete_user_data_file(filename):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     if len(filename.split("/")) > 3:
@@ -373,6 +418,53 @@ def delete_user_data_file(filename):
     logging.debug(f"{result.deleted_count} documents deleted")
 
     return
+
+
+def gather_instance_stats():
+    """
+    Counts the accounts, firewall configurations and snapshots on this instance.
+
+    Returns:
+        dict: Counts across the whole instance, with keys:
+              - users: Number of accounts, including disabled ones
+              - disabled_users: Number of disabled accounts
+              - configurations: Number of firewall configurations, all users
+              - snapshots: Number of snapshots, all users
+
+    Configurations and snapshots are counted per account collection, driven by
+    the account list rather than by listing collections, so the accounts,
+    session, key and instance-id collections are never mistaken for user data.
+    Accounts are disabled and never deleted, so a disabled account's
+    configurations still exist and are still counted.
+
+    user_store is imported here rather than at module scope because it imports
+    this module for its database handle.
+    """
+    from package import user_store
+
+    accounts = user_store.count_users()
+
+    db = _get_mongo_db()
+    configuration_count = 0
+    snapshot_count = 0
+
+    for username in user_store.list_usernames():
+        collection = db[username]
+        configuration_count += collection.count_documents(
+            {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
+        )
+        snapshot_count += collection.count_documents({"snapshot": {"$exists": True}})
+
+    stats = {
+        "users": accounts["total"],
+        "disabled_users": accounts["disabled"],
+        "configurations": configuration_count,
+        "snapshots": snapshot_count,
+    }
+
+    logging.debug("Instance stats: " + str(stats))
+
+    return stats
 
 
 def get_extra_items(session):
@@ -454,11 +546,11 @@ def initialize_data_dir():
        - backups/: For storing backup files
        - log/: For application logs
        - mongo_dumps/: For MongoDB database dumps
-       - database/: For SQLite database files
-       - tmp/: For temporary files (contents cleared on startup)
+       - database/: For retained pre-3.0.0 artifacts (the SQLite auth database
+         and the telemetry instance id file); nothing current is written here
+       - tmp/: Legacy scratch, no longer written to (contents cleared on startup)
        - uploads/: For user uploaded files
     3. Copies example.json from examples/ if not present
-    4. Creates SQLite auth database if not present
 
     The function checks for each directory's existence before creating it and logs the initialization
     process using the logging module.
@@ -488,10 +580,17 @@ def initialize_data_dir():
         logging.info(" |--> MongoDB directory not found, creating...")
         os.makedirs("data/mongo_dumps")
 
+    # Holds the retained pre-3.0.0 artifacts on an upgraded install
+    # (auth.db.migrated, instance.id.migrated). Nothing is written here by
+    # current code -- accounts and the telemetry id both live in MongoDB.
     if not os.path.exists("data/database"):
         logging.info(" |--> Database directory not found, creating...")
         os.makedirs("data/database")
 
+    # Nothing writes to data/tmp as of 3.0.0 -- decrypted SSH keys are now staged
+    # in the system temp directory. The wipe below is kept as legacy cleanup: on
+    # an install upgrading from a version that crashed mid-operation, it is what
+    # removes a stale *plaintext* private key left staged there.
     if not os.path.exists("data/tmp"):
         logging.info(" |--> Tmp directory not found, creating...")
         os.makedirs("data/tmp")
@@ -510,19 +609,67 @@ def initialize_data_dir():
         logging.info(" |--> Example data file not found, copying...")
         shutil.copy("examples/example.json", "data/example.json")
 
-    if not os.path.exists("./data/database/auth.db"):
-        logging.info(" |--> Auth database not found, creating...")
-        from app import app, db
-
-        with app.app_context():
-            db.create_all()
-
-    if not os.path.exists("data/database/instance.id"):
-        logging.info(" |--> Instance ID file not found, creating...")
-        with open("data/database/instance.id", "w") as f:
-            f.write(str(uuid.uuid4()))
-
     logging.info(" |--> Data directory initialized.")
+    return
+
+
+def sweep_legacy_user_files(usernames):
+    """
+    Removes per-user files that earlier releases left behind and nothing reads.
+
+    Args:
+        usernames (list): Account names, from user_store.list_usernames()
+
+    Returns:
+        None
+
+    Two kinds, both listed in _LEGACY_USER_FILE_SUFFIXES:
+
+    ``.conf`` -- before 3.0.0 every configuration push wrote
+    data/<username>/<firewall_name>.conf purely to hand the commands to NAPALM,
+    and nothing ever deleted them. They accumulated per firewall name and
+    outlived the configs they were generated from. NAPALM is now given the
+    commands as a string, so nothing reads or writes them.
+
+    ``.old`` -- mongo_converter renames each imported data/<username>/*.json to
+    <name>.old so it is not re-imported. Safe to delete because the rename
+    happens only after write_user_data_file() returns, so the presence of a .old
+    file means that config is already in MongoDB; a failed import leaves the
+    file as .json to be retried.
+
+    Both were swept into every full backup zip and S3 upload. ``.json`` is
+    deliberately *not* in the list -- mongo_converter still needs to import
+    those.
+
+    The account list is passed in rather than looked up here for two reasons: it
+    keeps this module from importing user_store, which imports this one, and it
+    lets the caller decide whether MongoDB is reachable. It also bounds the
+    deletions to real per-user directories -- a data/*/* glob would also match
+    stray directories under data/ that never belonged to a user.
+
+    Self-limiting rather than one-shot: after the first run the globs are empty,
+    so no marker file is needed. Never raises -- housekeeping must not stop
+    startup.
+    """
+    logging.info("Sweeping legacy per-user files...")
+
+    removed = 0
+    try:
+        for username in usernames:
+            for suffix in _LEGACY_USER_FILE_SUFFIXES:
+                # glob.escape: usernames pass a strict allowlist today, but a
+                # name with a glob metacharacter must not widen the match.
+                pattern = os.path.join(
+                    "data", glob.escape(str(username)), f"*.{suffix}"
+                )
+                for path in glob.glob(pattern):
+                    os.remove(path)
+                    removed += 1
+                    logging.info(f" |--> Removed legacy file: {path}")
+    except Exception as e:
+        logging.warning(f" |--X Error sweeping legacy per-user files: {e}")
+
+    logging.info(f" |--> Legacy per-user files removed: {removed}")
     return
 
 
@@ -590,8 +737,7 @@ def list_snapshots(session):
         collection_name = f"{session['username']}"
 
         logging.debug("Prepping Mongo query.")
-        client = _get_mongo_client()
-        db = client[os.environ.get("MONGODB_DATABASE")]
+        db = _get_mongo_db()
         collection = db[collection_name]
         query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
 
@@ -670,8 +816,7 @@ def list_user_files(session):
     collection_name = f"{session['username']}"
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
     query = {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
 
@@ -685,35 +830,25 @@ def list_user_files(session):
 
 def list_user_keys(session):
     """
-    Lists all SSH key files in the user's data directory, removing the .key extension.
+    Lists the names of the user's stored SSH keys.
 
     Args:
         session (dict): Session dictionary containing user session information including:
-                       - data_dir: Path to the user's data directory
+                       - username: The account whose keys to list
 
     Returns:
-        list: A sorted list of key filenames (strings) with .key extension removed,
-              found in the user's data directory
+        list: A sorted list of key names, without the .key extension
 
-    The function:
-    1. Creates an empty list to store key filenames
-    2. Lists all files in the user's data directory specified in session['data_dir']
-    3. Filters for files containing .key extension
-    4. Removes the .key extension from the filenames
-    5. Sorts the list alphabetically
-    6. Returns the sorted list of key filenames
+    Keys live in MongoDB as of 3.0.0 (see package/ssh_key_store.py); this used to
+    scan data/<username>/*.key. The name and the sorted-list contract are kept so
+    the push-form template and its callers are unaffected.
+
+    Imported here rather than at module scope because ssh_key_store imports this
+    module for its database handle.
     """
-    key_list = []
+    from package.ssh_key_store import list_key_names
 
-    files = os.listdir(f"{session['data_dir']}")
-
-    for file in files:
-        if ".key" in file:
-            key_list.append(file.replace(".key", ""))
-
-    key_list.sort()
-
-    return key_list
+    return list_key_names(session["username"])
 
 
 def mongo_dump():
@@ -737,14 +872,12 @@ def mongo_dump():
     logging.info("Dumping MongoDB Backup")
 
     timestamp = str(datetime.now()).replace(" ", "-")
-    db_name = os.environ.get("MONGODB_DATABASE")
-    mongo_dump_path = f"data/mongo_dumps/{timestamp}/{db_name}"
+    db = _get_mongo_db()
+    mongo_dump_path = f"data/mongo_dumps/{timestamp}/{db.name}"
 
     if not os.path.exists(mongo_dump_path):
         os.makedirs(mongo_dump_path)
 
-    client = _get_mongo_client()
-    db = client[db_name]
     collist = db.list_collection_names()
     for coll in collist:
         with open(os.path.join(mongo_dump_path, f"{coll}.bson"), "wb+") as f:
@@ -820,32 +953,37 @@ def process_upload(session, request, app):
             flash("File is not valid JSON", "danger")
 
     if filetype == "key":
+        # Imported here rather than at module scope because ssh_key_store imports
+        # this module for its database handle.
+        from package.ssh_key_store import store_key
+
         try:
             # TODO -- validate key is a valid ssh key
             with open(f"data/uploads/{filename}", "rb") as f:
                 data = f.read()
 
-                # Generate a key
-                key = Fernet.generate_key()
+            # Generate a key
+            key = Fernet.generate_key()
 
-                # using the generated key
-                fernet = Fernet(key)
+            # using the generated key
+            fernet = Fernet(key)
 
-                # encrypting the file
-                encrypted = fernet.encrypt(data)
+            # encrypting the file
+            encrypted = fernet.encrypt(data)
 
-                # writing the encrypted data
-                with open(f"{session['data_dir']}/{filename}", "wb") as encrypted_file:
-                    encrypted_file.write(encrypted)
-                    flash(
-                        f"Your encryption key for this file is: {key.decode('utf-8')}",
-                        "key",
-                    )
-                os.remove(f"data/uploads/{filename}")
-                flash(
-                    "SSH key has been uploaded and encrypted.  To use the SSH Key you will have to provide the encryption key.",
-                    "success",
-                )
+            # Store the ciphertext in MongoDB. The Fernet key is shown to the user
+            # once here and never persisted, so what is stored is a blob the
+            # server cannot read.
+            store_key(session["username"], filename.replace(".key", ""), encrypted)
+            flash(
+                f"Your encryption key for this file is: {key.decode('utf-8')}",
+                "key",
+            )
+            os.remove(f"data/uploads/{filename}")
+            flash(
+                "SSH key has been uploaded and encrypted.  To use the SSH Key you will have to provide the encryption key.",
+                "success",
+            )
         except Exception:
             flash("File is not valid key", "danger")
 
@@ -879,8 +1017,7 @@ def read_user_data_file(filename, snapshot="current", diff=False):
         firewall = filename.split("/")[2]
 
         logging.debug("Prepping Mongo query.")
-        client = _get_mongo_client()
-        db = client[os.environ.get("MONGODB_DATABASE")]
+        db = _get_mongo_db()
         collection = db[collection_name]
 
         if snapshot == "current":
@@ -955,8 +1092,7 @@ def set_snapshot_tag(filename, snapshot, tag):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     query = {"firewall": firewall, "snapshot": snapshot}
@@ -1131,7 +1267,11 @@ def upload_backup_file(backup_file):
             )
             s3.upload_file(backup_file, bucket_name, key)
 
-            flash("Backup file uploaded to S3.", "success")
+            # The weekly scheduler calls this from a background thread, where
+            # there is no request to flash into. The log line is the record in
+            # that case.
+            if has_request_context():
+                flash("Backup file uploaded to S3.", "success")
             logging.info("Backup file uploaded to S3.")
 
             return
@@ -1159,15 +1299,23 @@ def validate_mongodb_connection(mongodb_uri):
 
     The function:
     1. Attempts to connect to MongoDB using the provided URI
-    2. Sets a short 1ms server selection timeout
+    2. Allows SERVER_SELECTION_TIMEOUT_MS for a server to be found
     3. Tests the connection by requesting server info
     4. Logs success/failure message
     5. Closes the connection if successful
     6. Returns True on success, exits program on failure
+
+    The timeout used to be 1ms, which is shorter than a real connection takes: a
+    mongod that is up but still starting -- the normal case behind Compose's
+    `depends_on`, which has no healthcheck -- could fail this probe and exit the
+    app into a restart loop. Sharing the runtime bound keeps one number to reason
+    about and costs at most a few seconds on a genuinely unreachable database.
     """
     client = None
     try:
-        client = pymongo.MongoClient(mongodb_uri, serverSelectionTimeoutMS=1)
+        client = pymongo.MongoClient(
+            mongodb_uri, serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS
+        )
         client.server_info()
         logging.info("  |--> MongoDB connection successful.")
         return True
@@ -1177,40 +1325,6 @@ def validate_mongodb_connection(mongodb_uri):
     finally:
         if client is not None:
             client.close()
-
-
-def write_user_command_conf_file(session, command_list, delete=False):
-    """
-    Writes firewall commands to a configuration file.
-
-    Args:
-        session (dict): Session dictionary containing data_dir and firewall_name
-        command_list (list): List of firewall commands to write to file
-        delete (bool): If True, adds command to delete existing firewall first
-
-    The function:
-    1. Opens a .conf file using the firewall name from the session
-    2. If delete=True:
-        - Writes a comment and delete command at the start
-        - Writes all commands from command_list
-    3. If delete=False:
-        - Only writes the commands from command_list
-    4. File is written in the data_dir specified in session
-
-    Returns:
-        None
-    """
-    with open(f"{session['data_dir']}/{session['firewall_name']}.conf", "w") as f:
-        if delete is True:
-            f.write(
-                "#\n# Delete all firewall before setting new values\ndelete firewall\n"
-            )
-            for line in command_list:
-                f.write(f"{line}\n")
-        if delete is False:
-            for line in command_list:
-                f.write(f"{line}\n")
-    return
 
 
 def write_user_data_file(filename, data, snapshot="current"):
@@ -1247,8 +1361,7 @@ def write_user_data_file(filename, data, snapshot="current"):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     if snapshot == "current":

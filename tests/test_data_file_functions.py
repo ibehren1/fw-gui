@@ -1,17 +1,20 @@
 """
 Tests for package/data_file_functions.py
 
-Covers: allowed_file, update_schema, get_extra_items, get_system_name,
+Covers: allowed_file, update_schema, gather_instance_stats, get_extra_items,
+        get_system_name,
         list_user_keys, list_full_backups, list_user_files, list_snapshots,
         read_user_data_file, write_user_data_file, delete_user_data_file,
-        add_extra_items, add_hostname, write_user_command_conf_file,
+        add_extra_items, add_hostname, sweep_legacy_user_files,
         set_snapshot_tag, tag_snapshot, validate_mongodb_connection,
-        upload_backup_file.
+        upload_backup_file, create_backup, perform_full_backup.
 """
 
 import copy
+import logging
 import os
 import sys
+import zipfile
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -22,24 +25,31 @@ from package.data_file_functions import (
     add_extra_items,
     add_hostname,
     allowed_file,
+    create_backup,
     create_snapshot,
     delete_user_data_file,
+    gather_instance_stats,
     get_extra_items,
     get_system_name,
     list_full_backups,
     list_snapshots,
     list_user_files,
     list_user_keys,
+    perform_full_backup,
     read_user_data_file,
     restore_snapshot,
     set_snapshot_tag,
     tag_snapshot,
+    sweep_legacy_user_files,
     update_schema,
     upload_backup_file,
     validate_mongodb_connection,
-    write_user_command_conf_file,
     write_user_data_file,
 )
+# Captured at import time on purpose: conftest's session-scoped mongo_client
+# fixture replaces package.data_file_functions._get_mongo_client with a
+# mongomock lambda, so looking the name up later would test the stub.
+from package.data_file_functions import _get_mongo_client as _real_get_client
 from tests.conftest import make_request
 
 
@@ -294,35 +304,42 @@ class TestGetSystemName:
 
 
 class TestListUserKeys:
-    def test_with_keys(self, monkeypatch):
-        monkeypatch.setattr(
-            "os.listdir",
-            lambda path: ["server1.key", "server2.key", "config.json"],
-        )
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == ["server1", "server2"]
+    """Keys come from MongoDB as of 3.0.0, not from scanning the user's dir."""
 
-    def test_empty_dir(self, monkeypatch):
-        monkeypatch.setattr("os.listdir", lambda path: [])
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == []
+    @pytest.fixture
+    def keys(self, mock_mongo):
+        from package import ssh_key_store
 
-    def test_no_key_files(self, monkeypatch):
-        monkeypatch.setattr("os.listdir", lambda path: ["config.json", "backup.zip"])
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == []
+        return ssh_key_store.collection()
 
-    def test_keys_are_sorted(self, monkeypatch):
-        monkeypatch.setattr(
-            "os.listdir",
-            lambda path: ["zebra.key", "alpha.key", "middle.key"],
-        )
-        session = {"data_dir": "data/testuser"}
-        result = list_user_keys(session)
-        assert result == ["alpha", "middle", "zebra"]
+    def _store(self, keys, user, *names):
+        for name in names:
+            keys.insert_one({"_id": f"{user}/{name}", "user": user, "name": name})
+
+    def test_with_keys(self, keys):
+        self._store(keys, "testuser", "server1", "server2")
+        assert list_user_keys({"username": "testuser"}) == ["server1", "server2"]
+
+    def test_no_keys(self, keys):
+        assert list_user_keys({"username": "testuser"}) == []
+
+    def test_scoped_to_the_session_user(self, keys):
+        """Another user's keys must not be listed, let alone offered."""
+        self._store(keys, "testuser", "mine")
+        self._store(keys, "someone-else", "theirs")
+
+        assert list_user_keys({"username": "testuser"}) == ["mine"]
+
+    def test_keys_are_sorted(self, keys):
+        self._store(keys, "testuser", "zebra", "alpha", "middle")
+        assert list_user_keys({"username": "testuser"}) == ["alpha", "middle", "zebra"]
+
+    def test_two_users_may_share_a_key_name(self, keys):
+        self._store(keys, "testuser", "id_rsa")
+        self._store(keys, "someone-else", "id_rsa")
+
+        assert list_user_keys({"username": "testuser"}) == ["id_rsa"]
+        assert list_user_keys({"username": "someone-else"}) == ["id_rsa"]
 
 
 # ===========================================================================
@@ -398,6 +415,73 @@ class TestListUserFiles:
         session = {"username": "testuser"}
         result = list_user_files(session)
         assert result == ["alpha", "mike", "zulu"]
+
+
+# ===========================================================================
+# gather_instance_stats (MongoDB)
+# ===========================================================================
+
+
+class TestGatherInstanceStats:
+    @staticmethod
+    def _seed(db, username, configs=(), snapshots=()):
+        db["users"].insert_one({"_id": username, "disabled": False})
+        coll = db[username]
+        for name in configs:
+            coll.insert_one({"_id": name, "version": "1"})
+        for name in snapshots:
+            coll.insert_one(
+                {"_id": f"{username}_{name}", "firewall": configs[0], "snapshot": name}
+            )
+
+    def test_counts_across_every_account(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        self._seed(db, "alice", configs=["fw_a", "fw_b"], snapshots=["snap1"])
+        self._seed(db, "bob", configs=["fw_c"], snapshots=["snap1", "snap2"])
+
+        stats = gather_instance_stats()
+
+        assert stats == {
+            "users": 2,
+            "disabled_users": 0,
+            "configurations": 3,
+            "snapshots": 3,
+        }
+
+    def test_counts_disabled_accounts_and_their_configs(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        self._seed(db, "alice", configs=["fw_a"])
+        db["users"].insert_one({"_id": "gone", "disabled": True})
+        db["gone"].insert_one({"_id": "fw_orphan", "version": "1"})
+
+        stats = gather_instance_stats()
+
+        assert stats["users"] == 2
+        assert stats["disabled_users"] == 1
+        # Accounts are disabled, never deleted, so their data still exists.
+        assert stats["configurations"] == 2
+
+    def test_ignores_non_user_collections(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        self._seed(db, "alice", configs=["fw_a"])
+        db["sessions"].insert_one({"_id": "session_doc"})
+        db["keys"].insert_one({"_id": "alice/id_rsa"})
+        db["instance"].insert_one({"_id": "instance_id", "value": "uuid"})
+
+        stats = gather_instance_stats()
+
+        assert stats["configurations"] == 1
+        assert stats["snapshots"] == 0
+
+    def test_empty_instance(self, mock_mongo):
+        stats = gather_instance_stats()
+
+        assert stats == {
+            "users": 0,
+            "disabled_users": 0,
+            "configurations": 0,
+            "snapshots": 0,
+        }
 
 
 # ===========================================================================
@@ -897,58 +981,6 @@ class TestAddHostname:
 
 
 # ===========================================================================
-# write_user_command_conf_file
-# ===========================================================================
-
-
-class TestWriteUserCommandConfFile:
-    def test_write_without_delete(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        commands = ["set firewall name WAN_LOCAL", "set firewall name WAN_IN"]
-        write_user_command_conf_file(session, commands)
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert "set firewall name WAN_LOCAL\n" in content
-        assert "set firewall name WAN_IN\n" in content
-        assert "delete firewall" not in content
-
-    def test_write_with_delete(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        commands = ["set firewall name WAN_LOCAL"]
-        write_user_command_conf_file(session, commands, delete=True)
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert content.startswith("#\n# Delete all firewall before setting new values\ndelete firewall\n")
-        assert "set firewall name WAN_LOCAL\n" in content
-
-    def test_empty_command_list(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        write_user_command_conf_file(session, [])
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert content == ""
-
-    def test_empty_command_list_with_delete(self, tmp_path):
-        session = {
-            "data_dir": str(tmp_path),
-            "firewall_name": "test_fw",
-        }
-        write_user_command_conf_file(session, [], delete=True)
-        conf_path = tmp_path / "test_fw.conf"
-        content = conf_path.read_text()
-        assert "delete firewall" in content
-
-
-# ===========================================================================
 # set_snapshot_tag / tag_snapshot
 # ===========================================================================
 
@@ -1127,6 +1159,55 @@ class TestTagSnapshot:
 # ===========================================================================
 
 
+class TestMongoClientTimeout:
+    """The shared client must not use pymongo's 30s server-selection default.
+
+    Every stalled request holds a waitress thread, so an unreachable database
+    would wedge the server instead of failing fast.
+    """
+
+    def test_shared_client_bounds_server_selection(self, monkeypatch):
+        import package.data_file_functions as dff
+
+        captured = {}
+
+        def fake_client(uri, **kwargs):
+            captured["uri"] = uri
+            captured["kwargs"] = kwargs
+            return MagicMock()
+
+        monkeypatch.setattr(dff, "_mongo_client", None)
+        monkeypatch.setattr(dff.pymongo, "MongoClient", fake_client)
+        monkeypatch.setenv("MONGODB_URI", "mongodb://localhost:27017")
+
+        _real_get_client()
+
+        assert (
+            captured["kwargs"]["serverSelectionTimeoutMS"]
+            == dff.SERVER_SELECTION_TIMEOUT_MS
+        )
+        # A bound only helps if it is meaningfully below pymongo's 30s default.
+        assert 0 < dff.SERVER_SELECTION_TIMEOUT_MS <= 10000
+
+    def test_client_is_reused(self, monkeypatch):
+        """The bound must not come at the cost of a client per call."""
+        import package.data_file_functions as dff
+
+        calls = []
+
+        def fake_client(uri, **kwargs):
+            calls.append(uri)
+            return MagicMock()
+
+        monkeypatch.setattr(dff, "_mongo_client", None)
+        monkeypatch.setattr(dff.pymongo, "MongoClient", fake_client)
+
+        _real_get_client()
+        _real_get_client()
+
+        assert len(calls) == 1
+
+
 class TestValidateMongodbConnection:
     def test_successful_connection(self, monkeypatch):
         mock_client = MagicMock()
@@ -1148,6 +1229,31 @@ class TestValidateMongodbConnection:
         )
         with pytest.raises(SystemExit):
             validate_mongodb_connection("mongodb://badhost:27017")
+
+    def test_probe_uses_the_shared_timeout(self, monkeypatch):
+        """Was 1ms, which is shorter than a real connection takes.
+
+        A mongod that is up but still starting -- the normal case behind
+        Compose's healthcheck-less depends_on -- would fail the probe and exit the
+        app into a restart loop.
+        """
+        import package.data_file_functions as dff
+
+        captured = {}
+
+        def fake_client(uri, **kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        monkeypatch.setattr(dff.pymongo, "MongoClient", fake_client)
+
+        validate_mongodb_connection("mongodb://localhost:27017")
+
+        assert (
+            captured["serverSelectionTimeoutMS"] == dff.SERVER_SELECTION_TIMEOUT_MS
+        )
+        # Long enough for a starting mongod, short enough not to hang a boot.
+        assert 1000 <= dff.SERVER_SELECTION_TIMEOUT_MS <= 10000
 
 
 # ===========================================================================
@@ -1212,3 +1318,281 @@ class TestUploadBackupFile:
         monkeypatch.setattr("package.data_file_functions.boto3", mock_boto3)
         # Should not raise
         upload_backup_file("data/backups/test.zip")
+
+    def test_successful_upload_without_request_context(self, monkeypatch):
+        """The weekly scheduler uploads from a thread, with no request to flash into."""
+        monkeypatch.setenv("BUCKET_NAME", "my-bucket")
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "fake-key")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "fake-secret")
+        mock_s3 = MagicMock()
+        mock_boto3 = MagicMock()
+        mock_boto3.client.return_value = mock_s3
+        monkeypatch.setattr("package.data_file_functions.boto3", mock_boto3)
+
+        # Deliberately no test_request_context(): an unguarded flash() would
+        # raise RuntimeError here.
+        upload_backup_file("data/backups/full-backup-2024.zip")
+
+        mock_s3.upload_file.assert_called_once_with(
+            "data/backups/full-backup-2024.zip",
+            "my-bucket",
+            "fw-gui/backups/full-backup-2024.zip",
+        )
+
+
+# ---------------------------------------------------------------------------
+# create_backup
+# ---------------------------------------------------------------------------
+
+
+class TestCreateBackup:
+    @pytest.fixture
+    def data_tree(self, tmp_path, monkeypatch):
+        """Build a data/ tree in a temp cwd and return its root."""
+        data = tmp_path / "data"
+        (data / "backups").mkdir(parents=True)
+        (data / "database").mkdir()
+        (data / "tmp").mkdir()
+        (data / "uploads").mkdir()
+        (data / "myuser").mkdir()
+        (data / "database" / "instance.id.migrated").write_text("abc")
+        (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
+        (data / "myuser" / "old_rsa.key.migrated").write_bytes(b"retired ciphertext")
+        (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
+        (data / "myuser" / "firewall.json").write_text("{}")
+        (data / "tmp" / "scratch").write_text("x")
+        (data / "uploads" / "upload.json").write_text("{}")
+        monkeypatch.chdir(tmp_path)
+        return data
+
+    def _zip_names(self, data):
+        archives = list((data / "backups").glob("full-backup-*.zip"))
+        assert len(archives) == 1
+        with zipfile.ZipFile(archives[0]) as zf:
+            return set(zf.namelist())
+
+    def test_full_backup_excludes_legacy_auth_db_and_keys(
+        self, data_tree, monkeypatch
+    ):
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+        monkeypatch.setattr(
+            "package.data_file_functions.upload_backup_file", lambda path: None
+        )
+        from flask import Flask
+
+        test_app = Flask(__name__)
+        test_app.config["SECRET_KEY"] = "test"
+        with test_app.test_request_context():
+            create_backup({"username": "myuser"}, user=False)
+
+        names = self._zip_names(data_tree)
+        # Ordinary per-user files are still archived.
+        assert "myuser/firewall.json" in names
+        # The retired instance id is not a secret, so unlike auth.db* it is kept.
+        assert "database/instance.id.migrated" in names
+        # Legacy bcrypt hashes must not leave the host in a backup zip.
+        assert not any(n.startswith("database/auth.db") for n in names)
+        # Pre-existing exclusions still hold.
+        assert not any(n.endswith(".key") for n in names)
+        # The retained key file is a redundant second copy of a secret the Mongo
+        # dump already carries -- endswith(".key") does not match it.
+        assert not any(n.endswith(".key.migrated") for n in names)
+        assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
+
+    def test_full_backup_flashes_critical_on_failure(self, data_tree, monkeypatch):
+        def boom():
+            raise RuntimeError("mongo is down")
+
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", boom)
+        from flask import Flask, get_flashed_messages
+
+        test_app = Flask(__name__)
+        test_app.config["SECRET_KEY"] = "test"
+        with test_app.test_request_context():
+            create_backup({"username": "myuser"}, user=False)
+            categories = [c for c, _ in get_flashed_messages(with_categories=True)]
+
+        assert "critical" in categories
+
+
+# ---------------------------------------------------------------------------
+# perform_full_backup
+# ---------------------------------------------------------------------------
+
+
+class TestPerformFullBackup:
+    """The request-context-free core the weekly scheduler calls."""
+
+    @pytest.fixture
+    def data_tree(self, tmp_path, monkeypatch):
+        data = tmp_path / "data"
+        (data / "backups").mkdir(parents=True)
+        (data / "database").mkdir()
+        (data / "tmp").mkdir()
+        (data / "uploads").mkdir()
+        (data / "myuser").mkdir()
+        (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
+        (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
+        (data / "myuser" / "firewall.json").write_text("{}")
+        (data / "uploads" / "upload.json").write_text("{}")
+        monkeypatch.chdir(tmp_path)
+        return data
+
+    def test_runs_without_request_context(self, data_tree, monkeypatch):
+        """No test_request_context(): an unguarded flash() would raise here."""
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+        monkeypatch.setattr(
+            "package.data_file_functions.upload_backup_file", lambda path: None
+        )
+
+        backup_path = perform_full_backup(actor="scheduler")
+
+        assert backup_path.startswith("data/backups/full-backup-")
+        assert os.path.exists(backup_path)
+        with zipfile.ZipFile(backup_path) as zf:
+            names = set(zf.namelist())
+        # Every exclusion the request-driven path enforced still applies.
+        assert "myuser/firewall.json" in names
+        assert not any(n.startswith("database/auth.db") for n in names)
+        assert not any(n.endswith(".key") for n in names)
+        assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
+
+    def test_uploads_the_zip_it_wrote(self, data_tree, monkeypatch):
+        uploaded = []
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+        monkeypatch.setattr(
+            "package.data_file_functions.upload_backup_file", uploaded.append
+        )
+
+        backup_path = perform_full_backup(actor="scheduler")
+
+        assert uploaded == [backup_path]
+
+    def test_propagates_failure_and_leaves_no_partial_zip(
+        self, data_tree, monkeypatch
+    ):
+        """Staging in data/tmp is what keeps a failed run out of data/backups."""
+
+        def boom():
+            raise RuntimeError("mongo is down")
+
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", boom)
+
+        with pytest.raises(RuntimeError):
+            perform_full_backup(actor="scheduler")
+
+        # Nothing that list_full_backups() would report as a backup.
+        assert list((data_tree / "backups").glob("*")) == []
+
+    def test_zip_failure_leaves_no_partial_zip_in_backups(
+        self, data_tree, monkeypatch
+    ):
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+
+        real_walk = os.walk
+
+        def exploding_walk(path):
+            # Yield one entry so the archive is opened and partly written, then
+            # fail -- the case that used to leave a truncated zip behind.
+            for item in real_walk(path):
+                yield item
+                raise RuntimeError("walk blew up")
+
+        monkeypatch.setattr("package.data_file_functions.os.walk", exploding_walk)
+
+        with pytest.raises(RuntimeError):
+            perform_full_backup(actor="scheduler")
+
+        assert list((data_tree / "backups").glob("*")) == []
+
+
+# ---------------------------------------------------------------------------
+# sweep_legacy_user_files
+# ---------------------------------------------------------------------------
+
+
+class TestSweepLegacyUserFiles:
+    @pytest.fixture
+    def data_tree(self, tmp_path, monkeypatch):
+        """Build a data/ tree in a temp cwd and return its root."""
+        data = tmp_path / "data"
+        (data / "alice").mkdir(parents=True)
+        (data / "other_tmp").mkdir()
+        monkeypatch.chdir(tmp_path)
+        return data
+
+    def test_removes_legacy_files_and_keeps_everything_else(self, data_tree):
+        """The .json survival assertion is the load-bearing one.
+
+        mongo_converter still needs to import those, so the sweep must never
+        widen to them.
+        """
+        (data_tree / "alice" / "fw.conf").write_text("set firewall")
+        (data_tree / "alice" / "fw.old").write_text('{"version": "1"}')
+        (data_tree / "alice" / "fw.json").write_text("{}")
+        (data_tree / "alice" / "id_rsa.key").write_bytes(b"encrypted key")
+        (data_tree / "alice" / "id_rsa.key.migrated").write_bytes(b"retired")
+        (data_tree / "alice" / "user-alice-backup-2026.zip").write_bytes(b"PK")
+
+        sweep_legacy_user_files(["alice"])
+
+        assert not (data_tree / "alice" / "fw.conf").exists()
+        assert not (data_tree / "alice" / "fw.old").exists()
+        assert (data_tree / "alice" / "fw.json").exists()
+        assert (data_tree / "alice" / "id_rsa.key").exists()
+        # .key.migrated is the SSH-key rollback copy; the sweep must never take it.
+        assert (data_tree / "alice" / "id_rsa.key.migrated").exists()
+        assert (data_tree / "alice" / "user-alice-backup-2026.zip").exists()
+
+    def test_leaves_non_user_directories_alone(self, data_tree):
+        """The sweep is bounded to account directories.
+
+        A data/*/* glob would also delete from stray directories that never
+        belonged to a user.
+        """
+        (data_tree / "other_tmp" / "firewall.conf").write_text("set firewall")
+        (data_tree / "other_tmp" / "firewall.old").write_text("{}")
+
+        sweep_legacy_user_files(["alice"])
+
+        assert (data_tree / "other_tmp" / "firewall.conf").exists()
+        assert (data_tree / "other_tmp" / "firewall.old").exists()
+
+    @pytest.mark.parametrize("suffix", ["conf", "old"])
+    def test_removes_names_with_spaces_and_parens(self, data_tree, suffix):
+        """Firewall names allow spaces and parentheses, so filenames do too."""
+        target = data_tree / "alice" / f"vyos-ue-1 (AWS).{suffix}"
+        target.write_text("set firewall")
+
+        sweep_legacy_user_files(["alice"])
+
+        assert not target.exists()
+
+    def test_username_without_directory_is_not_an_error(self, data_tree):
+        sweep_legacy_user_files(["alice", "nonexistent-user"])
+
+    def test_remove_failure_does_not_raise(self, data_tree, monkeypatch, caplog):
+        """Housekeeping must never stop startup."""
+        (data_tree / "alice" / "fw.conf").write_text("set firewall")
+
+        def boom(path):
+            raise OSError("permission denied")
+
+        monkeypatch.setattr("package.data_file_functions.os.remove", boom)
+
+        with caplog.at_level(logging.WARNING):
+            sweep_legacy_user_files(["alice"])
+
+        assert any("Error sweeping legacy" in r.message for r in caplog.records)
+
+    def test_list_usernames_failure_does_not_raise(self, data_tree, caplog):
+        """A MongoDB failure mid-iteration is swallowed too."""
+
+        def exploding_usernames():
+            yield "alice"
+            raise RuntimeError("mongo went away")
+
+        with caplog.at_level(logging.WARNING):
+            sweep_legacy_user_files(exploding_usernames())
+
+        assert any("Error sweeping legacy" in r.message for r in caplog.records)

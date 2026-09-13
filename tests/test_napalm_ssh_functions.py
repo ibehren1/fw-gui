@@ -13,6 +13,11 @@ from package.napalm_ssh_functions import test_connection as _test_connection
 
 # Uses mock_session from conftest.py; also define specialized fixtures.
 
+# The candidate configuration handed to NAPALM. Must be non-empty: both
+# commit_to_firewall and get_diffs_from_firewall return early on a falsy
+# value, before the driver is assembled.
+MERGE_CONFIG = "set firewall ipv4 name FOO rule 10 action accept"
+
 
 @pytest.fixture
 def connection_string():
@@ -44,6 +49,7 @@ def op_command():
 def session():
     return {
         "data_dir": "/tmp/test",
+        "username": "testuser",
         "hostname": "192.168.1.1",
         "port": 22,
         "firewall_name": "test_fw",
@@ -71,7 +77,7 @@ def test_assemble_paramiko_driver_string_password(connection_string, session):
 def test_assemble_paramiko_driver_string_with_key(connection_string_with_key, session):
     with (
         patch("paramiko.SSHClient") as mock_ssh,
-        patch("package.napalm_ssh_functions.decrypt_file") as mock_decrypt,
+        patch("package.napalm_ssh_functions.decrypt_ssh_key") as mock_decrypt,
     ):
         ssh_instance = Mock()
         mock_ssh.return_value = ssh_instance
@@ -100,12 +106,14 @@ def test_commit_to_firewall_success(connection_string, session):
         mock_driver.compare_config.return_value = "Config differences"
         mock_driver.commit_config.return_value = None
 
-        result = commit_to_firewall(connection_string, session)
+        result = commit_to_firewall(connection_string, session, MERGE_CONFIG)
 
         assert "Config differences" in result
         assert "Commit successful" in result
         mock_driver.open.assert_called_once()
-        mock_driver.load_merge_candidate.assert_called_once()
+        mock_driver.load_merge_candidate.assert_called_once_with(
+            config=MERGE_CONFIG
+        )
         mock_driver.commit_config.assert_called_once()
         mock_driver.close.assert_called_once()
 
@@ -118,7 +126,7 @@ def test_commit_to_firewall_no_changes(connection_string, session):
         mock_assemble.return_value = (mock_driver, None)
         mock_driver.compare_config.return_value = ""
 
-        result = commit_to_firewall(connection_string, session)
+        result = commit_to_firewall(connection_string, session, MERGE_CONFIG)
 
         assert result == "No configuration changes to commit."
         mock_driver.discard_config.assert_called_once()
@@ -133,11 +141,13 @@ def test_get_diffs_from_firewall_with_changes(connection_string, session):
         mock_assemble.return_value = (mock_driver, None)
         mock_driver.compare_config.return_value = "Config differences"
 
-        result = get_diffs_from_firewall(connection_string, session)
+        result = get_diffs_from_firewall(connection_string, session, MERGE_CONFIG)
 
         assert result == "Config differences"
         mock_driver.open.assert_called_once()
-        mock_driver.load_merge_candidate.assert_called_once()
+        mock_driver.load_merge_candidate.assert_called_once_with(
+            config=MERGE_CONFIG
+        )
         mock_driver.discard_config.assert_called_once()
         mock_driver.close.assert_called_once()
 
@@ -174,7 +184,7 @@ def test_temporary_key_cleanup(connection_string_with_key, session):
         mock_assemble.return_value = (mock_driver, "/tmp/temp_key")
         mock_driver.compare_config.return_value = ""
 
-        commit_to_firewall(connection_string_with_key, session)
+        commit_to_firewall(connection_string_with_key, session, MERGE_CONFIG)
 
         mock_remove.assert_called_once_with("/tmp/temp_key")
 
@@ -202,7 +212,7 @@ def test_assemble_napalm_driver_string_password(connection_string, session):
 def test_assemble_napalm_driver_string_with_key(connection_string_with_key, session):
     with (
         patch("package.napalm_ssh_functions.get_network_driver") as mock_get_driver,
-        patch("package.napalm_ssh_functions.decrypt_file") as mock_decrypt,
+        patch("package.napalm_ssh_functions.decrypt_ssh_key") as mock_decrypt,
     ):
         mock_driver_class = Mock()
         mock_get_driver.return_value = mock_driver_class
@@ -215,7 +225,10 @@ def test_assemble_napalm_driver_string_with_key(connection_string_with_key, sess
         )
 
         assert tmp_key == "/tmp/decrypted_key"
-        mock_decrypt.assert_called_once()
+        # Looked up by account and key name, not by a data_dir path.
+        mock_decrypt.assert_called_once_with(
+            "testuser", "test_key.pem", b"keypassphrase"
+        )
         mock_driver_class.assert_called_with(
             hostname="192.168.1.1",
             username="admin",
@@ -262,7 +275,7 @@ def test_commit_to_firewall_driver_error(app, connection_string, session):
         ) as mock_assemble:
             mock_assemble.side_effect = Exception("Auth failed")
 
-            result = commit_to_firewall(connection_string, session)
+            result = commit_to_firewall(connection_string, session, MERGE_CONFIG)
 
             assert "Authentication failure" in result
 
@@ -274,7 +287,7 @@ def test_get_diffs_driver_error(app, connection_string, session):
         ) as mock_assemble:
             mock_assemble.side_effect = Exception("Auth failed")
 
-            result = get_diffs_from_firewall(connection_string, session)
+            result = get_diffs_from_firewall(connection_string, session, MERGE_CONFIG)
 
             assert "Authentication failure" in result
 
@@ -315,7 +328,35 @@ def test_get_diffs_no_changes(connection_string, session):
         mock_assemble.return_value = (mock_driver, None)
         mock_driver.compare_config.return_value = ""
 
-        result = get_diffs_from_firewall(connection_string, session)
+        result = get_diffs_from_firewall(connection_string, session, MERGE_CONFIG)
 
         assert result == "No configuration changes to commit."
         mock_driver.discard_config.assert_called_once()
+
+
+def test_commit_to_firewall_empty_merge_config(connection_string, session):
+    """An empty candidate must not reach NAPALM or open a connection.
+
+    napalm-vyos raises MergeConfigException for a falsy config, which the broad
+    except would surface as a red "Error in diff" banner. Reachable whenever
+    every command is commented out -- the seeded extra-items placeholder is three
+    comment lines.
+    """
+    with patch(
+        "package.napalm_ssh_functions.assemble_napalm_driver_string"
+    ) as mock_assemble:
+        result = commit_to_firewall(connection_string, session, "")
+
+        assert "No configuration commands to send" in result
+        mock_assemble.assert_not_called()
+
+
+def test_get_diffs_from_firewall_empty_merge_config(connection_string, session):
+    """Same guard on the diff path."""
+    with patch(
+        "package.napalm_ssh_functions.assemble_napalm_driver_string"
+    ) as mock_assemble:
+        result = get_diffs_from_firewall(connection_string, session, "")
+
+        assert "No configuration commands to send" in result
+        mock_assemble.assert_not_called()

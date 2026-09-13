@@ -3,6 +3,13 @@
 # Declare variables to be passed into your templates.
 
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+#
+# Keep this at 1 unless you have replaced the ReadWriteOnce PVCs below with RWX
+# storage: the data volume can only be mounted by one node at a time. Scheduled
+# backups stay correct either way -- the run is claimed atomically in MongoDB, so
+# only one pod ever backs up -- but the archive is written to whichever pod won,
+# so with per-pod storage the archives scatter. Configure an S3 bucket if you
+# need one collection point.
 replicaCount: 1
 
 # Container configurations
@@ -34,6 +41,17 @@ containers:
         value: ""
       - name: MONGODB_URI
         value: "mongodb://localhost:27017"
+      - name: MONGODB_DATABASE
+        value: "fwgui_database"
+      # The automatic weekly backup has no environment variables. It is off until
+      # switched on, and its day, hour and retention are set on the Admin Settings
+      # page and stored in MongoDB -- so they survive a redeploy and need no
+      # values here.
+      #
+      # Safe with more than one replica: each pod runs a scheduler thread, but a
+      # run is claimed with a single atomic MongoDB update, so exactly one pod
+      # backs up. See the replicaCount and autoscaling notes for the caveat about
+      # where the archive lands.
     livenessProbe:
       httpGet:
         path: /
@@ -132,6 +150,10 @@ resources: {}
 
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+#
+# Same caveat as replicaCount: the PVCs below are ReadWriteOnce, so scaling out
+# needs RWX storage first. Scheduled backups will not run twice -- the claim in
+# MongoDB serialises them -- but each archive lands on the pod that took the run.
 autoscaling:
   enabled: false
   minReplicas: 1

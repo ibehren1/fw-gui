@@ -12,9 +12,13 @@ services:
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=False
       - MONGODB_URI=mongodb
+      - MONGODB_DATABASE=fwgui_database
       - BUCKET_NAME=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
+      # The automatic weekly backup has no environment variables. It is off until
+      # switched on, and its day, hour and retention are set on the Admin Settings
+      # page and stored in MongoDB.
     ports:
       - 8080:8080/tcp
     restart: unless-stopped
@@ -23,8 +27,16 @@ services:
   # MongoDB runs WITHOUT authentication. This is intentional for this
   # single-stack deployment: the service publishes no `ports:`, so it is only
   # reachable by other containers on this Compose project's internal network
-  # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet, and it
-  # stores all firewall configs plus the session store.
+  # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet.
+  #
+  # As of FW-GUI 3.0.0 this database also holds the CREDENTIAL STORE (the
+  # `users` collection: usernames, emails, bcrypt password hashes) and every
+  # user's ENCRYPTED SSH KEY (the `keys` collection), alongside all firewall
+  # configs and the session store. Anything attached to this network can read
+  # both; before 3.0.0 they were files that needed filesystem access inside the
+  # fw-gui container. The SSH keys are Fernet ciphertext whose key FW-GUI never
+  # stores, so they are not directly usable, but the bcrypt hashes are a real
+  # offline target. Enabling auth is correspondingly more worthwhile.
   #
   # SECURITY NOTES:
   #   - Do NOT add a `ports:` mapping (e.g. 27017:27017) — that would expose an

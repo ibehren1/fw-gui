@@ -1,62 +1,43 @@
 """Tests for package/mongo_converter.py"""
 
 import json
-import os
-import sqlite3
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, mock_open
 
+import mongomock
 import pytest
 
+from package import user_store
 from package.mongo_converter import mongo_converter
 
 
 @pytest.fixture
-def converter_env(tmp_path):
-    """Set up a temporary environment for mongo_converter tests."""
-    # Create SQLite database with user table
-    db_dir = tmp_path / "data" / "database"
-    db_dir.mkdir(parents=True)
-    db_path = db_dir / "auth.db"
-
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE User (id INTEGER PRIMARY KEY, username TEXT, password TEXT, email TEXT)"
-    )
-    conn.commit()
-    conn.close()
-
-    return tmp_path, db_path
+def users(monkeypatch):
+    """Patch a mongomock client in and return the users collection."""
+    client = mongomock.MongoClient()
+    monkeypatch.setattr("package.data_file_functions._mongo_client", client)
+    monkeypatch.setattr("package.data_file_functions._get_mongo_client", lambda: client)
+    monkeypatch.setenv("MONGODB_DATABASE", "test_db")
+    monkeypatch.delenv("MONGODB_USERS_COLLECTION", raising=False)
+    return user_store.collection()
 
 
-def _add_user(db_path, username):
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO User (username, password, email) VALUES (?, ?, ?)",
-        (username, "hashed", f"{username}@test.com"),
-    )
-    conn.commit()
-    conn.close()
+def _add_user(users, username, **extra):
+    doc = {
+        "_id": username,
+        "email": f"{username}@test.com",
+        "password": "hashed",
+        "disabled": False,
+    }
+    doc.update(extra)
+    users.insert_one(doc)
 
 
-def test_mongo_converter_full_flow(converter_env):
-    tmp_path, db_path = converter_env
+def test_mongo_converter_full_flow(users):
+    _add_user(users, "testuser")
 
-    _add_user(db_path, "testuser")
-
-    # Create user directory with JSON file
-    user_dir = tmp_path / "data" / "testuser"
-    user_dir.mkdir(parents=True)
-    json_file = user_dir / "firewall.json"
     json_data = {"version": "1", "ipv4": {"chains": {}}}
-    json_file.write_text(json.dumps(json_data))
 
     with (
-        patch(
-            "package.mongo_converter.sqlite3.connect",
-            return_value=sqlite3.connect(str(db_path)),
-        ),
         patch("package.mongo_converter.os.listdir") as mock_listdir,
         patch("package.mongo_converter.write_user_data_file") as mock_write,
         patch("package.mongo_converter.os.rename") as mock_rename,
@@ -70,27 +51,37 @@ def test_mongo_converter_full_flow(converter_env):
         mock_rename.assert_called_once()
 
 
-def test_mongo_converter_no_users(converter_env):
-    tmp_path, db_path = converter_env
-
-    with patch(
-        "package.mongo_converter.sqlite3.connect",
-        return_value=sqlite3.connect(str(db_path)),
-    ):
-        # No users, so no files to process
+def test_mongo_converter_no_users(users):
+    # No users, so no files to process.
+    with patch("package.mongo_converter.os.listdir") as mock_listdir:
         mongo_converter()
 
+        mock_listdir.assert_not_called()
 
-def test_mongo_converter_no_json_files(converter_env):
-    tmp_path, db_path = converter_env
 
-    _add_user(db_path, "testuser")
+def test_mongo_converter_includes_disabled_users(users):
+    """A disabled user's leftover JSON is still imported."""
+    _add_user(users, "disableduser", disabled=True)
+
+    json_data = {"version": "1", "ipv4": {}}
 
     with (
-        patch(
-            "package.mongo_converter.sqlite3.connect",
-            return_value=sqlite3.connect(str(db_path)),
-        ),
+        patch("package.mongo_converter.os.listdir") as mock_listdir,
+        patch("package.mongo_converter.write_user_data_file") as mock_write,
+        patch("package.mongo_converter.os.rename"),
+        patch("builtins.open", mock_open(read_data=json.dumps(json_data))),
+    ):
+        mock_listdir.return_value = ["firewall.json"]
+
+        mongo_converter()
+
+        assert mock_write.call_args[0][0] == "data/disableduser/firewall"
+
+
+def test_mongo_converter_no_json_files(users):
+    _add_user(users, "testuser")
+
+    with (
         patch("package.mongo_converter.os.listdir") as mock_listdir,
         patch("package.mongo_converter.write_user_data_file") as mock_write,
     ):
@@ -101,16 +92,10 @@ def test_mongo_converter_no_json_files(converter_env):
         mock_write.assert_not_called()
 
 
-def test_mongo_converter_user_dir_missing(converter_env):
-    tmp_path, db_path = converter_env
-
-    _add_user(db_path, "ghostuser")
+def test_mongo_converter_user_dir_missing(users):
+    _add_user(users, "ghostuser")
 
     with (
-        patch(
-            "package.mongo_converter.sqlite3.connect",
-            return_value=sqlite3.connect(str(db_path)),
-        ),
         patch(
             "package.mongo_converter.os.listdir",
             side_effect=FileNotFoundError("No such directory"),
@@ -123,18 +108,12 @@ def test_mongo_converter_user_dir_missing(converter_env):
         mock_write.assert_not_called()
 
 
-def test_mongo_converter_removes_id_field(converter_env):
-    tmp_path, db_path = converter_env
-
-    _add_user(db_path, "testuser")
+def test_mongo_converter_removes_id_field(users):
+    _add_user(users, "testuser")
 
     json_data = {"_id": "old_id", "version": "1", "ipv4": {}}
 
     with (
-        patch(
-            "package.mongo_converter.sqlite3.connect",
-            return_value=sqlite3.connect(str(db_path)),
-        ),
         patch("package.mongo_converter.os.listdir") as mock_listdir,
         patch("package.mongo_converter.write_user_data_file") as mock_write,
         patch("package.mongo_converter.os.rename"),

@@ -97,7 +97,7 @@
                         </label>
                         {% for key in key_list %}
                         <label class="radio-item">
-                            <input type="radio" name="ssh_key_name" value="{{ key }}.key" {{ 'checked' if ssh_keyname == key else '' }}>
+                            <input type="radio" name="ssh_key_name" value="{{ key }}" {{ 'checked' if ssh_keyname == key else '' }}>
                             <span>Use SSH key: {{ key }}</span>
                         </label>
                         {% endfor %}

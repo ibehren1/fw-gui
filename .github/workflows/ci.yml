@@ -24,14 +24,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra test
 
-      - name: Seed CI instance id
-        # Identify telemetry from CI runs. conftest only writes a random id when
-        # this file is absent, so seeding it here makes the CI value stick.
-        run: |
-          mkdir -p data/database
-          printf 'github-actions-ci' > data/database/instance.id
-
       - name: Run tests
+        # FWGUI_INSTANCE_ID tags any telemetry a CI run might emit. As of 3.0.0
+        # the instance id lives in MongoDB, so the env var replaces the
+        # data/database/instance.id file this step used to seed; it short-circuits
+        # the lookup without touching a database.
+        env:
+          FWGUI_INSTANCE_ID: github-actions-ci
         run: uv run --extra test pytest
 
       - name: Run Bandit security scan

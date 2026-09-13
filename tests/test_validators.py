@@ -2,6 +2,8 @@
 
 from package.validators import (
     is_allowed_op_command,
+    is_auth_critical_username,
+    is_reserved_username,
     is_safe_name,
     is_valid_username,
 )
@@ -54,6 +56,70 @@ class TestIsValidUsername:
     def test_rejects_non_strings(self):
         assert not is_valid_username(None)
         assert not is_valid_username(42)
+
+    def test_rejects_reserved_names(self):
+        assert not is_valid_username("users")
+        assert not is_valid_username("sessions")
+        assert not is_valid_username("instance")
+        assert not is_valid_username("keys")
+
+
+class TestIsReservedUsername:
+    def test_rejects_application_collections(self):
+        assert is_reserved_username("users")
+        assert is_reserved_username("sessions")
+        assert is_reserved_username("instance")
+        assert is_reserved_username("keys")
+
+    def test_matching_ignores_case_and_surrounding_space(self):
+        assert is_reserved_username("Users")
+        assert is_reserved_username("USERS")
+        assert is_reserved_username(" sessions ")
+
+    def test_accepts_ordinary_names(self):
+        assert not is_reserved_username("alice")
+        assert not is_reserved_username("user")
+        assert not is_reserved_username("session")
+        assert not is_reserved_username("instances")
+        assert not is_reserved_username("key")
+
+    def test_rejects_non_strings(self):
+        assert not is_reserved_username(None)
+        assert not is_reserved_username(42)
+
+    def test_custom_users_collection_is_reserved_in_addition(self, monkeypatch):
+        monkeypatch.setenv("MONGODB_USERS_COLLECTION", "fwgui_accounts")
+        assert is_reserved_username("fwgui_accounts")
+        # The hardcoded pair is never narrowed by the override: an install that
+        # renamed the collection may still hold a "users"-named leftover.
+        assert is_reserved_username("users")
+        assert is_reserved_username("sessions")
+
+
+class TestIsAuthCriticalUsername:
+    """Narrower than is_reserved_username: only collisions worth aborting for."""
+
+    def test_covers_the_credential_and_key_stores(self):
+        assert is_auth_critical_username("users")
+        assert is_auth_critical_username("sessions")
+        assert is_auth_critical_username("SESSIONS")
+        # keys holds every user's SSH key ciphertext -- closer to users than to
+        # the telemetry id, so a collision is worth refusing to boot over.
+        assert is_auth_critical_username("keys")
+
+    def test_excludes_the_telemetry_collection(self):
+        # Reserved for new registrations, but a pre-existing account of this name
+        # must not stop the app from starting -- telemetry degrades instead.
+        assert is_reserved_username("instance")
+        assert not is_auth_critical_username("instance")
+
+    def test_accepts_ordinary_names(self):
+        assert not is_auth_critical_username("alice")
+        assert not is_auth_critical_username(None)
+
+    def test_custom_users_collection_is_auth_critical(self, monkeypatch):
+        monkeypatch.setenv("MONGODB_USERS_COLLECTION", "fwgui_accounts")
+        assert is_auth_critical_username("fwgui_accounts")
 
 
 class TestIsAllowedOpCommand:

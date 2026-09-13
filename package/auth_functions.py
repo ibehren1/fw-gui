@@ -21,9 +21,13 @@ from flask import flash
 from flask_login import login_user
 from packaging.version import Version
 
+from pymongo.errors import DuplicateKeyError
+
+from package import user_store
 from package.data_file_functions import write_user_data_file
 from package.telemetry_functions import telemetry_instance
-from package.validators import is_valid_username
+from package.user_migration import migrate_sqlite_users
+from package.validators import is_reserved_username, is_valid_username
 
 # Minimum length for new/changed passwords (enforced on set, not on login).
 MIN_PASSWORD_LENGTH = 8
@@ -31,14 +35,29 @@ MIN_PASSWORD_LENGTH = 8
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
-def change_password(bcrypt, db, User, username, request):
+def _password_matches(bcrypt, user, candidate):
+    """Returns True if ``candidate`` matches the stored hash.
+
+    check_password_hash feeds the stored value to bcrypt.hashpw as the salt,
+    which raises ValueError on an empty or malformed hash. Treat that as a
+    failed login rather than letting it 500 the login page.
+    """
+    try:
+        return bool(bcrypt.check_password_hash(user.password, candidate))
+    except ValueError:
+        logging.error(
+            f"Stored password hash for user <{user.username}> is unusable; "
+            "the account cannot log in until its password is reset."
+        )
+        return False
+
+
+def change_password(bcrypt, username, request):
     """
     Changes a user's password after validating current and new passwords.
 
     Args:
         bcrypt: Password hashing utility
-        db: Database connection
-        User: User model class
         username: Username of user changing password
         request: HTTP request containing form data
 
@@ -71,17 +90,38 @@ def change_password(bcrypt, db, User, username, request):
         flash("Passwords do not match.", "warning")
         return False
 
-    # Query User table
-    result = query_user_by_username(db, User, username)
+    # Look the account up. A session can outlive the account it belongs to, so
+    # this may legitimately be None rather than a bug.
+    result = user_store.get_user_by_username(username)
+
+    if result is None:
+        logging.warning(
+            f"{datetime.now()} Password change for unknown user <{username}>."
+        )
+        flash("Current password was incorrect.", "warning")
+        return False
+
+    # A disabled account must not be able to rotate its way back in.
+    if result.disabled:
+        logging.warning(
+            f"{datetime.now()} Password change attempted on disabled user <{username}>."
+        )
+        flash("Current password was incorrect.", "warning")
+        return False
 
     # Check if old password matches
-    if bcrypt.check_password_hash(result.password, cur_password):
-        # Hash new password
-        hashed_password = bcrypt.generate_password_hash(new_password)
+    if _password_matches(bcrypt, result, cur_password):
+        # Hash new password. generate_password_hash returns bytes; decode it so
+        # the stored value is a str rather than BSON Binary.
+        hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
 
-        # Update User table
-        result.password = hashed_password
-        db.session.commit()
+        if not user_store.set_password(username, hashed_password):
+            logging.warning(
+                f"{datetime.now()} Password change for <{username}> matched no account."
+            )
+            flash("Current password was incorrect.", "warning")
+            return False
+
         logging.info(f"{datetime.now()} User <{result.username}> changed password.")
         flash("Password changed.", "success")
         return True
@@ -129,15 +169,13 @@ def check_version():
     return
 
 
-def process_login(bcrypt, db, request, User):
+def process_login(bcrypt, request):
     """
     Authenticates user login and sets up user environment.
 
     Args:
         bcrypt: Password hashing utility
-        db: Database connection
         request: HTTP request containing login form data
-        User: User model class
 
     Returns:
         tuple: (success, data_dir, username)
@@ -148,14 +186,31 @@ def process_login(bcrypt, db, request, User):
     if request.form["username"] == "":
         return False, None, None
 
-    result = query_user_by_username(db, User, request.form["username"])
+    # Belt and braces: the startup migration runs from app.py's __main__ block,
+    # which is the shipped entrypoint but which a WSGI server (e.g. gunicorn
+    # app:app) never executes -- and every account would appear to have
+    # vanished. Cheap because it short-circuits on a missing file, and safe to
+    # race because the migration only ever inserts.
+    migrate_sqlite_users()
+
+    result = user_store.get_user_by_username(request.form["username"])
 
     if result is None:
         flash("Login incorrect.", "warning")
         return False, None, None
 
+    elif result.disabled:
+        # Deliberately the same message as a bad password: telling the caller an
+        # account exists but is disabled hands them account enumeration. The log
+        # line is where an operator sees the difference.
+        logging.warning(
+            f'{datetime.now()} Disabled user <{request.form["username"]}> attempted login.'
+        )
+        flash("Login incorrect.", "warning")
+        return False, None, None
+
     else:
-        if bcrypt.check_password_hash(result.password, request.form["password"]):
+        if _password_matches(bcrypt, result, request.form["password"]):
             logging.info(
                 f'{datetime.now()} User <{request.form["username"]}> logged in.'
             )
@@ -187,55 +242,13 @@ def process_login(bcrypt, db, request, User):
     return True, data_dir, username
 
 
-def query_user_by_id(db, User, id):
-    """
-    Queries user by ID.
-
-    Args:
-        db: Database connection
-        User: User model class
-        id: User ID to query
-
-    Returns:
-        User object if found, None otherwise
-    """
-    try:
-        result = db.session.execute(db.select(User).filter_by(id=id)).scalar_one()
-    except Exception:
-        result = None
-    return result
-
-
-def query_user_by_username(db, User, username):
-    """
-    Queries user by username.
-
-    Args:
-        db: Database connection
-        User: User model class
-        username: Username to query
-
-    Returns:
-        User object if found, None otherwise
-    """
-    try:
-        result = db.session.execute(
-            db.select(User).filter_by(username=username)
-        ).scalar_one()
-    except Exception:
-        result = None
-    return result
-
-
-def register_user(bcrypt, db, request, User):
+def register_user(bcrypt, request):
     """
     Registers a new user after validating inputs.
 
     Args:
         bcrypt: Password hashing utility
-        db: Database connection
         request: HTTP request containing registration form data
-        User: User model class
 
     Returns:
         bool: True if registration successful, False otherwise
@@ -249,6 +262,12 @@ def register_user(bcrypt, db, request, User):
     # Basic Validations
     if username == "":
         flash("Username cannot be empty.", "danger")
+        return False
+
+    # A username is also the name of the user's MongoDB collection, so the
+    # collections the application owns cannot be handed out as usernames.
+    if is_reserved_username(username):
+        flash("That username is reserved.", "danger")
         return False
 
     # Username becomes a directory name and a MongoDB collection name; hold it
@@ -283,15 +302,18 @@ def register_user(bcrypt, db, request, User):
         flash("Passwords do not match", "danger")
         return False
 
-    if query_user_by_username(db, User, username) is not None:
+    # Hash Password and Create User. generate_password_hash returns bytes;
+    # decode it so the stored value is a str rather than BSON Binary.
+    hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
+
+    # The username is the document _id, so the insert itself is the uniqueness
+    # check -- no query-then-insert window in which two registrations of the
+    # same name both succeed.
+    try:
+        user_store.create_user(username, email, hashed_password)
+    except DuplicateKeyError:
         flash("Username already exists.", "danger")
         return False
-
-    # Hash Password and Create User
-    hashed_password = bcrypt.generate_password_hash(password)
-    new_user = User(username=username, password=hashed_password, email=email)
-    db.session.add(new_user)
-    db.session.commit()
 
     flash(f"User {username} created successfully.", "success")
 

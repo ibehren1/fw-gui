@@ -18,7 +18,7 @@ Features:
 Requirements:
 - Python 3.x
 - Flask web framework
-- SQLAlchemy database
+- MongoDB
 - VyOS compatible device
 """
 
@@ -48,17 +48,21 @@ from flask import (
     url_for,
 )
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, UserMixin, login_required, logout_user
+from flask_login import LoginManager, login_required, logout_user
 from flask_session import Session
-from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from waitress import serve
 
 from package.auth_functions import (
     change_password,
     process_login,
-    query_user_by_id,
     register_user,
+)
+from package.backup_scheduler import (
+    describe_schedule,
+    prune_preview,
+    start_backup_scheduler,
+    update_settings,
 )
 from package.chain_functions import (
     add_chain_to_data,
@@ -72,11 +76,13 @@ from package.chain_functions import (
 )
 from package.data_file_functions import (
     AUTO_SNAPSHOT_TAG,
+    SERVER_SELECTION_TIMEOUT_MS,
     add_extra_items,
     add_hostname,
     create_backup,
     create_snapshot,
     delete_user_data_file,
+    gather_instance_stats,
     get_extra_items,
     get_system_name,
     initialize_data_dir,
@@ -87,9 +93,9 @@ from package.data_file_functions import (
     process_upload,
     read_user_data_file,
     restore_snapshot,
+    sweep_legacy_user_files,
     tag_snapshot,
     validate_mongodb_connection,
-    write_user_command_conf_file,
     write_user_data_file,
 )
 from package.diff_functions import process_diff
@@ -108,7 +114,11 @@ from package.flowtable_functions import (
     delete_flowtable_from_data,
     list_flowtables,
 )
-from package.generate_config import download_json_data, generate_config
+from package.generate_config import (
+    build_merge_config,
+    download_json_data,
+    generate_config,
+)
 from package.group_funtions import (
     add_group_to_data,
     assemble_detail_list_of_groups,
@@ -126,7 +136,10 @@ from package.napalm_ssh_functions import (
     run_operational_command,
     test_connection,
 )
+from package.ssh_key_store import migrate_legacy_key_files
 from package.telemetry_functions import telemetry_instance
+from package.user_migration import migrate_sqlite_users
+from package.user_store import get_user_by_session_id, list_usernames
 from package.validators import is_safe_name
 
 # Set SSL certificate file path
@@ -169,10 +182,7 @@ logging.basicConfig(
 logging.info(f"Logging Level: {log_level}")
 
 #
-# Initialize Flask application and database
-# Set database location to data/database directory
-db_location = os.path.join(os.getcwd(), "data/database")
-
+# Initialize Flask application
 # Load version from .version file into environment
 try:
     with open(".version", "r") as f:
@@ -202,8 +212,6 @@ if not app.secret_key:
     )
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:////{db_location}/auth.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
 # Session cookie hardening. HttpOnly blocks JavaScript from reading the cookie;
@@ -217,8 +225,7 @@ app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("SESSION_COOKIE_SECURE", "False").strip().lower() == "true"
 )
 
-# Initialize database and encryption
-db = SQLAlchemy(app)
+# Initialize password hashing
 bcrypt = Bcrypt(app)
 
 # Enable CSRF protection for all state-changing POST requests. Every rendered
@@ -235,7 +242,14 @@ app.config["SESSION_PERMANENT"] = True  # honors PERMANENT_SESSION_LIFETIME
 if session_type == "mongodb":
     from pymongo import MongoClient
 
-    app.config["SESSION_MONGODB"] = MongoClient(os.environ["MONGODB_URI"])
+    # Bounded server selection, not pymongo's 30s default: this client is hit on
+    # every single request (including the login page), so an unreachable database
+    # would otherwise stall each one for half a minute and exhaust the waitress
+    # thread pool.
+    app.config["SESSION_MONGODB"] = MongoClient(
+        os.environ["MONGODB_URI"],
+        serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
+    )
     app.config["SESSION_MONGODB_DB"] = os.environ.get(
         "MONGODB_DATABASE", "fwgui_database"
     )
@@ -349,48 +363,24 @@ login_manager.init_app(app)
 login_manager.login_view = "user_login"
 
 
-#
-# Database User Table Model
-class User(db.Model, UserMixin):
-    """
-    User model for authentication database.
-
-    This class defines the database schema for storing user account information.
-    It inherits from SQLAlchemy's Model class and Flask-Login's UserMixin.
-
-    Attributes:
-        id (int): Primary key for uniquely identifying users
-        username (str): Unique username, max length 20 characters, required
-        email (str): User's email address, max length 40 characters, required
-        password (str): Hashed password, max length 80 characters, required
-    """
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(40), nullable=False)
-    password = db.Column(db.String(80), nullable=False)
-
-
 @login_manager.user_loader
 def load_user(user_id):
     """
-    Load a user from the database by their user ID.
+    Load a user from MongoDB by their Flask-Login session token.
 
-    This function is used by Flask-Login to load a user object from the database
-    given their user ID. It is required for the login manager to function.
+    Runs on every authenticated request. Returns None for an unknown or
+    disabled account, so disabling a user takes effect on their next request
+    rather than at their next login.
 
     Args:
-        user_id: The ID of the user to load from the database
+        user_id: The "_user_id" value Flask-Login stored in the session,
+                 which is "u:<username>" (see user_store.SESSION_ID_PREFIX)
 
     Returns:
-        User: The User object if found, or None if not found
-
-    Raises:
-        NoResultFound: If no user with the given ID exists
+        User: The user_store.User if the account exists and is enabled,
+              otherwise None
     """
-    return db.session.execute(
-        db.select(User).filter_by(id=user_id)
-    ).scalar_one_or_none()
+    return get_user_by_session_id(user_id)
 
 
 #
@@ -431,6 +421,8 @@ def admin_settings():
             - file_list: List of user files
             - snapshot_list: List of system snapshots
             - full_backup_list: List of full system backups
+            - stats: Instance-wide account, configuration and snapshot counts
+            - schedule: Automatic weekly backup state, or None if unavailable
             - username: Current user's username
     """
     if request.method == "POST":
@@ -438,68 +430,70 @@ def admin_settings():
             if request.form["backup"] == "full_backup":
                 create_backup(session)
 
-        file_list = list_user_files(session)
-        full_backup_list = list_full_backups(session)
-        snapshot_list = list_snapshots(session)
+        # The weekly schedule settings. A separate form from the backup above, so
+        # the two can never arrive together. The hidden marker is what makes the
+        # absent "schedule_enabled" checkbox mean "off" rather than "not
+        # submitted" -- without it, an unchecked box is indistinguishable from a
+        # POST that never carried the field.
+        elif "schedule_form" in request.form:
+            enabled = "schedule_enabled" in request.form
+            schedule = update_settings(
+                enabled,
+                day_of_week=request.form.get("schedule_day_of_week"),
+                hour=request.form.get("schedule_hour"),
+                retention=request.form.get("schedule_retention"),
+            )
 
-        return render_template(
-            "admin_settings_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            full_backup_list=full_backup_list,
-            username=session["username"],
-        )
+            if schedule is None:
+                flash("Could not update the backup schedule.", "critical")
+            else:
+                logging.info(
+                    f"User <{session['username']}> saved the automatic weekly "
+                    f"backup settings: enabled={schedule['enabled']}, "
+                    f"day={schedule['day_of_week']}, hour={schedule['hour']}, "
+                    f"retention={schedule['retention']}."
+                )
+                if enabled:
+                    # Say what the next run will delete, at the moment of
+                    # consent. Nothing in the app pruned before 3.0.0, so an
+                    # existing install can be holding hundreds of dumps, and the
+                    # deletion would otherwise happen hours later in a thread.
+                    retention = schedule["retention"]
+                    preview = prune_preview(retention)
+                    if retention:
+                        message = (
+                            "Automatic weekly backup saved. Keeping the "
+                            f"{retention} newest archives and MongoDB dumps."
+                        )
+                    else:
+                        message = (
+                            "Automatic weekly backup saved. Nothing will be "
+                            "deleted, so the data directory is not bounded."
+                        )
+                    if preview["dumps"] or preview["zips"]:
+                        message += (
+                            f" The next run will remove {preview['dumps']} older "
+                            f"MongoDB dump(s) and {preview['zips']} older archive(s)."
+                        )
+                    flash(message, "success")
+                else:
+                    flash("Automatic weekly backup disabled.", "success")
 
-    else:
-        file_list = list_user_files(session)
-        full_backup_list = list_full_backups(session)
-        snapshot_list = list_snapshots(session)
+    file_list = list_user_files(session)
+    full_backup_list = list_full_backups(session)
+    snapshot_list = list_snapshots(session)
+    stats = gather_instance_stats()
+    schedule = describe_schedule()
 
-        return render_template(
-            "admin_settings_form.html",
-            file_list=file_list,
-            snapshot_list=snapshot_list,
-            full_backup_list=full_backup_list,
-            username=session["username"],
-        )
-
-
-@app.route("/download", methods=["POST"])
-@login_required
-def download():
-    """
-    Handle file download requests.
-
-    Endpoint that allows authenticated users to download files. The file path and name
-    are provided in the POST request form data.
-
-    Args:
-        None
-
-    Returns:
-        Response: File download response with the requested file data
-
-    Raises:
-        None
-    """
-    path = request.form["path"]
-    filename = request.form["filename"]
-    full_path = os.path.realpath(path + filename)
-
-    # Confirm the resolved path stays within the data/ directory. Using
-    # commonpath (not startswith) avoids the sibling-prefix bypass where a path
-    # like ".../data_secrets/..." would pass a naive "starts with .../data" test.
-    data_root = os.path.realpath("data")
-    if (
-        os.path.commonpath([full_path, data_root]) != data_root
-        or full_path == data_root
-    ):
-        flash("Invalid file path.", "danger")
-        return redirect(url_for("index"))
-
-    with open(full_path, "rb") as f:
-        data = f.read()
-    return send_file(BytesIO(data), download_name=filename, as_attachment=True)
+    return render_template(
+        "admin_settings_form.html",
+        file_list=file_list,
+        snapshot_list=snapshot_list,
+        full_backup_list=full_backup_list,
+        stats=stats,
+        schedule=schedule,
+        username=session["username"],
+    )
 
 
 #
@@ -531,7 +525,7 @@ def user_change_password():
         None
     """
     if request.method == "POST":
-        result = change_password(bcrypt, db, User, session["username"], request)
+        result = change_password(bcrypt, session["username"], request)
 
         if result:
             return redirect(url_for("index"))
@@ -577,9 +571,7 @@ def user_login():
         None
     """
     if request.method == "POST":
-        login, session["data_dir"], session["username"] = process_login(
-            bcrypt, db, request, User
-        )
+        login, session["data_dir"], session["username"] = process_login(bcrypt, request)
         if login:
             return redirect(url_for("index"))
         else:
@@ -613,12 +605,7 @@ def user_logout():
     Raises:
         None
     """
-    user_id = session.get("_user_id")
-    if user_id:
-        user = query_user_by_id(db, User, user_id)
-        username = user.username if user else "Unknown"
-    else:
-        username = "Unknown"
+    username = session.get("username", "Unknown")
     logging.info(f"{datetime.now()} User <{username}> logged out.")
     logout_user()
     session.clear()
@@ -656,7 +643,7 @@ def user_registration():
         registration = registration_enabled()
 
         if registration:
-            if register_user(bcrypt, db, request, User):
+            if register_user(bcrypt, request):
                 return redirect(url_for("user_login"))
             else:
                 return redirect(url_for("user_registration"))
@@ -1713,32 +1700,43 @@ def configuration_push():
             "port": session["port"],
         }
 
-        if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
-            connection_string["ssh_key_name"] = request.form["ssh_key_name"]
+        # Keys are addressed in MongoDB by their bare name (ssh_key_store uses
+        # _id = "<user>/<name>"). Pre-3.0.0 the form carried a trailing ".key"
+        # because the name was used to build an on-disk path, so strip it here as
+        # well as in the template: a browser still holding a cached copy of the
+        # old form would otherwise submit a name that cannot resolve. removesuffix
+        # rather than replace, so a key legitimately named "my.keyring" survives.
+        ssh_key_name = request.form.get("ssh_key_name", "").removesuffix(".key")
+
+        if ssh_key_name:
+            connection_string["ssh_key_name"] = ssh_key_name
 
         # Cache SSH user/pass to the server-side session for this login. The
         # password/Fernet key is encrypted so it is not stored in cleartext in
         # the session store at rest.
         session["ssh_user"] = username
         session["ssh_pass"] = encrypt_secret(password)
-        if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
-            session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
+        if ssh_key_name:
+            session["ssh_keyname"] = ssh_key_name
 
-        # Include 'delete firewall' before set commands
+        # generate_config() also supplies the message rendered when the action is
+        # unrecognized, so it stays outside the branches below. build_merge_config
+        # optionally includes 'delete firewall' before the set commands; it is
+        # pure string work, so computing it up front costs nothing even for the
+        # operational-command action that does not use it.
         message, config = generate_config(session)
-        if "delete_before_set" in request.form:
-            write_user_command_conf_file(session, config, delete=True)
-        else:
-            write_user_command_conf_file(session, config, delete=False)
+        merge_config = build_merge_config(
+            config, delete="delete_before_set" in request.form
+        )
 
         if request.form["action"] == "Run Operational Command":
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
         elif request.form["action"] == "View Diffs":
-            message = get_diffs_from_firewall(connection_string, session)
+            message = get_diffs_from_firewall(connection_string, session, merge_config)
         elif request.form["action"] == "Commit":
-            message = commit_to_firewall(connection_string, session)
+            message = commit_to_firewall(connection_string, session, merge_config)
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
         snapshot_list = list_snapshots(session)
@@ -2204,15 +2202,39 @@ if __name__ == "__main__":
     # Create and initialize the data directory for storing firewall configurations
     initialize_data_dir()
 
-    # Post instance telemetry
-    telemetry_instance()
-
     # Check if MongoDB connection is valid using URI from environment variables
-    # If connection is successful, run converter to migrate data
+    # If connection is successful, run the startup migrations. Users must move
+    # first: mongo_converter() gets its user list from the users collection.
     if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
+        migrate_sqlite_users()
+        # Removes per-user files earlier releases left behind (.conf, .old).
+        # Position is deliberate: after migrate_sqlite_users() because
+        # list_usernames() needs the accounts in MongoDB -- on a pre-3.0.0
+        # upgrade it would otherwise return nothing and sweep nothing -- and
+        # before mongo_converter() because that is what creates the .old files,
+        # so running it after would delete a file created seconds earlier. It
+        # cannot live in initialize_data_dir() above either; that runs before
+        # MongoDB is known to be reachable.
+        accounts = list_usernames()
+        # Adopts pre-3.0.0 data/<user>/*.key files into MongoDB. Same position
+        # requirement as the sweep below: it needs the migrated account list.
+        migrate_legacy_key_files(accounts)
+        sweep_legacy_user_files(accounts)
         mongo_converter()
+        # Automatic weekly backup. Last in the block on purpose: it needs a
+        # reachable database for its schedule document, and starting it after the
+        # migrations means the thread cannot claim a run while accounts are still
+        # moving or mongo_converter() is still writing. The thread starts whether
+        # or not the schedule is enabled -- "enabled" is enforced when a run is
+        # claimed, so the Admin Settings toggle works without a restart.
+        start_backup_scheduler()
 
-    # Convert all existing JSON config files to MongoDB format
+    # Post instance telemetry. Deliberately after the MongoDB check: the instance
+    # id now lives in MongoDB, so running this first would mean waiting on the
+    # database before the check that exists to report it is unreachable. The
+    # trade-off is that an install which cannot reach MongoDB no longer reports at
+    # all -- it used to post here and then exit in the check above.
+    telemetry_instance()
 
     # Check if running in development environment
     if os.environ.get("FLASK_ENV") == "Development":

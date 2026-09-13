@@ -3,7 +3,6 @@ Shared test fixtures for FW-GUI test suite.
 """
 
 import os
-import uuid
 
 # Set environment defaults before any imports could trigger app.py loading.
 os.environ.setdefault("APP_SECRET_KEY", "test-secret-key")
@@ -16,16 +15,12 @@ os.environ.setdefault("SESSION_TYPE", "filesystem")
 
 # Bootstrap the data directories the app normally creates via
 # initialize_data_dir() at startup. pytest imports the app without running its
-# __main__ block, so on a fresh checkout (e.g. CI) these do not yet exist and
-# SQLite/telemetry would fail. Make the suite self-contained.
+# __main__ block, so on a fresh checkout (e.g. CI) these do not yet exist.
 os.makedirs("data/database", exist_ok=True)
 os.makedirs("data/tmp", exist_ok=True)
 # Pre-create the test user's data dir so the first login does not trigger the
 # example-config write to MongoDB (which is not available in the offline suite).
 os.makedirs("data/testuser", exist_ok=True)
-if not os.path.exists("data/database/instance.id"):
-    with open("data/database/instance.id", "w") as _f:
-        _f.write(str(uuid.uuid4()))
 
 import copy
 import json
@@ -33,7 +28,6 @@ import json
 import pytest
 from flask import Flask
 from flask_login import LoginManager
-from unittest.mock import Mock
 from werkzeug.datastructures import ImmutableMultiDict
 
 
@@ -113,81 +107,121 @@ def make_request(form_dict):
 def bcrypt():
     class MockBcrypt:
         def check_password_hash(self, hashed, password):
+            if isinstance(hashed, bytes):
+                hashed = hashed.decode("utf-8")
             return hashed == f"hashed_{password}"
 
-        def generate_password_hash(self, password):
-            return f"hashed_{password}"
+        def generate_password_hash(self, password, rounds=None, prefix=None):
+            # Real flask_bcrypt returns bytes, so mirror that: the production
+            # code decodes the result and the tests must exercise that path.
+            return f"hashed_{password}".encode("utf-8")
 
     return MockBcrypt()
 
 
 @pytest.fixture
-def db():
-    class MockDB:
-        def __init__(self):
-            self.session = Mock()
-
-        def select(self, model):
-            return self
-
-        def filter_by(self, **kwargs):
-            return self
-
-    return MockDB()
-
-
-@pytest.fixture
 def user_model():
-    class User:
-        def __init__(self, username, password, email, id=1):
-            self.id = id
-            self.username = username
-            self.password = password
-            self.email = email
-            self.is_active = True
+    """The real user_store.User, built from a document.
 
-        def get_id(self):
-            return str(self.id)
+    Deliberately not a stand-in: the get_id() contract ("u:<username>") and the
+    disabled/is_active mapping are what the auth path depends on, so tests
+    should exercise the real thing.
+    """
+    from package.user_store import User
 
-    return User
+    def make_user(username, password, email, disabled=False):
+        return User(
+            {
+                "_id": username,
+                "password": password,
+                "email": email,
+                "disabled": disabled,
+            }
+        )
+
+    return make_user
+
+
+@pytest.fixture(scope="session", autouse=True)
+def no_real_sqlite_migration(tmp_path_factory):
+    """Keep the legacy-user migration away from the real data directory.
+
+    process_login() calls migrate_sqlite_users() as a fallback for non-app.py
+    entrypoints. On a developer checkout data/database/auth.db exists, so any
+    test that logs in would migrate and rename the real file (and purge the real
+    session store). Point the migration at a path that does not exist so it
+    short-circuits; test_user_migration.py redirects it to its own fixtures.
+    """
+    from package import user_migration
+
+    absent = tmp_path_factory.mktemp("no-auth-db") / "auth.db"
+    mp = pytest.MonkeyPatch()
+    mp.setattr(user_migration, "LEGACY_AUTH_DB", str(absent))
+    yield
+    mp.undo()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def no_real_instance_id_migration(tmp_path_factory):
+    """Keep the instance-id adoption away from the real data directory.
+
+    Same hazard as no_real_sqlite_migration, and it already bit us once with
+    auth.db: get_or_create_instance_id() adopts data/database/instance.id and
+    renames it, and that file exists on a developer checkout. Point it at a path
+    that does not exist; test_instance_id.py redirects it to its own fixtures.
+    """
+    from package import instance_id
+
+    absent = tmp_path_factory.mktemp("no-instance-id") / "instance.id"
+    mp = pytest.MonkeyPatch()
+    mp.setattr(instance_id, "LEGACY_INSTANCE_FILE", str(absent))
+    yield
+    mp.undo()
 
 
 @pytest.fixture(scope="session")
-def flask_app():
+def mongo_client():
+    """Session-wide mongomock client patched into the data layer.
+
+    Must be in place before flask_app runs: auth_client logs in through the real
+    /user_login endpoint, which reads the users collection, and without this the
+    suite would try to reach a live mongod. The built-in monkeypatch fixture is
+    function-scoped, so drive MonkeyPatch directly.
+    """
+    import mongomock
+
+    mp = pytest.MonkeyPatch()
+    client = mongomock.MongoClient()
+    mp.setattr("package.data_file_functions._mongo_client", client)
+    mp.setattr("package.data_file_functions._get_mongo_client", lambda: client)
+    yield client
+    mp.undo()
+
+
+@pytest.fixture(scope="session")
+def flask_app(mongo_client):
     """Real Flask app from app.py configured for testing.
 
-    Uses the app's existing SQLite database with TESTING=True.
-    Creates a dedicated test user if one does not already exist.
+    Seeds the test user into the mongomock users collection with a real bcrypt
+    hash (at minimum cost rounds) so the real login flow works offline.
     """
     from app import app as flask_application
     from app import bcrypt as flask_bcrypt
-    from app import db as flask_db
-    from app import User
+    from package import user_store
 
     flask_application.config["TESTING"] = True
     # Disable CSRF validation so tests can POST to forms without a token.
     flask_application.config["WTF_CSRF_ENABLED"] = False
 
     with flask_application.app_context():
-        flask_db.create_all()
-
-        # Create test user if not already present.
-        existing = flask_db.session.execute(
-            flask_db.select(User).filter_by(username="testuser")
-        ).scalar_one_or_none()
-        if not existing:
-            hashed_pw = flask_bcrypt.generate_password_hash("testpass").decode(
-                "utf-8"
-            )
-            test_user = User(
-                username="testuser", email="test@test.com", password=hashed_pw
-            )
-            flask_db.session.add(test_user)
-            flask_db.session.commit()
+        users = user_store.collection()
+        if users.find_one({"_id": "testuser"}) is None:
+            hashed_pw = flask_bcrypt.generate_password_hash(
+                "testpass", rounds=4
+            ).decode("utf-8")
+            user_store.create_user("testuser", "test@test.com", hashed_pw)
 
         yield flask_application
-
-        flask_db.session.remove()
 
 
 @pytest.fixture

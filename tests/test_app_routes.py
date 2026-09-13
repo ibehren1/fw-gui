@@ -5,7 +5,7 @@ Templates render for real to catch variable mismatches.
 """
 
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -124,10 +124,9 @@ class TestAuthRoutes:
             assert "/user_login" in resp.headers["Location"]
 
     def test_logout(self, auth_client):
-        mock_user = Mock(username="testuser")
-        with patch("app.query_user_by_id", return_value=mock_user):
-            resp = auth_client.get("/user_logout")
-            assert resp.status_code == 302
+        # Logout takes the name straight from the session; no user lookup.
+        resp = auth_client.get("/user_logout")
+        assert resp.status_code == 302
 
     def test_change_password_get(self, auth_client):
         with patch("app.list_user_files", return_value=[]), patch(
@@ -912,11 +911,78 @@ class TestConfigRoutes:
                 in resp.headers["Location"]
             )
 
+    def test_configuration_push_renders_bare_key_names(self, auth_client):
+        """The radio value must be the bare key name, with no .key suffix.
+
+        SSH keys moved into MongoDB in 3.0.0, addressed by bare name
+        (ssh_key_store._document_id -> "<user>/<name>"). The template kept
+        appending ".key" -- which the pre-3.0.0 on-disk path needed -- so every
+        lookup missed and all key-based auth failed with "No stored SSH key
+        named 'x.key'".
+        """
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch("app.test_connection", return_value=True), patch(
+            "app.list_user_keys", return_value=["mykey"]
+        ):
+            resp = auth_client.get("/configuration_push")
+
+            assert resp.status_code == 200
+            body = resp.data.decode()
+            assert 'name="ssh_key_name" value="mykey"' in body
+            assert 'value="mykey.key"' not in body
+
+    def test_configuration_push_forwards_bare_key_name(self, auth_client):
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="Commit successful",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=["mykey"]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "fernet-key",
+                    "action": "Commit",
+                    "ssh_key_name": "mykey",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][0]["ssh_key_name"] == "mykey"
+
+    def test_configuration_push_strips_legacy_key_suffix(self, auth_client):
+        """A browser holding the pre-fix cached form still resolves."""
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="Commit successful",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=["mykey"]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "fernet-key",
+                    "action": "Commit",
+                    "ssh_key_name": "mykey.key",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][0]["ssh_key_name"] == "mykey"
+
     def test_configuration_push_post_commit(self, auth_client):
         with patch(
             "app.generate_config",
             return_value=("config", ["line"]),
-        ), patch("app.write_user_command_conf_file"), patch(
+        ), patch(
             "app.commit_to_firewall",
             return_value="Commit successful",
         ) as mock_commit, patch(
@@ -932,12 +998,14 @@ class TestConfigRoutes:
             )
             assert resp.status_code == 200
             mock_commit.assert_called_once()
+            # The rendered command string is forwarded, not a file path.
+            assert mock_commit.call_args[0][2] == "line"
 
     def test_configuration_push_post_view_diffs(self, auth_client):
         with patch(
             "app.generate_config",
             return_value=("config", ["line"]),
-        ), patch("app.write_user_command_conf_file"), patch(
+        ), patch(
             "app.get_diffs_from_firewall",
             return_value="diff output",
         ) as mock_diffs, patch(
@@ -953,6 +1021,56 @@ class TestConfigRoutes:
             )
             assert resp.status_code == 200
             mock_diffs.assert_called_once()
+            assert mock_diffs.call_args[0][2] == "line"
+
+    def test_configuration_push_post_commit_delete_before_set(self, auth_client):
+        """The delete_before_set checkbox prepends the teardown command."""
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="Commit successful",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": "Commit",
+                    "delete_before_set": "true",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][2] == "delete firewall\nline"
+
+    def test_configuration_push_post_commit_all_comments(self, auth_client):
+        """A config of only banners and blanks forwards an empty string.
+
+        commit_to_firewall guards on that rather than handing NAPALM a falsy
+        config, which would raise MergeConfigException.
+        """
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["# banner", ""]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="No configuration commands to send.",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": "Commit",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][2] == ""
 
     def test_snapshot_diff_choose(self, auth_client):
         with patch(
@@ -1034,16 +1152,91 @@ class TestConfigRoutes:
 # Admin routes
 # ---------------------------------------------------------------------------
 class TestAdminRoutes:
+    SCHEDULE = {
+        "enabled": False,
+        "day_of_week": 6,
+        "hour": 3,
+        "retention": 4,
+        "day_choices": list(
+            enumerate(
+                (
+                    "Mondays",
+                    "Tuesdays",
+                    "Wednesdays",
+                    "Thursdays",
+                    "Fridays",
+                    "Saturdays",
+                    "Sundays",
+                )
+            )
+        ),
+        "hour_choices": list(range(24)),
+        "running": False,
+        "schedule_text": "Sundays at 03:00 UTC",
+        "last_run_text": "Never",
+        "next_run_text": "Not scheduled",
+        "last_error": None,
+    }
+
     @pytest.fixture(autouse=True)
     def setup_mocks(self):
         with patch("app.list_user_files", return_value=["test_firewall"]), patch(
             "app.list_snapshots", return_value=[]
-        ), patch("app.list_full_backups", return_value=[]):
+        ), patch("app.list_full_backups", return_value=[]), patch(
+            "app.describe_schedule", return_value=dict(self.SCHEDULE)
+        ):
             yield
 
     def test_admin_settings_get(self, auth_client):
         resp = auth_client.get("/admin_settings")
         assert resp.status_code == 200
+
+    def test_admin_settings_does_not_claim_keys_are_excluded(self, auth_client):
+        """Backups DO contain SSH keys as of 3.0.0.
+
+        The zip walk skips the on-disk .key files, but the ciphertext arrives via
+        keys.bson in the Mongo dump, so telling the operator keys are excluded
+        would misrepresent what leaves the host in an archive.
+        """
+        resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "excluded from backups" not in body
+        assert "MongoDB dump" in body
+
+    def test_admin_settings_shows_instance_counts(self, auth_client):
+        stats = {
+            "users": 4,
+            "disabled_users": 1,
+            "configurations": 7,
+            "snapshots": 12,
+        }
+        with patch("app.gather_instance_stats", return_value=stats):
+            resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "Registered Users" in body
+        assert "4" in body
+        assert "1 disabled" in body
+        assert "Firewall Configurations" in body
+        assert ">7<" in body
+        assert "Snapshots" in body
+        assert ">12<" in body
+
+    def test_admin_settings_renders_zero_counts_not_na(self, auth_client):
+        """A fresh instance has real zeros; showing "N/A" would look broken."""
+        stats = {
+            "users": 0,
+            "disabled_users": 0,
+            "configurations": 0,
+            "snapshots": 0,
+        }
+        with patch("app.gather_instance_stats", return_value=stats):
+            resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "N/A" not in body
+        assert "disabled)" not in body
 
     def test_admin_settings_post_full_backup(self, auth_client):
         with patch("app.create_backup") as mock_backup:
@@ -1053,32 +1246,142 @@ class TestAdminRoutes:
             assert resp.status_code == 200
             mock_backup.assert_called_once()
 
-    def test_download_valid_path(self, auth_client):
-        data_dir = os.path.join(os.getcwd(), "data", "testuser")
-        os.makedirs(data_dir, exist_ok=True)
-        test_file = os.path.join(data_dir, "_test_download.txt")
-        try:
-            with open(test_file, "wb") as f:
-                f.write(b"test content")
+    def test_admin_settings_shows_the_weekly_schedule(self, auth_client):
+        resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "Automatic Weekly Backup" in body
+        assert "Sundays at 03:00 UTC" in body
+        assert "Not scheduled" in body
+        assert "Save Schedule" in body
+
+    def test_admin_settings_form_preselects_the_stored_settings(self, auth_client):
+        """The document is the only place these live, so the form must reflect it."""
+        stored = dict(
+            self.SCHEDULE,
+            enabled=True,
+            day_of_week=2,
+            hour=5,
+            retention=9,
+            next_run_text="2026-09-16 05:00 UTC",
+        )
+        with patch("app.describe_schedule", return_value=stored):
+            resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert 'value="2" selected' in body
+        assert 'value="5" selected' in body
+        assert 'value="9"' in body
+        assert "checked" in body
+        assert "2026-09-16 05:00 UTC" in body
+
+    def test_admin_settings_checkbox_is_unchecked_when_disabled(self, auth_client):
+        resp = auth_client.get("/admin_settings")
+        assert "checked" not in resp.data.decode()
+
+    def test_admin_settings_survives_an_unavailable_schedule(self, auth_client):
+        """A database blip must degrade the card, not 500 the whole page."""
+        with patch("app.describe_schedule", return_value=None):
+            resp = auth_client.get("/admin_settings")
+
+        assert resp.status_code == 200
+        assert "Schedule unavailable" in resp.data.decode()
+
+    def test_admin_settings_form_carries_a_csrf_token(self, auth_client):
+        """CSRF is disabled in the suite, so assert the token is rendered."""
+        resp = auth_client.get("/admin_settings")
+        assert "csrf_token" in resp.data.decode()
+
+    def test_admin_settings_post_saves_the_schedule(self, auth_client):
+        with patch("app.update_settings") as mock_update, patch(
+            "app.prune_preview", return_value={"dumps": 212, "zips": 47}
+        ), patch("app.create_backup") as mock_backup:
+            mock_update.return_value = dict(
+                self.SCHEDULE, enabled=True, day_of_week=2, hour=5, retention=9
+            )
             resp = auth_client.post(
-                "/download",
+                "/admin_settings",
                 data={
-                    "path": "data/testuser/",
-                    "filename": "_test_download.txt",
+                    "schedule_form": "save",
+                    "schedule_enabled": "true",
+                    "schedule_day_of_week": "2",
+                    "schedule_hour": "5",
+                    "schedule_retention": "9",
                 },
             )
-            assert resp.status_code == 200
-            assert resp.data == b"test content"
-        finally:
-            if os.path.exists(test_file):
-                os.remove(test_file)
 
-    def test_download_path_traversal(self, auth_client):
+        assert resp.status_code == 200
+        mock_update.assert_called_once_with(
+            True, day_of_week="2", hour="5", retention="9"
+        )
+        # The two POST branches must not collide.
+        mock_backup.assert_not_called()
+        # The operator is told what the next run will delete.
+        body = resp.data.decode()
+        assert "212" in body
+        assert "47" in body
+
+    def test_admin_settings_missing_checkbox_means_disabled(self, auth_client):
+        """An unchecked box sends nothing; the hidden marker is what disambiguates."""
+        with patch("app.update_settings") as mock_update:
+            mock_update.return_value = dict(self.SCHEDULE, enabled=False)
+            resp = auth_client.post(
+                "/admin_settings",
+                data={
+                    "schedule_form": "save",
+                    "schedule_day_of_week": "6",
+                    "schedule_hour": "3",
+                    "schedule_retention": "4",
+                },
+            )
+
+        assert resp.status_code == 200
+        assert mock_update.call_args.args[0] is False
+        assert "disabled" in resp.data.decode().lower()
+
+    def test_admin_settings_warns_when_retention_is_zero(self, auth_client):
+        with patch("app.update_settings") as mock_update, patch(
+            "app.prune_preview", return_value={"dumps": 0, "zips": 0}
+        ):
+            mock_update.return_value = dict(self.SCHEDULE, enabled=True, retention=0)
+            resp = auth_client.post(
+                "/admin_settings",
+                data={"schedule_form": "save", "schedule_enabled": "true"},
+            )
+
+        assert "Nothing will be deleted" in resp.data.decode()
+
+    def test_admin_settings_flashes_when_the_save_fails(self, auth_client):
+        with patch("app.update_settings", return_value=None):
+            resp = auth_client.post(
+                "/admin_settings",
+                data={"schedule_form": "save", "schedule_enabled": "true"},
+            )
+
+        assert resp.status_code == 200
+        assert "Could not update the backup schedule." in resp.data.decode()
+
+    def test_admin_settings_post_full_backup_does_not_touch_the_schedule(
+        self, auth_client
+    ):
+        with patch("app.create_backup") as mock_backup, patch(
+            "app.update_settings"
+        ) as mock_update:
+            resp = auth_client.post(
+                "/admin_settings", data={"backup": "full_backup"}
+            )
+
+        assert resp.status_code == 200
+        mock_backup.assert_called_once()
+        mock_update.assert_not_called()
+
+    def test_download_route_is_gone(self, auth_client):
+        """Removed in 3.0.0: it read any file under data/ for any logged-in user."""
         resp = auth_client.post(
             "/download",
-            data={"path": "../", "filename": "etc/passwd"},
+            data={"path": "data/testuser/", "filename": "anything.txt"},
         )
-        assert resp.status_code == 302
+        assert resp.status_code == 404
 
 
 class TestSessionCookieHardening:

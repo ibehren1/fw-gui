@@ -1,17 +1,17 @@
 """
     MongoDB Converter
-    
+
     This script converts user data files from JSON format to MongoDB.
-    It reads user information from a SQLite database and processes JSON files
-    in user directories to load them into MongoDB.
+    It reads the user list from the MongoDB users collection and processes JSON
+    files in user directories to load them into MongoDB.
 """
 
 import json
 import logging
 import os
-import sqlite3
 
 from package.data_file_functions import write_user_data_file
+from package.user_store import list_usernames
 
 
 def mongo_converter():
@@ -19,27 +19,19 @@ def mongo_converter():
     Main function to convert JSON files to MongoDB entries.
 
     Steps:
-    1. Connects to SQLite DB and gets list of usernames
+    1. Gets the list of usernames from MongoDB
     2. Finds all JSON files in user directories
     3. Loads JSON data into MongoDB
     4. Renames processed files with .old extension
+
+    Must run after migrate_sqlite_users() on an install upgrading from
+    pre-3.0.0, since that is what puts the accounts in MongoDB.
     """
     logging.info("*** Starting MongoDB Converter ***")
 
-    # Connect to SQLite database and get list of users
-    con = sqlite3.connect("data/database/auth.db")
-    cur = con.cursor()
-    res = cur.execute("SELECT username FROM User")
-
-    # Convert query results to list of usernames
-    userlist = []
-    usertuples = res.fetchall()
-    for user in usertuples:
-        userlist.append(user[0])
-
-    # Close database connections
-    cur.close()
-    con.close()
+    # Get the list of users. Disabled accounts are included on purpose: their
+    # leftover JSON should still be imported rather than silently skipped.
+    userlist = list_usernames()
 
     # Find all JSON files in user directories
     file_list = []

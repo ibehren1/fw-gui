@@ -9,16 +9,20 @@ import logging
 
 import urllib3
 
+from package.instance_id import get_or_create_instance_id
+
 
 def get_instance_id():
-    try:
-        with open("data/database/instance.id") as f:
-            instance_id = f.read().strip()
-            logging.debug(f"Instance ID: {instance_id}")
-    except OSError:
-        logging.debug("instance.id not found; telemetry degraded.")
-        return ""
+    """Returns the install's telemetry id, or "" if unavailable.
 
+    Thin delegate to package.instance_id, which stores the id in MongoDB as of
+    3.0.0. Contract unchanged: this never raises. The callers below sit outside
+    the try blocks that guard a firewall push, so an exception here would turn a
+    telemetry lookup into a failed commit.
+    """
+    instance_id = get_or_create_instance_id()
+    if not instance_id:
+        logging.debug("No instance id available; telemetry degraded.")
     return instance_id
 
 

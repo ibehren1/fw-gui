@@ -1,21 +1,44 @@
 import os
 from unittest.mock import Mock, patch
 
+import mongomock
 import pytest
 from flask import Flask
 from flask_login import LoginManager
 
+from package import user_store
 from package.auth_functions import (
     change_password,
     check_version,
     process_login,
-    query_user_by_id,
-    query_user_by_username,
     register_user,
 )
 
 
-# Fixtures (app, bcrypt, db, user_model inherited from conftest.py)
+# Fixtures (app, bcrypt, user_model inherited from conftest.py)
+
+
+@pytest.fixture
+def users(monkeypatch):
+    """Patch a mongomock client in and return the users collection."""
+    client = mongomock.MongoClient()
+    monkeypatch.setattr("package.data_file_functions._mongo_client", client)
+    monkeypatch.setattr("package.data_file_functions._get_mongo_client", lambda: client)
+    monkeypatch.setenv("MONGODB_DATABASE", "test_db")
+    monkeypatch.delenv("MONGODB_USERS_COLLECTION", raising=False)
+    return user_store.collection()
+
+
+def seed(users, username="testuser", password="hashed_oldpass", **extra):
+    """Insert a user document. Password defaults to a MockBcrypt-style hash."""
+    doc = {"_id": username, "email": f"{username}@test.com", "password": password}
+    doc.update(extra)
+    users.insert_one(doc)
+    return doc
+
+
+def stored(users, username="testuser"):
+    return users.find_one({"_id": username})
 
 
 @pytest.fixture
@@ -27,7 +50,7 @@ def version_file(tmp_path):
 
 
 # Test change_password function
-def test_change_password_success(app, bcrypt, db, user_model):
+def test_change_password_success(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -37,16 +60,17 @@ def test_change_password_success(app, bcrypt, db, user_model):
                 "confirm_password": "newpass123",
             }
 
-        mock_user = user_model("testuser", "hashed_oldpass", "test@test.com")
-        db.session.execute().scalar_one.return_value = mock_user
+        seed(users)
 
-        result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
+        result = change_password(bcrypt, "testuser", MockRequest())
 
         assert result is True
-        assert mock_user.password == "hashed_newpass123"
+        # Stored as str, not BSON Binary: the production path decodes the hash.
+        assert stored(users)["password"] == "hashed_newpass123"
+        assert isinstance(stored(users)["password"], str)
 
 
-def test_change_password_mismatch(app, bcrypt, db, user_model):
+def test_change_password_mismatch(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -56,12 +80,12 @@ def test_change_password_mismatch(app, bcrypt, db, user_model):
                 "confirm_password": "different",
             }
 
-        result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
+        result = change_password(bcrypt, "testuser", MockRequest())
 
         assert result is False
 
 
-def test_change_password_empty(app, bcrypt, db, user_model):
+def test_change_password_empty(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -71,9 +95,67 @@ def test_change_password_empty(app, bcrypt, db, user_model):
                 "confirm_password": "",
             }
 
-        result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
+        result = change_password(bcrypt, "testuser", MockRequest())
 
         assert result is False
+
+
+def test_change_password_unknown_user(app, bcrypt, users):
+    """A session can outlive its account; that must not 500."""
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "current_password": "oldpass",
+                "new_password": "newpass123",
+                "confirm_password": "newpass123",
+            }
+
+        result = change_password(bcrypt, "ghost", MockRequest())
+
+        assert result is False
+
+
+def test_change_password_disabled_user(app, bcrypt, users):
+    """A disabled account must not be able to rotate its way back in."""
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "current_password": "oldpass",
+                "new_password": "newpass123",
+                "confirm_password": "newpass123",
+            }
+
+        seed(users, disabled=True)
+
+        result = change_password(bcrypt, "testuser", MockRequest())
+
+        assert result is False
+        assert stored(users)["password"] == "hashed_oldpass"
+
+
+def test_change_password_unusable_stored_hash(app, bcrypt, users):
+    """An empty stored hash fails the login rather than raising ValueError."""
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "current_password": "oldpass",
+                "new_password": "newpass123",
+                "confirm_password": "newpass123",
+            }
+
+        seed(users, password="")
+
+        class RaisingBcrypt:
+            def check_password_hash(self, hashed, password):
+                raise ValueError("invalid salt")
+
+            def generate_password_hash(self, password, rounds=None, prefix=None):
+                return b"unused"
+
+        assert change_password(RaisingBcrypt(), "testuser", MockRequest()) is False
 
 
 # Test check_version function
@@ -95,9 +177,7 @@ def test_check_version_update_available(app, version_file):
                     local_ver = f.read()
                 assert local_ver == "v1.0.0"
 
-                with patch(
-                    "builtins.open", return_value=open(version_file, "r")
-                ):
+                with patch("builtins.open", return_value=open(version_file, "r")):
                     check_version()
 
 
@@ -137,114 +217,147 @@ def test_check_version_network_error(app, version_file):
 
 
 # Test process_login function
-def test_process_login_success(app, bcrypt, db, user_model):
+def test_process_login_success(app, bcrypt, users):
     with app.test_request_context():
-        with patch("package.auth_functions.check_version") as mock_check_version:
+        with patch("package.auth_functions.check_version") as mock_check_version, patch(
+            "package.auth_functions.telemetry_instance"
+        ):
             mock_check_version.return_value = None
 
             class MockRequest:
                 form = {"username": "testuser", "password": "testpass"}
 
-            mock_user = user_model("testuser", "hashed_testpass", "test@test.com")
-            db.session.execute().scalar_one.return_value = mock_user
+            seed(users, password="hashed_testpass")
 
-            success, data_dir, username = process_login(
-                bcrypt, db, MockRequest(), user_model
-            )
+            success, data_dir, username = process_login(bcrypt, MockRequest())
 
             assert success is True
             assert username == "testuser"
             assert data_dir == "data/testuser"
 
 
-def test_process_login_failure(app, bcrypt, db, user_model):
+def test_process_login_failure(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
             form = {"username": "testuser", "password": "wrongpass"}
 
-        mock_user = user_model("testuser", "hashed_testpass", "test@test.com")
-        db.session.execute().scalar_one.return_value = mock_user
+        seed(users, password="hashed_testpass")
 
-        success, data_dir, username = process_login(
-            bcrypt, db, MockRequest(), user_model
-        )
+        success, data_dir, username = process_login(bcrypt, MockRequest())
 
         assert success is False
         assert data_dir is None
         assert username is None
 
 
-def test_process_login_empty_username(app, bcrypt, db, user_model):
+def test_process_login_empty_username(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
             form = {"username": "", "password": "testpass"}
 
-        success, data_dir, username = process_login(
-            bcrypt, db, MockRequest(), user_model
-        )
+        success, data_dir, username = process_login(bcrypt, MockRequest())
 
         assert success is False
         assert data_dir is None
         assert username is None
 
 
-def test_process_login_user_not_found(app, bcrypt, db, user_model):
+def test_process_login_user_not_found(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
             form = {"username": "nonexistent", "password": "testpass"}
 
-        db.session.execute().scalar_one.side_effect = Exception()
-
-        success, data_dir, username = process_login(
-            bcrypt, db, MockRequest(), user_model
-        )
+        success, data_dir, username = process_login(bcrypt, MockRequest())
 
         assert success is False
         assert data_dir is None
         assert username is None
 
 
-# Test query functions
-def test_query_user_by_id_found(db, user_model):
-    mock_user = user_model("testuser", "hashedpass", "test@test.com", id=1)
-    db.session.execute().scalar_one.return_value = mock_user
+def test_process_login_disabled_user(app, bcrypt, users):
+    """Correct password, disabled account: refused before login_user()."""
+    with app.test_request_context():
 
-    result = query_user_by_id(db, user_model, 1)
+        class MockRequest:
+            form = {"username": "testuser", "password": "testpass"}
 
-    assert result.username == "testuser"
-    assert result.id == 1
+        seed(users, password="hashed_testpass", disabled=True)
 
+        success, data_dir, username = process_login(bcrypt, MockRequest())
 
-def test_query_user_by_id_not_found(db, user_model):
-    db.session.execute().scalar_one.side_effect = Exception()
-
-    result = query_user_by_id(db, user_model, 999)
-
-    assert result is None
+        assert success is False
+        assert data_dir is None
+        assert username is None
 
 
-def test_query_user_by_username_found(db, user_model):
-    mock_user = user_model("testuser", "hashedpass", "test@test.com")
-    db.session.execute().scalar_one.return_value = mock_user
+def test_process_login_without_disabled_field(app, bcrypt, users):
+    """A document predating the flag is usable -- absent means enabled."""
+    with app.test_request_context():
+        with patch("package.auth_functions.check_version"), patch(
+            "package.auth_functions.telemetry_instance"
+        ):
 
-    result = query_user_by_username(db, user_model, "testuser")
+            class MockRequest:
+                form = {"username": "testuser", "password": "testpass"}
 
-    assert result.username == "testuser"
+            users.insert_one(
+                {
+                    "_id": "testuser",
+                    "email": "test@test.com",
+                    "password": "hashed_testpass",
+                }
+            )
+
+            success, _, username = process_login(bcrypt, MockRequest())
+
+            assert success is True
+            assert username == "testuser"
 
 
-def test_query_user_by_username_not_found(db, user_model):
-    db.session.execute().scalar_one.side_effect = Exception()
+def test_process_login_unusable_stored_hash(app, users):
+    """A corrupt stored hash fails the login rather than 500ing it."""
+    with app.test_request_context():
 
-    result = query_user_by_username(db, user_model, "nonexistent")
+        class MockRequest:
+            form = {"username": "testuser", "password": "testpass"}
 
-    assert result is None
+        seed(users, password="")
+
+        class RaisingBcrypt:
+            def check_password_hash(self, hashed, password):
+                raise ValueError("invalid salt")
+
+            def generate_password_hash(self, password, rounds=None, prefix=None):
+                return b"unused"
+
+        success, _, _ = process_login(RaisingBcrypt(), MockRequest())
+
+        assert success is False
+
+
+def test_process_login_mongo_errors_are_not_swallowed(app, bcrypt, users, monkeypatch):
+    """An outage must not be rendered as "Login incorrect."."""
+    from pymongo.errors import ServerSelectionTimeoutError
+
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {"username": "testuser", "password": "testpass"}
+
+        def boom(*args, **kwargs):
+            raise ServerSelectionTimeoutError("no server")
+
+        monkeypatch.setattr(user_store, "get_user_by_username", boom)
+
+        with pytest.raises(ServerSelectionTimeoutError):
+            process_login(bcrypt, MockRequest())
 
 
 # Test register_user function
-def test_register_user_success(app, bcrypt, db, user_model):
+def test_register_user_success(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -255,35 +368,38 @@ def test_register_user_success(app, bcrypt, db, user_model):
                 "confirm_password": "newpass123",
             }
 
-        db.session.execute().scalar_one.side_effect = Exception()  # User doesn't exist
-
-        result = register_user(bcrypt, db, MockRequest(), user_model)
+        result = register_user(bcrypt, MockRequest())
 
         assert result is True
-        db.session.add.assert_called_once()
-        db.session.commit.assert_called_once()
+        doc = stored(users, "newuser")
+        assert doc["email"] == "new@test.com"
+        # str, not BSON Binary.
+        assert doc["password"] == "hashed_newpass123"
+        assert isinstance(doc["password"], str)
+        assert doc["disabled"] is False
 
 
-def test_register_user_existing_username(app, bcrypt, db, user_model):
+def test_register_user_existing_username(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
             form = {
                 "username": "existinguser",
                 "email": "new@test.com",
-                "password": "newpass",
-                "confirm_password": "newpass",
+                "password": "newpass123",
+                "confirm_password": "newpass123",
             }
 
-        mock_user = user_model("existinguser", "hashedpass", "test@test.com")
-        db.session.execute().scalar_one.return_value = mock_user
+        seed(users, "existinguser")
 
-        result = register_user(bcrypt, db, MockRequest(), user_model)
+        result = register_user(bcrypt, MockRequest())
 
         assert result is False
+        # The existing account is untouched.
+        assert stored(users, "existinguser")["password"] == "hashed_oldpass"
 
 
-def test_register_user_password_mismatch(app, bcrypt, db, user_model):
+def test_register_user_password_mismatch(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -294,12 +410,12 @@ def test_register_user_password_mismatch(app, bcrypt, db, user_model):
                 "confirm_password": "different",
             }
 
-        result = register_user(bcrypt, db, MockRequest(), user_model)
+        result = register_user(bcrypt, MockRequest())
 
         assert result is False
 
 
-def test_register_user_empty_username(app, bcrypt, db, user_model):
+def test_register_user_empty_username(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -310,12 +426,12 @@ def test_register_user_empty_username(app, bcrypt, db, user_model):
                 "confirm_password": "newpass",
             }
 
-        result = register_user(bcrypt, db, MockRequest(), user_model)
+        result = register_user(bcrypt, MockRequest())
 
         assert result is False
 
 
-def test_register_user_empty_email(app, bcrypt, db, user_model):
+def test_register_user_empty_email(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -326,12 +442,12 @@ def test_register_user_empty_email(app, bcrypt, db, user_model):
                 "confirm_password": "newpass",
             }
 
-        result = register_user(bcrypt, db, MockRequest(), user_model)
+        result = register_user(bcrypt, MockRequest())
 
         assert result is False
 
 
-def test_register_user_empty_password(app, bcrypt, db, user_model):
+def test_register_user_empty_password(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -342,12 +458,29 @@ def test_register_user_empty_password(app, bcrypt, db, user_model):
                 "confirm_password": "",
             }
 
-        result = register_user(bcrypt, db, MockRequest(), user_model)
+        result = register_user(bcrypt, MockRequest())
 
         assert result is False
 
 
-def test_change_password_same_as_username(app, bcrypt, db, user_model):
+@pytest.mark.parametrize("name", ["users", "sessions", "Users", "SESSIONS"])
+def test_register_user_reserved_username(app, bcrypt, users, name):
+    """A username is a collection name; the application's own are off limits."""
+    with app.test_request_context():
+
+        class MockRequest:
+            form = {
+                "username": name,
+                "email": "new@test.com",
+                "password": "newpass123",
+                "confirm_password": "newpass123",
+            }
+
+        assert register_user(bcrypt, MockRequest()) is False
+        assert users.count_documents({}) == 0
+
+
+def test_change_password_same_as_username(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -357,12 +490,12 @@ def test_change_password_same_as_username(app, bcrypt, db, user_model):
                 "confirm_password": "testuser",
             }
 
-        result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
+        result = change_password(bcrypt, "testuser", MockRequest())
 
         assert result is False
 
 
-def test_change_password_same_as_current(app, bcrypt, db, user_model):
+def test_change_password_same_as_current(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -372,12 +505,12 @@ def test_change_password_same_as_current(app, bcrypt, db, user_model):
                 "confirm_password": "oldpass",
             }
 
-        result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
+        result = change_password(bcrypt, "testuser", MockRequest())
 
         assert result is False
 
 
-def test_change_password_wrong_current(app, bcrypt, db, user_model):
+def test_change_password_wrong_current(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -387,15 +520,15 @@ def test_change_password_wrong_current(app, bcrypt, db, user_model):
                 "confirm_password": "newpass",
             }
 
-        mock_user = user_model("testuser", "hashed_correctpass", "test@test.com")
-        db.session.execute().scalar_one.return_value = mock_user
+        seed(users, password="hashed_correctpass")
 
-        result = change_password(bcrypt, db, user_model, "testuser", MockRequest())
+        result = change_password(bcrypt, "testuser", MockRequest())
 
         assert result is False
+        assert stored(users)["password"] == "hashed_correctpass"
 
 
-def test_register_user_short_password(app, bcrypt, db, user_model):
+def test_register_user_short_password(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -406,11 +539,10 @@ def test_register_user_short_password(app, bcrypt, db, user_model):
                 "confirm_password": "short",
             }
 
-        db.session.execute().scalar_one.side_effect = Exception()
-        assert register_user(bcrypt, db, MockRequest(), user_model) is False
+        assert register_user(bcrypt, MockRequest()) is False
 
 
-def test_register_user_invalid_email(app, bcrypt, db, user_model):
+def test_register_user_invalid_email(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -421,11 +553,10 @@ def test_register_user_invalid_email(app, bcrypt, db, user_model):
                 "confirm_password": "newpass123",
             }
 
-        db.session.execute().scalar_one.side_effect = Exception()
-        assert register_user(bcrypt, db, MockRequest(), user_model) is False
+        assert register_user(bcrypt, MockRequest()) is False
 
 
-def test_change_password_short(app, bcrypt, db, user_model):
+def test_change_password_short(app, bcrypt, users):
     with app.test_request_context():
 
         class MockRequest:
@@ -435,4 +566,4 @@ def test_change_password_short(app, bcrypt, db, user_model):
                 "confirm_password": "short",
             }
 
-        assert change_password(bcrypt, db, user_model, "testuser", MockRequest()) is False
+        assert change_password(bcrypt, "testuser", MockRequest()) is False

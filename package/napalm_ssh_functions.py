@@ -14,7 +14,7 @@ import paramiko
 from flask import flash
 from napalm import get_network_driver
 
-from package.data_file_functions import decrypt_file
+from package.ssh_key_store import decrypt_ssh_key
 from package.telemetry_functions import (
     telemetry_commit,
     telemetry_diff,
@@ -38,9 +38,12 @@ def assemble_napalm_driver_string(connection_string, session):
     optional_args = {"port": connection_string["port"], "conn_timeout": 120}
 
     if "ssh_key_name" in connection_string:
+        # The "password" field carries the user's Fernet key on this path, not a
+        # login password.
         key = connection_string["password"].encode("utf-8")
-        key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
-        tmp_key_name = decrypt_file(key_name, key)
+        tmp_key_name = decrypt_ssh_key(
+            session["username"], connection_string["ssh_key_name"], key
+        )
         optional_args["key_file"] = tmp_key_name
 
         return (
@@ -93,9 +96,12 @@ def assemble_paramiko_driver_string(connection_string, session):
 
     if "ssh_key_name" in connection_string:
         logging.info("key")
+        # The "password" field carries the user's Fernet key on this path, not a
+        # login password.
         key = connection_string["password"].encode("utf-8")
-        key_name = f"{session['data_dir']}/{connection_string['ssh_key_name']}"
-        tmp_key_name = decrypt_file(key_name, key)
+        tmp_key_name = decrypt_ssh_key(
+            session["username"], connection_string["ssh_key_name"], key
+        )
         # If connect fails the caller never receives tmp_key_name, so remove
         # the decrypted key here rather than leaving it staged on disk.
         try:
@@ -113,19 +119,32 @@ def assemble_paramiko_driver_string(connection_string, session):
     return ssh, tmp_key_name
 
 
-def commit_to_firewall(connection_string, session):
+def commit_to_firewall(connection_string, session, merge_config):
     """
     Commits configuration changes to the VyOS firewall.
 
     Args:
         connection_string (dict): Connection parameters
-        session (dict): Session data including firewall configuration file path
+        session (dict): Session data including hostname, port and data_dir (the
+            latter for the SSH key, not for any configuration file)
+        merge_config (str): Set commands to merge, from build_merge_config()
 
     Returns:
         str: Result message indicating success or failure
     """
     logging.debug(" |------------------------------------------")
     telemetry_commit()
+
+    # Guard before the driver is assembled: an empty candidate means no SSH
+    # connection, no key decryption and nothing staged in data/tmp to clean up.
+    # napalm-vyos treats a falsy config as a caller error and raises
+    # MergeConfigException, which the broad except below would surface as a red
+    # "Error in diff" banner -- misleading for a config that simply has nothing
+    # to send (every rule commented out, say). Deliberately after the telemetry
+    # call so commit counts stay comparable to previous releases.
+    if not merge_config:
+        logging.info(" |--X No configuration commands to send; skipping connection.")
+        return "No configuration commands to send.  Add rules or extra configuration items first."
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
@@ -144,9 +163,7 @@ def commit_to_firewall(connection_string, session):
 
     try:
         vyos_router.open()
-        vyos_router.load_merge_candidate(
-            filename=f"{session['data_dir']}/{session['firewall_name']}.conf"
-        )
+        vyos_router.load_merge_candidate(config=merge_config)
 
         logging.debug(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
@@ -184,19 +201,27 @@ def commit_to_firewall(connection_string, session):
             logging.debug(" |-----------------------------------------")
 
 
-def get_diffs_from_firewall(connection_string, session):
+def get_diffs_from_firewall(connection_string, session, merge_config):
     """
     Gets configuration differences between local and remote firewall configurations.
 
     Args:
         connection_string (dict): Connection parameters
-        session (dict): Session data including firewall configuration file path
+        session (dict): Session data including hostname, port and data_dir (the
+            latter for the SSH key, not for any configuration file)
+        merge_config (str): Set commands to compare, from build_merge_config()
 
     Returns:
         str: Configuration differences or status message
     """
     logging.debug(" |------------------------------------------")
     telemetry_diff()
+
+    # See commit_to_firewall for why this guard runs here, before the driver is
+    # assembled and after the telemetry call.
+    if not merge_config:
+        logging.info(" |--X No configuration commands to send; skipping connection.")
+        return "No configuration commands to send.  Add rules or extra configuration items first."
 
     try:
         driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
@@ -215,9 +240,7 @@ def get_diffs_from_firewall(connection_string, session):
 
     try:
         vyos_router.open()
-        vyos_router.load_merge_candidate(
-            filename=f"{session['data_dir']}/{session['firewall_name']}.conf"
-        )
+        vyos_router.load_merge_candidate(config=merge_config)
 
         logging.debug(" |--> Comparing configuration")
         diffs = vyos_router.compare_config()
