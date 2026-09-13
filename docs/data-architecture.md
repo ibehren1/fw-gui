@@ -110,8 +110,12 @@ flowchart TD
   `TypeError: name must be an instance of str` on `client[None]`, and since
   2.5.0 accounts live here too, an unset variable would take the login page down
   rather than only the config routes.
-- `validate_mongodb_connection()` (`:1155-1193`) probes with
-  `serverSelectionTimeoutMS=1` and `sys.exit()`s on failure at startup.
+- `validate_mongodb_connection()` (`:1169-1208`) probes at startup and
+  `sys.exit()`s on failure, using the same `SERVER_SELECTION_TIMEOUT_MS`. It used
+  to pass `serverSelectionTimeoutMS=1`, which is shorter than a real connection
+  takes: a mongod that is up but still starting — the normal case behind Compose's
+  healthcheck-less `depends_on` — could fail the probe and drop the app into a
+  restart loop. In practice the session-store failure above usually fires first.
 - No indexes are created by application code. Uniqueness comes from `_id` alone
   (config name per user collection; username in `users`). The TTL index on the
   `sessions` collection is created by Flask-Session, not by this repo.

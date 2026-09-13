@@ -1204,6 +1204,31 @@ class TestValidateMongodbConnection:
         with pytest.raises(SystemExit):
             validate_mongodb_connection("mongodb://badhost:27017")
 
+    def test_probe_uses_the_shared_timeout(self, monkeypatch):
+        """Was 1ms, which is shorter than a real connection takes.
+
+        A mongod that is up but still starting -- the normal case behind
+        Compose's healthcheck-less depends_on -- would fail the probe and exit the
+        app into a restart loop.
+        """
+        import package.data_file_functions as dff
+
+        captured = {}
+
+        def fake_client(uri, **kwargs):
+            captured.update(kwargs)
+            return MagicMock()
+
+        monkeypatch.setattr(dff.pymongo, "MongoClient", fake_client)
+
+        validate_mongodb_connection("mongodb://localhost:27017")
+
+        assert (
+            captured["serverSelectionTimeoutMS"] == dff.SERVER_SELECTION_TIMEOUT_MS
+        )
+        # Long enough for a starting mongod, short enough not to hang a boot.
+        assert 1000 <= dff.SERVER_SELECTION_TIMEOUT_MS <= 10000
+
 
 # ===========================================================================
 # upload_backup_file

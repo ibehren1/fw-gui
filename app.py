@@ -2145,11 +2145,10 @@ if __name__ == "__main__":
         mongo_converter()
 
     # Post instance telemetry. Deliberately after the MongoDB check: the instance
-    # id now lives in MongoDB, and the shared client sets no
-    # serverSelectionTimeoutMS, so reading it before the check would stall the
-    # boot for pymongo's 30s default on an unreachable database. The trade-off is
-    # that an install which cannot reach MongoDB no longer reports at all -- it
-    # used to post here and then exit in the check above.
+    # id now lives in MongoDB, so running this first would mean waiting on the
+    # database before the check that exists to report it is unreachable. The
+    # trade-off is that an install which cannot reach MongoDB no longer reports at
+    # all -- it used to post here and then exit in the check above.
     telemetry_instance()
 
     # Check if running in development environment

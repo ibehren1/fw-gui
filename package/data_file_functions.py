@@ -1181,15 +1181,23 @@ def validate_mongodb_connection(mongodb_uri):
 
     The function:
     1. Attempts to connect to MongoDB using the provided URI
-    2. Sets a short 1ms server selection timeout
+    2. Allows SERVER_SELECTION_TIMEOUT_MS for a server to be found
     3. Tests the connection by requesting server info
     4. Logs success/failure message
     5. Closes the connection if successful
     6. Returns True on success, exits program on failure
+
+    The timeout used to be 1ms, which is shorter than a real connection takes: a
+    mongod that is up but still starting -- the normal case behind Compose's
+    `depends_on`, which has no healthcheck -- could fail this probe and exit the
+    app into a restart loop. Sharing the runtime bound keeps one number to reason
+    about and costs at most a few seconds on a genuinely unreachable database.
     """
     client = None
     try:
-        client = pymongo.MongoClient(mongodb_uri, serverSelectionTimeoutMS=1)
+        client = pymongo.MongoClient(
+            mongodb_uri, serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS
+        )
         client.server_info()
         logging.info("  |--> MongoDB connection successful.")
         return True
