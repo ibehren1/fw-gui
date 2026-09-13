@@ -2,6 +2,7 @@
 
 from package.validators import (
     is_allowed_op_command,
+    is_reserved_username,
     is_safe_name,
     is_valid_username,
 )
@@ -54,6 +55,38 @@ class TestIsValidUsername:
     def test_rejects_non_strings(self):
         assert not is_valid_username(None)
         assert not is_valid_username(42)
+
+    def test_rejects_reserved_names(self):
+        assert not is_valid_username("users")
+        assert not is_valid_username("sessions")
+
+
+class TestIsReservedUsername:
+    def test_rejects_application_collections(self):
+        assert is_reserved_username("users")
+        assert is_reserved_username("sessions")
+
+    def test_matching_ignores_case_and_surrounding_space(self):
+        assert is_reserved_username("Users")
+        assert is_reserved_username("USERS")
+        assert is_reserved_username(" sessions ")
+
+    def test_accepts_ordinary_names(self):
+        assert not is_reserved_username("alice")
+        assert not is_reserved_username("user")
+        assert not is_reserved_username("session")
+
+    def test_rejects_non_strings(self):
+        assert not is_reserved_username(None)
+        assert not is_reserved_username(42)
+
+    def test_custom_users_collection_is_reserved_in_addition(self, monkeypatch):
+        monkeypatch.setenv("MONGODB_USERS_COLLECTION", "fwgui_accounts")
+        assert is_reserved_username("fwgui_accounts")
+        # The hardcoded pair is never narrowed by the override: an install that
+        # renamed the collection may still hold a "users"-named leftover.
+        assert is_reserved_username("users")
+        assert is_reserved_username("sessions")
 
 
 class TestIsAllowedOpCommand:

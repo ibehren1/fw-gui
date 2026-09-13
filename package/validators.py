@@ -11,6 +11,7 @@ filesystem or shift the collection/document addressing. These helpers reject
 such names.
 """
 
+import os
 import re
 
 # Tokens that would let a single name component escape its directory or shift
@@ -20,6 +21,14 @@ _UNSAFE_CHARS = ("/", "\\", "\x00")
 # Usernames become both a directory name and a MongoDB collection name, so they
 # are held to a strict allowlist (applied to new registrations).
 _USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+# Collections owned by the application, never by a user. Hardcoded on purpose --
+# see is_reserved_username.
+_RESERVED_USERNAMES = frozenset({"users", "sessions"})
+
+# Collection holding user accounts. Overridable so an install that already has a
+# user named "users" has somewhere to go.
+DEFAULT_USERS_COLLECTION = "users"
 
 
 def is_safe_name(name):
@@ -64,6 +73,27 @@ def is_allowed_op_command(command):
     return bool(tokens) and tokens[0] == "show"
 
 
+def is_reserved_username(name):
+    """Return True if ``name`` is a collection name the application owns.
+
+    A username is also a MongoDB collection name, so a user holding one of these
+    would be handed an application collection as their "config" collection: the
+    normal config routes would let them list, read and delete other users'
+    accounts (``users``) or session documents (``sessions``).
+
+    ``MONGODB_USERS_COLLECTION`` is honoured in addition to -- never instead of
+    -- the hardcoded pair, because an install that renamed the collection may
+    still have a ``users``-named leftover from before the rename.
+    """
+    if not isinstance(name, str):
+        return False
+    reserved = set(_RESERVED_USERNAMES)
+    reserved.add(
+        os.environ.get("MONGODB_USERS_COLLECTION", DEFAULT_USERS_COLLECTION).lower()
+    )
+    return name.strip().lower() in reserved
+
+
 def is_valid_username(name):
     """Return True if ``name`` is a valid username (strict allowlist)."""
     return bool(
@@ -71,4 +101,5 @@ def is_valid_username(name):
         and name != ""
         and ".." not in name
         and _USERNAME_RE.match(name)
+        and not is_reserved_username(name)
     )

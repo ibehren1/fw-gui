@@ -35,6 +35,10 @@ from package.validators import is_safe_name
 # Shared MongoDB client — reused across calls to avoid connection leaks.
 _mongo_client = None
 
+# Fallback database name, used when MONGODB_DATABASE is unset. Kept in sync with
+# the SESSION_MONGODB_DB default in app.py.
+DEFAULT_MONGODB_DATABASE = "fwgui_database"
+
 # Keys that exist only on snapshot documents. A "current" document must never
 # carry them: generate_config walks the document's top-level keys, and a stray
 # `tag` string there previously crashed config generation.
@@ -62,6 +66,21 @@ def _get_mongo_client():
     return _mongo_client
 
 
+def _get_mongo_db():
+    """
+    Returns the application database handle.
+
+    MONGODB_DATABASE has a default because pymongo raises
+    ``TypeError: name must be an instance of str`` on ``client[None]``. User
+    accounts live in this database too, so an unset variable would otherwise
+    take the login page down rather than just the config routes. The default
+    matches the one used for the session store in app.py.
+    """
+    return _get_mongo_client()[
+        os.environ.get("MONGODB_DATABASE", DEFAULT_MONGODB_DATABASE)
+    ]
+
+
 def _unique_snapshot_name(filename):
     """
     Builds a timestamp snapshot name that is not already used by this config.
@@ -81,8 +100,7 @@ def _unique_snapshot_name(filename):
     collection_name = filename.split("/")[1]
     firewall = filename.split("/")[2]
 
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     timestamp = datetime.now()
@@ -357,8 +375,7 @@ def delete_user_data_file(filename):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     if len(filename.split("/")) > 3:
@@ -590,8 +607,7 @@ def list_snapshots(session):
         collection_name = f"{session['username']}"
 
         logging.debug("Prepping Mongo query.")
-        client = _get_mongo_client()
-        db = client[os.environ.get("MONGODB_DATABASE")]
+        db = _get_mongo_db()
         collection = db[collection_name]
         query = {"firewall": session["firewall_name"], "snapshot": {"$exists": True}}
 
@@ -670,8 +686,7 @@ def list_user_files(session):
     collection_name = f"{session['username']}"
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
     query = {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
 
@@ -737,14 +752,12 @@ def mongo_dump():
     logging.info("Dumping MongoDB Backup")
 
     timestamp = str(datetime.now()).replace(" ", "-")
-    db_name = os.environ.get("MONGODB_DATABASE")
-    mongo_dump_path = f"data/mongo_dumps/{timestamp}/{db_name}"
+    db = _get_mongo_db()
+    mongo_dump_path = f"data/mongo_dumps/{timestamp}/{db.name}"
 
     if not os.path.exists(mongo_dump_path):
         os.makedirs(mongo_dump_path)
 
-    client = _get_mongo_client()
-    db = client[db_name]
     collist = db.list_collection_names()
     for coll in collist:
         with open(os.path.join(mongo_dump_path, f"{coll}.bson"), "wb+") as f:
@@ -879,8 +892,7 @@ def read_user_data_file(filename, snapshot="current", diff=False):
         firewall = filename.split("/")[2]
 
         logging.debug("Prepping Mongo query.")
-        client = _get_mongo_client()
-        db = client[os.environ.get("MONGODB_DATABASE")]
+        db = _get_mongo_db()
         collection = db[collection_name]
 
         if snapshot == "current":
@@ -955,8 +967,7 @@ def set_snapshot_tag(filename, snapshot, tag):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     query = {"firewall": firewall, "snapshot": snapshot}
@@ -1247,8 +1258,7 @@ def write_user_data_file(filename, data, snapshot="current"):
     firewall = filename.split("/")[2]
 
     logging.debug("Prepping Mongo query.")
-    client = _get_mongo_client()
-    db = client[os.environ.get("MONGODB_DATABASE")]
+    db = _get_mongo_db()
     collection = db[collection_name]
 
     if snapshot == "current":
