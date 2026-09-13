@@ -64,9 +64,11 @@ flowchart TD
 | Paramiko client assembly (Run Command) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` (`:69`) |
 | Commit / diff / operational actions | `commit_to_firewall()` (`:116`), `get_diffs_from_firewall()` (`:198`) — both take the candidate configuration as a `merge_config` string — and `run_operational_command()` (`:265`) |
 | TCP reachability check | `test_connection()` (`:333`) |
-| Key upload + encryption | `package/data_file_functions.py` → `process_upload()` (`:824`) |
-| Key decryption (temp staging) | `package/data_file_functions.py` → `decrypt_file()` (`:202`) |
-| List uploaded keys | `package/data_file_functions.py` → `list_user_keys()` (`:597`) |
+| Key upload + encryption | `package/data_file_functions.py` → `process_upload()` |
+| Key storage (MongoDB `keys` collection) | `package/ssh_key_store.py` → `store_key()` / `get_ciphertext()` |
+| Key decryption (temp staging) | `package/ssh_key_store.py` → `decrypt_ssh_key()` |
+| List uploaded keys | `package/data_file_functions.py` → `list_user_keys()` (delegates to `ssh_key_store.list_key_names()`) |
+| Adoption of pre-2.5.0 key files | `package/ssh_key_store.py` → `migrate_legacy_key_files()` |
 | Push form template | `templates/configuration_push.html` |
 
 ---
@@ -85,12 +87,13 @@ sequenceDiagram
     actor User
     participant App as FW-GUI (process_upload)
     participant Disk as Server disk
+    participant Mongo as MongoDB (keys)
 
     User->>App: Upload private key file (name.key)
     App->>Disk: Save raw upload to data/uploads/name.key
     App->>App: key = Fernet.generate_key()
     App->>App: encrypted = Fernet(key).encrypt(raw_key_bytes)
-    App->>Disk: Write encrypted blob to data/<username>/name.key
+    App->>Mongo: Store encrypted blob in keys collection (_id user/name)
     App->>Disk: Delete data/uploads/name.key (raw upload)
     App-->>User: Flash the generated encryption key (shown ONCE)
     Note over User: User must save this encryption key.<br/>It is required later and is NOT recoverable from FW-GUI.
@@ -102,11 +105,23 @@ Key facts for auditors:
 - **The generated Fernet key is displayed to the user once** (`flash(..., "key")`,
   `data_file_functions.py:746-749`) and is **not** persisted by FW-GUI. Losing it
   means the stored key file cannot be decrypted — the user must re-upload.
-- **Storage location:** the encrypted key lives at
-  `data/<username>/<name>.key` (per-user directory).
-- Key files are **excluded from user backups** (`.key` skipped in
-  `create_backup()`, `data_file_functions.py:186`).
-- `# TODO -- validate key is a valid ssh key` (`:730`) — uploaded content is not
+- **Storage location (2.5.0+):** the encrypted blob is a document in the MongoDB
+  `keys` collection, `_id` = `"<username>/<name>"`, with the ciphertext as BSON
+  Binary. Pre-2.5.0 it was `data/<username>/<name>.key`;
+  `migrate_legacy_key_files()` adopts those at startup and renames the file to
+  `.key.migrated`, retained for downgrade and never deleted — that ciphertext is
+  the user's only copy.
+- `keys` is a **reserved username** and, unlike `instance`, an *auth-critical* one:
+  a username is also a collection name, so an account called `keys` would own
+  every other user's key ciphertext. A legacy account of that name aborts startup
+  until it is renamed.
+- **Key material is in full backups as of 2.5.0.** `mongo_dump()` sweeps every
+  collection, so `keys.bson` is in the zip and any S3 upload. This is a deliberate
+  change from the previous "`.key` excluded" posture, and it is only defensible
+  because the Fernet key is never stored server-side: a leaked archive yields
+  ciphertext with no way to decrypt it. The retained `.key.migrated` file *is*
+  still excluded, as a redundant second copy of what the dump already carries.
+- `# TODO -- validate key is a valid ssh key` — uploaded content is not
   yet validated as a real SSH key.
 
 ---
@@ -126,11 +141,11 @@ flowchart TD
 
     NAP --> NK{ssh_key_name present?}
     NK -->|No| NPW["driver password = connection_string password<br/>napalm_ssh_functions.py:56-65"]
-    NK -->|Yes| NDEC["key = password.encode()<br/>tmp = decrypt_file(data/user/name.key, key)<br/>driver key_file = tmp, password = ''<br/>napalm_ssh_functions.py:39-54"]
+    NK -->|Yes| NDEC["fernet_key = password.encode()<br/>tmp = decrypt_ssh_key(user, name, fernet_key)<br/>driver key_file = tmp, password = ''"]
 
     PAR --> PK{ssh_key_name present?}
     PK -->|No| PPW["ssh.connect(..., password=password)<br/>napalm_ssh_functions.py:96-99"]
-    PK -->|Yes| PDEC["key = password.encode()<br/>tmp = decrypt_file(...)<br/>ssh.connect(..., key_filename=tmp)<br/>napalm_ssh_functions.py:90-95"]
+    PK -->|Yes| PDEC["fernet_key = password.encode()<br/>tmp = decrypt_ssh_key(...)<br/>ssh.connect(..., key_filename=tmp)"]
 
     NPW --> RUN[Open connection, run action]
     NDEC --> RUN
@@ -142,13 +157,19 @@ flowchart TD
 
 ### Temporary decrypted-key lifecycle
 
-`decrypt_file()` (`data_file_functions.py:202-245`):
+`decrypt_ssh_key(user, name, fernet_key)` (`package/ssh_key_store.py`):
 
-1. `Fernet(key)` where `key = connection_string["password"].encode("utf-8")`.
-2. Reads `data/<username>/<name>.key`, decrypts it.
-3. Writes the **plaintext** private key to a `tempfile.mkstemp(dir="data/tmp")`
-   file — a cryptographically-random name with **`0o600` (owner-only)**
-   permissions, so it is not world-readable.
+1. Reads the ciphertext from the `keys` collection. A missing document raises
+   `FileNotFoundError`, and one user cannot reach another's key — the lookup is by
+   `_id` = `"<user>/<name>"`.
+2. `Fernet(fernet_key).decrypt(...)`, where the Fernet key arrives as
+   `connection_string["password"]` — on the key-auth path that field carries the
+   Fernet key, not a login password. A wrong key raises `InvalidToken`.
+3. Writes the **plaintext** private key to a `tempfile.mkstemp()` file — a
+   cryptographically-random name with **`0o600` (owner-only)** permissions.
+   **No `dir=`**, so it lands in the system temp directory, *not* the mounted data
+   volume: as of 2.5.0 `data/` holds no secrets at all. Decryption happens before
+   the file is created, so a wrong Fernet key leaves nothing staged.
 4. Returns that path; NAPALM/Paramiko use it as `key_file` / `key_filename`.
 5. The caller deletes it in a `finally` block:
    - `commit_to_firewall()` → `napalm_ssh_functions.py` finally / `os.remove`
@@ -159,6 +180,11 @@ flowchart TD
    itself (so it is not left staged when the caller never receives the path).
 7. If driver assembly raises before a temp file is created, `tmpfile` is
    `None` and cleanup is correctly skipped.
+
+`data/tmp/` is no longer written to, but `initialize_data_dir()` still creates and
+wipes it on every startup. That is deliberate legacy cleanup: on an install
+upgrading from a version that crashed mid-operation, the wipe is what removes a
+stale plaintext private key staged there.
 
 ### Host key policy
 
@@ -232,7 +258,7 @@ In `configuration_push()` (POST):
   index. Because the cached secret is encrypted (see §10), a document lingering
   briefly before reaping does not expose the cleartext secret.
 - Note: logout/timeout does **not** touch the encrypted `.key` file at rest
-  (persists by design) or `data/tmp/` (decrypted keys are deleted per-action in
+  (persists by design) or the system temp directory (decrypted keys are deleted per-action in
   the action `finally` blocks, not at logout).
 
 ```mermaid
@@ -257,7 +283,7 @@ flowchart LR
     subgraph Server
       Sess["Server-side session store<br/>(Mongo 'sessions' collection)<br/>ssh_user / ssh_keyname (plain)<br/>ssh_pass (Fernet-encrypted)"]
       KeyFile["data/&lt;user&gt;/&lt;name&gt;.key<br/>Fernet-encrypted private key (at rest)"]
-      Tmp["data/tmp/&lt;mkstemp 0o600&gt;<br/>plaintext key, only during one action,<br/>deleted in finally"]
+      Tmp["TMPDIR/&lt;mkstemp 0o600&gt;<br/>plaintext key, only during one action,<br/>deleted in finally"]
     end
     Device[("VyOS device")]
 
@@ -276,8 +302,8 @@ flowchart LR
 |--------|-------------------|--------------|-----------------|-----------|
 | Device SSH password | User types on push form | Server-side session (`ssh_pass`), **Fernet-encrypted at rest** | Yes, as SSH login password | On config switch, logout, or session timeout |
 | Fernet encryption key (for uploaded key) | Generated at upload, shown once | **Not stored** by FW-GUI; user keeps it. Cached in server-side session (`ssh_pass`) **encrypted** after entry, for the session | No | Cache cleared on config switch / logout / timeout |
-| Encrypted private key file | Encrypted at upload | `data/<username>/<name>.key` (Fernet-encrypted, at rest) | No (only its decrypted form is used) | Deleted only if the user deletes the key |
-| Decrypted private key (temp) | Per action, by `decrypt_file()` | `data/tmp/` via `mkstemp` (plaintext, `0o600`) | Used as `key_file` for the SSH login | Removed in the action's `finally` (and on connect failure) |
+| Encrypted private key | Encrypted at upload | MongoDB `keys` collection, ciphertext as BSON Binary (2.5.0+; previously `data/<username>/<name>.key`) | No (only its decrypted form is used) | Replaced on re-upload; there is no delete-key feature |
+| Decrypted private key (temp) | Per action, by `decrypt_ssh_key()` | System temp dir via `mkstemp` (plaintext, `0o600`) | Used as `key_file` for the SSH login | Removed in the action's `finally` (and on connect failure) |
 | Session id | On login | Signed cookie in browser | No | Cookie expiry / logout / timeout |
 
 ---
@@ -287,7 +313,7 @@ flowchart LR
 - `assemble_paramiko_driver_string()` logs the connection parameters at DEBUG
   with the `password` key **removed** (`napalm_ssh_functions.py:88`), so the
   password / Fernet key is not written to `data/log/app.log`.
-- `decrypt_file()` logs the temp file *path* (not contents) at DEBUG
+- `decrypt_ssh_key()` logs the temp file *path* (not contents) at DEBUG
   (`data_file_functions.py:242`).
 - `run_operational_command()` logs the operational command text and its output
   at INFO/DEBUG (`napalm_ssh_functions.py:257,276`).
@@ -307,7 +333,7 @@ flowchart LR
 | 4 | Cached secret at rest in the Mongo `sessions` collection | **Mitigated** — the cached secret is Fernet-encrypted before storage (§10). Residual: the derivation key comes from `APP_SECRET_KEY`, so a host/app compromise that exposes that key defeats it; still lock down DB access. |
 | 5 | `paramiko.AutoAddPolicy()` trusts unknown host keys | **Residual** — MITM exposure; intentional today. Consider `RejectPolicy` + known-hosts. |
 | 6 | `run_operational_command()` sends arbitrary `op_command` to the device with no allowlist | **Residual** — authenticated users can run any operational command. |
-| 7 | `decrypt_file()` writes the plaintext key to `data/tmp/` | **Mitigated** — now `tempfile.mkstemp` (crypto-random name, `0o600` owner-only) and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it (cleared on next startup). |
+| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 2.5.0, and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
 | 8 | Uploaded `.key` content is not validated as a real SSH key | **Residual** — see `# TODO` at `data_file_functions.py:730`. |
 
 ---

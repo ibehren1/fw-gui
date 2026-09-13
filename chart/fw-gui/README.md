@@ -56,8 +56,8 @@ The fw-gui-app container includes these environment variables:
 - `MONGODB_DATABASE`: MongoDB database name (default `fwgui_database`)
 
 As of FW-GUI 2.5.0 this database holds user accounts (the `users` collection:
-usernames, emails, bcrypt password hashes) as well as firewall configs and
-sessions. The chart runs MongoDB without authentication as a sidecar container
+usernames, emails, bcrypt password hashes) and every user's encrypted SSH key
+(the `keys` collection) as well as firewall configs and sessions. The chart runs MongoDB without authentication as a sidecar container
 in the same pod, so the credential store is readable by anything with access to
 it — worth weighing before exposing the pod network. Note also that the
 `volume-permissions` initContainer chmods the data directory 777 inside the pod,

@@ -26,27 +26,28 @@ store:
 
 | Store | Technology | Holds |
 |-------|-----------|-------|
-| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots (one collection per user), **plus `users` (accounts) and `instance` (telemetry id)** |
+| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots (one collection per user), **plus `users` (accounts), `keys` (encrypted SSH keys) and `instance` (telemetry id)** |
 | Session store | **MongoDB** (`sessions` collection, via Flask-Session) | Per-session state; browser holds only an opaque id |
-| Filesystem (`data/`) | Local volume | Encrypted SSH keys, backups, logs, Mongo dumps |
+| Filesystem (`data/`) | Local volume | Backups, logs, Mongo dumps — **outputs only, no durable state and no secrets** |
 
 ```mermaid
 flowchart TD
     Browser(["Browser"]) -->|"session cookie = opaque id"| App["Flask app (app.py)"]
 
     App -->|"firewall configs + snapshots (PyMongo)"| Mongo[("MongoDB (MONGODB_DATABASE)")]
-    App -->|"user accounts + telemetry id"| Mongo
+    App -->|"accounts + SSH keys + telemetry id"| Mongo
     App -->|"session state (Flask-Session)"| Sessions[("Mongo sessions")]
-    App -->|"keys / backups / logs"| FS[/"Filesystem data dir"/]
+    App -->|"backups / logs / dumps"| FS[/"Filesystem data dir"/]
 
     App -->|"generated set commands via SSH"| VyOS[("VyOS device")]
     FS -.->|"optional backup upload"| S3[("AWS S3 (BUCKET_NAME)")]
     App -.->|"UUID + version only"| Tele[("telemetry.fw-gui.com")]
 ```
 
-Configuration data, accounts and the telemetry id are all in MongoDB — the
-filesystem holds only keys, generated command files, backups and logs. Those SSH
-keys are why the volume is still required.
+Configuration data, accounts, SSH keys and the telemetry id are all in MongoDB.
+The filesystem holds only outputs — backups, logs and Mongo dumps — plus the
+retained pre-2.5.0 artifacts on an upgraded install. Decrypted SSH keys are staged
+in the system temp directory rather than here, so `data/` holds no secrets.
 
 Consequence worth stating plainly: **MongoDB now holds the credential store.**
 The shipped compose files leave MongoDB authentication commented out, justified
@@ -464,6 +465,15 @@ taken after the cutover exclude `auth.db*` and carry `mongo_dumps/.../users.bson
 instead, so they cannot serve a downgrade. If the volume's `auth.db.migrated` is
 gone, there is no rollback path.
 
+**Rename `<name>.key.migrated` back too.** 2.5.0 also moved encrypted SSH keys
+into MongoDB (`docs/ssh-credential-handling.md` §3) and retired `data/<user>/<name>.key` the same way. Without the
+rename the old code finds no keys and the user must re-upload, getting a new
+Fernet key:
+
+```bash
+for f in data/*/*.key.migrated; do mv "$f" "${f%.migrated}"; done
+```
+
 **Rename `instance.id.migrated` back too.** 2.5.0 also moved the telemetry
 instance id into MongoDB (§10) and retired `data/database/instance.id` the same
 way. A downgrade that leaves the file renamed will have the old code mint a fresh
@@ -513,10 +523,10 @@ flowchart TD
     data --> backups["backups/<br/>full-backup-&lt;timestamp&gt;.zip"]
     data --> dumps["mongo_dumps/<br/>&lt;timestamp&gt;/&lt;db&gt;/&lt;collection&gt;.bson"]
     data --> uploads["uploads/<br/>(transient upload staging)"]
-    data --> tmp["tmp/<br/>(decrypted SSH keys; wiped on startup)"]
+    data --> tmp["tmp/<br/>(legacy scratch, no longer written;<br/>wiped on startup)"]
     data --> ex["example.json (reference copy)"]
     data --> userdir["&lt;username&gt;/"]
-    userdir --> keys["&lt;name&gt;.key (Fernet-encrypted SSH keys)"]
+    userdir --> keys["&lt;name&gt;.key.migrated<br/>(pre-2.5.0, retained for downgrade)"]
     userdir --> ubk["user-&lt;user&gt;-backup-&lt;timestamp&gt;.zip"]
 ```
 
@@ -529,10 +539,17 @@ flowchart TD
   in 2.5.0; it had no caller in the UI. The two real download endpoints,
   `/download_config` and `/download_json`, build their response from the
   session's own config and take no caller-supplied path.
-- **Neither firewall config data, user accounts, nor the telemetry id are here**
-  — all three are in MongoDB as of 2.5.0. The per-user dir holds only keys and
-  user backup zips; `database/` holds nothing that current code writes, only the
-  retained `auth.db.migrated` and `instance.id.migrated` on an upgraded install.
+- **No durable state and no secrets are here as of 2.5.0.** Firewall configs, user
+  accounts, SSH keys and the telemetry id are all in MongoDB. What remains is
+  outputs — `backups/`, `log/`, `mongo_dumps/` — plus the retained pre-2.5.0
+  artifacts on an upgraded install (`auth.db.migrated`, `instance.id.migrated`,
+  `<name>.key.migrated`) and a per-user dir that now holds only user backup zips.
+- Decrypted SSH keys are staged in the **system temp directory**, not under
+  `data/`, so a plaintext private key never touches this volume
+  (`ssh_key_store.decrypt_ssh_key()`; see `docs/ssh-credential-handling.md`).
+- The `<name>.key.migrated` files are excluded from backups: the live ciphertext
+  already arrives via `keys.bson` in the Mongo dump, so the on-disk copy would be
+  a redundant second copy of the same secret.
 - `sweep_legacy_user_files()` (`:564-620`) removes two kinds of leftover from the
   per-user dir on the first startup after upgrade, both of which earlier releases
   created and never deleted, and both of which shipped in every full-backup zip:
@@ -567,7 +584,10 @@ flowchart LR
   `uploads/`, any `*.key`, and `auth.db*` (`:237-250`), then
   `upload_backup_file()`.
 - `mongo_dump()` sweeps `list_collection_names()`, so since 2.5.0 every dump
-  includes `users.bson` — the full bcrypt hash set. That is intentional: a backup
+  includes `users.bson` — the full bcrypt hash set — and `keys.bson`, every user's
+  Fernet-encrypted SSH key. The key blobs are only defensible in a backup because
+  the Fernet key is never stored server-side (`docs/ssh-credential-handling.md`
+  §3), so a leaked archive yields ciphertext nobody can decrypt. That is intentional: a backup
   without accounts would be of limited use. It is also why the retained
   pre-2.5.0 `auth.db*` is excluded (a second, redundant copy of the same
   secrets) and why the `POST /download` route was removed (§6): the zips were
