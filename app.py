@@ -1651,16 +1651,24 @@ def configuration_push():
             "port": session["port"],
         }
 
-        if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
-            connection_string["ssh_key_name"] = request.form["ssh_key_name"]
+        # Keys are addressed in MongoDB by their bare name (ssh_key_store uses
+        # _id = "<user>/<name>"). Pre-2.5.0 the form carried a trailing ".key"
+        # because the name was used to build an on-disk path, so strip it here as
+        # well as in the template: a browser still holding a cached copy of the
+        # old form would otherwise submit a name that cannot resolve. removesuffix
+        # rather than replace, so a key legitimately named "my.keyring" survives.
+        ssh_key_name = request.form.get("ssh_key_name", "").removesuffix(".key")
+
+        if ssh_key_name:
+            connection_string["ssh_key_name"] = ssh_key_name
 
         # Cache SSH user/pass to the server-side session for this login. The
         # password/Fernet key is encrypted so it is not stored in cleartext in
         # the session store at rest.
         session["ssh_user"] = username
         session["ssh_pass"] = encrypt_secret(password)
-        if "ssh_key_name" in request.form and request.form["ssh_key_name"]:
-            session["ssh_keyname"] = request.form["ssh_key_name"].replace(".key", "")
+        if ssh_key_name:
+            session["ssh_keyname"] = ssh_key_name
 
         # generate_config() also supplies the message rendered when the action is
         # unrecognized, so it stays outside the branches below. build_merge_config

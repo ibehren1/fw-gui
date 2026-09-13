@@ -911,6 +911,73 @@ class TestConfigRoutes:
                 in resp.headers["Location"]
             )
 
+    def test_configuration_push_renders_bare_key_names(self, auth_client):
+        """The radio value must be the bare key name, with no .key suffix.
+
+        SSH keys moved into MongoDB in 2.5.0, addressed by bare name
+        (ssh_key_store._document_id -> "<user>/<name>"). The template kept
+        appending ".key" -- which the pre-2.5.0 on-disk path needed -- so every
+        lookup missed and all key-based auth failed with "No stored SSH key
+        named 'x.key'".
+        """
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch("app.test_connection", return_value=True), patch(
+            "app.list_user_keys", return_value=["mykey"]
+        ):
+            resp = auth_client.get("/configuration_push")
+
+            assert resp.status_code == 200
+            body = resp.data.decode()
+            assert 'name="ssh_key_name" value="mykey"' in body
+            assert 'value="mykey.key"' not in body
+
+    def test_configuration_push_forwards_bare_key_name(self, auth_client):
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="Commit successful",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=["mykey"]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "fernet-key",
+                    "action": "Commit",
+                    "ssh_key_name": "mykey",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][0]["ssh_key_name"] == "mykey"
+
+    def test_configuration_push_strips_legacy_key_suffix(self, auth_client):
+        """A browser holding the pre-fix cached form still resolves."""
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.commit_to_firewall",
+            return_value="Commit successful",
+        ) as mock_commit, patch(
+            "app.list_user_keys", return_value=["mykey"]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "fernet-key",
+                    "action": "Commit",
+                    "ssh_key_name": "mykey.key",
+                },
+            )
+            assert resp.status_code == 200
+            assert mock_commit.call_args[0][0]["ssh_key_name"] == "mykey"
+
     def test_configuration_push_post_commit(self, auth_client):
         with patch(
             "app.generate_config",
