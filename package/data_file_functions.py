@@ -215,7 +215,8 @@ def create_backup(session, user=False):
     1. Generates timestamp for backup filename
     2. For full backup (user=False):
         - Creates MongoDB dump
-        - Zips entire data directory excluding backups/tmp/uploads/key files
+        - Zips entire data directory excluding backups/tmp/uploads, key files,
+          and the retained pre-2.5.0 auth.db*
         - Logs backup creation and shows success message
         - Uploads backup file
     3. For user backup (user=True):
@@ -239,6 +240,12 @@ def create_backup(session, user=False):
                         continue
                     for file in files:
                         if file.endswith(".key"):
+                            continue
+                        # The retained pre-2.5.0 auth database is a full set of
+                        # bcrypt hashes that nothing reads any more. Current
+                        # accounts are already in the Mongo dump; there is no
+                        # reason to ship the legacy copy off the host as well.
+                        if file.startswith("auth.db"):
                             continue
                         file_path = os.path.join(root, file)
                         zipf.write(file_path, os.path.relpath(file_path, "data/"))

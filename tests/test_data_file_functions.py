@@ -12,6 +12,7 @@ Covers: allowed_file, update_schema, get_extra_items, get_system_name,
 import copy
 import os
 import sys
+import zipfile
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -22,6 +23,7 @@ from package.data_file_functions import (
     add_extra_items,
     add_hostname,
     allowed_file,
+    create_backup,
     create_snapshot,
     delete_user_data_file,
     get_extra_items,
@@ -1212,3 +1214,57 @@ class TestUploadBackupFile:
         monkeypatch.setattr("package.data_file_functions.boto3", mock_boto3)
         # Should not raise
         upload_backup_file("data/backups/test.zip")
+
+
+# ---------------------------------------------------------------------------
+# create_backup
+# ---------------------------------------------------------------------------
+
+
+class TestCreateBackup:
+    @pytest.fixture
+    def data_tree(self, tmp_path, monkeypatch):
+        """Build a data/ tree in a temp cwd and return its root."""
+        data = tmp_path / "data"
+        (data / "backups").mkdir(parents=True)
+        (data / "database").mkdir()
+        (data / "tmp").mkdir()
+        (data / "uploads").mkdir()
+        (data / "myuser").mkdir()
+        (data / "database" / "instance.id").write_text("abc")
+        (data / "database" / "auth.db.migrated").write_bytes(b"legacy bcrypt hashes")
+        (data / "myuser" / "id_rsa.key").write_bytes(b"encrypted key")
+        (data / "myuser" / "firewall.conf").write_text("set firewall")
+        (data / "tmp" / "scratch").write_text("x")
+        (data / "uploads" / "upload.json").write_text("{}")
+        monkeypatch.chdir(tmp_path)
+        return data
+
+    def _zip_names(self, data):
+        archives = list((data / "backups").glob("full-backup-*.zip"))
+        assert len(archives) == 1
+        with zipfile.ZipFile(archives[0]) as zf:
+            return set(zf.namelist())
+
+    def test_full_backup_excludes_legacy_auth_db_and_keys(
+        self, data_tree, monkeypatch
+    ):
+        monkeypatch.setattr("package.data_file_functions.mongo_dump", lambda: None)
+        monkeypatch.setattr(
+            "package.data_file_functions.upload_backup_file", lambda path: None
+        )
+        from flask import Flask
+
+        test_app = Flask(__name__)
+        test_app.config["SECRET_KEY"] = "test"
+        with test_app.test_request_context():
+            create_backup({"username": "myuser"}, user=False)
+
+        names = self._zip_names(data_tree)
+        assert "database/instance.id" in names
+        assert "myuser/firewall.conf" in names
+        # Legacy bcrypt hashes must not leave the host in a backup zip.
+        assert not any(n.startswith("database/auth.db") for n in names)
+        # Pre-existing exclusions still hold.
+        assert not any(n.endswith(".key") for n in names)
+        assert not any(n.startswith(("backups/", "tmp/", "uploads/")) for n in names)
