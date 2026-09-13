@@ -380,6 +380,53 @@ def delete_user_data_file(filename):
     return
 
 
+def gather_instance_stats():
+    """
+    Counts the accounts, firewall configurations and snapshots on this instance.
+
+    Returns:
+        dict: Counts across the whole instance, with keys:
+              - users: Number of accounts, including disabled ones
+              - disabled_users: Number of disabled accounts
+              - configurations: Number of firewall configurations, all users
+              - snapshots: Number of snapshots, all users
+
+    Configurations and snapshots are counted per account collection, driven by
+    the account list rather than by listing collections, so the accounts,
+    session, key and instance-id collections are never mistaken for user data.
+    Accounts are disabled and never deleted, so a disabled account's
+    configurations still exist and are still counted.
+
+    user_store is imported here rather than at module scope because it imports
+    this module for its database handle.
+    """
+    from package import user_store
+
+    accounts = user_store.count_users()
+
+    db = _get_mongo_db()
+    configuration_count = 0
+    snapshot_count = 0
+
+    for username in user_store.list_usernames():
+        collection = db[username]
+        configuration_count += collection.count_documents(
+            {"firewall": {"$exists": False}, "snapshot": {"$exists": False}}
+        )
+        snapshot_count += collection.count_documents({"snapshot": {"$exists": True}})
+
+    stats = {
+        "users": accounts["total"],
+        "disabled_users": accounts["disabled"],
+        "configurations": configuration_count,
+        "snapshots": snapshot_count,
+    }
+
+    logging.debug("Instance stats: " + str(stats))
+
+    return stats
+
+
 def get_extra_items(session):
     """
     Gets extra configuration items for a firewall from the user's data file.

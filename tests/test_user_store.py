@@ -2,7 +2,8 @@
 Tests for package/user_store.py
 
 Covers: collection, User (is_active / get_id), get_user_by_username,
-        get_user_by_session_id, create_user, set_password, list_usernames.
+        get_user_by_session_id, create_user, set_password, count_users,
+        list_usernames.
 """
 
 import mongomock
@@ -13,6 +14,7 @@ from package import user_store
 from package.user_store import (
     SESSION_ID_PREFIX,
     User,
+    count_users,
     create_user,
     get_user_by_session_id,
     get_user_by_username,
@@ -205,6 +207,22 @@ class TestSetPassword:
 # ---------------------------------------------------------------------------
 # list_usernames
 # ---------------------------------------------------------------------------
+
+
+class TestCountUsers:
+    def test_counts_total_and_disabled(self, users):
+        seed(users, "alice")
+        seed(users, "bob", disabled=True)
+        seed(users, "carol", disabled=False)
+        assert count_users() == {"total": 3, "disabled": 1}
+
+    def test_document_without_disabled_field_counts_as_enabled(self, users):
+        """Pre-2.5.0 and hand-written documents may omit the field."""
+        users.insert_one({"_id": "legacy", "password": "hash"})
+        assert count_users() == {"total": 1, "disabled": 0}
+
+    def test_empty_collection(self, users):
+        assert count_users() == {"total": 0, "disabled": 0}
 
 
 class TestListUsernames:

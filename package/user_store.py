@@ -122,6 +122,19 @@ def set_password(username, password_hash):
     return result.matched_count == 1
 
 
+def count_users():
+    """Returns the account counts as ``{"total": int, "disabled": int}``.
+
+    Counted in MongoDB rather than by loading documents: this feeds the admin
+    settings page, and the only thing needed there is the number.
+    """
+    users = collection()
+    return {
+        "total": users.count_documents({}),
+        "disabled": users.count_documents({"disabled": True}),
+    }
+
+
 def list_usernames():
     """Returns every username, including disabled accounts.
 

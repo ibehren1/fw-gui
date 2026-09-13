@@ -53,14 +53,25 @@
                     <span class="info-value">{{ config['VERSION'] }}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Users:</span>
-                    <span class="info-value">{{ user_count if user_count else 'N/A' }}</span>
+                    <span class="info-label">Registered Users:</span>
+                    <span class="info-value">
+                        {% if stats %}
+                        {{ stats['users'] }}{% if stats['disabled_users'] %} ({{ stats['disabled_users'] }} disabled){% endif %}
+                        {% else %}N/A{% endif %}
+                    </span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Configurations:</span>
-                    <span class="info-value">{{ config_count if config_count else 'N/A' }}</span>
+                    <span class="info-label">Firewall Configurations:</span>
+                    <span class="info-value">{{ stats['configurations'] if stats else 'N/A' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Snapshots:</span>
+                    <span class="info-value">{{ stats['snapshots'] if stats else 'N/A' }}</span>
                 </div>
             </div>
+            <p class="settings-description info-note">
+                Counted across every account on this instance, not just your own.
+            </p>
         </div>
     </div>
 </div>
@@ -109,6 +120,12 @@
 .info-value {
     color: var(--primary-color);
     font-weight: 600;
+}
+
+.info-note {
+    margin-top: 1rem;
+    margin-bottom: 0;
+    font-size: 0.85rem;
 }
 
 .backup-list {

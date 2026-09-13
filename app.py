@@ -76,6 +76,7 @@ from package.data_file_functions import (
     create_backup,
     create_snapshot,
     delete_user_data_file,
+    gather_instance_stats,
     get_extra_items,
     get_system_name,
     initialize_data_dir,
@@ -414,6 +415,7 @@ def admin_settings():
             - file_list: List of user files
             - snapshot_list: List of system snapshots
             - full_backup_list: List of full system backups
+            - stats: Instance-wide account, configuration and snapshot counts
             - username: Current user's username
     """
     if request.method == "POST":
@@ -424,12 +426,14 @@ def admin_settings():
         file_list = list_user_files(session)
         full_backup_list = list_full_backups(session)
         snapshot_list = list_snapshots(session)
+        stats = gather_instance_stats()
 
         return render_template(
             "admin_settings_form.html",
             file_list=file_list,
             snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
+            stats=stats,
             username=session["username"],
         )
 
@@ -437,12 +441,14 @@ def admin_settings():
         file_list = list_user_files(session)
         full_backup_list = list_full_backups(session)
         snapshot_list = list_snapshots(session)
+        stats = gather_instance_stats()
 
         return render_template(
             "admin_settings_form.html",
             file_list=file_list,
             snapshot_list=snapshot_list,
             full_backup_list=full_backup_list,
+            stats=stats,
             username=session["username"],
         )
 

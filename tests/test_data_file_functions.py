@@ -1,7 +1,8 @@
 """
 Tests for package/data_file_functions.py
 
-Covers: allowed_file, update_schema, get_extra_items, get_system_name,
+Covers: allowed_file, update_schema, gather_instance_stats, get_extra_items,
+        get_system_name,
         list_user_keys, list_full_backups, list_user_files, list_snapshots,
         read_user_data_file, write_user_data_file, delete_user_data_file,
         add_extra_items, add_hostname, sweep_legacy_user_files,
@@ -27,6 +28,7 @@ from package.data_file_functions import (
     create_backup,
     create_snapshot,
     delete_user_data_file,
+    gather_instance_stats,
     get_extra_items,
     get_system_name,
     list_full_backups,
@@ -412,6 +414,73 @@ class TestListUserFiles:
         session = {"username": "testuser"}
         result = list_user_files(session)
         assert result == ["alpha", "mike", "zulu"]
+
+
+# ===========================================================================
+# gather_instance_stats (MongoDB)
+# ===========================================================================
+
+
+class TestGatherInstanceStats:
+    @staticmethod
+    def _seed(db, username, configs=(), snapshots=()):
+        db["users"].insert_one({"_id": username, "disabled": False})
+        coll = db[username]
+        for name in configs:
+            coll.insert_one({"_id": name, "version": "1"})
+        for name in snapshots:
+            coll.insert_one(
+                {"_id": f"{username}_{name}", "firewall": configs[0], "snapshot": name}
+            )
+
+    def test_counts_across_every_account(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        self._seed(db, "alice", configs=["fw_a", "fw_b"], snapshots=["snap1"])
+        self._seed(db, "bob", configs=["fw_c"], snapshots=["snap1", "snap2"])
+
+        stats = gather_instance_stats()
+
+        assert stats == {
+            "users": 2,
+            "disabled_users": 0,
+            "configurations": 3,
+            "snapshots": 3,
+        }
+
+    def test_counts_disabled_accounts_and_their_configs(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        self._seed(db, "alice", configs=["fw_a"])
+        db["users"].insert_one({"_id": "gone", "disabled": True})
+        db["gone"].insert_one({"_id": "fw_orphan", "version": "1"})
+
+        stats = gather_instance_stats()
+
+        assert stats["users"] == 2
+        assert stats["disabled_users"] == 1
+        # Accounts are disabled, never deleted, so their data still exists.
+        assert stats["configurations"] == 2
+
+    def test_ignores_non_user_collections(self, mock_mongo):
+        db = mock_mongo["test_db"]
+        self._seed(db, "alice", configs=["fw_a"])
+        db["sessions"].insert_one({"_id": "session_doc"})
+        db["keys"].insert_one({"_id": "alice/id_rsa"})
+        db["instance"].insert_one({"_id": "instance_id", "value": "uuid"})
+
+        stats = gather_instance_stats()
+
+        assert stats["configurations"] == 1
+        assert stats["snapshots"] == 0
+
+    def test_empty_instance(self, mock_mongo):
+        stats = gather_instance_stats()
+
+        assert stats == {
+            "users": 0,
+            "disabled_users": 0,
+            "configurations": 0,
+            "snapshots": 0,
+        }
 
 
 # ===========================================================================

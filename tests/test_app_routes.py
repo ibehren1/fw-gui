@@ -1176,6 +1176,40 @@ class TestAdminRoutes:
         assert "excluded from backups" not in body
         assert "MongoDB dump" in body
 
+    def test_admin_settings_shows_instance_counts(self, auth_client):
+        stats = {
+            "users": 4,
+            "disabled_users": 1,
+            "configurations": 7,
+            "snapshots": 12,
+        }
+        with patch("app.gather_instance_stats", return_value=stats):
+            resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "Registered Users" in body
+        assert "4" in body
+        assert "1 disabled" in body
+        assert "Firewall Configurations" in body
+        assert ">7<" in body
+        assert "Snapshots" in body
+        assert ">12<" in body
+
+    def test_admin_settings_renders_zero_counts_not_na(self, auth_client):
+        """A fresh instance has real zeros; showing "N/A" would look broken."""
+        stats = {
+            "users": 0,
+            "disabled_users": 0,
+            "configurations": 0,
+            "snapshots": 0,
+        }
+        with patch("app.gather_instance_stats", return_value=stats):
+            resp = auth_client.get("/admin_settings")
+
+        body = resp.data.decode()
+        assert "N/A" not in body
+        assert "disabled)" not in body
+
     def test_admin_settings_post_full_backup(self, auth_client):
         with patch("app.create_backup") as mock_backup:
             resp = auth_client.post(
