@@ -181,6 +181,7 @@ def migrate_sqlite_users():
     _check_no_reserved_usernames(rows)
 
     inserted = 0
+    already_present = []
     for uid, username, email, password in rows:
         if not username or not password:
             logging.warning(
@@ -213,10 +214,28 @@ def migrate_sqlite_users():
         if result.upserted_id is not None:
             inserted += 1
             logging.info(f" |--> Migrated user <{username}>.")
+        else:
+            already_present.append(username)
 
     logging.info(
         f" |--> {len(rows)} legacy account(s) read, {inserted} newly inserted."
     )
+
+    # On a genuine first migration nothing is skipped, so this fires only when
+    # MongoDB already holds accounts of the same name -- i.e. a re-upgrade after
+    # a downgrade, or a data/ volume restored from before the cutover. Nothing
+    # has gone wrong (the newer MongoDB copy winning is the whole point of
+    # $setOnInsert), but which copy won is not something to leave unsaid.
+    if already_present:
+        logging.warning(
+            f" |--> {len(already_present)} legacy account(s) already existed in "
+            f"MongoDB and were left untouched: {already_present}. The MongoDB "
+            "copy wins, so any password change or disable held there is "
+            "preserved and the SQLite values are discarded. If this is a "
+            "re-upgrade after a downgrade to pre-2.5.0, changes made while "
+            "downgraded are being dropped -- see 'Downgrading and re-upgrading' "
+            "in docs/data-architecture.md."
+        )
 
     _purge_sessions()
     _retire_legacy_db()

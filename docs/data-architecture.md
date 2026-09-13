@@ -378,11 +378,71 @@ erDiagram
   normalises both to `str`.
 
 After upgrading, the file is retained as `data/database/auth.db.migrated` (see
-§8). Nothing reads it; it exists so that downgrading the image still has
-accounts. It is a point-in-time snapshot, so **a downgrade loses every account
-created and every password changed after the cutover.** It is excluded from
-backup zips, since it is a full set of bcrypt hashes that would otherwise travel
-to S3.
+§8.1). Nothing reads it; it exists only so that downgrading the image still has
+accounts. It is excluded from backup zips, since it is a full set of bcrypt
+hashes that would otherwise travel to S3.
+
+### Downgrading and re-upgrading
+
+**Procedure.** Stop the app, rename the file back, then start the pre-2.5.0
+image:
+
+```bash
+docker compose stop fw-gui
+mv data/database/auth.db.migrated data/database/auth.db
+# switch the image tag back, then
+docker compose up -d fw-gui
+```
+
+The order matters. Pre-2.5.0 `initialize_data_dir()` runs `db.create_all()` when
+`auth.db` is absent, so starting the old image first leaves you with an empty
+database — no accounts and an open registration page — which then has to be
+overwritten and the container restarted.
+
+**What the downgrade costs.** `auth.db.migrated` is a point-in-time snapshot
+taken at the cutover, and the old code knows nothing about the fields 2.5.0
+added:
+
+- **Disabled accounts become active again.** Pre-2.5.0 has no `disabled`
+  concept and never reads the field, so anyone disabled in 2.5.0 regains access.
+- Accounts created after the cutover are **not in the file at all** — those users
+  lose access entirely.
+- Passwords changed after the cutover **revert to their pre-cutover value**,
+  including one rotated precisely because it leaked.
+- Everyone is logged out once. Sessions hold `_user_id = "u:<username>"`, which
+  matches no integer primary key, so the old `load_user` returns `None` and the
+  request is redirected to the login page. Not an error, just a re-login.
+- `POST /download` comes back (§6).
+
+Firewall configs and snapshots are unaffected — the authentication move did not
+touch their documents, so the old image reads exactly the same data.
+
+**Re-upgrading afterwards needs a decision.** The `users` collection stays in
+MongoDB for the whole downgraded period, and the migration's `$setOnInsert`
+(§8.1) means an existing MongoDB document always wins. So a plain re-upgrade
+**keeps the MongoDB state and discards everything changed while downgraded** —
+password changes and disables included; only users who are genuinely new to
+MongoDB get inserted. The migration logs a WARNING naming every account it
+skipped for this reason, which on a first-ever migration never appears.
+
+That default is deliberate: quietly overwriting live accounts from a stale
+SQLite file would be the worse mistake. To re-upgrade from the SQLite state
+instead, drop the collection first so the migration repopulates it from scratch:
+
+```javascript
+db.users.drop()
+```
+
+Be clear about what that costs, though — it makes SQLite the whole truth, so it
+reintroduces the downgrade's own losses: **every account created after the
+original cutover disappears** (they were only ever in MongoDB), and **every
+disabled account is enabled again** (SQLite has no such field). Prefer it only
+when the changes made while downgraded outweigh those.
+
+**Where the rollback data lives: the volume, not a backup.** Full-backup zips
+taken after the cutover exclude `auth.db*` and carry `mongo_dumps/.../users.bson`
+instead, so they cannot serve a downgrade. If the volume's `auth.db.migrated` is
+gone, there is no rollback path.
 
 ---
 
@@ -528,6 +588,10 @@ missing-file check. `app.py` is the shipped entrypoint, but a WSGI server
 appear to have vanished.
 
 To re-run deliberately, rename `auth.db.migrated` back to `auth.db` and restart.
+Note what a re-run does **not** do: accounts already present in MongoDB are left
+exactly as they are (that is `$setOnInsert`), so this recovers accounts that
+failed to migrate rather than re-syncing the ones that succeeded. See
+"Downgrading and re-upgrading" in §4.
 
 ### 8.2 On-disk JSON configs → MongoDB (`mongo_converter.py`, 1.4.0)
 

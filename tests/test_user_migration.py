@@ -7,6 +7,7 @@ Covers: the pre-2.5.0 SQLite -> MongoDB account migration, its idempotency,
         acts as the "already migrated" marker.
 """
 
+import logging
 import os
 import sqlite3
 
@@ -15,7 +16,6 @@ import pytest
 
 from package import user_migration, user_store
 from package.user_migration import migrate_sqlite_users
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -237,6 +237,33 @@ class TestIdempotency:
         migrate_sqlite_users()
 
         assert users.count_documents({}) == 1
+
+    def test_rerun_warns_which_accounts_it_left_alone(self, users, legacy_db, caplog):
+        """The signal an operator needs after a downgrade / re-upgrade."""
+        legacy_db([("alice", "a@b.c", "old-hash")])
+        migrate_sqlite_users()
+
+        user_store.set_password("alice", "new-hash")
+        legacy_db([("alice", "a@b.c", "old-hash")])
+
+        with caplog.at_level(logging.WARNING):
+            migrate_sqlite_users()
+
+        warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+        assert any("already existed in MongoDB" in m for m in warnings)
+        assert any("alice" in m for m in warnings)
+        # The warning is about which copy won, not a failure.
+        assert users.find_one({"_id": "alice"})["password"] == "new-hash"
+
+    def test_first_migration_does_not_warn(self, users, legacy_db, caplog):
+        """Guards the targeting: this must not fire on every upgrade."""
+        legacy_db([("alice", "a@b.c", "hash"), ("bob", "b@b.c", "hash")])
+
+        with caplog.at_level(logging.WARNING):
+            migrate_sqlite_users()
+
+        warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+        assert not any("already existed in MongoDB" in m for m in warnings)
 
 
 # ---------------------------------------------------------------------------
