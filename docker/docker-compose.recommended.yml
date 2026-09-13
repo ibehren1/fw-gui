@@ -13,6 +13,7 @@ services:
       - DISABLE_REGISTRATION=<True|False>
       - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
       - MONGODB_URI=mongodb
+      - MONGODB_DATABASE=fwgui_database
       - BUCKET_NAME=<bucket-name>
       - AWS_ACCESS_KEY_ID=<access-key>
       - AWS_SECRET_ACCESS_KEY=<secret-access-key>
@@ -69,8 +70,14 @@ services:
   # MongoDB runs WITHOUT authentication. This is intentional for this
   # single-stack deployment: the service publishes no `ports:`, so it is only
   # reachable by other containers on this Compose project's internal network
-  # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet, and it
-  # stores all firewall configs plus the session store.
+  # (i.e. fw-gui). It is NOT exposed to the host, LAN, or internet.
+  #
+  # As of FW-GUI 2.5.0 this database also holds the CREDENTIAL STORE (the
+  # `users` collection: usernames, emails, bcrypt password hashes) alongside all
+  # firewall configs and the session store. Anything attached to this network
+  # can read those hashes; before 2.5.0 they were in a SQLite file that needed
+  # filesystem access inside the fw-gui container. Enabling auth is
+  # correspondingly more worthwhile.
   #
   # SECURITY NOTES:
   #   - Do NOT add a `ports:` mapping (e.g. 27017:27017) — that would expose an

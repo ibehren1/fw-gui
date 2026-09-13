@@ -8,11 +8,54 @@ references — with diagrams for a quick mental model.
 Related: `docs/ssh-credential-handling.md` covers SSH credentials/keys/cookies
 in depth; this document covers the overall data model.
 
+**Version note.** The authentication store moved in **2.5.0**: user accounts
+live in MongoDB from 2.5.0 onward, and in a SQLite file (`data/database/auth.db`,
+via Flask-SQLAlchemy) before it. Both are documented — §1 and §4 each carry a
+`2.5.0+` and a `Pre-2.5.0` subsection — so this document is usable while running
+either. Upgrading is automatic and needs no operator action; see §8.
+
 ---
 
 ## 1. Overview
 
-FW-GUI uses **three persistent stores**, plus a server-side session store:
+### 2.5.0+
+
+**Two persistent stores**, one of which also backs the server-side session
+store:
+
+| Store | Technology | Holds |
+|-------|-----------|-------|
+| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots, one collection per user, **plus the `users` collection holding accounts** |
+| Session store | **MongoDB** (`sessions` collection, via Flask-Session) | Per-session state; browser holds only an opaque id |
+| Filesystem (`data/`) | Local volume | Encrypted SSH keys, generated `.conf` files, backups, logs, Mongo dumps, instance id |
+
+```mermaid
+flowchart TD
+    Browser(["Browser"]) -->|"session cookie = opaque id"| App["Flask app (app.py)"]
+
+    App -->|"firewall configs + snapshots (PyMongo)"| Mongo[("MongoDB (MONGODB_DATABASE)")]
+    App -->|"user accounts (users collection)"| Mongo
+    App -->|"session state (Flask-Session)"| Sessions[("Mongo sessions")]
+    App -->|"keys / .conf / backups / logs"| FS[/"Filesystem data dir"/]
+
+    App -->|"generated set commands via SSH"| VyOS[("VyOS device")]
+    FS -.->|"optional backup upload"| S3[("AWS S3 (BUCKET_NAME)")]
+    App -.->|"UUID + version only"| Tele[("telemetry.fw-gui.com")]
+```
+
+Neither configuration data nor accounts live on disk — the per-user filesystem
+directory holds only keys, generated command files, and backups.
+
+Consequence worth stating plainly: **MongoDB now holds the credential store.**
+The shipped compose files leave MongoDB authentication commented out, justified
+by the fact that no port is published and only the fw-gui container shares the
+network. Post-2.5.0 anything else attached to that network can read every bcrypt
+hash, where previously it would have needed filesystem access inside the fw-gui
+container. Enabling MongoDB authentication is correspondingly more worthwhile.
+
+### Pre-2.5.0
+
+**Three persistent stores**, plus a server-side session store:
 
 | Store | Technology | Holds |
 |-------|-----------|-------|
@@ -35,9 +78,6 @@ flowchart TD
     App -.->|"UUID + version only"| Tele[("telemetry.fw-gui.com")]
 ```
 
-Configuration data lives in **MongoDB**, not on disk — the per-user filesystem
-directory holds only keys, generated command files, and backups.
-
 ---
 
 ## 2. MongoDB — firewall configuration store
@@ -46,13 +86,19 @@ directory holds only keys, generated command files, and backups.
 
 - Single shared client, lazily created and reused: `_mongo_client` /
   `_get_mongo_client()` → `pymongo.MongoClient(os.environ.get("MONGODB_URI"))`
-  (`package/data_file_functions.py:35,38-42`).
-- Database selected everywhere as `client[os.environ.get("MONGODB_DATABASE")]`
-  (e.g. `:276,509,586,795,1098`). Default `"fwgui_database"` is applied only in
-  the session config (`app.py:227-229`); **the data-layer calls pass no default**,
-  so `MONGODB_DATABASE` must be set.
-- `validate_mongodb_connection()` (`:995-1027`) probes with
+  (`package/data_file_functions.py:36,62-66`).
+- Database handle from `_get_mongo_db()` (`:69-81`), which every call site uses
+  (`:103,378,610,689,762,897,972,1263`). `MONGODB_DATABASE` defaults to
+  `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"` (`:40`), matching the
+  session-store default at `app.py:240`. The default matters: pymongo raises
+  `TypeError: name must be an instance of str` on `client[None]`, and since
+  2.5.0 accounts live here too, an unset variable would take the login page down
+  rather than only the config routes.
+- `validate_mongodb_connection()` (`:1155-1193`) probes with
   `serverSelectionTimeoutMS=1` and `sys.exit()`s on failure at startup.
+- No indexes are created by application code. Uniqueness comes from `_id` alone
+  (config name per user collection; username in `users`). The TTL index on the
+  `sessions` collection is created by Flask-Session, not by this repo.
 
 ### Addressing: collection = user, document = config
 
@@ -232,9 +278,86 @@ now also allow-lists `ipv4`/`ipv6` as a second line of defence.
 
 ---
 
-## 4. SQLite — authentication database
+## 4. Authentication store
 
-`User` model (`app.py:270-287`), a Flask-SQLAlchemy + Flask-Login `UserMixin`:
+### 2.5.0+ — MongoDB `users` collection
+
+Accounts live in the collection named by `MONGODB_USERS_COLLECTION` (default
+`users`) inside `MONGODB_DATABASE`. Access goes through `package/user_store.py`;
+`app.py` has no user model.
+
+```
+{"_id":       "alice",              # username — the natural key
+ "email":     "alice@example.com",
+ "password":  "$2b$12$...",         # bcrypt hash, always str
+ "disabled":  false,                # absent means enabled
+ "legacy_id": 1,                    # rows migrated from SQLite only
+ "created":   ISODate(...)}         # new registrations only
+```
+
+**`_id` is the username.** That is load-bearing, not incidental:
+
+- Uniqueness is free. No index is created at startup, so there is no index build
+  to fail, and `register_user` does not pre-check the name — `create_user()`
+  inserts and `DuplicateKeyError` *is* the duplicate check
+  (`auth_functions.py:294-306`). The pre-2.5.0 query-then-insert had a window in
+  which two simultaneous registrations of one name could both succeed.
+- `_id` matching is binary, which preserves exactly the case-sensitive
+  uniqueness the SQLite `unique` column gave: `Bob` and `bob` are distinct. No
+  collation is set, deliberately — adding one would change semantics and could
+  make an existing pair unmigratable.
+- The username is immutable identity. Already true in practice: it is also the
+  Mongo collection name and the `data/<username>` directory name, and there is
+  no rename feature.
+
+**Reserved usernames.** Because a username is a collection name, `users` and
+`sessions` are rejected — hardcoded in `validators.py`
+(`_RESERVED_USERNAMES` / `is_reserved_username`), matched lowercased and
+stripped, and honoured *in addition to* whatever `MONGODB_USERS_COLLECTION` is
+set to. A user holding one of those names would be handed an application
+collection as their config collection, and the ordinary config routes would then
+let them list, read and delete other users' accounts or session documents.
+`is_valid_username()` calls the guard, so every caller inherits it, and the
+startup migration refuses to boot if a legacy account already holds such a name.
+
+**Disabling, not deleting.** There is no delete-user feature, by design. Removing
+a document would free the username, and the next person to register it would
+inherit the previous holder's configs, snapshots and SSH keys. Disable instead:
+
+```javascript
+db.users.updateOne({_id: "alice"}, {$set: {disabled: true}})
+```
+
+The field is `disabled` rather than `enabled` so that an absent value means
+usable — documents predating the field keep working. It is enforced in three
+places, because checking only at login would leave an already-authenticated
+session alive: `process_login` before `login_user()`
+(`auth_functions.py:172-181`), `get_user_by_session_id` used by the `user_loader`
+(`user_store.py:83-95`, so disabling takes effect on the user's *next request*),
+and `change_password` (`auth_functions.py:84-90`, so a disabled account cannot
+rotate its way back in). `User.is_active` returns `not disabled`, which
+Flask-Login consults in `login_user()`, as a fourth free layer. A refused login
+flashes the same "Login incorrect." as a bad password — saying "disabled" would
+hand out account enumeration — and logs a WARNING with the username.
+
+**Session token.** `get_id()` returns `u:<username>`
+(`user_store.SESSION_ID_PREFIX`), not the bare name: `is_valid_username` permits
+all-digit usernames, so an unprefixed token would be indistinguishable from the
+integer primary key that pre-2.5.0 sessions carry, and a stale session holding
+`"1"` could resolve to the account *named* `1`.
+
+Passwords are hashed with Flask-Bcrypt and stored as `str` — both write paths
+`.decode("utf-8")` the bytes `generate_password_hash()` returns
+(`auth_functions.py:97,297`). `_password_matches()` (`:35-49`) traps the
+`ValueError` bcrypt raises on an empty or malformed stored hash, so such an
+account fails its login instead of 500ing the login page.
+
+Queries deliberately do not swallow exceptions: a MongoDB outage must not be
+rendered as "no such user".
+
+### Pre-2.5.0 — SQLite `auth.db` (historical)
+
+`User` model in `app.py`, a Flask-SQLAlchemy + Flask-Login `UserMixin`:
 
 ```mermaid
 erDiagram
@@ -247,41 +370,55 @@ erDiagram
 ```
 
 - File: `sqlite:////{db_location}/auth.db` where
-  `db_location = os.path.join(os.getcwd(), "data/database")` → `data/database/auth.db`
-  (`app.py:166,193`). Created via `db.create_all()` if missing
-  (`initialize_data_dir` → `data_file_functions.py:430-435`).
-- Passwords hashed with Flask-Bcrypt at registration (`auth_functions.py:264-267`),
-  verified on login/change (`:141,66`). Username is allowlist-validated
-  (`is_valid_username`) because it becomes a directory and Mongo collection name.
+  `db_location = os.path.join(os.getcwd(), "data/database")` → `data/database/auth.db`.
+  Created via `db.create_all()` if missing, from `initialize_data_dir()`.
+- The `password` column holds a **mix of TEXT and BLOB**:
+  `generate_password_hash()` returns bytes and neither write path decoded it, so
+  what a row contains depends on which code path created it. The 2.5.0 migration
+  normalises both to `str`.
+
+After upgrading, the file is retained as `data/database/auth.db.migrated` (see
+§8). Nothing reads it; it exists so that downgrading the image still has
+accounts. It is a point-in-time snapshot, so **a downgrade loses every account
+created and every password changed after the cutover.** It is excluded from
+backup zips, since it is a full set of bcrypt hashes that would otherwise travel
+to S3.
 
 ---
 
 ## 5. Session store
 
 Flask-Session stores session state **server-side**; the browser cookie holds
-only an opaque, signed session id (`app.py:216-231`).
+only an opaque, signed session id (`app.py:221-245`).
 
 - `SESSION_TYPE` (env, default `mongodb`) → collection `sessions` in the same
   Mongo database (`SESSION_MONGODB*`). Tests use `filesystem`.
 - Keys: `data_dir`, `username`, `firewall_name`, `hostname`, `port`, `ssh_user`,
   `ssh_pass` (**Fernet-encrypted at rest**, `encrypt_secret`/`decrypt_secret`,
-  `app.py:234-260`), `ssh_keyname`, `_user_id`.
+  `app.py:248-274`), `ssh_keyname`, `_user_id`.
+- `_user_id` is Flask-Login's token. **2.5.0+:** `u:<username>`. **Pre-2.5.0:**
+  the SQLite integer primary key as a string. The formats are disjoint on
+  purpose (§4).
 - Cookie hardening: `HTTPONLY=True`, `SAMESITE=Lax`, `SECURE` opt-in via env.
 - Lifetime: `SESSION_PERMANENT=True` honoring `PERMANENT_SESSION_LIFETIME`
   (from `SESSION_TIMEOUT`, default 120 min). Logout deletes the session doc; a
   TTL index on `expiration` reaps expired ones. (Details in
   `docs/ssh-credential-handling.md`.)
+- **The 2.5.0 upgrade clears the session store once** — every document in the
+  `sessions` collection and every file in `flask_session/` — because the
+  `_user_id` format changed. Everyone is logged out at the cutover instead of
+  holding a token that cannot resolve.
 
 ---
 
 ## 6. Filesystem layout (`data/`)
 
-Created by `initialize_data_dir()` (`data_file_functions.py:362-443`):
+Created by `initialize_data_dir()` (`data_file_functions.py:464-537`):
 
 ```mermaid
 flowchart TD
     data["data/"]
-    data --> db["database/<br/>auth.db (SQLite)<br/>instance.id (telemetry UUID)"]
+    data --> db["database/<br/>instance.id (telemetry UUID)<br/>auth.db.migrated (pre-2.5.0 SQLite, retained)"]
     data --> log["log/<br/>app.log"]
     data --> backups["backups/<br/>full-backup-&lt;timestamp&gt;.zip"]
     data --> dumps["mongo_dumps/<br/>&lt;timestamp&gt;/&lt;db&gt;/&lt;collection&gt;.bson"]
@@ -294,7 +431,7 @@ flowchart TD
     userdir --> ubk["user-&lt;user&gt;-backup-&lt;timestamp&gt;.zip"]
 ```
 
-- Per-user dir `data/<username>/` created on first login (`auth_functions.py:149-161`);
+- Per-user dir `data/<username>/` created on first login (`auth_functions.py:218-233`);
   path stored in the session as `data_dir`.
 - `data/tmp/` is cleared on every startup (`:410-418`); it stages decrypted SSH
   keys per-operation (see the SSH doc).
@@ -303,8 +440,10 @@ flowchart TD
   in 2.5.0; it had no caller in the UI. The two real download endpoints,
   `/download_config` and `/download_json`, build their response from the
   session's own config and take no caller-supplied path.
-- **Firewall config data is NOT here** — it's in MongoDB. The per-user dir holds
-  only keys, generated `.conf` files, and user backup zips.
+- **Neither firewall config data nor user accounts are here** — both are in
+  MongoDB (accounts since 2.5.0). The per-user dir holds only keys, generated
+  `.conf` files, and user backup zips; `database/` holds the telemetry instance
+  id and, on an upgraded install, the retained `auth.db.migrated`.
 
 ---
 
@@ -313,15 +452,23 @@ flowchart TD
 ```mermaid
 flowchart LR
     A["Admin: Create Full Backup"] --> MD["mongo_dump() writes<br/>data/mongo_dumps/ts/db/coll.bson"]
-    MD --> Z["zip to data/backups/full-backup-ts.zip<br/>(excludes backups/, tmp/, uploads/, *.key)"]
+    MD --> Z["zip to data/backups/full-backup-ts.zip<br/>(excludes backups/, tmp/, uploads/, *.key, auth.db*)"]
     Z --> U{"BUCKET_NAME set?"}
     U -->|yes| S3["boto3 upload to<br/>s3 BUCKET/fw-gui/backups/file"]
     U -->|no| Skip["skip upload (logged)"]
 ```
 
-- `create_backup(session, user=False)` (`data_file_functions.py:135-200`): runs
-  `mongo_dump()` (`:631-664`), zips `data/` **excluding** `backups/`, `tmp/`,
-  `uploads/`, and any `*.key` (`:167-171`), then `upload_backup_file()`.
+- `create_backup(session, user=False)` (`data_file_functions.py:206-270`): runs
+  `mongo_dump()` (`:731-770`), zips `data/` **excluding** `backups/`, `tmp/`,
+  `uploads/`, any `*.key`, and `auth.db*` (`:237-250`), then
+  `upload_backup_file()`.
+- `mongo_dump()` sweeps `list_collection_names()`, so since 2.5.0 every dump
+  includes `users.bson` — the full bcrypt hash set. That is intentional: a backup
+  without accounts would be of limited use. It is also why the retained
+  pre-2.5.0 `auth.db*` is excluded (a second, redundant copy of the same
+  secrets) and why the `POST /download` route was removed (§6): the zips were
+  in-app readable by any logged-in user. Dumps are timestamped and never pruned,
+  so the number of copies on the volume grows with each backup.
 - S3 (`upload_backup_file:932-992`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
   `AWS_SECRET_ACCESS_KEY`; skipped if `BUCKET_NAME` unset; key prefix
   `fw-gui/backups/`.
@@ -332,13 +479,63 @@ flowchart LR
 
 ---
 
-## 8. Legacy migration (`mongo_converter.py`)
+## 8. Startup migrations
 
-One-shot startup migration of pre-1.4.0 on-disk JSON configs into MongoDB
-(`mongo_converter():17-70`), run at startup after the Mongo connection check
-(`app.py:1990-1991`):
+Both run from `app.py`'s `__main__` block after the MongoDB connection check,
+users first — `mongo_converter()` takes its user list from the `users`
+collection, so the accounts have to be there already:
 
-1. `SELECT username FROM User` in `auth.db`.
+```python
+if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
+    migrate_sqlite_users()
+    mongo_converter()
+```
+
+### 8.1 SQLite accounts → MongoDB (`user_migration.py`, 2.5.0)
+
+No operator action required.
+
+1. Return immediately if `data/database/auth.db` is absent — a fresh install, or
+   one already migrated.
+2. Abort (CRITICAL + exit) if the target collection already holds documents with
+   no `password` field: it is some user's config collection, and
+   `MONGODB_USERS_COLLECTION` needs to point somewhere else.
+3. Read the accounts from SQLite over a read-only `file:` URI (so no `-wal`
+   /`-shm` sidecars appear beside a database the app otherwise no longer opens),
+   querying `FROM user` — SQLAlchemy's implicit table name. An unreadable or
+   corrupt file is logged and skipped **without** renaming, so the next boot
+   retries.
+4. Abort (CRITICAL + exit) if any legacy username is reserved (§4). The operator
+   has to rename the account.
+5. For each row, normalise the hash to `str` (the column holds a TEXT/BLOB mix)
+   and upsert with **`$setOnInsert`**. Rows with no username or no password are
+   skipped with a warning.
+6. Purge the session store (§5).
+7. Rename `auth.db` → `auth.db.migrated`. An existing `auth.db.migrated` is never
+   overwritten — it is an earlier migration's rollback snapshot — so the new one
+   gets a timestamp suffix instead.
+
+**Why `$setOnInsert` and not `$set`.** The rename is the marker, and a marker on
+a volume is not trustworthy: restore `data/` from an older snapshot and the
+migration runs again. With `$set` that re-run would restore every user's
+pre-cutover password hash — including one deliberately rotated because it
+leaked — and re-enable an account the operator had since disabled. With
+`$setOnInsert` a second run is a no-op on accounts that already exist.
+
+`process_login()` also calls `migrate_sqlite_users()`, guarded by the same
+missing-file check. `app.py` is the shipped entrypoint, but a WSGI server
+(`gunicorn app:app`) never runs its `__main__` block, and every account would
+appear to have vanished.
+
+To re-run deliberately, rename `auth.db.migrated` back to `auth.db` and restart.
+
+### 8.2 On-disk JSON configs → MongoDB (`mongo_converter.py`, 1.4.0)
+
+One-shot startup migration of pre-1.4.0 on-disk JSON configs:
+
+1. Get the user list from `user_store.list_usernames()` (disabled accounts
+   included, so their leftover JSON still imports). Pre-2.5.0 this was
+   `SELECT username FROM User` against `auth.db`.
 2. For each user, find `data/<user>/*.json`.
 3. `json.loads` each, drop `_id`, `write_user_data_file(...)` (inserts a current
    config doc).
@@ -346,6 +543,10 @@ One-shot startup migration of pre-1.4.0 on-disk JSON configs into MongoDB
 
 No-op when no leftover `.json` files exist. Uploaded JSON takes the same
 `write_user_data_file` path via `process_upload`.
+
+It walks per-user directories rather than globbing `data/*/*.json` on purpose:
+the glob would match `data/uploads/*.json`, the transient upload staging area,
+and import a stray upload into a collection named `uploads`.
 
 ---
 
@@ -376,7 +577,7 @@ Matches the documented flow in `CLAUDE.md`: HTTP → route → package function 
 ## 10. Telemetry
 
 - `data/database/instance.id` — a random `uuid.uuid4()` created once
-  (`data_file_functions.py:437-440`), read by `get_instance_id()`.
+  (`data_file_functions.py:530-533`), read by `get_instance_id()`.
 - Sends **only** the instance UUID and app version to
   `https://telemetry.fw-gui.com/<route>` (`/instance`, `/commit`, `/diff`,
   `/rule_usage`) via urllib3 (`telemetry_functions.py`). No config or user data
@@ -388,8 +589,9 @@ Matches the documented flow in `CLAUDE.md`: HTTP → route → package function 
 
 | Variable | Purpose |
 |----------|---------|
-| `MONGODB_URI` | MongoDB connection string (configs + sessions) |
-| `MONGODB_DATABASE` | Mongo database name (data layer passes no default — must be set) |
+| `MONGODB_URI` | MongoDB connection string (configs, accounts, sessions) |
+| `MONGODB_DATABASE` | Mongo database name (default `fwgui_database`) |
+| `MONGODB_USERS_COLLECTION` | Collection holding user accounts (default `users`, 2.5.0+). Escape hatch for an install that already has a user of that name |
 | `APP_SECRET_KEY` | Signs the session id; derives the cached-secret encryption key |
 | `SESSION_TYPE` | Session backend (`mongodb` default; `filesystem` for tests) |
 | `SESSION_TIMEOUT` | Session lifetime in minutes (default 120) |
