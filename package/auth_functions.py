@@ -26,6 +26,7 @@ from pymongo.errors import DuplicateKeyError
 from package import user_store
 from package.data_file_functions import write_user_data_file
 from package.telemetry_functions import telemetry_instance
+from package.user_migration import migrate_sqlite_users
 from package.validators import is_reserved_username, is_valid_username
 
 # Minimum length for new/changed passwords (enforced on set, not on login).
@@ -184,6 +185,13 @@ def process_login(bcrypt, request):
     """
     if request.form["username"] == "":
         return False, None, None
+
+    # Belt and braces: the startup migration runs from app.py's __main__ block,
+    # which is the shipped entrypoint but which a WSGI server (e.g. gunicorn
+    # app:app) never executes -- and every account would appear to have
+    # vanished. Cheap because it short-circuits on a missing file, and safe to
+    # race because the migration only ever inserts.
+    migrate_sqlite_users()
 
     result = user_store.get_user_by_username(request.form["username"])
 

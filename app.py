@@ -125,6 +125,7 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.telemetry_functions import telemetry_instance
+from package.user_migration import migrate_sqlite_users
 from package.user_store import get_user_by_session_id
 from package.validators import is_safe_name
 
@@ -2170,8 +2171,10 @@ if __name__ == "__main__":
     telemetry_instance()
 
     # Check if MongoDB connection is valid using URI from environment variables
-    # If connection is successful, run converter to migrate data
+    # If connection is successful, run the startup migrations. Users must move
+    # first: mongo_converter() gets its user list from the users collection.
     if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
+        migrate_sqlite_users()
         mongo_converter()
 
     # Convert all existing JSON config files to MongoDB format

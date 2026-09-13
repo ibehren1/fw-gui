@@ -147,6 +147,25 @@ def user_model():
     return make_user
 
 
+@pytest.fixture(scope="session", autouse=True)
+def no_real_sqlite_migration(tmp_path_factory):
+    """Keep the legacy-user migration away from the real data directory.
+
+    process_login() calls migrate_sqlite_users() as a fallback for non-app.py
+    entrypoints. On a developer checkout data/database/auth.db exists, so any
+    test that logs in would migrate and rename the real file (and purge the real
+    session store). Point the migration at a path that does not exist so it
+    short-circuits; test_user_migration.py redirects it to its own fixtures.
+    """
+    from package import user_migration
+
+    absent = tmp_path_factory.mktemp("no-auth-db") / "auth.db"
+    mp = pytest.MonkeyPatch()
+    mp.setattr(user_migration, "LEGACY_AUTH_DB", str(absent))
+    yield
+    mp.undo()
+
+
 @pytest.fixture(scope="session")
 def mongo_client():
     """Session-wide mongomock client patched into the data layer.
