@@ -29,12 +29,11 @@ import pymongo
 from package import data_file_functions
 from package.validators import INSTANCE_COLLECTION
 
-# Upper bound on how long a telemetry id lookup may block. The shared client sets
-# no serverSelectionTimeoutMS, so pymongo's 30s default applied here would stall
-# the login path (telemetry_instance) and the commit path (telemetry_commit) for
-# half a minute on an unreachable database -- where this used to be a free file
-# read. A MongoDB outage already breaks those requests for other reasons; it must
-# not also make them hang.
+# Upper bound on how long a telemetry id lookup may block. Tighter than the
+# shared client's SERVER_SELECTION_TIMEOUT_MS on purpose: this used to be a free
+# file read, and it sits in the login path (telemetry_instance) and the commit
+# path (telemetry_commit). A MongoDB outage already breaks those requests for
+# other reasons; telemetry must not add to the wait.
 _LOOKUP_TIMEOUT_SECONDS = 2.0
 
 # Pre-2.5.0 location, and the name it is renamed to once its value is in

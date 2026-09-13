@@ -70,6 +70,7 @@ from package.chain_functions import (
 )
 from package.data_file_functions import (
     AUTO_SNAPSHOT_TAG,
+    SERVER_SELECTION_TIMEOUT_MS,
     add_extra_items,
     add_hostname,
     create_backup,
@@ -229,7 +230,14 @@ app.config["SESSION_PERMANENT"] = True  # honors PERMANENT_SESSION_LIFETIME
 if session_type == "mongodb":
     from pymongo import MongoClient
 
-    app.config["SESSION_MONGODB"] = MongoClient(os.environ["MONGODB_URI"])
+    # Bounded server selection, not pymongo's 30s default: this client is hit on
+    # every single request (including the login page), so an unreachable database
+    # would otherwise stall each one for half a minute and exhaust the waitress
+    # thread pool.
+    app.config["SESSION_MONGODB"] = MongoClient(
+        os.environ["MONGODB_URI"],
+        serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
+    )
     app.config["SESSION_MONGODB_DB"] = os.environ.get(
         "MONGODB_DATABASE", "fwgui_database"
     )

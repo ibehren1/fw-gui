@@ -88,7 +88,21 @@ flowchart TD
 
 - Single shared client, lazily created and reused: `_mongo_client` /
   `_get_mongo_client()` → `pymongo.MongoClient(os.environ.get("MONGODB_URI"))`
-  (`package/data_file_functions.py:36,62-66`).
+  (`package/data_file_functions.py:36,72-79`).
+- **`serverSelectionTimeoutMS` is 5 s**, not pymongo's 30 s default
+  (`SERVER_SELECTION_TIMEOUT_MS`, `:50`), and the Flask-Session client in
+  `app.py:236-240` carries the same bound. A database on the same Docker network
+  either answers in milliseconds or is not coming, and every stalled request
+  holds a waitress thread — a handful of retrying browsers during an outage would
+  wedge a finite pool. Measured against a killed MongoDB with the app already
+  running: **60.4 s per request before the bound, 10.1 s after** (Flask-Session
+  reads on the request and writes on the response, so a request pays the timeout
+  twice). `socketTimeoutMS` is deliberately left alone — capping it would kill
+  legitimately long queries.
+- With `SESSION_TYPE=mongodb` and MongoDB unreachable, `app.py` cannot even be
+  imported: Flask-Session's `MongoDBSessionInterface` creates the `expiration` TTL
+  index in its constructor. Long-standing behaviour, now surfacing in ~6 s rather
+  than ~31 s.
 - Database handle from `_get_mongo_db()` (`:69-81`), which every call site uses
   (`:103,378,610,689,762,897,972,1263`). `MONGODB_DATABASE` defaults to
   `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"` (`:40`), matching the
@@ -694,10 +708,11 @@ the startup migration; `instance_id.py` logs an ERROR and telemetry degrades.
   `telemetry_diff()` are called from `napalm_ssh_functions.py:128` and `:199`
   *outside* the try blocks that guard a firewall push, so an escaping exception
   would turn a telemetry lookup into a failed commit. An unavailable id is `""`.
-- **The lookup is time-bounded** by `pymongo.timeout(2.0)`. The shared client sets
-  no `serverSelectionTimeoutMS`, so pymongo's 30 s default applied per event: four
-  telemetry calls against an unreachable database measured 121 s before the bound,
-  8 s after. `telemetry_instance()` is in the login path.
+- **The lookup is time-bounded** by `pymongo.timeout(2.0)`, tighter than the
+  shared client's 5 s (§2) because this used to be a free file read and
+  `telemetry_instance()` is in the login path. Four telemetry calls against an
+  unreachable database measured 121 s against pymongo's bare 30 s default, 8 s
+  with the bound.
 
 `telemetry_instance()` runs *after* `validate_mongodb_connection()` in `app.py`'s
 `__main__`, so it has a real id and cannot stall the boot. Consequence: an install

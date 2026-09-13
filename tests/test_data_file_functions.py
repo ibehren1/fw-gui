@@ -42,6 +42,10 @@ from package.data_file_functions import (
     write_user_command_conf_file,
     write_user_data_file,
 )
+# Captured at import time on purpose: conftest's session-scoped mongo_client
+# fixture replaces package.data_file_functions._get_mongo_client with a
+# mongomock lambda, so looking the name up later would test the stub.
+from package.data_file_functions import _get_mongo_client as _real_get_client
 from tests.conftest import make_request
 
 
@@ -1127,6 +1131,55 @@ class TestTagSnapshot:
 # ===========================================================================
 # validate_mongodb_connection
 # ===========================================================================
+
+
+class TestMongoClientTimeout:
+    """The shared client must not use pymongo's 30s server-selection default.
+
+    Every stalled request holds a waitress thread, so an unreachable database
+    would wedge the server instead of failing fast.
+    """
+
+    def test_shared_client_bounds_server_selection(self, monkeypatch):
+        import package.data_file_functions as dff
+
+        captured = {}
+
+        def fake_client(uri, **kwargs):
+            captured["uri"] = uri
+            captured["kwargs"] = kwargs
+            return MagicMock()
+
+        monkeypatch.setattr(dff, "_mongo_client", None)
+        monkeypatch.setattr(dff.pymongo, "MongoClient", fake_client)
+        monkeypatch.setenv("MONGODB_URI", "mongodb://localhost:27017")
+
+        _real_get_client()
+
+        assert (
+            captured["kwargs"]["serverSelectionTimeoutMS"]
+            == dff.SERVER_SELECTION_TIMEOUT_MS
+        )
+        # A bound only helps if it is meaningfully below pymongo's 30s default.
+        assert 0 < dff.SERVER_SELECTION_TIMEOUT_MS <= 10000
+
+    def test_client_is_reused(self, monkeypatch):
+        """The bound must not come at the cost of a client per call."""
+        import package.data_file_functions as dff
+
+        calls = []
+
+        def fake_client(uri, **kwargs):
+            calls.append(uri)
+            return MagicMock()
+
+        monkeypatch.setattr(dff, "_mongo_client", None)
+        monkeypatch.setattr(dff.pymongo, "MongoClient", fake_client)
+
+        _real_get_client()
+        _real_get_client()
+
+        assert len(calls) == 1
 
 
 class TestValidateMongodbConnection:

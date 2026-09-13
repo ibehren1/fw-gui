@@ -38,6 +38,17 @@ _mongo_client = None
 # the SESSION_MONGODB_DB default in app.py.
 DEFAULT_MONGODB_DATABASE = "fwgui_database"
 
+# How long pymongo may spend looking for a reachable server before giving up.
+# pymongo's default is 30 seconds, which is not a useful wait: a database on the
+# same Docker network either answers in milliseconds or is not coming. Meanwhile
+# every stalled request holds a waitress thread (the pool is finite), so a
+# handful of retrying browsers during an outage wedges the server instead of
+# failing fast. Applied to the shared client here and to the Flask-Session client
+# in app.py, which is the one every single request touches.
+#
+# Deliberately not socketTimeoutMS: that would cap legitimately long queries.
+SERVER_SELECTION_TIMEOUT_MS = 5000
+
 # Keys that exist only on snapshot documents. A "current" document must never
 # carry them: generate_config walks the document's top-level keys, and a stray
 # `tag` string there previously crashed config generation.
@@ -61,7 +72,10 @@ _SNAPSHOT_NAME_FORMAT = "%m-%d-%Y %H:%M:%S"
 def _get_mongo_client():
     global _mongo_client
     if _mongo_client is None:
-        _mongo_client = pymongo.MongoClient(os.environ.get("MONGODB_URI"))
+        _mongo_client = pymongo.MongoClient(
+            os.environ.get("MONGODB_URI"),
+            serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
+        )
     return _mongo_client
 
 
