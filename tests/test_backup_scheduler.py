@@ -331,14 +331,22 @@ class TestEnsureScheduleDocument:
     def test_returns_none_without_raising_when_mongo_is_down(self, broken_mongo):
         assert ensure_schedule_document(MONDAY) is None
 
-    def test_coexists_with_the_telemetry_instance_id(self, schedule, caplog):
+    def test_coexists_with_the_telemetry_instance_id(
+        self, schedule, caplog, monkeypatch
+    ):
         """
         The schedule document shares the instance collection with the telemetry
         id, which is why no new reserved username was needed.
+
+        FWGUI_INSTANCE_ID has to go: it short-circuits the lookup before MongoDB
+        is touched, so with it set this would assert nothing about the two
+        documents coexisting. CI sets it (.github/workflows/ci.yml), which is
+        exactly where the earlier version of this test failed.
         """
         from package import instance_id
 
-        instance_id._instance_id = None
+        monkeypatch.delenv(instance_id.INSTANCE_ID_ENV_VAR, raising=False)
+        monkeypatch.setattr(instance_id, "_instance_id", None)
         schedule.insert_one({"_id": "instance_id", "value": "abc-123"})
 
         ensure_schedule_document(MONDAY)
@@ -346,7 +354,6 @@ class TestEnsureScheduleDocument:
         with caplog.at_level(logging.ERROR):
             assert instance_id.get_or_create_instance_id() == "abc-123"
         assert [r for r in caplog.records if r.levelno >= logging.ERROR] == []
-        instance_id._instance_id = None
 
 
 # ---------------------------------------------------------------------------
