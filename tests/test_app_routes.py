@@ -1052,32 +1052,13 @@ class TestAdminRoutes:
             assert resp.status_code == 200
             mock_backup.assert_called_once()
 
-    def test_download_valid_path(self, auth_client):
-        data_dir = os.path.join(os.getcwd(), "data", "testuser")
-        os.makedirs(data_dir, exist_ok=True)
-        test_file = os.path.join(data_dir, "_test_download.txt")
-        try:
-            with open(test_file, "wb") as f:
-                f.write(b"test content")
-            resp = auth_client.post(
-                "/download",
-                data={
-                    "path": "data/testuser/",
-                    "filename": "_test_download.txt",
-                },
-            )
-            assert resp.status_code == 200
-            assert resp.data == b"test content"
-        finally:
-            if os.path.exists(test_file):
-                os.remove(test_file)
-
-    def test_download_path_traversal(self, auth_client):
+    def test_download_route_is_gone(self, auth_client):
+        """Removed in 2.5.0: it read any file under data/ for any logged-in user."""
         resp = auth_client.post(
             "/download",
-            data={"path": "../", "filename": "etc/passwd"},
+            data={"path": "data/testuser/", "filename": "anything.txt"},
         )
-        assert resp.status_code == 302
+        assert resp.status_code == 404
 
 
 class TestSessionCookieHardening:

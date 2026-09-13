@@ -298,8 +298,11 @@ flowchart TD
   path stored in the session as `data_dir`.
 - `data/tmp/` is cleared on every startup (`:410-418`); it stages decrypted SSH
   keys per-operation (see the SSH doc).
-- `/download` restricts any download to within `data/` via `os.path.commonpath`
-  (`app.py:403-414`).
+- Nothing in the app serves arbitrary files out of `data/`. The `POST /download`
+  route, which read any path under `data/` for any logged-in user, was removed
+  in 2.5.0; it had no caller in the UI. The two real download endpoints,
+  `/download_config` and `/download_json`, build their response from the
+  session's own config and take no caller-supplied path.
 - **Firewall config data is NOT here** — it's in MongoDB. The per-user dir holds
   only keys, generated `.conf` files, and user backup zips.
 
@@ -322,8 +325,9 @@ flowchart LR
 - S3 (`upload_backup_file:932-992`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
   `AWS_SECRET_ACCESS_KEY`; skipped if `BUCKET_NAME` unset; key prefix
   `fw-gui/backups/`.
-- **No in-app restore**: backups are created/uploaded/listed only. A backup zip
-  can be fetched via `/download`, but there is no automated restore path in the
+- **No in-app restore**: backups are created/uploaded/listed only. Retrieving a
+  backup zip is an out-of-band operation (filesystem or S3) — as of 2.5.0 there
+  is no in-app download for it — and there is no automated restore path in the
   code.
 
 ---

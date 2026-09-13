@@ -434,44 +434,6 @@ def admin_settings():
         )
 
 
-@app.route("/download", methods=["POST"])
-@login_required
-def download():
-    """
-    Handle file download requests.
-
-    Endpoint that allows authenticated users to download files. The file path and name
-    are provided in the POST request form data.
-
-    Args:
-        None
-
-    Returns:
-        Response: File download response with the requested file data
-
-    Raises:
-        None
-    """
-    path = request.form["path"]
-    filename = request.form["filename"]
-    full_path = os.path.realpath(path + filename)
-
-    # Confirm the resolved path stays within the data/ directory. Using
-    # commonpath (not startswith) avoids the sibling-prefix bypass where a path
-    # like ".../data_secrets/..." would pass a naive "starts with .../data" test.
-    data_root = os.path.realpath("data")
-    if (
-        os.path.commonpath([full_path, data_root]) != data_root
-        or full_path == data_root
-    ):
-        flash("Invalid file path.", "danger")
-        return redirect(url_for("index"))
-
-    with open(full_path, "rb") as f:
-        data = f.read()
-    return send_file(BytesIO(data), download_name=filename, as_attachment=True)
-
-
 #
 # Sessions
 @app.route("/user_change_password", methods=["GET", "POST"])
