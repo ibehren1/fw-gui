@@ -32,6 +32,7 @@ The web-based FW-GUI allows the user to visually:
 
 - [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, MongoDB-backed authentication (SQLite before 3.0.0), session store, filesystem layout, backups, and data flow (with diagrams).
 - [SSH, Password, Key & Cookie Handling](docs/ssh-credential-handling.md) — how SSH connectivity, passwords, keys, and cookies are stored, used, and disposed of (with diagrams).
+- [MongoDB Restore Procedure](docs/mongodb-restore-procedure.md) — how to restore a MongoDB dump into a running `mongodb` container (with diagram).
 
 ## VyOS Release Support
 
@@ -99,7 +100,7 @@ Nothing is ever deleted from S3.  Offsite copies exist to survive mistakes made 
 
 A missed window is caught up once, not once per week missed: an instance that was switched off for a month takes one backup shortly after it starts again, then returns to its normal schedule.  Running more than one replica is safe — each claims the run atomically in MongoDB, so exactly one of them backs up.
 
-There is still no automated restore.  Retrieving an archive, and restoring a MongoDB dump from it, remains a manual operation on the host or from S3.
+There is still no automated restore.  Retrieving an archive, and restoring a MongoDB dump from it, remains a manual operation on the host or from S3 — see the [MongoDB Restore Procedure](docs/mongodb-restore-procedure.md).
 
 ## Deployment
 
