@@ -166,7 +166,7 @@ services:
       - mysql-data:/var/lib/mysql
 + mongodb:
 +   container_name: mongodb
-+   image: mongo:latest
++   image: mongo:7
 +   restart: always
 +   volumes:
 +     - mongo-data:/data/db
@@ -209,7 +209,7 @@ services:
       - data:/opt/fw-gui/data
   mongodb:
     container_name: mongodb
-    image: mongo:latest
+    image: mongo:7
     restart: always
     volumes:
       - mongo-data:/data/db
