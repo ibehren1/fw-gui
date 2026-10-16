@@ -36,6 +36,10 @@ WORKDIR /opt/fw-gui
 ENV UV_CACHE_DIR=/tmp/uv-cache
 ENV UV_TOOL_DIR=/tmp/uv-tools
 ENV UV_PYTHON_INSTALL_DIR=/tmp/uv-python
+# Pin the interpreter: the base image has no python3, so without this uv
+# downloads the newest CPython, which can outrun wheel availability (3.15 +
+# cffi 2.0.0 had no wheel, and the image has no compiler). Matches CI.
+ENV UV_PYTHON=3.12
 
 # Install pip modules
 RUN uv sync

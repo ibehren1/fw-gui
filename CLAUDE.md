@@ -131,3 +131,12 @@ Pytest configuration is in `pyproject.toml` (`-v -ra -q` flags).
 ## Version Management
 
 Version is set in `pyproject.toml` under `[project] version`. The build script reads it and writes `v{VERSION}` to `.version`. Update `pyproject.toml` when bumping versions.
+
+**Every code change bumps the patch (z in x.y.z).** Every commit that changes code, dependencies (`pyproject.toml`/`uv.lock`), templates, static assets, Docker or Helm files increments z by one, relative to the version in its parent commit (e.g. 3.0.0 → 3.0.1 → 3.0.2 across two code commits). The bump goes in the same commit as the change. Docs-only commits (`*.md`, `docs/`) do not bump. Minor/major bumps stay a deliberate, separate decision.
+
+A patch bump touches exactly three files, kept in sync so a build does not produce a diff:
+- `pyproject.toml` — `[project] version` (source of truth)
+- `.version` — `v{VERSION}`
+- `uv.lock` — the `fw-gui` package entry (run `uv lock` after editing `pyproject.toml`)
+
+Leave "As of X" / "pre-X" references in comments and docs alone; they mark when a behavior changed, not the current version.
