@@ -1,6 +1,6 @@
 [project]
 name = "FW-GUI"
-version = "3.0.2"
+version = "3.0.3"
 description = "Basic Flask app to present web forms and process posts from them.  Generates VyOS firewall CLI configuration commands to create the corresponding firewall filters, chains and rules."
 authors = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
 maintainers = [{ name = "Isaac Behrens", email = "isaac@behrenshome.com" }]
@@ -24,7 +24,7 @@ dependencies = [
     "packaging",
     "paramiko>=4.0.0",
     "Pygments>=2.20.0",
-    "pymongo>=4.16.0",
+    "pymongo>=4.18.2",
     "python-dotenv>=1.2.2",
     "requests>=2.33.0",
     "setuptools>=83.0.0",
