@@ -979,6 +979,40 @@ class TestAddHostname:
         assert doc["system"]["hostname"] == "second.host"
         assert doc["system"]["port"] == "8022"
 
+    def _seed_pinned(self, db, sample_user_data):
+        data = copy.deepcopy(sample_user_data)
+        data["system"] = {
+            "hostname": "10.0.0.1",
+            "port": "22",
+            "host_key": {"host": "10.0.0.1:22", "type": "ssh-rsa", "key": "AAAA"},
+        }
+        db["testuser"].insert_one({"_id": "test_firewall", **data})
+
+    @pytest.mark.parametrize(
+        "form",
+        [
+            {"hostname": "10.0.0.2", "port": "22"},
+            {"hostname": "10.0.0.1", "port": "2222"},
+        ],
+    )
+    def test_changed_address_drops_pinned_host_key(
+        self, mock_mongo, mock_session, sample_user_data, form
+    ):
+        db = mock_mongo["test_db"]
+        self._seed_pinned(db, sample_user_data)
+        add_hostname(mock_session, make_request(form))
+        doc = db["testuser"].find_one({"_id": "test_firewall"})
+        assert "host_key" not in doc["system"]
+
+    def test_unchanged_address_keeps_pinned_host_key(
+        self, mock_mongo, mock_session, sample_user_data
+    ):
+        db = mock_mongo["test_db"]
+        self._seed_pinned(db, sample_user_data)
+        add_hostname(mock_session, make_request({"hostname": "10.0.0.1", "port": "22"}))
+        doc = db["testuser"].find_one({"_id": "test_firewall"})
+        assert doc["system"]["host_key"]["host"] == "10.0.0.1:22"
+
 
 # ===========================================================================
 # set_snapshot_tag / tag_snapshot

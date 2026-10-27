@@ -124,6 +124,7 @@ from package.group_funtions import (
     assemble_detail_list_of_groups,
     delete_group_from_data,
 )
+from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
 from package.interface_functions import (
     add_interface_to_data,
     delete_interface_from_data,
@@ -1758,6 +1759,9 @@ def configuration_push():
             ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
+            host_key_fingerprint=get_pinned_fingerprint(
+                session, session["hostname"], session["port"]
+            ),
             message=message,
             username=session["username"],
         )
@@ -1785,9 +1789,35 @@ def configuration_push():
             ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),
             key_list=key_list,
+            host_key_fingerprint=get_pinned_fingerprint(
+                session, session["hostname"], session["port"]
+            ),
             message=message,
             username=session["username"],
         )
+
+
+@app.route("/configuration_host_key_reset", methods=["POST"])
+@login_required
+@requires_firewall
+def configuration_host_key_reset():
+    """
+    Forget the pinned SSH host key for the current firewall.
+
+    The next connection pins whatever key the device then presents, so this is
+    for a key that changed legitimately (reinstall, regenerated server key).
+
+    Returns:
+        Response: Redirect to the configuration push page
+    """
+    clear_pinned_key(session)
+    flash(
+        "Pinned SSH host key cleared.  The next connection will pin the key the "
+        "firewall presents; verify its fingerprint.",
+        "warning",
+    )
+
+    return redirect(url_for("configuration_push"))
 
 
 @app.route("/create_config", methods=["POST"])

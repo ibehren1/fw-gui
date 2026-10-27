@@ -39,8 +39,21 @@
                     <span class="status-label">SSH Port:</span>
                     <span class="status-value">{{ firewall_port if firewall_port else '22' }}</span>
                 </div>
+
+                <div class="status-item">
+                    <span class="status-label">Host Key:</span>
+                    <span class="status-value" style="word-break: break-all;">{{ host_key_fingerprint if host_key_fingerprint else 'Not pinned; pinned on first connection' }}</span>
+                </div>
             </div>
-            
+
+            {% if host_key_fingerprint %}
+            <form action="/configuration_host_key_reset" method="post" class="hostname-form"
+                  onsubmit="return confirm('Forget the pinned host key? The next connection will trust whatever key the firewall presents.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-secondary full-width">Reset Host Key</button>
+            </form>
+            {% endif %}
+
             <form action="/configuration_hostname_add" method="post" class="hostname-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
