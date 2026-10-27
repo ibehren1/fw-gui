@@ -14,6 +14,12 @@ import paramiko
 from flask import flash
 from napalm import get_network_driver
 
+from package.host_key_store import (
+    HostKeyMismatch,
+    add_to_host_keys,
+    verify_host_key,
+    write_known_hosts,
+)
 from package.ssh_key_store import decrypt_ssh_key
 from package.telemetry_functions import (
     telemetry_commit,
@@ -32,41 +38,61 @@ def assemble_napalm_driver_string(connection_string, session):
         session (dict): Session data including data directory path
 
     Returns:
-        tuple: (NAPALM driver instance, temporary key file path if using SSH key auth)
+        tuple: (NAPALM driver instance, list of temporary files the caller must
+            delete: the staged known_hosts file and, with SSH key auth, the
+            decrypted key)
+
+    Raises:
+        HostKeyMismatch: If the device's host key differs from the pinned one.
     """
+    hostname = connection_string["hostname"]
+    port = connection_string["port"]
+
+    # Verify (or pin) the host key before decrypting anything, then make netmiko
+    # enforce it on the authenticating connection: ssh_strict selects
+    # RejectPolicy and alt_key_file supplies the only key it will accept.
+    host_key = verify_host_key(session, hostname, port)
+    known_hosts = write_known_hosts(hostname, port, host_key)
+    tmpfiles = [known_hosts]
+
     driver = get_network_driver("vyos")
-    optional_args = {"port": connection_string["port"], "conn_timeout": 120}
+    optional_args = {
+        "port": port,
+        "conn_timeout": 120,
+        "ssh_strict": True,
+        "alt_host_keys": True,
+        "alt_key_file": known_hosts,
+    }
+    password = connection_string["password"]
 
-    if "ssh_key_name" in connection_string:
-        # The "password" field carries the user's Fernet key on this path, not a
-        # login password.
-        key = connection_string["password"].encode("utf-8")
-        tmp_key_name = decrypt_ssh_key(
-            session["username"], connection_string["ssh_key_name"], key
-        )
-        optional_args["key_file"] = tmp_key_name
+    # If anything below fails the caller never receives tmpfiles, so remove
+    # them here rather than leaving them staged on disk.
+    try:
+        if "ssh_key_name" in connection_string:
+            # The "password" field carries the user's Fernet key on this path,
+            # not a login password.
+            key = password.encode("utf-8")
+            tmp_key_name = decrypt_ssh_key(
+                session["username"], connection_string["ssh_key_name"], key
+            )
+            tmpfiles.append(tmp_key_name)
+            optional_args["key_file"] = tmp_key_name
+            # B105 -- Not a hardcoded password.
+            password = ""  # nosec
 
         return (
-            # B106 -- Not a hardcoded password.
             driver(
-                hostname=connection_string["hostname"],
+                hostname=hostname,
                 username=connection_string["username"],
-                password="",
-                optional_args=optional_args,
-            ),  # nosec
-            tmp_key_name,
-        )
-
-    else:
-        return (
-            driver(
-                hostname=connection_string["hostname"],
-                username=connection_string["username"],
-                password=connection_string["password"],
+                password=password,
                 optional_args=optional_args,
             ),
-            None,
+            tmpfiles,
         )
+    except Exception:
+        for tmpfile in tmpfiles:
+            os.remove(tmpfile)
+        raise
 
 
 def assemble_paramiko_driver_string(connection_string, session):
@@ -79,15 +105,22 @@ def assemble_paramiko_driver_string(connection_string, session):
 
     Returns:
         tuple: (Paramiko SSH client instance, temporary key file path if using SSH key auth)
-    """
-    # B507 -- Purposely allowing trust of the unknown host key
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
 
+    Raises:
+        HostKeyMismatch: If the device's host key differs from the pinned one.
+    """
     hostname = connection_string["hostname"]
     port = connection_string["port"]
     username = connection_string["username"]
     password = connection_string["password"]
+
+    # Only the verified (or just-pinned) key is loaded, and RejectPolicy refuses
+    # anything else, so the authenticating connection cannot be swapped for an
+    # impostor after the probe.
+    host_key = verify_host_key(session, hostname, port)
+    ssh = paramiko.SSHClient()
+    add_to_host_keys(ssh.get_host_keys(), hostname, port, host_key)
+    ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
 
     # Never log the password / Fernet key.
     logging.debug(
@@ -106,7 +139,7 @@ def assemble_paramiko_driver_string(connection_string, session):
         # the decrypted key here rather than leaving it staged on disk.
         try:
             ssh.connect(
-                hostname, port=port, username=username, key_filename=tmp_key_name
+                hostname, port=int(port), username=username, key_filename=tmp_key_name
             )
         except Exception:
             os.remove(tmp_key_name)
@@ -114,7 +147,7 @@ def assemble_paramiko_driver_string(connection_string, session):
     else:
         logging.info("no_key")
         tmp_key_name = None
-        ssh.connect(hostname, port=port, username=username, password=password)
+        ssh.connect(hostname, port=int(port), username=username, password=password)
 
     return ssh, tmp_key_name
 
@@ -147,9 +180,17 @@ def commit_to_firewall(connection_string, session, merge_config):
         return "No configuration commands to send.  Add rules or extra configuration items first."
 
     try:
-        driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
+        driver, tmpfiles = assemble_napalm_driver_string(connection_string, session)
+    except HostKeyMismatch as e:
+        logging.info(f" |--X {e}")
+        flash(str(e), "danger")
+        return f"Host key verification failed!\n{e}"
+    except (OSError, paramiko.SSHException) as e:
+        # The host key probe: unreachable host, or no SSH key exchange.
+        logging.info(f" |--X Error reading host key: {e}")
+        flash(f"Error: {e}", "danger")
+        return f"Could not read the firewall's SSH host key.\n{e}"
     except Exception as e:
-        tmpfile = None
         logging.info(f" |--X Error assembling NAPALM driver: {e}")
         flash(f"Error: {e}", "danger")
         return f"Authentication failure!\n{e}\n\nIf using SSH key, suggest uploading again and saving your encryption key."
@@ -194,11 +235,11 @@ def commit_to_firewall(connection_string, session, merge_config):
         return str(e)
 
     finally:
-        # Delete key
-        if tmpfile is not None:
+        # Delete the staged known_hosts file and decrypted key
+        for tmpfile in tmpfiles:
             os.remove(tmpfile)
-            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
-            logging.debug(" |-----------------------------------------")
+            logging.debug(f" |--> Deleted temporary file: {tmpfile}")
+        logging.debug(" |-----------------------------------------")
 
 
 def get_diffs_from_firewall(connection_string, session, merge_config):
@@ -224,9 +265,17 @@ def get_diffs_from_firewall(connection_string, session, merge_config):
         return "No configuration commands to send.  Add rules or extra configuration items first."
 
     try:
-        driver, tmpfile = assemble_napalm_driver_string(connection_string, session)
+        driver, tmpfiles = assemble_napalm_driver_string(connection_string, session)
+    except HostKeyMismatch as e:
+        logging.info(f" |--X {e}")
+        flash(str(e), "danger")
+        return f"Host key verification failed!\n{e}"
+    except (OSError, paramiko.SSHException) as e:
+        # The host key probe: unreachable host, or no SSH key exchange.
+        logging.info(f" |--X Error reading host key: {e}")
+        flash(f"Error: {e}", "danger")
+        return f"Could not read the firewall's SSH host key.\n{e}"
     except Exception as e:
-        tmpfile = None
         logging.info(f" |--X Error assembling NAPALM driver: {e}")
         flash(f"Error: {e}", "danger")
         return f"Authentication failure!\n{e}\n\nIf using SSH key, suggest uploading again and saving your encryption key."
@@ -260,11 +309,11 @@ def get_diffs_from_firewall(connection_string, session, merge_config):
         return str(e)
 
     finally:
-        # Delete key
-        if tmpfile is not None:
+        # Delete the staged known_hosts file and decrypted key
+        for tmpfile in tmpfiles:
             os.remove(tmpfile)
-            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
-            logging.debug(" |------------------------------------------")
+            logging.debug(f" |--> Deleted temporary file: {tmpfile}")
+        logging.debug(" |------------------------------------------")
 
 
 # Uses Paramiko rather than Napalm
@@ -322,6 +371,11 @@ def run_operational_command(connection_string, session, op_command):
         ssh.close()
 
         return output
+
+    except HostKeyMismatch as e:
+        logging.info(f" |--X {e}")
+        flash(str(e), "danger")
+        return f"Host key verification failed!\n{e}"
 
     except Exception as e:
         logging.info(f" |--X Error: {e}")

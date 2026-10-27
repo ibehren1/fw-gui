@@ -879,6 +879,31 @@ class TestConfigRoutes:
             assert "/configuration_push" in resp.headers["Location"]
             mock_add.assert_called_once()
 
+    def test_configuration_host_key_reset(self, auth_client):
+        with patch("app.clear_pinned_key") as mock_clear:
+            resp = auth_client.post("/configuration_host_key_reset")
+            assert resp.status_code == 302
+            assert "/configuration_push" in resp.headers["Location"]
+            mock_clear.assert_called_once()
+
+    def test_configuration_host_key_reset_rejects_get(self, auth_client):
+        resp = auth_client.get("/configuration_host_key_reset")
+        assert resp.status_code == 405
+
+    def test_configuration_push_shows_host_key_fingerprint(self, auth_client):
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch("app.test_connection", return_value=True), patch(
+            "app.list_user_keys", return_value=[]
+        ), patch(
+            "app.get_pinned_fingerprint", return_value="SHA256:abcdefPINNED"
+        ):
+            resp = auth_client.get("/configuration_push")
+            assert resp.status_code == 200
+            assert b"SHA256:abcdefPINNED" in resp.data
+            assert b"/configuration_host_key_reset" in resp.data
+
     def test_configuration_push_get_hostname_set(self, auth_client):
         with patch(
             "app.generate_config",

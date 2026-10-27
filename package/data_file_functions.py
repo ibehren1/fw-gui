@@ -197,6 +197,14 @@ def add_hostname(session, request):
     # Get user's data
     user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
 
+    # A pinned SSH host key belongs to the old address; drop it so the new one
+    # is pinned on first connect (see host_key_store).
+    if (
+        user_data["system"].get("hostname") != request.form["hostname"]
+        or user_data["system"].get("port") != request.form["port"]
+    ):
+        user_data["system"].pop("host_key", None)
+
     # Add hostname and port to user_data
     user_data["system"]["hostname"] = request.form["hostname"]
     user_data["system"]["port"] = request.form["port"]

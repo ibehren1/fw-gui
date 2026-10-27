@@ -1,7 +1,9 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
+import paramiko
 import pytest
 
+from package.host_key_store import HostKeyMismatch
 from package.napalm_ssh_functions import (
     assemble_paramiko_driver_string,
     commit_to_firewall,
@@ -58,14 +60,26 @@ def session():
 
 # Test assemble_paramiko_driver_string
 def test_assemble_paramiko_driver_string_password(connection_string, session):
-    with patch("paramiko.SSHClient") as mock_ssh:
+    with (
+        patch("paramiko.SSHClient") as mock_ssh,
+        patch("package.napalm_ssh_functions.verify_host_key") as mock_verify,
+        patch("package.napalm_ssh_functions.add_to_host_keys") as mock_add,
+    ):
         ssh_instance = Mock()
         mock_ssh.return_value = ssh_instance
+        host_key = Mock()
+        mock_verify.return_value = host_key
 
         ssh, tmp_key = assemble_paramiko_driver_string(connection_string, session)
 
         assert tmp_key is None
-        ssh_instance.set_missing_host_key_policy.assert_called_once()
+        mock_verify.assert_called_once_with(session, "192.168.1.1", 22)
+        mock_add.assert_called_once_with(
+            ssh_instance.get_host_keys.return_value, "192.168.1.1", 22, host_key
+        )
+        # Only the verified key is trusted; anything else is rejected.
+        (policy,), _ = ssh_instance.set_missing_host_key_policy.call_args
+        assert isinstance(policy, paramiko.RejectPolicy)
         ssh_instance.connect.assert_called_with(
             connection_string["hostname"],
             port=connection_string["port"],
@@ -77,6 +91,8 @@ def test_assemble_paramiko_driver_string_password(connection_string, session):
 def test_assemble_paramiko_driver_string_with_key(connection_string_with_key, session):
     with (
         patch("paramiko.SSHClient") as mock_ssh,
+        patch("package.napalm_ssh_functions.verify_host_key"),
+        patch("package.napalm_ssh_functions.add_to_host_keys"),
         patch("package.napalm_ssh_functions.decrypt_ssh_key") as mock_decrypt,
     ):
         ssh_instance = Mock()
@@ -96,13 +112,30 @@ def test_assemble_paramiko_driver_string_with_key(connection_string_with_key, se
         )
 
 
+def test_assemble_paramiko_host_key_mismatch_never_connects(
+    connection_string, session
+):
+    """A changed host key aborts before credentials are sent or keys decrypted."""
+    with (
+        patch("paramiko.SSHClient") as mock_ssh,
+        patch(
+            "package.napalm_ssh_functions.verify_host_key",
+            side_effect=HostKeyMismatch("changed"),
+        ),
+    ):
+        with pytest.raises(HostKeyMismatch):
+            assemble_paramiko_driver_string(connection_string, session)
+
+        mock_ssh.return_value.connect.assert_not_called()
+
+
 # Test commit_to_firewall
 def test_commit_to_firewall_success(connection_string, session):
     with patch(
         "package.napalm_ssh_functions.assemble_napalm_driver_string"
     ) as mock_assemble:
         mock_driver = Mock()
-        mock_assemble.return_value = (mock_driver, None)
+        mock_assemble.return_value = (mock_driver, [])
         mock_driver.compare_config.return_value = "Config differences"
         mock_driver.commit_config.return_value = None
 
@@ -123,7 +156,7 @@ def test_commit_to_firewall_no_changes(connection_string, session):
         "package.napalm_ssh_functions.assemble_napalm_driver_string"
     ) as mock_assemble:
         mock_driver = Mock()
-        mock_assemble.return_value = (mock_driver, None)
+        mock_assemble.return_value = (mock_driver, [])
         mock_driver.compare_config.return_value = ""
 
         result = commit_to_firewall(connection_string, session, MERGE_CONFIG)
@@ -138,7 +171,7 @@ def test_get_diffs_from_firewall_with_changes(connection_string, session):
         "package.napalm_ssh_functions.assemble_napalm_driver_string"
     ) as mock_assemble:
         mock_driver = Mock()
-        mock_assemble.return_value = (mock_driver, None)
+        mock_assemble.return_value = (mock_driver, [])
         mock_driver.compare_config.return_value = "Config differences"
 
         result = get_diffs_from_firewall(connection_string, session, MERGE_CONFIG)
@@ -181,35 +214,67 @@ def test_temporary_key_cleanup(connection_string_with_key, session):
         patch("os.remove") as mock_remove,
     ):
         mock_driver = Mock()
-        mock_assemble.return_value = (mock_driver, "/tmp/temp_key")
+        mock_assemble.return_value = (mock_driver, ["/tmp/known_hosts", "/tmp/temp_key"])
         mock_driver.compare_config.return_value = ""
 
         commit_to_firewall(connection_string_with_key, session, MERGE_CONFIG)
 
-        mock_remove.assert_called_once_with("/tmp/temp_key")
+        assert mock_remove.call_args_list == [
+            call("/tmp/known_hosts"),
+            call("/tmp/temp_key"),
+        ]
 
 
 # Test assemble_napalm_driver_string
-def test_assemble_napalm_driver_string_password(connection_string, session):
+STRICT_ARGS = {
+    "ssh_strict": True,
+    "alt_host_keys": True,
+    "alt_key_file": "/tmp/known_hosts",
+}
+
+
+@pytest.fixture
+def pinned_host_key():
+    """Stubs host key verification and the staged known_hosts file."""
+    with (
+        patch("package.napalm_ssh_functions.verify_host_key") as mock_verify,
+        patch(
+            "package.napalm_ssh_functions.write_known_hosts",
+            return_value="/tmp/known_hosts",
+        ) as mock_write,
+    ):
+        yield mock_verify, mock_write
+
+
+def test_assemble_napalm_driver_string_password(
+    connection_string, session, pinned_host_key
+):
+    mock_verify, mock_write = pinned_host_key
     with patch("package.napalm_ssh_functions.get_network_driver") as mock_get_driver:
         mock_driver_class = Mock()
         mock_get_driver.return_value = mock_driver_class
 
         from package.napalm_ssh_functions import assemble_napalm_driver_string
 
-        driver, tmp_key = assemble_napalm_driver_string(connection_string, session)
+        driver, tmpfiles = assemble_napalm_driver_string(connection_string, session)
 
-        assert tmp_key is None
+        assert tmpfiles == ["/tmp/known_hosts"]
+        mock_verify.assert_called_once_with(session, "192.168.1.1", 22)
+        mock_write.assert_called_once_with(
+            "192.168.1.1", 22, mock_verify.return_value
+        )
         mock_get_driver.assert_called_with("vyos")
         mock_driver_class.assert_called_with(
             hostname="192.168.1.1",
             username="admin",
             password="secret",
-            optional_args={"port": 22, "conn_timeout": 120},
+            optional_args={"port": 22, "conn_timeout": 120, **STRICT_ARGS},
         )
 
 
-def test_assemble_napalm_driver_string_with_key(connection_string_with_key, session):
+def test_assemble_napalm_driver_string_with_key(
+    connection_string_with_key, session, pinned_host_key
+):
     with (
         patch("package.napalm_ssh_functions.get_network_driver") as mock_get_driver,
         patch("package.napalm_ssh_functions.decrypt_ssh_key") as mock_decrypt,
@@ -220,11 +285,11 @@ def test_assemble_napalm_driver_string_with_key(connection_string_with_key, sess
 
         from package.napalm_ssh_functions import assemble_napalm_driver_string
 
-        driver, tmp_key = assemble_napalm_driver_string(
+        driver, tmpfiles = assemble_napalm_driver_string(
             connection_string_with_key, session
         )
 
-        assert tmp_key == "/tmp/decrypted_key"
+        assert tmpfiles == ["/tmp/known_hosts", "/tmp/decrypted_key"]
         # Looked up by account and key name, not by a data_dir path.
         mock_decrypt.assert_called_once_with(
             "testuser", "test_key.pem", b"keypassphrase"
@@ -236,9 +301,66 @@ def test_assemble_napalm_driver_string_with_key(connection_string_with_key, sess
             optional_args={
                 "port": 22,
                 "conn_timeout": 120,
+                **STRICT_ARGS,
                 "key_file": "/tmp/decrypted_key",
             },
         )
+
+
+def test_assemble_napalm_driver_string_cleans_up_on_decrypt_failure(
+    connection_string_with_key, session, pinned_host_key
+):
+    """The caller never receives tmpfiles on failure, so assembly removes them."""
+    with (
+        patch("package.napalm_ssh_functions.get_network_driver"),
+        patch(
+            "package.napalm_ssh_functions.decrypt_ssh_key",
+            side_effect=ValueError("bad fernet key"),
+        ),
+        patch("os.remove") as mock_remove,
+    ):
+        from package.napalm_ssh_functions import assemble_napalm_driver_string
+
+        with pytest.raises(ValueError):
+            assemble_napalm_driver_string(connection_string_with_key, session)
+
+        mock_remove.assert_called_once_with("/tmp/known_hosts")
+
+
+def test_commit_to_firewall_host_key_mismatch(app, connection_string, session):
+    with app.test_request_context():
+        with patch(
+            "package.napalm_ssh_functions.assemble_napalm_driver_string",
+            side_effect=HostKeyMismatch("Host key for 192.168.1.1:22 has changed"),
+        ):
+            result = commit_to_firewall(connection_string, session, MERGE_CONFIG)
+
+            assert "Host key verification failed" in result
+            assert "has changed" in result
+
+
+def test_get_diffs_host_key_probe_unreachable(app, connection_string, session):
+    with app.test_request_context():
+        with patch(
+            "package.napalm_ssh_functions.assemble_napalm_driver_string",
+            side_effect=ConnectionRefusedError("refused"),
+        ):
+            result = get_diffs_from_firewall(connection_string, session, MERGE_CONFIG)
+
+            assert "Could not read the firewall's SSH host key" in result
+
+
+def test_run_operational_command_host_key_mismatch(app, connection_string, session):
+    with app.test_request_context():
+        with patch(
+            "package.napalm_ssh_functions.assemble_paramiko_driver_string",
+            side_effect=HostKeyMismatch("Host key for 192.168.1.1:22 has changed"),
+        ):
+            result = run_operational_command(
+                connection_string, session, "show interfaces"
+            )
+
+            assert "Host key verification failed" in result
 
 
 # Test test_connection
@@ -325,7 +447,7 @@ def test_get_diffs_no_changes(connection_string, session):
         "package.napalm_ssh_functions.assemble_napalm_driver_string"
     ) as mock_assemble:
         mock_driver = Mock()
-        mock_assemble.return_value = (mock_driver, None)
+        mock_assemble.return_value = (mock_driver, [])
         mock_driver.compare_config.return_value = ""
 
         result = get_diffs_from_firewall(connection_string, session, MERGE_CONFIG)
@@ -360,3 +482,18 @@ def test_get_diffs_from_firewall_empty_merge_config(connection_string, session):
 
         assert "No configuration commands to send" in result
         mock_assemble.assert_not_called()
+
+
+def test_napalm_vyos_forwards_strict_host_key_args():
+    """napalm-vyos drops optional_args it does not whitelist; these must survive."""
+    from napalm import get_network_driver
+
+    driver = get_network_driver("vyos")(
+        hostname="192.168.1.1",
+        username="admin",
+        password="secret",
+        optional_args={"port": 22, **STRICT_ARGS},
+    )
+
+    for name, value in STRICT_ARGS.items():
+        assert driver.netmiko_optional_args[name] == value
