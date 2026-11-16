@@ -599,6 +599,34 @@ table.grid { width: 100%; border-collapse: collapse; }
 .grid tbody tr:hover { background: var(--hover); }
 .grid .num { width: 56px; text-align: right; color: var(--muted); font-family: var(--mono); }
 .grid .nowrap, .grid .mono { white-space: nowrap; }
+.grid td.desc { min-width: 160px; }
+.num-input {
+    font: inherit;
+    font-family: var(--mono);
+    width: 64px;
+    height: 22px;
+    padding: 0 4px;
+    text-align: right;
+    border: 1px solid transparent;
+    border-radius: var(--r);
+    background: transparent;
+    color: var(--muted);
+    -moz-appearance: textfield;
+}
+.num-input::-webkit-inner-spin-button, .num-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.num-input:hover { border-color: var(--input-line); }
+.num-input:focus { outline: none; border-color: var(--accent); background: var(--input-bg); color: var(--text); box-shadow: 0 0 0 2px var(--focus); }
+.renumber-form { margin: 0; }
+/* Chain rules: fixed columns so every chain's table lines up. */
+.grid.rules { table-layout: fixed; }
+.grid.rules td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grid.rules th:nth-child(1) { width: 80px; }
+.grid.rules th:nth-child(3) { width: 92px; }
+.grid.rules th:nth-child(4) { width: 72px; }
+.grid.rules th:nth-child(7) { width: 96px; }
+.grid.rules th:nth-child(8) { width: 48px; }
+.grid.rules th:nth-child(9) { width: 128px; }
+.grid.rules td.row-actions { overflow: visible; }
 .grid .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; margin: 0; }
 .grid tr.is-disabled td { opacity: 0.5; }
