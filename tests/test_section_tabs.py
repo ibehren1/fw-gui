@@ -179,3 +179,22 @@ def test_group_delete_without_type_redirects_without_anchor(auth_client, store):
     # A page rendered before group_type was posted still deletes cleanly.
     resp = auth_client.post("/group_delete", data={"group": "ipv4,WEB"})
     assert _location(resp).endswith("/group_view")
+
+
+@pytest.mark.parametrize(
+    "path, versions",
+    [
+        # The fixture has IPv4 chains and filters only, so only IPv4 gets a label.
+        ("/chain_view", ["ipv4"]),
+        ("/filter_view", ["ipv4"]),
+        ("/group_view", ["ipv4", "ipv6", "other"]),
+    ],
+)
+def test_version_labels_select_whole_version(auth_client, store, path, versions):
+    # The IPv4/IPv6 (and Other) labels in the tab row are links whose hash
+    # names the version's section group, which section-tabs.js then shows
+    # in full.
+    body = auth_client.get(path).get_data(as_text=True)
+    for version in versions:
+        assert f'href="#{version}" class="tab-sep tab-sep-{version} section-tab"' in body
+        assert f'id="{version}" class="tab-section-group' in body

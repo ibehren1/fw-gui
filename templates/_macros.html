@@ -21,7 +21,7 @@
     {% for ip_version in ["ipv4", "ipv6"] %}
     {% if by_version[ip_version] %}
     <div class="tab-group">
-        <span class="tab-sep tab-sep-{{ ip_version }}">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</span>
+        <a href="#{{ ip_version }}" class="tab-sep tab-sep-{{ ip_version }} section-tab" title="Show all {{ 'IPv4' if ip_version == 'ipv4' else 'IPv6' }}">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</a>
         {% for key in by_version[ip_version] %}
         <a href="#{{ ip_version }}{{ key }}" class="tab section-tab">{{ key }}</a>
         {% endfor %}

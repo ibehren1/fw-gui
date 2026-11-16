@@ -487,7 +487,9 @@ code, pre, .mono { font-family: var(--mono); }
 .tab.active { color: var(--heading); border-bottom-color: var(--accent); }
 .tab-sep {
     min-width: 34px;
-    padding: 2px 4px 2px 0;
+    padding: 4px 8px;
+    margin-right: 2px;
+    border-radius: var(--r);
     font-size: 0.75em;
     font-weight: 700;
     color: var(--muted);
@@ -735,6 +737,10 @@ table.grid { width: 100%; border-collapse: collapse; }
     align-self: center;
 }
 /* IP version: teal for IPv4, violet for IPv6, wherever the version is shown */
+a.tab-sep:hover { text-decoration: none; background: var(--hover); }
+.tab-sep.active { background: var(--chip-bg); box-shadow: inset 0 -2px 0 var(--accent); }
+.tab-sep-ipv4.active { background: var(--v4-bg); box-shadow: inset 0 -2px 0 var(--v4); }
+.tab-sep-ipv6.active { background: var(--v6-bg); box-shadow: inset 0 -2px 0 var(--v6); }
 .tag-ipv4, .tab-sep-ipv4 { color: var(--v4); }
 .tag-ipv6, .tab-sep-ipv6 { color: var(--v6); }
 .tag-ipv4 { background: var(--v4-bg); border-color: var(--v4); }

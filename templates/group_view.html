@@ -31,7 +31,7 @@
     <div class="tab-groups">
     {% for version, heading, categories in sections %}
     <div class="tab-group">
-        <span class="tab-sep tab-sep-{{ version }}">{{ heading }}</span>
+        <a href="#{{ version }}" class="tab-sep tab-sep-{{ version }} section-tab" title="Show all {{ heading }} groups">{{ heading }}</a>
         {% for id, tab_label, title, group_type, ip_version, noun in categories %}
         <a href="#{{ id }}" class="tab section-tab">{{ tab_label }}</a>
         {% endfor %}
@@ -41,7 +41,7 @@
 </div>
 
 {% for version, heading, categories in sections %}
-<div class="tab-section-group version-section version-{{ version }}">
+<div id="{{ version }}" class="tab-section-group version-section version-{{ version }}">
 <div class="version-head"><h3>{{ heading }} groups</h3></div>
 {% for id, tab_label, title, group_type, ip_version, noun in categories %}
 {% set groups = group_list|selectattr('group_type', 'equalto', group_type) %}
