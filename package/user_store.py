@@ -22,7 +22,8 @@ Document shape::
      "password": "$2b$12$...",    # bcrypt hash, always str
      "disabled": False,           # absent means enabled
      "legacy_id": 1,              # rows migrated from SQLite only
-     "created": datetime}         # new registrations only
+     "created": datetime,         # new registrations only
+     "theme": "dark"}             # "dark" or "light"; absent until chosen
 """
 
 import os
@@ -39,6 +40,10 @@ from package.validators import DEFAULT_USERS_COLLECTION
 # that pre-3.0.0 sessions carry, and a stale session could resolve to the
 # account *named* "1".
 SESSION_ID_PREFIX = "u:"
+
+# UI themes a user can choose. An account without one is asked to pick at its
+# next login, so there is no default to migrate existing accounts onto.
+THEMES = ("dark", "light")
 
 
 def collection():
@@ -58,6 +63,9 @@ class User(UserMixin):
         # Absent means enabled, so documents written before the field existed
         # (and hand-written ones) keep working.
         self.disabled = bool(doc.get("disabled", False))
+        # None until the user picks one; anything unrecognised reads as unset.
+        theme = doc.get("theme")
+        self.theme = theme if theme in THEMES else None
 
     @property
     def is_active(self):
@@ -119,6 +127,18 @@ def set_password(username, password_hash):
     result = collection().update_one(
         {"_id": username}, {"$set": {"password": password_hash}}
     )
+    return result.matched_count == 1
+
+
+def set_theme(username, theme):
+    """Stores an account's UI theme. Returns True if the account existed.
+
+    Raises ``ValueError`` for anything not in ``THEMES``, so a forged form value
+    never reaches the document.
+    """
+    if theme not in THEMES:
+        raise ValueError(f"Unknown theme: {theme!r}")
+    result = collection().update_one({"_id": username}, {"$set": {"theme": theme}})
     return result.matched_count == 1
 
 

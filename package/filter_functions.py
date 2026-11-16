@@ -151,6 +151,29 @@ def add_filter_to_data(session, request):
     return
 
 
+def filter_defaults(session):
+    """
+    Returns each filter's default action, for display as the filter's last rule.
+
+    Args:
+        session: The current session containing data directory and firewall name
+
+    Returns:
+        dict: {ip_version: {filter_name: {"action": str or None, "log": bool}}}
+    """
+    # read_user_data_file returns None when the config document is missing.
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}') or {}
+
+    defaults = {}
+    for ip_version in ["ipv4", "ipv6"]:
+        for filter_name, filt in user_data.get(ip_version, {}).get("filters", {}).items():
+            defaults.setdefault(ip_version, {})[filter_name] = {
+                "action": filt.get("default-action") or None,
+                "log": bool(filt.get("log", False)),
+            }
+    return defaults
+
+
 def assemble_detail_list_of_filters(session):
     """
     Creates a detailed dictionary of all filters and their rules.

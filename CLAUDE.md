@@ -8,11 +8,11 @@ FW-GUI is a Flask web application for visually creating and managing VyOS firewa
 
 ## Tech Stack
 
-- **Backend:** Python 3.12+ / Flask / Waitress (WSGI)
+- **Backend:** Python 3.14+ / Flask / Waitress (WSGI)
 - **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 3.0.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
 - **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
-- **Frontend:** Jinja2 templates + jQuery + CSS Grid/Flexbox
+- **Frontend:** Jinja2 templates + plain JavaScript (no jQuery as of 4.0.40) + CSS Grid/Flexbox. One stylesheet, `static/styles.css`, with dark and light themes as custom properties scoped by `data-theme` on `<html>` (dark before login); components use only those tokens. Templates have no page-local `<style>` blocks; shared Jinja macros live in `templates/_macros.html`
 - **Package Manager:** uv (with uv.lock for deterministic builds)
 - **Container:** Docker (Ubuntu 24.04 base, multi-arch ARM64/AMD64)
 
@@ -71,7 +71,10 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `napalm_ssh_functions.py` | SSH connectivity, config push, diffs, operational commands |
 | `diff_functions.py` | Configuration diff generation |
 | `mongo_converter.py` | Legacy pre-1.4.0 JSON-to-MongoDB config migration (runs at startup) |
-| `telemetry_functions.py` | Anonymous usage telemetry (UUID + version only; never raises, so it cannot break a config push) |
+| `start_functions.py` | Getting started page: build-order progress for the selected config, and the quick-start starter config |
+| `mongo_admin.py` | MongoDB server version and feature compatibility version (FCV) for Admin Settings; raising the FCV to match the server before a major upgrade (docs/mongodb-upgrade.md) |
+| `telemetry_functions.py` | Anonymous usage telemetry: instance check-ins (startup, login, daily heartbeat) and diff/commit counters, posted on a background thread; never raises, so it cannot break a config push. Payload in docs/data-architecture.md §10 |
+| `telemetry_collect.py` | Builds the anonymous deployment / bucketed size / feature-flag fields of the startup and heartbeat check-ins; every collector isolated and time-bounded |
 
 Note: `group_funtions.py` has a typo in the filename — this is intentional/historical.
 
@@ -88,7 +91,7 @@ HTTP Request → Flask route (app.py) → package function
 ### Data Storage
 
 - **MongoDB:** One collection per user/firewall config. Documents contain complete firewall configuration (chains, filters, groups, etc.) with IPv4/IPv6 root keys.
-- **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`. Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-3.0.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
+- **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`, `theme` (`dark`/`light`; absent until the user picks one on the post-login chooser). Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-3.0.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
 - **MongoDB `instance` collection:** two fixed documents. `{_id: "instance_id", value: <uuid4>}` holds the anonymous telemetry id — pre-3.0.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `{_id: "backup_schedule", ...}` holds the automatic weekly backup's **entire configuration and state** (`enabled`, `day_of_week`, `hour`, `retention`, `poll_seconds`, `lease_seconds`, `next_run`, the claim fields and the last result) — there are no environment variables for it. The schedule shares this collection deliberately: a username is also a collection name, so a new collection would mean reserving another username. `users`, `sessions`, `instance` and `keys` are all rejected as usernames for that reason.
 - **SSH host key pins:** each firewall config document carries `system.host_key` (`host`, `type`, `key`, `pinned`). The first connection to a hostname/port pins the presented key; later connections must match or are refused before authentication. Changing hostname/port drops the pin; the push page shows the fingerprint and a reset button. Pre-3.1.0 no host key was checked (GHSA-64wj-4f9q-rwr7).
 - **MongoDB `keys` collection:** one document per SSH key, `_id` = `"<user>/<name>"`, ciphertext as BSON Binary. The Fernet key is generated at upload, shown to the user once and **never stored**, so the server holds a blob it cannot read. Decrypted keys are staged in the system temp dir, never under `data/`.
@@ -134,9 +137,13 @@ Pytest configuration is in `pyproject.toml` (`-v -ra -q` flags).
 
 Version is set in `pyproject.toml` under `[project] version`. The build script reads it and writes `v{VERSION}` to `.version`. Update `pyproject.toml` when bumping versions.
 
-**Every code change bumps the patch (z in x.y.z).** Every commit that changes code, dependencies (`pyproject.toml`/`uv.lock`), templates, static assets, Docker or Helm files increments z by one, relative to the version in its parent commit (e.g. 3.0.0 → 3.0.1 → 3.0.2 across two code commits). The bump goes in the same commit as the change. Docs-only commits (`*.md`, `docs/`) do not bump. Minor/major bumps stay a deliberate, separate decision.
+**The user chooses x and y; every commit increments z.** (Rule as of 3.5.0.)
+- x (major) and y (minor) are set only by the user. Never change them on your own.
+- Every commit increments z by one relative to its parent commit, docs-only commits included (e.g. 3.5.0 → 3.5.1 → 3.5.2). The bump goes in the same commit as the change.
+- When the user sets a new x.y, the first commit at that version is x.y.0.
+- Commit regularly in small, self-contained steps: one logical change per commit, with tests passing. Do not save work up into one large commit at the end.
 
-A patch bump touches exactly three files, kept in sync so a build does not produce a diff:
+A version bump touches exactly three files, kept in sync so a build does not produce a diff:
 - `pyproject.toml` — `[project] version` (source of truth)
 - `.version` — `v{VERSION}`
 - `uv.lock` — the `fw-gui` package entry (run `uv lock` after editing `pyproject.toml`)

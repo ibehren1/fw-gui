@@ -26,6 +26,7 @@ Requirements:
 # Library Imports
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -33,6 +34,7 @@ from io import BytesIO
 import base64
 import hashlib
 from functools import wraps
+from urllib.parse import urlsplit
 
 import certifi
 from cryptography.fernet import Fernet
@@ -48,7 +50,7 @@ from flask import (
     url_for,
 )
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, login_required, logout_user
+from flask_login import LoginManager, current_user, login_required, logout_user
 from flask_session import Session
 from flask_wtf.csrf import CSRFProtect
 from waitress import serve
@@ -58,6 +60,7 @@ from package.auth_functions import (
     process_login,
     register_user,
 )
+from package.mongo_admin import fcv_status, raise_fcv_to_server
 from package.backup_scheduler import (
     describe_schedule,
     prune_preview,
@@ -68,6 +71,7 @@ from package.chain_functions import (
     add_chain_to_data,
     add_rule_to_data,
     assemble_detail_list_of_chains,
+    chain_defaults,
     assemble_list_of_chains,
     delete_rule_from_data,
     move_chain_rule_in_data,
@@ -81,6 +85,7 @@ from package.data_file_functions import (
     add_hostname,
     create_backup,
     create_snapshot,
+    perform_full_backup,
     delete_user_data_file,
     gather_instance_stats,
     get_extra_items,
@@ -92,6 +97,7 @@ from package.data_file_functions import (
     list_user_keys,
     process_upload,
     read_user_data_file,
+    rename_user_data_file,
     restore_snapshot,
     sweep_legacy_user_files,
     tag_snapshot,
@@ -103,6 +109,7 @@ from package.filter_functions import (
     add_filter_rule_to_data,
     add_filter_to_data,
     assemble_detail_list_of_filters,
+    filter_defaults,
     assemble_list_of_filters,
     delete_filter_rule_from_data,
     move_filter_rule_in_data,
@@ -123,9 +130,12 @@ from package.group_funtions import (
     add_group_to_data,
     assemble_detail_list_of_groups,
     delete_group_from_data,
+    group_section_anchor,
 )
 from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
 from package.interface_functions import (
+    CUSTOM_TYPE_COLORS,
+    INTERFACE_TYPES,
     add_interface_to_data,
     delete_interface_from_data,
     list_interfaces,
@@ -138,8 +148,10 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.ssh_key_store import migrate_legacy_key_files
-from package.telemetry_functions import telemetry_instance
+from package.start_functions import build_quick_start, config_progress
+from package.telemetry_functions import start_telemetry_heartbeat, telemetry_instance
 from package.user_migration import migrate_sqlite_users
+from package import user_store
 from package.user_store import get_user_by_session_id, list_usernames
 from package.validators import is_safe_name
 
@@ -213,6 +225,12 @@ if not app.secret_key:
     )
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
+# Interface type names and custom colours for the templates, from one source.
+app.jinja_env.globals["INTERFACE_TYPES"] = INTERFACE_TYPES
+app.jinja_env.globals["CUSTOM_TYPE_COLORS"] = CUSTOM_TYPE_COLORS
+# Appended to static asset URLs (?v=...) so an upgrade always fetches its own
+# CSS and JS, past any browser or proxy copy of the previous release's.
+app.jinja_env.globals["ASSET_VERSION"] = (app.config["VERSION"] or "0.0.0").strip()
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
 # Session cookie hardening. HttpOnly blocks JavaScript from reading the cookie;
@@ -390,11 +408,87 @@ def load_user(user_id):
 @login_required
 def index():
     """
-    Root endpoint that redirects to the display_config view.
+    Root endpoint that redirects to the Getting started page.
 
     Returns:
-        Response: Redirect to the display_config endpoint
+        Response: Redirect to the start endpoint
     """
+    return redirect(url_for("start"))
+
+
+@app.route("/start")
+@login_required
+def start():
+    """
+    Handle Getting started page requests.
+
+    The landing page after login. Offers selecting, creating or quick-starting
+    a configuration, and shows the build order with how far the selected
+    configuration has got at each step.
+
+    Returns:
+        Response: Rendered start template
+    """
+    firewall_name = session.get("firewall_name")
+    return render_template(
+        "start.html",
+        file_list=list_user_files(session),
+        firewall_name=firewall_name,
+        progress=config_progress(session) if firewall_name else None,
+        username=session["username"],
+    )
+
+
+# Linux interface names: at most 15 characters, no spaces or slashes.
+_INTERFACE_NAME = re.compile(r"^[A-Za-z0-9._-]{1,15}$")
+
+
+@app.route("/quick_start", methods=["POST"])
+@login_required
+def quick_start():
+    """
+    Handle quick-start requests from the Getting started page.
+
+    Creates a new configuration with WAN and LAN interfaces and the
+    WAN_IN/WAN_LOCAL/LAN_IN/LAN_OUT/LAN_LOCAL chains and input/forward
+    filters from build_quick_start, for IPv4 and IPv6, then selects it.
+    Never touches an existing configuration.
+
+    Returns:
+        Response: Redirect to the Getting started page
+    """
+    name = request.form.get("config_name", "").strip()
+    wan = request.form.get("wan_interface", "").strip()
+    lan = request.form.get("lan_interface", "").strip()
+
+    if not is_safe_name(name):
+        flash("Enter a valid configuration name.", "danger")
+    elif name in list_user_files(session):
+        flash(f"A configuration named {name} already exists.", "danger")
+    elif not _INTERFACE_NAME.match(wan) or not _INTERFACE_NAME.match(lan):
+        flash("Interface names must be 1-15 letters, digits, '.', '_' or '-'.", "danger")
+    elif wan == lan:
+        flash("The WAN and LAN interfaces must be different.", "danger")
+    elif "accept_responsibility" not in request.form:
+        flash("Confirm that you accept responsibility for the configuration to continue.", "danger")
+    else:
+        data = build_quick_start(wan, lan, allow_wan_ping="allow_wan_ping" in request.form)
+        write_user_data_file(f"{session['data_dir']}/{name}", data)
+        session["firewall_name"] = name
+        flash(
+            f"Created {name}: {wan} (WAN) and {lan} (LAN) with WAN_IN, WAN_LOCAL, "
+            "LAN_IN, LAN_OUT and LAN_LOCAL for IPv4 and IPv6. Review it, then deploy.",
+            "success",
+        )
+
+    return redirect(url_for("start"))
+
+
+def _after_selecting():
+    """Where to go after selecting or creating a config: back to the page
+    that asked (only the Getting started page does), else Display config."""
+    if request.form.get("next") == "start":
+        return redirect(url_for("start"))
     return redirect(url_for("display_config"))
 
 
@@ -436,6 +530,30 @@ def admin_settings():
         # absent "schedule_enabled" checkbox mean "off" rather than "not
         # submitted" -- without it, an unchecked box is indistinguishable from a
         # POST that never carried the field.
+        # Raise MongoDB's feature compatibility version to match the server, the
+        # prerequisite for a major upgrade. Instance-wide and not reversible
+        # from here, so it needs the explicit confirmation, and it takes a full
+        # backup first unless that box is cleared.
+        elif "fcv_form" in request.form:
+            if "fcv_confirm" not in request.form:
+                flash("Confirm the feature compatibility change to continue.", "danger")
+            else:
+                backed_up = True
+                if "fcv_backup" in request.form:
+                    try:
+                        backup_path = perform_full_backup(actor=session["username"])
+                        flash(f"Backup created: {backup_path}", "success")
+                    except Exception as e:  # noqa: BLE001
+                        backed_up = False
+                        logging.error(f"Backup before FCV change failed: {e}")
+                        flash("Backup failed, so the feature compatibility version was not changed.", "critical")
+                if backed_up:
+                    ok, message = raise_fcv_to_server()
+                    logging.warning(
+                        f"User <{session['username']}> requested an FCV raise: {message}"
+                    )
+                    flash(message, "success" if ok else "danger")
+
         elif "schedule_form" in request.form:
             enabled = "schedule_enabled" in request.form
             schedule = update_settings(
@@ -488,6 +606,7 @@ def admin_settings():
 
     return render_template(
         "admin_settings_form.html",
+        mongo=fcv_status(),
         file_list=file_list,
         snapshot_list=snapshot_list,
         full_backup_list=full_backup_list,
@@ -574,6 +693,9 @@ def user_login():
     if request.method == "POST":
         login, session["data_dir"], session["username"] = process_login(bcrypt, request)
         if login:
+            # An account that has never picked a theme is asked once, here.
+            if current_user.is_authenticated and current_user.theme is None:
+                return redirect(url_for("choose_theme"))
             return redirect(url_for("index"))
         else:
             return redirect(url_for("user_login"))
@@ -586,6 +708,70 @@ def user_login():
             session="None",
             registration=registration,
         )
+
+
+@app.route("/choose_theme", methods=["GET", "POST"])
+@login_required
+def choose_theme():
+    """
+    Handle the theme chooser shown after login to an account without a theme.
+
+    For GET requests, renders the chooser with a preview of each theme.
+    For POST requests, stores the chosen theme on the account and continues to
+    the index page. It can also be visited later to change the theme.
+
+    Returns:
+        Response: Rendered chooser, or redirect to index once a theme is saved
+    """
+    if request.method == "POST":
+        theme = request.form.get("theme")
+        if theme in user_store.THEMES:
+            user_store.set_theme(current_user.username, theme)
+            return redirect(url_for("index"))
+        flash("Choose a theme to continue.", "warning")
+
+    return render_template(
+        "choose_theme.html",
+        themes=user_store.THEMES,
+        current=current_user.theme,
+        username=current_user.username,
+    )
+
+
+def _same_site_path(url):
+    """Returns the path and query of url if it points at this host, else None.
+
+    Used to send the user back where they came from without turning the
+    Referer header into an open redirect.
+    """
+    if not url:
+        return None
+    parts = urlsplit(url)
+    if parts.netloc and parts.netloc != request.host:
+        return None
+    if not parts.path.startswith("/") or parts.path.startswith("//"):
+        return None
+    return parts.path + (f"?{parts.query}" if parts.query else "")
+
+
+@app.route("/user_theme", methods=["POST"])
+@login_required
+def user_theme():
+    """
+    Handle the top-bar theme switch.
+
+    Stores the posted theme on the account and returns to the page the switch
+    was clicked on.
+
+    Returns:
+        Response: Redirect back to the referring page, or the index page
+    """
+    theme = request.form.get("theme")
+    if theme in user_store.THEMES:
+        user_store.set_theme(current_user.username, theme)
+    else:
+        flash("Unknown theme.", "danger")
+    return redirect(_same_site_path(request.referrer) or url_for("index"))
 
 
 @app.route("/user_logout")
@@ -688,6 +874,10 @@ def group_add():
     if request.method == "POST":
         if request.form["type"] == "add":
             add_group_to_data(session, request)
+            anchor = group_section_anchor(
+                request.form["group_type"], request.form.get("ip_version")
+            )
+            return redirect(url_for("group_view", _anchor=anchor))
 
         elif request.form["type"] == "edit":
             file_list = list_user_files(session)
@@ -708,6 +898,15 @@ def group_add():
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
         rule_detail_defaults = {"ip_version": "ipv4", "group_type": "address-group"}
+        # The groups page's per-section "Add group" buttons preselect the
+        # section's type and IP version; anything unrecognised is ignored.
+        if request.args.get("group_type") in (
+            "address-group", "network-group", "port-group", "mac-group",
+            "domain-group", "interface-group",
+        ):
+            rule_detail_defaults["group_type"] = request.args["group_type"]
+        if request.args.get("ip_version") in ("ipv4", "ipv6"):
+            rule_detail_defaults["ip_version"] = request.args["ip_version"]
 
         return render_template(
             "group_add_form.html",
@@ -736,7 +935,10 @@ def group_delete():
         Response: Redirect to group view page after deletion
     """
     delete_group_from_data(session, request)
-    return redirect(url_for("group_view"))
+    anchor = group_section_anchor(
+        request.form.get("group_type"), request.form["group"].split(",")[0]
+    )
+    return redirect(url_for("group_view", _anchor=anchor))
 
 
 @app.route("/group_view")
@@ -818,6 +1020,10 @@ def interface_add():
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
         rule_detail_defaults = {"interface_name": "", "interface_desc": ""}
+        # The Interfaces page's per-section "Add interface" buttons preselect
+        # the section's type; anything unrecognised is ignored.
+        if request.args.get("interface_type") in INTERFACE_TYPES:
+            rule_detail_defaults["interface_type"] = request.args["interface_type"]
 
         return render_template(
             "interface_add_form.html",
@@ -1015,6 +1221,7 @@ def flowtable_view():
         snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         flowtable_list=flowtable_list,
+        interface_list=list_interfaces(session),
         username=session["username"],
     )
 
@@ -1048,7 +1255,12 @@ def chain_add():
     if request.method == "POST":
         add_chain_to_data(session, request)
 
-        return redirect(url_for("chain_view"))
+        return redirect(
+            url_for(
+                "chain_view",
+                _anchor=request.form["ip_version"] + request.form["fw_chain"],
+            )
+        )
 
     else:
         file_list = list_user_files(session)
@@ -1166,7 +1378,9 @@ def chain_rule_delete():
         Response: Redirect to chain view page
     """
     delete_rule_from_data(session, request)
-    return redirect(url_for("chain_view"))
+    return redirect(
+        url_for("chain_view", _anchor="".join(request.form["rule"].split(",")[:2]))
+    )
 
 
 @app.route("/chain_rule_reorder", methods=["GET", "POST"])
@@ -1277,6 +1491,8 @@ def chain_view():
     return render_template(
         "chain_view.html",
         chain_dict=chain_dict,
+        chain_defaults=chain_defaults(session),
+        group_list=assemble_detail_list_of_groups(session, flash_empty=False),
         file_list=file_list,
         snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
@@ -1311,7 +1527,12 @@ def filter_add():
     if request.method == "POST":
         add_filter_to_data(session, request)
 
-        return redirect(url_for("filter_view"))
+        return redirect(
+            url_for(
+                "filter_view",
+                _anchor=request.form["ip_version"] + request.form["type"],
+            )
+        )
 
     else:
         file_list = list_user_files(session)
@@ -1446,7 +1667,9 @@ def filter_rule_delete():
         Response: Redirect to filter view page
     """
     delete_filter_rule_from_data(session, request)
-    return redirect(url_for("filter_view"))
+    return redirect(
+        url_for("filter_view", _anchor="".join(request.form["rule"].split(",")[:2]))
+    )
 
 
 @app.route("/filter_rule_reorder", methods=["GET", "POST"])
@@ -1559,6 +1782,8 @@ def filter_view():
         file_list=file_list,
         snapshot_list=snapshot_list,
         filter_dict=filter_dict,
+        filter_defaults=filter_defaults(session),
+        interface_list=list_interfaces(session),
         firewall_name=session["firewall_name"],
         username=session["username"],
     )
@@ -1851,7 +2076,29 @@ def create_config():
             f"{session['data_dir']}/{request.form['config_name']}", user_data
         )
 
-    return redirect(url_for("display_config"))
+    return _after_selecting()
+
+
+@app.route("/configurations")
+@login_required
+def configurations():
+    """
+    Handle configuration management page requests.
+
+    Lists the user's firewall configurations and the selected one's snapshots,
+    with the create, delete, import and export forms. The forms post to the
+    existing routes; this page only gathers them in one place.
+
+    Returns:
+        Response: Rendered configurations template
+    """
+    return render_template(
+        "configurations.html",
+        file_list=list_user_files(session),
+        snapshot_list=list_snapshots(session) if session.get("firewall_name") else [],
+        firewall_name=session.get("firewall_name"),
+        username=session["username"],
+    )
 
 
 @app.route("/display_config")
@@ -1875,7 +2122,7 @@ def display_config():
     snapshot_list = list_snapshots(session)
 
     if "firewall_name" not in session:
-        message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
+        message = "No firewall selected.<br><br>Select one from the Config menu in the top bar, or create one on the Configurations page."
 
         return render_template(
             "configuration_display.html",
@@ -2060,6 +2307,33 @@ def delete_config():
     return redirect(url_for("display_config"))
 
 
+@app.route("/rename_config", methods=["POST"])
+@login_required
+def rename_config():
+    """
+    Handle firewall configuration rename requests.
+
+    Renames the configuration and moves its snapshots with it. If the renamed
+    configuration is the selected one, the selection follows it.
+
+    Returns:
+        Response: Redirect to the Configurations page
+    """
+    old_name = request.form.get("old_name", "")
+    new_name = request.form.get("new_name", "")
+
+    if not is_safe_name(old_name) or not is_safe_name(new_name):
+        flash("Invalid config name.", "danger")
+        return redirect(url_for("configurations"))
+
+    ok, message = rename_user_data_file(session["data_dir"], old_name, new_name)
+    flash(message, "success" if ok else "danger")
+    if ok and session.get("firewall_name") == old_name:
+        session["firewall_name"] = new_name
+
+    return redirect(url_for("configurations"))
+
+
 @app.route("/download_config")
 @login_required
 @requires_firewall
@@ -2183,7 +2457,7 @@ def select_firewall_config():
     session["ssh_pass"] = ""  # nosec
     session["ssh_keyname"] = ""
 
-    return redirect(url_for("display_config"))
+    return _after_selecting()
 
 
 @app.route("/upload_json", methods=["POST"])
@@ -2264,7 +2538,8 @@ if __name__ == "__main__":
     # database before the check that exists to report it is unreachable. The
     # trade-off is that an install which cannot reach MongoDB no longer reports at
     # all -- it used to post here and then exit in the check above.
-    telemetry_instance()
+    telemetry_instance("startup")
+    start_telemetry_heartbeat()
 
     # Check if running in development environment
     if os.environ.get("FLASK_ENV") == "Development":

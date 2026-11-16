@@ -21,7 +21,6 @@
     
     <form action="/configuration_extra_items" method="post" class="extra-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <img src="{{ url_for('static', filename='extra-config-32-yellow.svg') }}" alt="" class="extra-config-icon">
         <div class="extra-form-content">
             <div class="form-group">
                 <label for="extra_items" class="form-label">Extra Configuration Items</label>
@@ -40,79 +39,4 @@
     </form>
 </div>
 
-<style>
-.extra-config {
-    max-width: 800px;
-}
-
-.extra-config-icon {
-    width: 4rem;
-    height: 5rem;
-    margin-right: 1rem;
-    flex-shrink: 0;
-}
-
-.extra-form-content {
-    flex: 1;
-}
-
-.section-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 2rem;
-    line-height: 1.6;
-}
-
-.extra-form {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-label {
-    display: block;
-    color: var(--primary-color);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.field-description {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
-    margin-bottom: 0.75rem;
-    line-height: 1.4;
-}
-
-.form-textarea {
-    width: 100%;
-    min-height: 300px;
-    padding: 1rem;
-    background: var(--light-color);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius);
-    color: var(--text-dark);
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.7rem;
-    line-height: 1.4;
-    resize: vertical;
-}
-
-.form-textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(255, 191, 18, 0.2);
-}
-
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-}
-</style>
 {% endblock body %}

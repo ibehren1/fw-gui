@@ -1,0 +1,154 @@
+{% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
+{% block body %}
+<div class="page-head">
+    <div>
+        <h2>Getting started</h2>
+        <p class="lead">Pick a configuration to work on, then build it in the order below. Each step links to where you do it.</p>
+    </div>
+</div>
+
+{{ ui.flash_messages() }}
+
+{#- Step 1: a configuration to work on -#}
+<div class="block-grid start-choose">
+    <div class="block">
+        <div class="block-head">
+            <div class="block-title"><h3>Open a configuration</h3><span class="meta">{{ file_list|length if file_list else 0 }}</span></div>
+        </div>
+        {% if file_list %}
+        <form action="/select_firewall_config" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="start">
+            <table class="grid">
+                <tbody>
+                    {% for file in file_list %}
+                    <tr>
+                        <td class="mono strong">{{ file }}</td>
+                        <td>{% if file == firewall_name %}<span class="pill pill-ok">Selected</span>{% endif %}</td>
+                        <td class="row-actions">
+                            <button type="submit" name="file" value="{{ file }}" class="btn btn-sm">Select</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        {% else %}
+        <div class="block-body muted">No configurations yet. Create one, or use the quick start.</div>
+        {% endif %}
+    </div>
+
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Create a new configuration</h3></div></div>
+        <form action="/create_config" method="post" class="block-body">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="start">
+            <label class="field">
+                <span>Name</span>
+                <input type="text" name="config_name" maxlength="50" placeholder="e.g. edge-fw-01" class="input" required>
+            </label>
+            <div class="form-foot">
+                <span class="muted small">Starts empty. Build it step by step below.</span>
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{#- Quick start -#}
+<div class="block quick-start">
+    <div class="block-head">
+        <div class="block-title"><h3>Quick start</h3><span class="meta">a new configuration with a basic WAN/LAN policy</span></div>
+    </div>
+    <form action="/quick_start" method="post" class="block-body quick-start-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="quick-start-fields">
+            <label class="field">
+                <span>Configuration name</span>
+                <input type="text" name="config_name" maxlength="50" placeholder="e.g. edge-fw-01" class="input" required>
+            </label>
+            <label class="field">
+                <span>WAN interface</span>
+                <input type="text" name="wan_interface" value="eth0" maxlength="15" class="input mono" required>
+            </label>
+            <label class="field">
+                <span>LAN interface</span>
+                <input type="text" name="lan_interface" value="eth1" maxlength="15" class="input mono" required>
+            </label>
+            <label class="checkbox-item quick-start-ping">
+                <input type="checkbox" name="allow_wan_ping" value="true">
+                <span>Allow ping to the firewall from the WAN (IPv4)</span>
+            </label>
+            <label class="checkbox-item quick-start-ack">
+                <input type="checkbox" name="accept_responsibility" value="true" required>
+                <span>I understand this configuration is mine: I am responsible for reviewing and testing it before deploying it, and I accept all risk of its use.</span>
+            </label>
+            <button type="submit" class="btn btn-primary">Create starter config</button>
+        </div>
+        <div class="quick-start-explain">
+            <p><b>Allows all outbound, blocks all inbound</b>, for IPv4 and IPv6:</p>
+            <table class="grid quick-start-table">
+                <tbody>
+                    <tr><td class="mono">WAN_IN</td><td>WAN &rarr; LAN</td><td>return traffic only</td><td>{{ ui.default_badge("drop") }}</td></tr>
+                    <tr><td class="mono">WAN_LOCAL</td><td>WAN &rarr; firewall</td><td>return traffic only</td><td>{{ ui.default_badge("drop") }}</td></tr>
+                    <tr><td class="mono">LAN_IN</td><td>LAN &rarr; anywhere</td><td>allow all</td><td>{{ ui.default_badge("accept") }}</td></tr>
+                    <tr><td class="mono">LAN_OUT</td><td>out to the LAN</td><td>return traffic only</td><td>{{ ui.default_badge("accept") }}</td></tr>
+                    <tr><td class="mono">LAN_LOCAL</td><td>LAN &rarr; firewall</td><td>allow all</td><td>{{ ui.default_badge("accept") }}</td></tr>
+                </tbody>
+            </table>
+            <p class="muted small">Input and forward filters send each interface to its chain. The IPv6 WAN_LOCAL also allows ICMPv6 and DHCPv6 replies, which IPv6 needs to work; that includes answering IPv6 ping. Nothing is pushed until you deploy.</p>
+            {{ ui.responsibility_notice("A generated starting point, not security advice. The configuration and the risk of using it are yours.") }}
+        </div>
+    </form>
+</div>
+
+{#- Build order -#}
+<div class="version-head start-steps-head">
+    <h3>Build order</h3>
+    {% if firewall_name %}<span class="meta">for <span class="mono">{{ firewall_name }}</span></span>{% else %}<span class="meta">select or create a configuration first</span>{% endif %}
+</div>
+
+{%- set p = progress or {} -%}
+{%- set steps = [
+    ("Interfaces", "Name the interfaces your filters attach to, such as WAN and LAN, and give each a type.",
+     p.interfaces, "interface" ~ ("" if p.interfaces == 1 else "s"), url_for('interface_view'), url_for('interface_add'), False),
+    ("Groups", "Address, network, port and domain groups to reuse across rules.",
+     p.groups, "group" ~ ("" if p.groups == 1 else "s"), url_for('group_view'), url_for('group_add'), True),
+    ("First chain", "A chain is an ordered list of rules with a default action, such as WAN_IN or LAN_LOCAL.",
+     p.chains, ("chain" ~ ("" if p.chains == 1 else "s")) ~ (", " ~ p.chain_rules ~ " rules" if p.chains else ""), url_for('chain_view'), url_for('chain_add'), False),
+    ("First filter", "Filters (input, forward, output) send traffic on each interface to the right chain.",
+     p.filters, ("filter" ~ ("" if p.filters == 1 else "s")) ~ (", " ~ p.filter_rules ~ " rules" if p.filters else ""), url_for('filter_view'), url_for('filter_add'), False),
+    ("Extra configs", "Any other VyOS set commands to push along with the firewall.",
+     p.extra_items, "command" ~ ("" if p.extra_items == 1 else "s"), url_for('configuration_extra_items'), None, True),
+    ("Deploy", "Review the generated configuration, then push it to the firewall over SSH.",
+     1 if p.hostname_set else 0, "firewall address set" if p.hostname_set else "", url_for('display_config'), url_for('configuration_push'), False),
+] -%}
+<ol class="steps{% if not firewall_name %} steps-locked{% endif %}">
+    {% for title, help, count, status, view_url, add_url, optional in steps %}
+    {% set done = firewall_name and count %}
+    <li class="step{% if done %} step-done{% endif %}">
+        <div class="step-head">
+            <span class="step-num">{% if done %}&#10003;{% else %}{{ loop.index }}{% endif %}</span>
+            <h4>{{ title }}</h4>
+            {% if optional %}<span class="pill pill-off">optional</span>{% endif %}
+        </div>
+        <p class="step-help">{{ help }}</p>
+        <div class="step-foot">
+            <span class="step-status">{% if done %}{{ count if title != "Deploy" else "" }} {{ status }}{% elif firewall_name %}Not started{% endif %}</span>
+            {% if firewall_name %}
+            <span class="step-links">
+                {% if title == "Deploy" %}
+                <a href="{{ view_url }}" class="btn btn-sm">Review</a>
+                <a href="{{ add_url }}" class="btn btn-sm{% if not done %} btn-primary{% endif %}">Push</a>
+                {% else %}
+                {% if count %}<a href="{{ view_url }}" class="btn btn-sm">View</a>{% endif %}
+                {% if add_url %}<a href="{{ add_url }}" class="btn btn-sm{% if not count %} btn-primary{% endif %}">Add</a>{% else %}<a href="{{ view_url }}" class="btn btn-sm">Edit</a>{% endif %}
+                {% endif %}
+            </span>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ol>
+{% endblock body %}

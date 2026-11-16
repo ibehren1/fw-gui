@@ -35,7 +35,7 @@ class Distribution:
 
 def _bare_name(requirement):
     """Strip version specifiers / extras from a requirement string."""
-    return _re.split(r"[<>=!~;\[ ]", requirement, 1)[0].strip()
+    return _re.split(r"[<>=!~;\[ ]", requirement, maxsplit=1)[0].strip()
 
 
 def get_distribution(dist):

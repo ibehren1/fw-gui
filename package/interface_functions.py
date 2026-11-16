@@ -12,6 +12,46 @@ from flask import flash
 from package.data_file_functions import read_user_data_file, write_user_data_file
 
 
+# Interface types, shown colour-coded wherever an interface appears. Display
+# only: the type is never written to the generated VyOS configuration.
+INTERFACE_TYPES = {
+    "public_wan": "Public WAN",
+    "private_wan": "Private WAN",
+    "lan": "LAN",
+    "dmz": "DMZ",
+    "custom": "Custom",
+}
+# Colours a custom type may use. Chosen to stay clear of the built-in types
+# (red, orange, green, yellow) and the IPv4/IPv6 colours (teal, violet).
+CUSTOM_TYPE_COLORS = ("blue", "pink", "brown", "gray")
+CUSTOM_LABEL_MAX = 24
+
+
+def interface_type_fields(form):
+    """
+    Returns the validated type fields from a posted interface form.
+
+    Args:
+        form: request.form with interface_type, and for custom types
+              type_label and type_color
+
+    Returns:
+        dict: {} for no type, {"type": ...} for a built-in type, or
+              {"type": "custom", "type_label": ..., "type_color": ...}.
+              Unknown values are dropped rather than stored.
+    """
+    interface_type = form.get("interface_type", "")
+    if interface_type not in INTERFACE_TYPES:
+        return {}
+    if interface_type != "custom":
+        return {"type": interface_type}
+    label = " ".join(form.get("type_label", "").split())[:CUSTOM_LABEL_MAX] or "Custom"
+    color = form.get("type_color", "")
+    if color not in CUSTOM_TYPE_COLORS:
+        color = CUSTOM_TYPE_COLORS[0]
+    return {"type": "custom", "type_label": label, "type_color": color}
+
+
 def add_interface_to_data(session, request):
     """
     Adds a new interface configuration to the user's data file.
@@ -49,6 +89,7 @@ def add_interface_to_data(session, request):
     new_interface = {}
     new_interface["name"] = interface_name
     new_interface["description"] = interface_desc
+    new_interface.update(interface_type_fields(request.form))
     user_data["interfaces"].append(new_interface)
 
     # Write user_data to file
@@ -109,7 +150,8 @@ def list_interfaces(session):
               Returns empty list if no interfaces exist.
     """
     # Get user's data
-    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
+    # read_user_data_file returns None when the config document is missing.
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}") or {}
 
     if "interfaces" not in user_data:
         interface_list = []

@@ -5,7 +5,7 @@
         <h2 class="section-title">Firewall Configuration</h2>
         <p class="config-description">
             The VyOS CLI configuration commands below can be copied and pasted to the CLI for firewall configuration, 
-            or download the complete configuration using the button in the sidebar.
+            or download the complete configuration from the Configurations page.
             <a href="https://docs.vyos.io/en/sagitta/cli.html" target="_blank" class="docs_link">
                 Documentation ↗
             </a>
@@ -49,49 +49,4 @@ function copyToClipboard() {
 }
 </script>
 
-<style>
-.config-display {
-    max-width: 100%;
-}
-
-.config-header {
-    margin-bottom: 2rem;
-}
-
-.config-description {
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.6;
-    margin-top: 0.5rem;
-}
-
-.config-content {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-}
-
-.config-toolbar {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.configuration {
-    margin: 0;
-    padding: 1.5rem;
-    background: var(--light-color);
-    color: var(--text-dark);
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.7rem !important;
-    line-height: 1.5;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.btn-success {
-    background: var(--success-color) !important;
-    color: var(--text-light) !important;
-}
-</style>
 {% endblock body %}

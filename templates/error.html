@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ current_user.theme if current_user and current_user.is_authenticated and current_user.theme else 'dark' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FW-GUI — Error {{ code }}</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico', v=ASSET_VERSION) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=ASSET_VERSION) }}">
 </head>
 <body>
-    <div style="max-width: 40rem; margin: 4rem auto; text-align: center;">
+    <div class="error-page">
         <h1>Error {{ code }}</h1>
         <p>{{ message }}</p>
         <p><a href="{{ url_for('index') }}">Return to home</a></p>

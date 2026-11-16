@@ -1,3 +1,5 @@
+![GitHub Release](https://img.shields.io/github/v/release/ibehren1/fw-gui)
+
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/ibehren1)  
 Tell me how you are using FW-GUI! [File a Usage Report](https://github.com/ibehren1/fw-gui/issues/new?assignees=ibehren1&labels=Usage+Information&projects=&template=report-usage-information.md&title=Report+Usage+Information)
 
@@ -13,16 +15,19 @@ Copyright © 2023-2026 Isaac Behrens. All rights reserved.
 ## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
 The web-based FW-GUI allows the user to visually:
-- Create and manage group objects
-- Create and manage firewall chains
-- Create and manage filters of chains
+- Get started quickly: a **Getting started** page shows the build order (interfaces, groups, chains, filters, extra configuration, deploy) and how far the selected configuration has got, and **Quick start** creates a ready-made WAN/LAN policy for IPv4 and IPv6 that allows all outbound and blocks all inbound
+- Create and manage interfaces, colour-coded by type (Public WAN, Private WAN, LAN, DMZ, or a custom label and colour)
+- Create and manage group objects (address, network, port, MAC and domain groups)
+- Create and manage firewall chains and filters, shown as compact rule tables with each chain's or filter's default action as its last row
+- See a group's type and values by hovering over it in a rule
 - Create and manage flowtables
-- Support for managing multiple firewall configurations
+- Manage multiple firewall configurations: create, rename, import/export (JSON) and delete them on the **Configurations** page
 - Create and compare (diff) snapshots of firewall configurations
 - Tag snapshots with a note describing why they were taken, and load or delete them from the Manage Snapshots page
 - Loading a snapshot automatically snapshots the working copy first (tagged "auto-snapshot before reloading snapshot"), so nothing is lost
-- Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface
-- Import/export a JSON file of the fw-gui configuration for backup and to move between instances of the GUI
+- Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface, with the firewall's SSH host key pinned on first use
+- Download the generated VyOS configuration (`.cfg`)
+- Work in a dark or light theme, chosen at first login and switchable from the top bar
 
 (FW-GUI only manages configurations under 'set firewall' in the command line syntax.)
 
@@ -33,13 +38,14 @@ The web-based FW-GUI allows the user to visually:
 - [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, MongoDB-backed authentication (SQLite before 3.0.0), session store, filesystem layout, backups, and data flow (with diagrams).
 - [SSH, Password, Key & Cookie Handling](docs/ssh-credential-handling.md) — how SSH connectivity, passwords, keys, and cookies are stored, used, and disposed of (with diagrams).
 - [MongoDB Restore Procedure](docs/mongodb-restore-procedure.md) — how to restore a MongoDB dump into a running `mongodb` container (with diagram).
+- [MongoDB Major-Version Upgrade](docs/mongodb-upgrade.md) — why `mongo:latest` can stop an existing install from starting, and how to upgrade one major at a time using the feature compatibility version (with diagram).
 
 ## VyOS Release Support
 
 | VyOS Release   | FW-GUI Testing | FW-GUI Support (no SLA) |
 |----------------|----------------------------|----------------|
 | VyOS 1.3.x Equuleus | - Untested | - No support (do not open issues) |
-| VyOS 1.4.x Sagiitta | - Designed for 1.4 and heavily tested in 2024.<br> - No known issues but no longer tested due to VyOS closed release versions. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br> - Best effort support on old build from July 2024. |
+| VyOS 1.4.x Sagitta | - Designed for 1.4 and heavily tested in 2024.<br> - No known issues but no longer tested due to VyOS closed release versions. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br> - Best effort support on old build from July 2024. |
 | VyOS 1.5.x Circinus<br>(rolling release) | - Minimal testing but no known issues. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br> - Issues may be deprioritized due to unstable daily build status.
 | **VyOS 1.5 Stream**<br>(latest release) | - Minimal testing but no known issues.<br>- Current target version for development and testing. | - Open [GitHub issues](https://github.com/ibehren1/fw-gui/issues/new/choose) for errors.<br>- Current quarterly stream release is where testing/fixes will be targeted.
 
@@ -51,7 +57,7 @@ The web-based FW-GUI allows the user to visually:
 
 ### Recommended Usage
 
-Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encrytion between client (web browser) and FW-GUI. Recommend adding `proxy_read_timeout 30m;` as a custom Nginx configuration.
+Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encryption between client (web browser) and FW-GUI. Recommend adding `proxy_read_timeout 30m;` as a custom Nginx configuration.
 
 ![images](./images/nginx_custom_config.png)
 
@@ -73,7 +79,11 @@ Connections to the firewall are made using the [Napalm-VyOS library](https://git
 
 There is no initial username and password.  After starting the application, use the "Register as a new user" link to create your username and password.  Once you have registered your user(s), you can disable user registration by updating the environment variable in Docker configuration to `DISABLE_REGISTRATION=True`. Doing this will remove the link to the registration page and stop any POSTS to the route /user_registration from being processed.  This can be reenabled anytime you need to setup users.
 
-Future releases *may* include administration and user management features.
+The first time you log in you are asked to choose a dark or light theme; it is saved to your account and can be changed at any time from the top bar.  You then land on the **Getting started** page: open or create a configuration, or use **Quick start**, and follow the build order from there.
+
+Configurations generated by FW-GUI, including Quick start, are a starting point and not security advice.  You are responsible for reviewing and testing any configuration before deploying it, and deploying it is at your own risk (FW-GUI is provided as-is under the MIT License).
+
+Admin Settings covers backups and MongoDB status.  There is no user management yet: accounts are created through registration.
 
 ## Backups
 
@@ -101,6 +111,21 @@ Nothing is ever deleted from S3.  Offsite copies exist to survive mistakes made 
 A missed window is caught up once, not once per week missed: an instance that was switched off for a month takes one backup shortly after it starts again, then returns to its normal schedule.  Running more than one replica is safe — each claims the run atomically in MongoDB, so exactly one of them backs up.
 
 There is still no automated restore.  Retrieving an archive, and restoring a MongoDB dump from it, remains a manual operation on the host or from S3 — see the [MongoDB Restore Procedure](docs/mongodb-restore-procedure.md).
+
+### MongoDB upgrades
+
+An existing MongoDB install can only move up **one major version at a time**, and only after its *feature compatibility version* (FCV) has been raised to match the version it runs.  The compose files pin `image: mongo:8` for that reason: with `mongo:latest` a pull can skip a major and leave MongoDB unable to start.  **Admin Settings → MongoDB** shows the server version and FCV, says whether the install is ready for the next major, and can raise the FCV (taking a full backup first).  The full procedure is in [MongoDB Major-Version Upgrade](docs/mongodb-upgrade.md).
+
+## Telemetry
+
+FW-GUI reports anonymous usage to `telemetry.fw-gui.com` so the developer can see how many installs exist, which versions are in use and how FW-GUI is deployed.  It is sent in the background and never affects the app if the server is unreachable.
+
+- **Each install** is identified by a random UUID generated on first start (stored in MongoDB), not by anything about you.
+- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration).
+- **At each login:** only the UUID and version.
+- **For each View Diffs, Commit and operational command:** only the UUID, to count use.
+
+**Never sent:** usernames or emails, configuration or rule contents, the names of chains, groups or interfaces, IP addresses or hostnames from your configurations, credentials or SSH keys.  Like any web request, the telemetry server sees the IP address the request comes from.  The full list is in [Data Architecture §10](docs/data-architecture.md#10-telemetry).
 
 ## Deployment
 
@@ -166,7 +191,7 @@ services:
       - mysql-data:/var/lib/mysql
 + mongodb:
 +   container_name: mongodb
-+   image: mongo:7
++   image: mongo:8
 +   restart: always
 +   volumes:
 +     - mongo-data:/data/db
@@ -209,7 +234,7 @@ services:
       - data:/opt/fw-gui/data
   mongodb:
     container_name: mongodb
-    image: mongo:7
+    image: mongo:8
     restart: always
     volumes:
       - mongo-data:/data/db
@@ -225,12 +250,36 @@ volumes:
 ```bash
 git clone https://github.com/ibehren1/fw-gui.git
 cd fw-gui
-helm install fw-gui ./chart/fw-gui-0.1.0.tgz
+helm install fw-gui ./chart/fw-gui
 ```
+
+### Running from source
+
+FW-GUI requires **Python 3.14+** and a reachable MongoDB.  With [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync
+uv run python app.py
+```
+
+Settings are read from the environment or a `.env` file (`APP_SECRET_KEY`, `MONGODB_URI`, and the others shown in the Docker Compose examples).
 
 ## Interface Screenshots
 
-![image](./images/fw-gui_interface_1.png)
-![image](./images/fw-gui_interface_2.png)
-![image](./images/fw-gui_interface_3.png)
-![image](./images/fw-gui_interface_4.png)
+**Getting started:** open or create a configuration, Quick start, and the build order with progress for the selected configuration.
+![Getting started page](./images/fw-gui_interface_1.png)
+
+**Chains:** one row per rule, the default action as the last row, and a group's values on hover.
+![Chains page](./images/fw-gui_interface_2.png)
+
+**Groups:** grouped by IPv4, IPv6 and other types.
+![Groups page](./images/fw-gui_interface_3.png)
+
+**Interfaces:** grouped and colour-coded by type.
+![Interfaces page](./images/fw-gui_interface_4.png)
+
+**Filters:** input and forward filters jumping to chains per interface and direction.
+![Filters page](./images/fw-gui_interface_5.png)
+
+**Configurations:** configurations, snapshots, and create, rename, import, export and delete.
+![Configurations page](./images/fw-gui_interface_6.png)

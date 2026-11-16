@@ -76,7 +76,7 @@ def test_get_version_strips_v_prefix():
 @patch("package.telemetry_functions.urllib3.request")
 def test_post_telemetry_success(mock_request):
     body = json.dumps({"instance_id": "test-uuid"})
-    post_telemetry(body, "instance")
+    post_telemetry(body, "instance", background=False)
 
     mock_request.assert_called_once_with(
         "POST",
@@ -93,7 +93,7 @@ def test_post_telemetry_exception(mock_request):
     body = json.dumps({"instance_id": "test-uuid"})
 
     # Should not raise
-    post_telemetry(body, "instance")
+    post_telemetry(body, "instance", background=False)
 
 
 @patch("package.telemetry_functions.post_telemetry")
@@ -140,3 +140,79 @@ def test_telemetry_rule_usage(mock_id, mock_post):
     body = json.loads(mock_post.call_args[0][0])
     assert body["instance_id"] == "test-uuid"
     assert mock_post.call_args[0][1] == "rule_usage"
+
+
+# ---------------------------------------------------------------------------
+# Background posting and the daily heartbeat
+# ---------------------------------------------------------------------------
+
+import threading  # noqa: E402
+
+from package import telemetry_functions  # noqa: E402
+
+
+def test_post_telemetry_runs_off_the_calling_thread():
+    started = threading.Event()
+    release = threading.Event()
+
+    def slow_request(*args, **kwargs):
+        started.set()
+        release.wait(5)
+
+    with patch("package.telemetry_functions.urllib3.request", side_effect=slow_request):
+        thread = post_telemetry("{}", "instance")
+        # The caller is back while the request is still in flight.
+        assert started.wait(2)
+        assert thread.is_alive() and thread.daemon
+        release.set()
+        thread.join(2)
+    assert not thread.is_alive()
+
+
+def test_heartbeat_posts_heartbeat_events(monkeypatch):
+    sent = []
+    done = threading.Event()
+
+    def record(event="login"):
+        sent.append(event)
+        if len(sent) >= 2:
+            done.set()
+
+    monkeypatch.setattr(telemetry_functions, "_heartbeat_delay", lambda: 0.01)
+    monkeypatch.setattr(telemetry_functions, "telemetry_instance", record)
+    thread = telemetry_functions.start_telemetry_heartbeat()
+    try:
+        assert done.wait(2)
+        assert set(sent) == {"heartbeat"}
+        # Idempotent: a second start returns the running thread.
+        assert telemetry_functions.start_telemetry_heartbeat() is thread
+    finally:
+        telemetry_functions.stop_telemetry_heartbeat()
+        thread.join(2)
+    assert not thread.is_alive()
+
+
+def test_heartbeat_survives_a_failing_check_in(monkeypatch):
+    calls = []
+    done = threading.Event()
+
+    def flaky(event="login"):
+        calls.append(event)
+        if len(calls) >= 2:
+            done.set()
+        raise RuntimeError("telemetry server down")
+
+    monkeypatch.setattr(telemetry_functions, "_heartbeat_delay", lambda: 0.01)
+    monkeypatch.setattr(telemetry_functions, "telemetry_instance", flaky)
+    thread = telemetry_functions.start_telemetry_heartbeat()
+    try:
+        assert done.wait(2)
+    finally:
+        telemetry_functions.stop_telemetry_heartbeat()
+        thread.join(2)
+
+
+def test_heartbeat_delay_is_about_a_day():
+    for _ in range(20):
+        delay = telemetry_functions._heartbeat_delay()
+        assert telemetry_functions.HEARTBEAT_SECONDS <= delay < telemetry_functions.HEARTBEAT_SECONDS + 3600

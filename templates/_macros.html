@@ -1,0 +1,181 @@
+{#- Shared template macros. Import with: {% import "_macros.html" as ui %} -#}
+
+{% macro flash_messages() -%}
+{% with flashed_messages = get_flashed_messages(with_categories=true) %}
+{% if flashed_messages %}
+<div class="flash-messages">
+    {% for category, flash_message in flashed_messages %}
+    <div class="alert alert-{{ category }}">{{ flash_message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+{%- endmacro %}
+
+{#- Section tabs for a {"ipv4": {name: ...}, "ipv6": {...}} dict. Driven by
+    static/section-tabs.js: each link's hash must match a .tab-section id. -#}
+{% macro version_tabs(by_version) -%}
+<div class="tabs">
+    <a href="#all" class="tab section-tab">All</a>
+    <div class="tab-groups">
+    {% for ip_version in ["ipv4", "ipv6"] %}
+    {% if by_version[ip_version] %}
+    <div class="tab-group">
+        <a href="#{{ ip_version }}" class="tab-sep tab-sep-{{ ip_version }} section-tab" title="Show all {{ 'IPv4' if ip_version == 'ipv4' else 'IPv6' }}">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</a>
+        {% for key in by_version[ip_version] %}
+        <a href="#{{ ip_version }}{{ key }}" class="tab section-tab">{{ key }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    </div>
+</div>
+{%- endmacro %}
+
+{#- Key that ties a group reference to its card. Rule data names the type with
+    underscores (address_group); group data with hyphens (address-group).
+    Domain groups are only stored under ipv4. -#}
+{% macro group_key(ip_version, group_type, name) -%}
+{%- set group_type = group_type|replace("_", "-") -%}
+{{ "ipv4" if group_type == "domain-group" else ip_version }}|{{ group_type }}|{{ name }}
+{%- endmacro %}
+
+{#- A reference to a group. ref-cards.js shows the matching group card on
+    hover or keyboard focus. -#}
+{% macro group_ref(ip_version, group_type, name) -%}
+<span class="ref" tabindex="0" data-ref="{{ group_key(ip_version, group_type, name) }}">{{ name }}</span>
+{%- endmacro %}
+
+{#- One side of a rule match: address (or group) plus port (or port group). -#}
+{% macro endpoint(address, address_type, port, port_type, address_group="", port_group="", ip_version="ipv4") -%}
+{%- set address = address or address_group -%}
+{%- set port = port or port_group -%}
+{%- if address -%}
+{%- if address_group or (address_type and address_type != "address") -%}
+{{ group_ref(ip_version, address_type if address_type and address_type != "address" else "address_group", address) }}
+{%- else -%}
+<span class="mono">{{ address }}</span>
+{%- endif -%}
+{%- endif -%}
+{%- if address and port %} {% endif -%}
+{%- if port -%}
+{%- if port_group or port_type == "port_group" -%}
+{{ group_ref(ip_version, "port_group", port) }}
+{%- else -%}
+<span class="mono"><span class="muted">:</span>{{ port }}</span>
+{%- endif -%}
+{%- endif -%}
+{%- if not address and not port %}<span class="muted">any</span>{% endif -%}
+{%- endmacro %}
+
+{% macro states(rule) -%}
+{%- set s = [] -%}
+{%- if rule.state_est %}{% set _ = s.append("EST") %}{% endif -%}
+{%- if rule.state_rel %}{% set _ = s.append("REL") %}{% endif -%}
+{%- if rule.state_new %}{% set _ = s.append("NEW") %}{% endif -%}
+{%- if rule.state_inv %}{% set _ = s.append("INV") %}{% endif -%}
+{%- if s %}<span class="mono">{{ s|join(" ") }}</span>{% else %}<span class="muted">any</span>{% endif -%}
+{%- endmacro %}
+
+{% macro check(value) -%}
+{%- if value %}<span class="yes" title="Yes">&#10003;</span>{% else %}<span class="muted">&ndash;</span>{% endif -%}
+{%- endmacro %}
+
+{#- IPv4/IPv6 tag, colour-coded by version. -#}
+{% macro ip_tag(ip_version) -%}
+<span class="tag tag-{{ 'ipv6' if ip_version == 'ipv6' else 'ipv4' }}">{{ "IPv6" if ip_version == "ipv6" else "IPv4" }}</span>
+{%- endmacro %}
+
+{#- Hidden detail cards, one per group, cloned into a popover by
+    static/ref-cards.js when a .ref with the same data-ref is hovered. -#}
+{% macro group_cards(group_list) -%}
+<div class="ref-cards" hidden>
+    {% for group in group_list %}
+    <div class="ref-card" data-ref-card="{{ group_key(group.ip_version, group.group_type, group.group_name) }}">
+        <div class="ref-card-head">
+            <span class="mono strong">{{ group.group_name }}</span>
+            {% if group.group_type != "domain-group" %}{{ ip_tag(group.ip_version) }}{% endif %}
+        </div>
+        <div class="ref-card-meta">
+            <span>{{ group.group_type|replace("-", " ")|capitalize }}</span>
+            <span>&middot; {{ group.group_value|length }} value{{ "" if group.group_value|length == 1 else "s" }}</span>
+        </div>
+        {% if group.group_desc %}<div class="ref-card-desc">{{ group.group_desc }}</div>{% endif %}
+        <div class="ref-card-scroll">
+        <table class="grid ref-card-values">
+            <tbody>
+                {% for value in group.group_value %}
+                <tr><td class="num">{{ loop.index }}</td><td class="mono">{{ value }}</td></tr>
+                {% else %}
+                <tr><td class="muted">No values</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{%- endmacro %}
+
+{#- The implicit last rule of a chain or filter: its default action, applied
+    when no rule matches. Shown read-only; the default is changed on the
+    chain or filter itself. middle_cells fill the columns between the action
+    and the log column; has_log=False for tables without a log column. -#}
+{% macro default_row(default, kind, middle_cells, has_log=True) -%}
+<tr class="default-row" title="Applied when no rule in this {{ kind }} matches. Not a rule, so it cannot be edited or moved here; it is set on the {{ kind }} itself.">
+    <td class="num"><span class="default-mark">default</span></td>
+    <td class="desc muted">Default action</td>
+    <td>{% if default and default.action %}<span class="act act-{{ default.action }}">{{ default.action }}</span>{% else %}<span class="muted" title="No default action is set, so the generated config sets none and VyOS applies its own.">not set</span>{% endif %}</td>
+    {% for value in middle_cells %}<td><span class="muted">{{ value }}</span></td>{% endfor %}
+    {% if has_log %}<td class="center">{{ check(default and default.log) }}</td>{% endif %}
+    <td class="row-actions"><span class="default-lock" aria-label="Not editable">&#128274;</span></td>
+</tr>
+{%- endmacro %}
+
+{#- An interface's type as a coloured dot plus label. interface is a stored
+    interface dict (or anything with type / type_label / type_color); nothing
+    is rendered when it has no type. bare drops the outline (for use beside
+    an interface name). -#}
+{% macro iftype(interface, bare=False, label=True) -%}
+{%- if interface and interface.type in INTERFACE_TYPES -%}
+{%- set custom = interface.type == "custom" -%}
+{%- set key = ("c-" ~ interface.type_color) if custom and interface.type_color in CUSTOM_TYPE_COLORS else interface.type -%}
+{%- set text = (interface.type_label or "Custom") if custom else INTERFACE_TYPES[interface.type] -%}
+<span class="iftype iftype-{{ key }}{% if bare %} iftype-bare{% endif %}" title="{{ text }}"><i class="dot"></i>{% if label %}{{ text }}{% endif %}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{#- An interface name with its type dot. ifaces maps name -> interface dict
+    (see interfaces_by_name); an unknown or untyped interface shows the name
+    alone. -#}
+{% macro if_name(name, ifaces) -%}
+<span class="if-name">{{ iftype(ifaces.get(name), bare=True, label=False) }}<span class="mono">{{ name }}</span></span>
+{%- endmacro %}
+
+{#- Pencil icon for Edit buttons. An SVG rather than the U+270E glyph, which
+    most fonts draw hatched and too faint to read at row-icon size. -#}
+{% macro icon_edit() -%}
+<svg class="icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M11.2 2.3a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1L6 12.5 2.5 13.5l1-3.5 7.7-7.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.8 3.7l2.5 2.5" stroke="currentColor" stroke-width="1.6"/></svg>
+{%- endmacro %}
+
+{#- An action badge, for places that show an action outside a rule row. -#}
+{% macro default_badge(action) -%}
+<span class="act act-{{ action }}">{{ action }}</span>
+{%- endmacro %}
+
+{#- Responsibility statement for firewall configurations. One source, shown on
+    the quick start and before deploying. -#}
+{% macro responsibility_statement() -%}
+<div class="legal">
+    <p><b>Responsibility for firewall configurations.</b> Every firewall configuration created, imported, edited, generated or deployed with FW-GUI, including any configuration produced by Quick start, is your configuration. You own it, and you alone are responsible for reviewing it, for confirming that it meets your security, operational and compliance requirements, and for testing it before applying it to any device. Configurations generated by FW-GUI are a starting point only. They are not security advice, and are not a recommendation that they are suitable for any network.</p>
+    <p>FW-GUI is provided &ldquo;as is&rdquo;, without warranty of any kind, express or implied, under the MIT License. To the fullest extent permitted by law, the authors and copyright holders are not liable for any loss of access, service outage, security incident, data loss or other damage arising from any configuration or its deployment. By creating or deploying a configuration you accept these terms and assume all risk of its use.</p>
+</div>
+{%- endmacro %}
+
+{#- A one-line responsibility notice with the full statement behind a toggle. -#}
+{% macro responsibility_notice(summary) -%}
+<details class="legal-notice">
+    <summary>{{ summary }} <span class="legal-more">Read the full statement</span></summary>
+    {{ responsibility_statement() }}
+</details>
+{%- endmacro %}

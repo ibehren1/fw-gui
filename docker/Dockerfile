@@ -5,8 +5,9 @@ LABEL org.opencontainers.image.authors="isaac@behrenshome.com"
 RUN apt-get update && \
     apt-get dist-upgrade -y
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv. Pinned to a minor so image builds are repeatable; 0.13 still
+# takes 0.13.x fixes. Raise it deliberately.
+COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /usr/local/bin/uv
 
 # Clean-up apt cache
 RUN apt-get clean && \
@@ -38,8 +39,9 @@ ENV UV_TOOL_DIR=/tmp/uv-tools
 ENV UV_PYTHON_INSTALL_DIR=/tmp/uv-python
 # Pin the interpreter: the base image has no python3, so without this uv
 # downloads the newest CPython, which can outrun wheel availability (3.15 +
-# cffi 2.0.0 had no wheel, and the image has no compiler). Matches CI.
-ENV UV_PYTHON=3.12
+# cffi 2.0.0 had no wheel, and the image has no compiler). Matches CI and
+# pyproject requires-python.
+ENV UV_PYTHON=3.14
 
 # Install pip modules
 RUN uv sync

@@ -120,3 +120,49 @@ def test_delete_nonexistent_interface(app, mock_session, mock_user_data):
         interface_list = list_interfaces(mock_session)
 
         assert len(interface_list) == 2
+
+
+@pytest.mark.parametrize(
+    "form, expected",
+    [
+        ({}, {}),
+        ({"interface_type": ""}, {}),
+        ({"interface_type": "bogus"}, {}),
+        ({"interface_type": "public_wan"}, {"type": "public_wan"}),
+        ({"interface_type": "lan", "type_label": "ignored"}, {"type": "lan"}),
+        ({"interface_type": "custom", "type_label": "  Guest   Wi-Fi ", "type_color": "pink"},
+         {"type": "custom", "type_label": "Guest Wi-Fi", "type_color": "pink"}),
+        ({"interface_type": "custom", "type_label": "", "type_color": "red"},
+         {"type": "custom", "type_label": "Custom", "type_color": "blue"}),
+        ({"interface_type": "custom", "type_label": "x" * 40, "type_color": "gray"},
+         {"type": "custom", "type_label": "x" * 24, "type_color": "gray"}),
+    ],
+)
+def test_interface_type_fields(form, expected):
+    from package.interface_functions import interface_type_fields
+
+    assert interface_type_fields(form) == expected
+
+
+def _req(form):
+    return type("Request", (), {"form": ImmutableMultiDict(form)})
+
+
+def test_add_interface_stores_type(app, mock_session, mock_user_data):
+    with app.test_request_context():
+        add_interface_to_data(mock_session, _req({
+            "interface_name": "eth9", "interface_desc": "Guest",
+            "interface_type": "custom", "type_label": "Guest", "type_color": "brown",
+        }))
+    stored = next(i for i in mock_user_data["interfaces"] if i["name"] == "eth9")
+    assert stored == {"name": "eth9", "description": "Guest", "type": "custom",
+                      "type_label": "Guest", "type_color": "brown"}
+
+
+def test_re_adding_interface_without_type_clears_it(app, mock_session, mock_user_data):
+    with app.test_request_context():
+        add_interface_to_data(mock_session, _req({
+            "interface_name": "eth0", "interface_desc": "", "interface_type": "lan"}))
+        add_interface_to_data(mock_session, _req({"interface_name": "eth0", "interface_desc": ""}))
+    stored = next(i for i in mock_user_data["interfaces"] if i["name"] == "eth0")
+    assert "type" not in stored

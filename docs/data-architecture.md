@@ -47,7 +47,7 @@ flowchart TD
 
     App -->|"generated set commands via SSH"| VyOS[("VyOS device")]
     FS -.->|"optional backup upload"| S3[("AWS S3 (BUCKET_NAME)")]
-    App -.->|"UUID + version only"| Tele[("telemetry.fw-gui.com")]
+    App -.->|"anonymous check-ins (§10)"| Tele[("telemetry.fw-gui.com")]
 ```
 
 Configuration data, accounts, SSH keys and the telemetry id are all in MongoDB.
@@ -897,10 +897,24 @@ Matches the documented flow in `CLAUDE.md`: HTTP → route → package function 
 
 ## 10. Telemetry
 
-Sends **only** an instance UUID and the app version to
-`https://telemetry.fw-gui.com/<route>` (`/instance`, `/commit`, `/diff`,
-`/rule_usage`) via urllib3 (`telemetry_functions.py`). No config or user data is
-transmitted, and every failure is swallowed.
+Posts to `https://telemetry.fw-gui.com/<route>` via urllib3
+(`telemetry_functions.py`), on a background thread so it never delays a request,
+and swallows every failure.
+
+| Route | When | Payload |
+|---|---|---|
+| `/instance` | startup, every login, and a daily heartbeat | schema 2: `instance_id`, `version`, `event` (`startup` / `login` / `heartbeat`). Startup and heartbeat also send `deployment`, `size` and `features` (below); a login sends only the first four fields. |
+| `/diff`, `/commit`, `/rule_usage` | each View Diffs, Commit and operational command | `instance_id` only |
+
+`deployment`, `size` and `features` are built by `telemetry_collect.py`:
+
+- **deployment:** `type` (`docker` / `kubernetes` / `source`), CPU `arch`, `python` version, `mongodb` server major.minor
+- **size:** accounts, firewall configurations, and rules (chain and filter `rule-order` entries in working copies; snapshots excluded), each bucketed `0` / `1` / `2-5` / `6-20` / `21-100` / `101+`. Never an exact count.
+- **features:** yes/no for: light theme in use, quick start used (`origin: quick_start`), flowtables, interface types, scheduled backup, S3 backup, stored SSH keys, registration open
+
+**Never sent:** usernames, emails, configuration or rule contents, names of chains/groups/interfaces, addresses, hostnames, credentials or keys. Each collector is isolated, and its MongoDB reads time-bounded, so one that fails reports `null` and the rest still go out.
+
+The telemetry server sees the client IP like any HTTP server does; behind Cloudflare it also records the country.
 
 ### 3.0.0+ — the `instance` collection
 

@@ -157,120 +157,64 @@
                 Counted across every account on this instance, not just your own.
             </p>
         </div>
+
+        <div class="settings-card" id="mongodb">
+            <h3 class="subsection-title">MongoDB</h3>
+            {% if mongo and not mongo.error %}
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Server version:</span>
+                    <span class="info-value">{{ mongo.server }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Feature compatibility:</span>
+                    <span class="info-value">{{ mongo.fcv }}{% if mongo.in_progress %} &rarr; {{ mongo.transition_to }}{% endif %}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Upgrade readiness:</span>
+                    <span class="info-value">
+                        {% if mongo.state == "current" %}<span class="pill pill-ok">Ready for the next major</span>
+                        {% elif mongo.state == "behind" %}<span class="pill pill-warn">FCV behind server</span>
+                        {% elif mongo.state == "in_progress" %}<span class="pill pill-warn">FCV change interrupted</span>
+                        {% else %}<span class="pill pill-danger">FCV ahead of server</span>{% endif %}
+                    </span>
+                </div>
+            </div>
+            <p class="settings-description info-note">
+                {% if mongo.state == "current" %}
+                The feature compatibility version matches the server, so this install can move to the next MongoDB major version.
+                {% elif mongo.state == "behind" %}
+                The feature compatibility version ({{ mongo.fcv }}) is behind the server ({{ mongo.target }}). Upgrading MongoDB to the next major version now would leave it unable to start. Raise the FCV first.
+                {% elif mongo.state == "in_progress" %}
+                An earlier change of the feature compatibility version to {{ mongo.transition_to }} did not finish. Running it again completes it.
+                {% else %}
+                The feature compatibility version is newer than the server, which MongoDB should not allow. Check the MongoDB logs.
+                {% endif %}
+                Upgrade one major version at a time; see the <a href="https://github.com/ibehren1/fw-gui/blob/master/docs/mongodb-upgrade.md" target="_blank" rel="noopener">MongoDB upgrade guide</a>.
+            </p>
+            {% if mongo.state in ("behind", "in_progress") %}
+            {% set fcv_target = mongo.transition_to if mongo.in_progress else mongo.target %}
+            <form action="/admin_settings#mongodb" method="post" class="fcv-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="fcv_form" value="raise">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fcv_backup" value="true" checked>
+                    <span>Create a full backup first</span>
+                </label>
+                <label class="checkbox-item fcv-confirm">
+                    <input type="checkbox" name="fcv_confirm" value="true" required>
+                    <span>I understand this changes MongoDB for every account on this instance, and that afterwards MongoDB cannot be rolled back to a version older than {{ fcv_target }} without restoring a backup.</span>
+                </label>
+                <button type="submit" class="btn btn-danger full-width">Raise feature compatibility version to {{ fcv_target }}</button>
+            </form>
+            {% endif %}
+            {% else %}
+            <p class="settings-description">
+                MongoDB version information unavailable{% if mongo and mongo.error %}: <span class="mono">{{ mongo.error }}</span>{% endif %}.
+            </p>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<style>
-.admin-settings {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.settings-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 2rem;
-}
-
-.settings-description {
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 1rem;
-    line-height: 1.5;
-}
-
-.info-grid {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.info-label {
-    font-weight: 600;
-}
-
-.info-value {
-    color: var(--primary-color);
-    font-weight: 600;
-}
-
-.info-note {
-    margin-top: 1rem;
-    margin-bottom: 0;
-    font-size: 0.85rem;
-}
-
-.backup-list {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.backup-list-title {
-    color: var(--primary-color);
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    font-size: 1rem;
-}
-
-.backup-files {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.schedule-form {
-    margin-top: 1rem;
-    display: grid;
-    gap: 0.75rem;
-}
-
-.schedule-check {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-}
-
-.schedule-field {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
-.schedule-field select,
-.schedule-field input {
-    flex: 0 0 10rem;
-    padding: 0.4rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(0, 0, 0, 0.3);
-    color: inherit;
-    font-size: 0.9rem;
-}
-
-.backup-file {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.5rem;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.9);
-    border-left: 3px solid var(--primary-color);
-}
-</style>
 {% endblock body %}

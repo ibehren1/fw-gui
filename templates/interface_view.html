@@ -1,123 +1,89 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
-<div class="interface-view">
-    <div class="view-header">
-        <h2 class="section-title">Interfaces</h2>
-        <a href="{{ url_for('interface_add') }}" class="btn btn-add">Add Interface</a>
+{#- Sections in type order, Public WAN first, then Unassigned. Only sections
+    with interfaces are shown. -#}
+{%- set sections = [] -%}
+{%- for key, label in INTERFACE_TYPES.items() -%}
+{%- set members = interface_list|selectattr('type', 'equalto', key)|list -%}
+{%- if key == "custom" %}{% set members = members|sort(attribute='name')|sort(attribute='type_label') %}{% else %}{% set members = members|sort(attribute='name') %}{% endif -%}
+{%- if members %}{% set _ = sections.append((key, label, members)) %}{% endif -%}
+{%- endfor -%}
+{%- set unassigned = [] -%}
+{%- for item in interface_list|sort(attribute='name') if item.type not in INTERFACE_TYPES %}{% set _ = unassigned.append(item) %}{% endfor -%}
+{%- if unassigned %}{% set _ = sections.append(("unassigned", "Unassigned", unassigned)) %}{% endif -%}
+
+<div class="page-head">
+    <h2>Interfaces</h2>
+    <div class="page-actions">
+        <a href="{{ url_for('interface_add') }}" class="btn btn-primary">+ Add interface</a>
     </div>
-    
-    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-    {% if flashed_messages %}
-    <div class="flash-messages">
-        {% for category, flash_message in flashed_messages %}
-        <div class="alert alert-{{ category }}">
-            {{flash_message}}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-    
-    {% if interface_list %}
-    <div class="interfaces-grid">
-        {% for interface in interface_list|sort(attribute='name') %}
-        <div class="interface-card">
-            <div class="interface-header">
-                <img src="{{ url_for('static', filename='network-interface-32-yellow.svg') }}" alt="" class="interface-icon">
-                <div class="interface-info">
-                    <h3 class="interface-name">{{ interface.name }}</h3>
-                    {% if interface.description %}
-                    <p class="interface-subtitle">{{ interface.description }}</p>
-                    {% endif %}
-                </div>
-                <form action="/interface_delete" method="post" class="delete-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="interface" value="{{ interface.name }}">
-                    <button type="submit" class="btn btn-delete-small"
-                            onclick="return confirm('Delete interface {{ interface.name }}?')"
-                            title="Delete interface">×</button>
-                </form>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-        <p>No interfaces configured. Add an interface to get started.</p>
-        <a href="{{ url_for('interface_add') }}" class="btn btn-primary">Add First Interface</a>
-    </div>
-    {% endif %}
 </div>
 
-<style>
-.interface-view {
-    max-width: 1000px;
-}
+{{ ui.flash_messages() }}
 
-.view-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
+{% if interface_list %}
+<div class="tabs">
+    <a href="#all" class="tab section-tab">All</a>
+    <div class="tab-groups"><div class="tab-group">
+        {% for key, label, members in sections %}
+        <a href="#if-{{ key }}" class="tab section-tab"><span class="if-name"><span class="iftype iftype-{{ 'none' if key == 'unassigned' else key }} iftype-bare"><i class="dot"></i></span>{{ label }}</span></a>
+        {% endfor %}
+    </div></div>
+</div>
 
-.interfaces-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-}
-
-.interface-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.interface-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.interface-info {
-    flex: 1;
-}
-
-.interface-icon {
-    width: 1.8rem;
-    height: 1.8rem;
-    margin-right: 0.75rem;
-}
-
-.interface-name {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0;
-}
-
-.interface-subtitle {
-    color: var(--text-light);
-    margin: 0.25rem 0 0 0;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.delete-form {
-    margin: 0;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-}
-
-.empty-state p {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 1rem;
-}
-</style>
+{% for key, label, members in sections %}
+<div id="if-{{ key }}" class="block tab-section">
+    <div class="block-head">
+        <div class="block-title">
+            <span class="iftype iftype-{{ 'none' if key == 'unassigned' else key }}"><i class="dot"></i>{{ label }}</span>
+            <span class="meta">{{ members|length }} interface{{ "" if members|length == 1 else "s" }}</span>
+        </div>
+        <div class="block-actions">
+            <a href="{{ url_for('interface_add', interface_type=key) if key != 'unassigned' else url_for('interface_add') }}" class="btn btn-primary btn-sm">+ Add interface</a>
+        </div>
+    </div>
+    <table class="grid">
+        <thead>
+            <tr><th>Interface</th><th>Description</th><th class="row-actions"></th></tr>
+        </thead>
+        <tbody>
+            {% for interface in members %}
+            <tr>
+                <td class="mono strong col-name">
+                    <span class="if-name">{{ ui.iftype(interface, bare=True, label=False) }}{{ interface.name }}{% if key == "custom" %} {{ ui.iftype(interface) }}{% endif %}</span>
+                </td>
+                <td class="desc">{% if interface.description %}{{ interface.description }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
+                <td class="row-actions">
+                    <form action="/interface_add" method="post" class="edit-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="type" value="edit">
+                        <input type="hidden" name="interface_name" value="{{ interface.name }}">
+                        <input type="hidden" name="interface_desc" value="{{ interface.description }}">
+                        <input type="hidden" name="interface_type" value="{{ interface.type or '' }}">
+                        <input type="hidden" name="type_label" value="{{ interface.type_label or '' }}">
+                        <input type="hidden" name="type_color" value="{{ interface.type_color or '' }}">
+                        <button type="submit" class="ib" title="Edit interface">{{ ui.icon_edit() }}</button>
+                    </form>
+                    <form action="/interface_delete" method="post" class="delete-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="interface" value="{{ interface.name }}">
+                        <button type="submit" class="ib ib-danger"
+                                onclick="return confirm('Delete interface {{ interface.name }}?')"
+                                title="Delete interface">&times;</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+<script src="{{ url_for('static', filename='section-tabs.js', v=ASSET_VERSION) }}"></script>
+{% else %}
+<div class="empty-state">
+    <p>No interfaces configured. Add an interface to get started.</p>
+    <a href="{{ url_for('interface_add') }}" class="btn btn-primary">Add first interface</a>
+</div>
+{% endif %}
 {% endblock body %}
