@@ -142,6 +142,9 @@ def build_quick_start(wan, lan, allow_wan_ping=False):
 
     data = {
         "version": "1",
+        # Marks the config as quick-start generated; anonymous telemetry reports
+        # only whether any such config exists (see telemetry_collect).
+        "origin": "quick_start",
         "system": {"hostname": "None", "port": "None"},
         "interfaces": [
             {"name": wan, "description": "WAN", "type": "public_wan"},

@@ -205,3 +205,7 @@ def test_responsibility_statement_shown(auth_client):
     assert 'name="accept_responsibility"' in body and "required" in body.split('name="accept_responsibility"', 1)[1][:40]
     assert "Responsibility for firewall configurations." in body
     assert "assume all risk" in body
+
+
+def test_quick_start_marks_its_origin():
+    assert build_quick_start("eth0", "eth1")["origin"] == "quick_start"
