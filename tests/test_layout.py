@@ -204,3 +204,10 @@ def test_interface_add_preselects_type_from_query(auth_client):
         bogus = auth_client.get("/interface_add?interface_type=nope").get_data(as_text=True)
     assert 'value="dmz" checked' in body
     assert 'name="interface_type" value="" checked' in bogus
+
+
+def test_layout_does_not_load_jquery(auth_client):
+    # jQuery 1.6.2 had known XSS issues and nothing used it; it was removed.
+    with patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.get("/configurations").get_data(as_text=True)
+    assert "jquery" not in body.lower()

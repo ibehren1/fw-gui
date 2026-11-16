@@ -12,7 +12,7 @@ FW-GUI is a Flask web application for visually creating and managing VyOS firewa
 - **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 3.0.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
 - **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
-- **Frontend:** Jinja2 templates + jQuery + CSS Grid/Flexbox. One stylesheet, `static/styles.css`, with dark and light themes as custom properties scoped by `data-theme` on `<html>` (dark before login); components use only those tokens. Templates have no page-local `<style>` blocks; shared Jinja macros live in `templates/_macros.html`
+- **Frontend:** Jinja2 templates + plain JavaScript (no jQuery as of 4.0.40) + CSS Grid/Flexbox. One stylesheet, `static/styles.css`, with dark and light themes as custom properties scoped by `data-theme` on `<html>` (dark before login); components use only those tokens. Templates have no page-local `<style>` blocks; shared Jinja macros live in `templates/_macros.html`
 - **Package Manager:** uv (with uv.lock for deterministic builds)
 - **Container:** Docker (Ubuntu 24.04 base, multi-arch ARM64/AMD64)
 
