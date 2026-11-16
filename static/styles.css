@@ -1108,6 +1108,46 @@ legend { padding: 0 6px; margin-left: -6px; }
 .error-page h1 { font-size: 1.8em; margin-bottom: 6px; }
 
 /* ------------------------------------------------------------------ */
+/* Snapshot diff window (difflib HtmlDiff output)                      */
+/* ------------------------------------------------------------------ */
+.full-width-container { padding: 16px 20px 40px; }
+.full-width-content > .section-title { font-size: 1.45em; }
+.diff-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 10px; color: var(--muted); font-size: 0.92em; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-color {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    font-family: var(--mono);
+    font-weight: 700;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+}
+.legend-color.added { color: var(--ok); background: var(--ok-bg); }
+.legend-color.removed { color: var(--danger); background: var(--danger-bg); }
+.legend-color.jump { color: var(--info); background: var(--info-bg); }
+.diff-toolbar { display: flex; gap: 6px; margin-bottom: 10px; }
+.diff-html-content {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    overflow: auto;
+}
+.diff-html-content table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.9em; }
+.diff-html-content th, .diff-html-content td { padding: 1px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-all; }
+.diff-html-content th { background: var(--th-bg); color: var(--th); font-family: var(--font); font-weight: 600; border-bottom: 1px solid var(--line); }
+.diff-html-content .diff_header { color: var(--muted); background: var(--panel-head); text-align: right; border-right: 1px solid var(--line); }
+.diff-html-content .diff_add { color: var(--ok); background: var(--ok-bg); }
+.diff-html-content .diff_sub { color: var(--danger); background: var(--danger-bg); }
+.diff-html-content .diff_chg { color: var(--warn); background: var(--warn-bg); }
+.diff-html-content td.diff_next { background: var(--panel-head); text-align: center; }
+.diff-html-content td.diff_next, .diff-html-content .diff_header { width: 1%; white-space: nowrap; word-break: normal; }
+.diff-html-content td.diff_next a { color: var(--info); }
+.diff-html-content td.diff_next a:focus { outline: 2px solid var(--focus); }
+
+/* ------------------------------------------------------------------ */
 /* Alerts (flash messages)                                             */
 /* ------------------------------------------------------------------ */
 .flash-messages { margin-bottom: 12px; }
