@@ -990,6 +990,10 @@ def interface_add():
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
         rule_detail_defaults = {"interface_name": "", "interface_desc": ""}
+        # The Interfaces page's per-section "Add interface" buttons preselect
+        # the section's type; anything unrecognised is ignored.
+        if request.args.get("interface_type") in INTERFACE_TYPES:
+            rule_detail_defaults["interface_type"] = request.args["interface_type"]
 
         return render_template(
             "interface_add_form.html",

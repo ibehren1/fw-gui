@@ -178,3 +178,29 @@ def test_filter_rule_edit_preselects_offload_flowtable(auth_client):
     body = resp.get_data(as_text=True)
     assert '<option value="FT_LAN" selected>' in body
     assert '<option value="FT_WAN" >' in body
+
+
+def test_interfaces_grouped_by_type_in_order(auth_client):
+    interfaces = [
+        {"name": "wg0", "description": ""},
+        {"name": "eth9", "description": "", "type": "custom", "type_label": "Guest", "type_color": "pink"},
+        {"name": "eth1", "description": "", "type": "lan"},
+        {"name": "eth0", "description": "", "type": "public_wan"},
+    ]
+    with patch("app.list_interfaces", return_value=interfaces), \
+            patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.get("/interface_view").get_data(as_text=True)
+    ids = ["if-public_wan", "if-lan", "if-custom", "if-unassigned"]
+    positions = [body.index(f'id="{i}"') for i in ids]
+    assert positions == sorted(positions)
+    # Types with no interfaces get no section.
+    assert 'id="if-private_wan"' not in body and 'id="if-dmz"' not in body
+    assert "interface_type=lan" in body
+
+
+def test_interface_add_preselects_type_from_query(auth_client):
+    with patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.get("/interface_add?interface_type=dmz").get_data(as_text=True)
+        bogus = auth_client.get("/interface_add?interface_type=nope").get_data(as_text=True)
+    assert 'value="dmz" checked' in body
+    assert 'name="interface_type" value="" checked' in bogus

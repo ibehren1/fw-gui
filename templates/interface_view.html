@@ -1,6 +1,18 @@
 {% extends "basic_page.html" %}
 {% import "_macros.html" as ui %}
 {% block body %}
+{#- Sections in type order, Public WAN first, then Unassigned. Only sections
+    with interfaces are shown. -#}
+{%- set sections = [] -%}
+{%- for key, label in INTERFACE_TYPES.items() -%}
+{%- set members = interface_list|selectattr('type', 'equalto', key)|list -%}
+{%- if key == "custom" %}{% set members = members|sort(attribute='name')|sort(attribute='type_label') %}{% else %}{% set members = members|sort(attribute='name') %}{% endif -%}
+{%- if members %}{% set _ = sections.append((key, label, members)) %}{% endif -%}
+{%- endfor -%}
+{%- set unassigned = [] -%}
+{%- for item in interface_list|sort(attribute='name') if item.type not in INTERFACE_TYPES %}{% set _ = unassigned.append(item) %}{% endfor -%}
+{%- if unassigned %}{% set _ = sections.append(("unassigned", "Unassigned", unassigned)) %}{% endif -%}
+
 <div class="page-head">
     <h2>Interfaces</h2>
     <div class="page-actions">
@@ -11,16 +23,36 @@
 {{ ui.flash_messages() }}
 
 {% if interface_list %}
-<div class="block">
+<div class="tabs">
+    <a href="#all" class="tab section-tab">All</a>
+    <div class="tab-groups"><div class="tab-group">
+        {% for key, label, members in sections %}
+        <a href="#if-{{ key }}" class="tab section-tab"><span class="if-name"><span class="iftype iftype-{{ 'none' if key == 'unassigned' else key }} iftype-bare"><i class="dot"></i></span>{{ label }}</span></a>
+        {% endfor %}
+    </div></div>
+</div>
+
+{% for key, label, members in sections %}
+<div id="if-{{ key }}" class="block tab-section">
+    <div class="block-head">
+        <div class="block-title">
+            <span class="iftype iftype-{{ 'none' if key == 'unassigned' else key }}"><i class="dot"></i>{{ label }}</span>
+            <span class="meta">{{ members|length }} interface{{ "" if members|length == 1 else "s" }}</span>
+        </div>
+        <div class="block-actions">
+            <a href="{{ url_for('interface_add', interface_type=key) if key != 'unassigned' else url_for('interface_add') }}" class="btn btn-primary btn-sm">+ Add interface</a>
+        </div>
+    </div>
     <table class="grid">
         <thead>
-            <tr><th>Interface</th><th>Type</th><th>Description</th><th class="row-actions"></th></tr>
+            <tr><th>Interface</th><th>Description</th><th class="row-actions"></th></tr>
         </thead>
         <tbody>
-            {% for interface in interface_list|sort(attribute='name') %}
+            {% for interface in members %}
             <tr>
-                <td class="mono strong col-name"><span class="if-name">{{ ui.iftype(interface, bare=True, label=False) }}{{ interface.name }}</span></td>
-                <td class="col-type">{% if interface.type in INTERFACE_TYPES %}{{ ui.iftype(interface) }}{% else %}<span class="muted">Unassigned</span>{% endif %}</td>
+                <td class="mono strong col-name">
+                    <span class="if-name">{{ ui.iftype(interface, bare=True, label=False) }}{{ interface.name }}{% if key == "custom" %} {{ ui.iftype(interface) }}{% endif %}</span>
+                </td>
                 <td class="desc">{% if interface.description %}{{ interface.description }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
                 <td class="row-actions">
                     <form action="/interface_add" method="post" class="edit-form">
@@ -46,6 +78,8 @@
         </tbody>
     </table>
 </div>
+{% endfor %}
+<script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
 {% else %}
 <div class="empty-state">
     <p>No interfaces configured. Add an interface to get started.</p>
