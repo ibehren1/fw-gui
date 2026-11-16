@@ -636,6 +636,14 @@ table.grid { width: 100%; border-collapse: collapse; }
 .grid.rules-filter th:nth-child(5) { width: 14%; }
 .grid.rules-filter th:nth-child(6) { width: 12%; }
 .grid.rules-filter th:nth-child(7) { width: 128px; }
+.grid.groups { table-layout: fixed; }
+.grid.groups th:nth-child(1) { width: 200px; }
+.grid.groups th:nth-child(2) { width: 24%; }
+.grid.groups th:nth-child(3) { width: 64px; }
+.grid.groups th:nth-child(5) { width: 72px; }
+.grid.groups td { overflow: hidden; text-overflow: ellipsis; }
+.grid.groups td.row-actions { overflow: visible; }
+.grid .chips { white-space: normal; }
 .grid .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; margin: 0; }
 .grid tr.is-disabled td { opacity: 0.5; }

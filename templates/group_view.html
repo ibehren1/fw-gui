@@ -1,643 +1,91 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
-<div class="group-view">
-    <div class="view-header">
-        <h2 class="section-title">Firewall Groups</h2>
-        <a href="{{ url_for('group_add') }}" class="btn btn-add">Add Group</a>
-    </div>
-    
-    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-    {% if flashed_messages %}
-    <div class="flash-messages">
-        {% for category, flash_message in flashed_messages %}
-        <div class="alert alert-{{ category }}">
-            {{flash_message}}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-    
-    <!-- Quick Navigation -->
-    <div class="group-nav">
-        <div class="nav-all">
-            <a href="#all" class="nav-link member-tag section-tab">All</a>
-        </div>
-        <div class="nav-section">
-            <h3 class="nav-title">IPv4 Groups</h3>
-            <div class="nav-links">
-                <a href="#ipv4-address" class="nav-link member-tag section-tab">Address Groups</a>
-                <a href="#ipv4-network" class="nav-link member-tag section-tab">Network Groups</a>
-            </div>
-        </div>
-        <div class="nav-section">
-            <h3 class="nav-title">IPv6 Groups</h3>
-            <div class="nav-links">
-                <a href="#ipv6-address" class="nav-link member-tag section-tab">Address Groups</a>
-                <a href="#ipv6-network" class="nav-link member-tag section-tab">Network Groups</a>
-            </div>
-        </div>
-        <div class="nav-section">
-            <h3 class="nav-title">Other Groups</h3>
-            <div class="nav-links">
-                <a href="#domain" class="nav-link member-tag section-tab">Domain Groups</a>
-                <a href="#mac" class="nav-link member-tag section-tab">MAC Groups</a>
-                <a href="#port" class="nav-link member-tag section-tab">Port Groups</a>
-            </div>
-        </div>
-    </div>
-    
-    <!-- IPv4 Address Groups -->
-    <div id="ipv4-address" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">IPv4 Address Groups</h3></div>
-        {% set ipv4_address_groups = group_list|selectattr('group_type', 'equalto', 'address-group')|selectattr('ip_version', 'equalto', 'ipv4')|list %}
-        {% if ipv4_address_groups %}
-        <div class="groups-grid">
-            {% for group in ipv4_address_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} members</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No IPv4 address groups configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- IPv4 Network Groups -->
-    <div id="ipv4-network" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">IPv4 Network Groups</h3></div>
-        {% set ipv4_network_groups = group_list|selectattr('group_type', 'equalto', 'network-group')|selectattr('ip_version', 'equalto', 'ipv4')|list %}
-        {% if ipv4_network_groups %}
-        <div class="groups-grid">
-            {% for group in ipv4_network_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} networks</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No IPv4 network groups configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- IPv6 Address Groups -->
-    <div id="ipv6-address" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">IPv6 Address Groups</h3></div>
-        {% set ipv6_address_groups = group_list|selectattr('group_type', 'equalto', 'address-group')|selectattr('ip_version', 'equalto', 'ipv6')|list %}
-        {% if ipv6_address_groups %}
-        <div class="groups-grid">
-            {% for group in ipv6_address_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="ipv6,{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} members</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No IPv6 address groups configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- IPv6 Network Groups -->
-    <div id="ipv6-network" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">IPv6 Network Groups</h3></div>
-        {% set ipv6_network_groups = group_list|selectattr('group_type', 'equalto', 'network-group')|selectattr('ip_version', 'equalto', 'ipv6')|list %}
-        {% if ipv6_network_groups %}
-        <div class="groups-grid">
-            {% for group in ipv6_network_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="ipv6,{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} networks</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No IPv6 network groups configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- Port Groups -->
-    <div id="port" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">Port Groups</h3></div>
-        {% set port_groups = group_list|selectattr('group_type', 'equalto', 'port-group')|list %}
-        {% if port_groups %}
-        <div class="groups-grid">
-            {% for group in port_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="{{ group.ip_version }},{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} ports</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No port groups configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- MAC Groups -->
-    <div id="mac" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">MAC Address Groups</h3></div>
-        {% set mac_groups = group_list|selectattr('group_type', 'equalto', 'mac-group')|list %}
-        {% if mac_groups %}
-        <div class="groups-grid">
-            {% for group in mac_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="{{ group.ip_version }}">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="{{ group.ip_version }},{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} addresses</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No MAC address groups configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- Domain Groups -->
-    <div id="domain" class="group-section tab-section">
-        <div class="section-header"><h3 class="section-heading">Domain Groups</h3></div>
-        {% set domain_groups = group_list|selectattr('group_type', 'equalto', 'domain-group')|list %}
-        {% if domain_groups %}
-        <div class="groups-grid">
-            {% for group in domain_groups|sort(attribute='group_name') %}
-            <div class="group-card">
-                <img src="{{ url_for('static', filename='group-32-yellow.svg') }}" alt="" class="group-icon">
-                <div class="group-content">
-                <div class="group-header">
-                    <div class="group-info">
-                        <h4 class="group-name">{{ group.group_name }}{% if group.group_desc %}<span class="group-desc-separator">—</span><span class="group-description-inline">{{ group.group_desc }}</span>{% endif %}</h4>
-                    </div>
-                    <div class="group-actions">
-                        <form action="/group_add" method="post" class="edit-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="type" value="edit">
-                            <input type="hidden" name="ip_version" value="ipv4">
-                            <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
-                            <input type="hidden" name="group_name" value="{{ group.group_name }}">
-                            <input type="hidden" name="group_value" value="{{ group.group_value }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                        </form>
-                        <form action="/group_delete" method="post" class="delete-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                            <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
-                            <button type="submit" class="btn btn-delete-small" 
-                                    onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
-                        </form>
-                    </div>
-                </div>
-                <div class="group-members">
-                    <span class="members-count">{{ group.group_value|length }} domains</span>
-                    {% if group.group_value %}
-                    <div class="members-preview">
-                        {% for member in group.group_value %}
-                        <span class="member-tag">{{ member }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-group">
-            <p>No domain groups configured.</p>
-        </div>
-        {% endif %}
+{#- id, title, group_type, ip_version (None = any), member noun -#}
+{% set categories = [
+    ("ipv4-address", "IPv4 Address", "address-group", "ipv4", "members"),
+    ("ipv4-network", "IPv4 Network", "network-group", "ipv4", "networks"),
+    ("ipv6-address", "IPv6 Address", "address-group", "ipv6", "members"),
+    ("ipv6-network", "IPv6 Network", "network-group", "ipv6", "networks"),
+    ("port", "Port", "port-group", None, "ports"),
+    ("mac", "MAC Address", "mac-group", None, "addresses"),
+    ("domain", "Domain", "domain-group", None, "domains"),
+] %}
+<div class="page-head">
+    <h2>Groups</h2>
+    <div class="page-actions">
+        <a href="{{ url_for('group_add') }}" class="btn btn-primary">+ Add group</a>
     </div>
 </div>
 
-<style>
-.group-view {
-    max-width: 1400px;
-}
+{{ ui.flash_messages() }}
 
-.group-nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-}
+<div class="tabs">
+    <a href="#all" class="tab section-tab">All</a>
+    {% for id, title, group_type, ip_version, noun in categories %}
+    <a href="#{{ id }}" class="tab section-tab">{{ title }}</a>
+    {% endfor %}
+</div>
 
-.nav-section {
-    text-align: center;
-}
+{% for id, title, group_type, ip_version, noun in categories %}
+{% set groups = group_list|selectattr('group_type', 'equalto', group_type) %}
+{% if ip_version %}{% set groups = groups|selectattr('ip_version', 'equalto', ip_version) %}{% endif %}
+{% set groups = groups|list %}
+<div id="{{ id }}" class="block tab-section">
+    <div class="block-head">
+        <div class="block-title">
+            <h3>{{ title }} Groups</h3>
+            <span class="meta">{{ groups|length }} group{{ "" if groups|length == 1 else "s" }}</span>
+        </div>
+    </div>
+    {% if groups %}
+    <table class="grid groups">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th class="center">Count</th>
+                <th>Values</th>
+                <th class="row-actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in groups|sort(attribute='group_name') %}
+            {#- Domain groups are stored under ipv4 only. -#}
+            {% set group_ip = "ipv4" if group_type == "domain-group" else group.ip_version %}
+            <tr>
+                <td class="mono strong">{{ group.group_name }}{% if not ip_version and group_type != "domain-group" %} <span class="tag">{{ "IPv6" if group.ip_version == "ipv6" else "IPv4" }}</span>{% endif %}</td>
+                <td class="desc">{% if group.group_desc %}{{ group.group_desc }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
+                <td class="center mono muted" title="{{ group.group_value|length }} {{ noun }}">{{ group.group_value|length }}</td>
+                <td class="chips">{% for member in group.group_value %}<span class="chip">{{ member }}</span>{% endfor %}</td>
+                <td class="row-actions">
+                    <form action="/group_add" method="post" class="edit-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="type" value="edit">
+                        <input type="hidden" name="ip_version" value="{{ group_ip }}">
+                        <input type="hidden" name="group_desc" value="{{ group.group_desc }}">
+                        <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                        <input type="hidden" name="group_value" value="{{ group.group_value }}">
+                        <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                        <button type="submit" class="ib" title="Edit group {{ group.group_name }}">&#9998;</button>
+                    </form>
+                    <form action="/group_delete" method="post" class="delete-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="group_type" value="{{ group.group_type }}">
+                        <input type="hidden" name="group" value="{{ group_ip }},{{ group.group_name }}">
+                        <button type="submit" class="ib ib-danger" title="Delete group {{ group.group_name }}"
+                                onclick="return confirm('Delete group {{ group.group_name }}?')">&times;</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="block-body muted">No {{ title }} groups configured.</div>
+    {% endif %}
+</div>
+{% endfor %}
 
-.nav-title {
-    color: var(--primary-color);
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    font-size: 1rem;
-}
-
-.nav-links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.nav-link {
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: var(--transition);
-    font-size: 0.9rem;
-}
-
-.nav-link:hover {
-    background: rgba(255, 191, 18, 0.1);
-    color: var(--primary-color);
-}
-
-.group-section {
-    margin-bottom: 3rem;
-}
-
-.section-heading {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.25rem;
-    margin: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--primary-color);
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.nav-all {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: center;
-}
-
-.section-tab.active {
-    background: var(--primary-color) !important;
-    color: var(--text-dark) !important;
-}
-
-.tab-section[hidden], .tab-section-group[hidden] {
-    display: none !important;
-}
-
-.groups-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-}
-
-.group-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-}
-
-.group-icon {
-    width: 2rem;
-    height: 2rem;
-    margin-right: 1rem;
-    flex-shrink: 0;
-}
-
-.group-content {
-    flex: 1;
-}
-
-.group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.group-info {
-    flex: 1;
-}
-
-.group-name {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0;
-}
-
-.group-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.edit-form, .delete-form {
-    margin: 0;
-}
-
-.group-desc-separator {
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0 0.5rem;
-}
-
-.group-description-inline {
-    color: var(--text-light);
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.group-members {
-    margin-top: 1rem;
-}
-
-.members-count {
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.members-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-}
-
-.member-tag {
-    background: rgba(255, 191, 18, 0.2);
-    color: var(--primary-color);
-    padding: 0.2rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    font-family: monospace;
-}
-
-.more-members {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-    padding: 0.2rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-style: italic;
-}
-
-.empty-group {
-    text-align: center;
-    padding: 2rem;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-}
-
-/* Smooth scrolling for navigation */
-html {
-    scroll-behavior: smooth;
-}
-
-@media (max-width: 768px) {
-    .group-nav {
-        grid-template-columns: 1fr;
-    }
-    
-    .groups-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
 <script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
 {% endblock body %}
