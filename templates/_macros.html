@@ -17,14 +17,18 @@
 {% macro version_tabs(by_version) -%}
 <div class="tabs">
     <a href="#all" class="tab section-tab">All</a>
+    <div class="tab-groups">
     {% for ip_version in ["ipv4", "ipv6"] %}
     {% if by_version[ip_version] %}
-    <span class="tab-sep tab-sep-{{ ip_version }}">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</span>
-    {% for key in by_version[ip_version] %}
-    <a href="#{{ ip_version }}{{ key }}" class="tab section-tab">{{ key }}</a>
-    {% endfor %}
+    <div class="tab-group">
+        <span class="tab-sep tab-sep-{{ ip_version }}">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</span>
+        {% for key in by_version[ip_version] %}
+        <a href="#{{ ip_version }}{{ key }}" class="tab section-tab">{{ key }}</a>
+        {% endfor %}
+    </div>
     {% endif %}
     {% endfor %}
+    </div>
 </div>
 {%- endmacro %}
 

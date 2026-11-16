@@ -466,9 +466,8 @@ code, pre, .mono { font-family: var(--mono); }
 /* ------------------------------------------------------------------ */
 .tabs {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px;
+    align-items: flex-start;
+    gap: 0 22px;
     border-bottom: 1px solid var(--line);
     margin-bottom: 14px;
 }
@@ -479,12 +478,16 @@ code, pre, .mono { font-family: var(--mono); }
     margin-bottom: -1px;
     font-weight: 500;
 }
+/* One IP version's tabs. Each group wraps to its own row as a unit when
+   the versions do not fit on one line, and wraps internally only if a
+   single version is wider than the page. */
+.tab-groups { display: flex; flex-wrap: wrap; gap: 0 22px; flex: 1; min-width: 0; }
+.tab-group { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .tab:hover { color: var(--text); text-decoration: none; }
 .tab.active { color: var(--heading); border-bottom-color: var(--accent); }
 .tab-sep {
-    margin-left: 10px;
-    padding: 2px 4px 2px 14px;
-    border-left: 1px solid var(--line-strong);
+    min-width: 34px;
+    padding: 2px 4px 2px 0;
     font-size: 0.75em;
     font-weight: 700;
     color: var(--muted);
@@ -744,8 +747,6 @@ table.grid { width: 100%; border-collapse: collapse; }
     align-items: baseline;
     gap: 10px;
     margin-bottom: 8px;
-    padding-bottom: 5px;
-    border-bottom: 2px solid var(--line-strong);
 }
 .version-head h3 {
     font-size: 1em;
@@ -753,12 +754,8 @@ table.grid { width: 100%; border-collapse: collapse; }
     letter-spacing: 0.02em;
     color: var(--heading);
 }
-.version-ipv4 > .version-head { border-bottom-color: var(--v4); }
 .version-ipv4 > .version-head h3 { color: var(--v4); }
-.version-ipv6 > .version-head { border-bottom-color: var(--v6); }
 .version-ipv6 > .version-head h3 { color: var(--v6); }
-.version-ipv4 > .block { border-left: 3px solid var(--v4); }
-.version-ipv6 > .block { border-left: 3px solid var(--v6); }
 
 .empty-state {
     padding: 16px;

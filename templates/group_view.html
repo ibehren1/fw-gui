@@ -28,12 +28,16 @@
 
 <div class="tabs">
     <a href="#all" class="tab section-tab">All</a>
+    <div class="tab-groups">
     {% for version, heading, categories in sections %}
-    <span class="tab-sep tab-sep-{{ version }}">{{ heading }}</span>
-    {% for id, tab_label, title, group_type, ip_version, noun in categories %}
-    <a href="#{{ id }}" class="tab section-tab">{{ tab_label }}</a>
+    <div class="tab-group">
+        <span class="tab-sep tab-sep-{{ version }}">{{ heading }}</span>
+        {% for id, tab_label, title, group_type, ip_version, noun in categories %}
+        <a href="#{{ id }}" class="tab section-tab">{{ tab_label }}</a>
+        {% endfor %}
+    </div>
     {% endfor %}
-    {% endfor %}
+    </div>
 </div>
 
 {% for version, heading, categories in sections %}
