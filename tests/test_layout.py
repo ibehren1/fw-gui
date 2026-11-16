@@ -211,3 +211,13 @@ def test_layout_does_not_load_jquery(auth_client):
     with patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
         body = auth_client.get("/configurations").get_data(as_text=True)
     assert "jquery" not in body.lower()
+
+
+def test_static_urls_carry_the_version(auth_client, flask_app):
+    # An upgrade must fetch its own CSS/JS rather than a cached copy of the
+    # previous release's (the 4.0 restyle changed both completely).
+    version = flask_app.jinja_env.globals["ASSET_VERSION"]
+    with patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.get("/configurations").get_data(as_text=True)
+    assert f"/static/styles.css?v={version}" in body
+    assert "/static/styles.css\"" not in body

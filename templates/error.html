@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FW-GUI — Error {{ code }}</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico', v=ASSET_VERSION) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=ASSET_VERSION) }}">
 </head>
 <body>
     <div class="error-page">

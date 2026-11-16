@@ -228,6 +228,9 @@ app.config["UPLOAD_FOLDER"] = "./data/uploads"
 # Interface type names and custom colours for the templates, from one source.
 app.jinja_env.globals["INTERFACE_TYPES"] = INTERFACE_TYPES
 app.jinja_env.globals["CUSTOM_TYPE_COLORS"] = CUSTOM_TYPE_COLORS
+# Appended to static asset URLs (?v=...) so an upgrade always fetches its own
+# CSS and JS, past any browser or proxy copy of the previous release's.
+app.jinja_env.globals["ASSET_VERSION"] = (app.config["VERSION"] or "0.0.0").strip()
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
 # Session cookie hardening. HttpOnly blocks JavaScript from reading the cookie;

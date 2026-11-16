@@ -147,6 +147,6 @@
 {% endfor %}
 
 {{ ui.group_cards(group_list or []) }}
-<script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
-<script src="{{ url_for('static', filename='ref-cards.js') }}"></script>
+<script src="{{ url_for('static', filename='section-tabs.js', v=ASSET_VERSION) }}"></script>
+<script src="{{ url_for('static', filename='ref-cards.js', v=ASSET_VERSION) }}"></script>
 {% endblock body %}

@@ -4,8 +4,8 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>FW-GUI · Choose your theme</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" type="text/css" />
-        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=ASSET_VERSION) }}" type="text/css" />
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico', v=ASSET_VERSION) }}" />
     </head>
     {%- macro preview() %}
     <div class="m-bar"><span class="logo">FW</span><b>FW-GUI</b><span class="m-cfg">edge-fw-01 &#9662;</span></div>
