@@ -8,7 +8,7 @@ FW-GUI is a Flask web application for visually creating and managing VyOS firewa
 
 ## Tech Stack
 
-- **Backend:** Python 3.12+ / Flask / Waitress (WSGI)
+- **Backend:** Python 3.14+ / Flask / Waitress (WSGI)
 - **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 3.0.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
 - **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
