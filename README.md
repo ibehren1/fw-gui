@@ -112,7 +112,7 @@ There is still no automated restore.  Retrieving an archive, and restoring a Mon
 
 ### MongoDB upgrades
 
-An existing MongoDB install can only move up **one major version at a time**, and only after its *feature compatibility version* (FCV) has been raised to match the version it runs.  With `image: mongo:latest` a pull can skip that and leave MongoDB unable to start.  **Admin Settings → MongoDB** shows the server version and FCV, says whether the install is ready for the next major, and can raise the FCV (taking a full backup first).  The full procedure is in [MongoDB Major-Version Upgrade](docs/mongodb-upgrade.md).
+An existing MongoDB install can only move up **one major version at a time**, and only after its *feature compatibility version* (FCV) has been raised to match the version it runs.  The compose files pin `image: mongo:8` for that reason: with `mongo:latest` a pull can skip a major and leave MongoDB unable to start.  **Admin Settings → MongoDB** shows the server version and FCV, says whether the install is ready for the next major, and can raise the FCV (taking a full backup first).  The full procedure is in [MongoDB Major-Version Upgrade](docs/mongodb-upgrade.md).
 
 ## Deployment
 
@@ -178,7 +178,7 @@ services:
       - mysql-data:/var/lib/mysql
 + mongodb:
 +   container_name: mongodb
-+   image: mongo:7
++   image: mongo:8
 +   restart: always
 +   volumes:
 +     - mongo-data:/data/db
@@ -221,7 +221,7 @@ services:
       - data:/opt/fw-gui/data
   mongodb:
     container_name: mongodb
-    image: mongo:7
+    image: mongo:8
     restart: always
     volumes:
       - mongo-data:/data/db
