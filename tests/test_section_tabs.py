@@ -246,3 +246,24 @@ def test_filter_default_row_with_stored_action(auth_client, store):
     store.data["ipv4"]["filters"]["input"]["log"] = True
     row = _default_row(auth_client.get("/filter_view").get_data(as_text=True))
     assert "act-accept" in row
+
+
+def test_group_sections_match_chain_headers(auth_client, store):
+    body = auth_client.get("/group_view").get_data(as_text=True)
+    ipv4 = body.split('id="ipv4-address"', 1)[1].split("</div>", 3)
+    head = "".join(ipv4[:3])
+    assert "tag tag-ipv4" in head
+    assert "group_type=address-group" in body and "ip_version=ipv4" in body
+
+
+@pytest.mark.parametrize("query, gtype, ipv", [
+    ("?group_type=network-group&ip_version=ipv6", "network-group", "ipv6"),
+    ("?group_type=port-group&ip_version=ipv4", "port-group", "ipv4"),
+    ("?group_type=bogus&ip_version=ipv9", "address-group", "ipv4"),
+])
+def test_group_add_preselects_from_query(auth_client, store, query, gtype, ipv):
+    body = auth_client.get("/group_add" + query).get_data(as_text=True)
+    gt = body.split('name="group_type" value="' + gtype + '"', 1)[1][:200]
+    assert "checked" in gt
+    iv = body.split('name="ip_version" value="' + ipv + '"', 1)[1][:200]
+    assert "checked" in iv

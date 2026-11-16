@@ -868,6 +868,15 @@ def group_add():
         file_list = list_user_files(session)
         snapshot_list = list_snapshots(session)
         rule_detail_defaults = {"ip_version": "ipv4", "group_type": "address-group"}
+        # The groups page's per-section "Add group" buttons preselect the
+        # section's type and IP version; anything unrecognised is ignored.
+        if request.args.get("group_type") in (
+            "address-group", "network-group", "port-group", "mac-group",
+            "domain-group", "interface-group",
+        ):
+            rule_detail_defaults["group_type"] = request.args["group_type"]
+        if request.args.get("ip_version") in ("ipv4", "ipv6"):
+            rule_detail_defaults["ip_version"] = request.args["ip_version"]
 
         return render_template(
             "group_add_form.html",

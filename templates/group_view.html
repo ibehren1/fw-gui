@@ -42,7 +42,16 @@
 
 {% for version, heading, categories in sections %}
 <div id="{{ version }}" class="tab-section-group version-section version-{{ version }}">
-<div class="version-head"><h3>{{ heading }} groups</h3></div>
+{%- set total = namespace(n=0) -%}
+{%- for id, tab_label, title, group_type, ip_version, noun in categories -%}
+{%- set in_cat = group_list|selectattr('group_type', 'equalto', group_type) -%}
+{%- if ip_version %}{% set in_cat = in_cat|selectattr('ip_version', 'equalto', ip_version) %}{% endif -%}
+{%- set total.n = total.n + in_cat|list|length -%}
+{%- endfor %}
+<div class="version-head">
+    <h3>{{ heading }} groups</h3>
+    <span class="meta">{{ total.n }} group{{ "" if total.n == 1 else "s" }}</span>
+</div>
 {% for id, tab_label, title, group_type, ip_version, noun in categories %}
 {% set groups = group_list|selectattr('group_type', 'equalto', group_type) %}
 {% if ip_version %}{% set groups = groups|selectattr('ip_version', 'equalto', ip_version) %}{% endif %}
@@ -50,8 +59,12 @@
 <div id="{{ id }}" class="block tab-section">
     <div class="block-head">
         <div class="block-title">
-            <h3>{{ title }} Groups</h3>
+            {% if ip_version %}{{ ui.ip_tag(ip_version) }}{% endif %}
+            <h3>{{ tab_label }} groups</h3>
             <span class="meta">{{ groups|length }} group{{ "" if groups|length == 1 else "s" }}</span>
+        </div>
+        <div class="block-actions">
+            <a href="{{ url_for('group_add', group_type=group_type, ip_version=ip_version or 'ipv4') }}" class="btn btn-primary btn-sm">+ Add group</a>
         </div>
     </div>
     {% if groups %}
