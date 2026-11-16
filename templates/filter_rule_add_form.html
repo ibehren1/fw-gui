@@ -108,9 +108,13 @@
                         
                         <select name="offload_target" id="offload_target" class="form-select">
                             <option value="">Select flowtable</option>
+                            {#- list_flowtables() returns dicts; the stored value is the bare
+                                flowtable name, used as the rule's offload-target. Editing posts
+                                the current target as "target". -#}
+                            {% set current_offload = rule_detail.offload_target or (rule_detail.target if rule_detail.action == 'offload' else '') %}
                             {% for flowtable in flowtable_list %}
-                            <option value='{{flowtable[0]}},{{flowtable[1]}}' {% if rule_detail.offload_target == flowtable[0] + ',' + flowtable[1] %}selected{% endif %}>
-                                {{flowtable[0]}}: {{flowtable[1]}}
+                            <option value="{{ flowtable.name }}" {% if current_offload == flowtable.name %}selected{% endif %}>
+                                {{ flowtable.name }}{% if flowtable.description %} - {{ flowtable.description }}{% endif %}
                             </option>
                             {% endfor %}
                         </select>

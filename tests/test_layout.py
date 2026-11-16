@@ -142,3 +142,39 @@ def test_filter_rule_interface_picker_names_the_type(auth_client):
     assert "eth0 - WAN [Public WAN]</option>" in body
     assert "eth9 [Guest]</option>" in body
     assert ">wg0</option>" in body
+
+
+def _filter_rule_form(client, method="get", data=None):
+    flowtables = [{"name": "FT_WAN", "description": "Offload", "interfaces": ["eth0"]},
+                  {"name": "FT_LAN", "description": "", "interfaces": []}]
+    with patch("app.list_interfaces", return_value=[{"name": "eth0", "description": ""}]), \
+            patch("app.list_flowtables", return_value=flowtables), \
+            patch("app.assemble_list_of_filters", return_value=[("ipv4", "forward")]), \
+            patch("app.assemble_list_of_chains", return_value=[("ipv4", "WAN_IN")]), \
+            patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        if method == "get":
+            return client.get("/filter_rule_add?filter=ipv4,forward")
+        return client.post("/filter_rule_add", data=data)
+
+
+def test_filter_rule_form_renders_with_flowtables(auth_client):
+    # Regression: the template indexed flowtable[0]/[1], but list_flowtables()
+    # returns dicts, so the page 500'd whenever any flowtable existed.
+    resp = _filter_rule_form(auth_client)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert '<option value="FT_WAN" >' in body
+    assert "FT_WAN - Offload" in body
+    assert '<option value="FT_LAN" >' in body
+
+
+def test_filter_rule_edit_preselects_offload_flowtable(auth_client):
+    resp = _filter_rule_form(auth_client, "post", {
+        "type": "edit", "filter": "ipv4,forward", "name": "20", "description": "",
+        "action": "offload", "direction": "", "ip_version": "ipv4",
+        "target": "FT_LAN", "interface": "",
+    })
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert '<option value="FT_LAN" selected>' in body
+    assert '<option value="FT_WAN" >' in body
