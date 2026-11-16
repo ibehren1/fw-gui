@@ -65,6 +65,7 @@
         <div class="shell{% if not current_user.is_authenticated %} shell-bare{% endif %}">
             {% if current_user.is_authenticated %}
             <nav class="nav" aria-label="Main">
+                <a class="nav-item nav-start{% if ep == 'start' %} active{% endif %}" href="{{ url_for('start') }}">Getting started</a>
                 {% if firewall_name %}
                 <div class="nav-group">Build</div>
                 <a class="nav-item{% if ep.startswith('interface') %} active{% endif %}" href="{{ url_for('interface_view') }}">Interfaces</a>

@@ -145,6 +145,7 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.ssh_key_store import migrate_legacy_key_files
+from package.start_functions import config_progress
 from package.telemetry_functions import telemetry_instance
 from package.user_migration import migrate_sqlite_users
 from package import user_store
@@ -401,11 +402,42 @@ def load_user(user_id):
 @login_required
 def index():
     """
-    Root endpoint that redirects to the display_config view.
+    Root endpoint that redirects to the Getting started page.
 
     Returns:
-        Response: Redirect to the display_config endpoint
+        Response: Redirect to the start endpoint
     """
+    return redirect(url_for("start"))
+
+
+@app.route("/start")
+@login_required
+def start():
+    """
+    Handle Getting started page requests.
+
+    The landing page after login. Offers selecting, creating or quick-starting
+    a configuration, and shows the build order with how far the selected
+    configuration has got at each step.
+
+    Returns:
+        Response: Rendered start template
+    """
+    firewall_name = session.get("firewall_name")
+    return render_template(
+        "start.html",
+        file_list=list_user_files(session),
+        firewall_name=firewall_name,
+        progress=config_progress(session) if firewall_name else None,
+        username=session["username"],
+    )
+
+
+def _after_selecting():
+    """Where to go after selecting or creating a config: back to the page
+    that asked (only the Getting started page does), else Display config."""
+    if request.form.get("next") == "start":
+        return redirect(url_for("start"))
     return redirect(url_for("display_config"))
 
 
@@ -1955,7 +1987,7 @@ def create_config():
             f"{session['data_dir']}/{request.form['config_name']}", user_data
         )
 
-    return redirect(url_for("display_config"))
+    return _after_selecting()
 
 
 @app.route("/configurations")
@@ -2336,7 +2368,7 @@ def select_firewall_config():
     session["ssh_pass"] = ""  # nosec
     session["ssh_keyname"] = ""
 
-    return redirect(url_for("display_config"))
+    return _after_selecting()
 
 
 @app.route("/upload_json", methods=["POST"])

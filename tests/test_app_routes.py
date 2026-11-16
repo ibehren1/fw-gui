@@ -686,7 +686,7 @@ class TestConfigRoutes:
     def test_index_redirects(self, auth_client):
         resp = auth_client.get("/")
         assert resp.status_code == 302
-        assert "/display_config" in resp.headers["Location"]
+        assert resp.headers["Location"].endswith("/start")
 
     def test_display_config_firewall_selected(self, auth_client):
         with patch(

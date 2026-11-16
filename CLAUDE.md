@@ -71,6 +71,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `napalm_ssh_functions.py` | SSH connectivity, config push, diffs, operational commands |
 | `diff_functions.py` | Configuration diff generation |
 | `mongo_converter.py` | Legacy pre-1.4.0 JSON-to-MongoDB config migration (runs at startup) |
+| `start_functions.py` | Getting started page: build-order progress for the selected config, and the quick-start starter config |
 | `telemetry_functions.py` | Anonymous usage telemetry (UUID + version only; never raises, so it cannot break a config push) |
 
 Note: `group_funtions.py` has a typo in the filename — this is intentional/historical.

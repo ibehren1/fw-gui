@@ -1165,6 +1165,55 @@ legend { padding: 0 6px; margin-left: -6px; }
 .rename-form { display: flex; gap: 6px; margin-top: 6px; }
 .rename-form .input { max-width: 260px; height: 24px; }
 .export { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--row-line); }
+/* Getting started */
+.start-choose { margin-bottom: 22px; }
+.start-steps-head h3 { color: var(--heading); }
+.steps {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    counter-reset: step;
+}
+.step {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--line-strong);
+    border-radius: var(--r);
+    padding: 10px 12px;
+    min-width: 0;
+}
+.step-done { border-top-color: var(--ok); }
+.step-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.step-head h4 { font-size: 1em; }
+.step-head .pill-off { margin-left: 0; }
+.step-num {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.85em;
+    font-weight: 700;
+}
+.step-done .step-num { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.step-help { color: var(--muted); font-size: 0.9em; flex: 1; }
+.step-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+.step-status { font-size: 0.85em; color: var(--muted); }
+.step-done .step-status { color: var(--ok); }
+.step-links { display: flex; gap: 4px; margin-left: auto; }
+.steps-locked .step { opacity: 0.6; }
+.nav-start { margin-bottom: 2px; font-weight: 600; }
+@media (max-width: 1300px) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .steps { grid-template-columns: 1fr; } }
+
 .error-page { max-width: 40rem; margin: 4rem auto; text-align: center; }
 .error-page h1 { font-size: 1.8em; margin-bottom: 6px; }
 
