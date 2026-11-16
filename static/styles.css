@@ -615,6 +615,28 @@ table.grid { width: 100%; border-collapse: collapse; }
     color: var(--ref);
     border-bottom: 1px dotted var(--ref);
 }
+.ref[data-ref] { cursor: help; }
+.ref[data-ref]:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+/* Group detail card, shown by ref-cards.js on hover/focus of a .ref */
+.ref-popover {
+    position: fixed;
+    z-index: 50;
+    width: max-content;
+    min-width: 220px;
+    max-width: 360px;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+}
+.ref-card-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px 2px; }
+.ref-card-meta { padding: 0 10px 6px; color: var(--muted); font-size: 0.88em; }
+.ref-card-desc { padding: 0 10px 6px; color: var(--text); }
+.ref-card-scroll { border-top: 1px solid var(--line); max-height: 260px; overflow: auto; }
+.ref-card-values td { padding: 3px 10px; }
+.ref-card-values .num { width: 32px; }
 .yes { color: var(--ok); }
 .chip {
     display: inline-block;

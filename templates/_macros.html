@@ -32,13 +32,27 @@
 </div>
 {%- endmacro %}
 
+{#- Key that ties a group reference to its card. Rule data names the type with
+    underscores (address_group); group data with hyphens (address-group).
+    Domain groups are only stored under ipv4. -#}
+{% macro group_key(ip_version, group_type, name) -%}
+{%- set group_type = group_type|replace("_", "-") -%}
+{{ "ipv4" if group_type == "domain-group" else ip_version }}|{{ group_type }}|{{ name }}
+{%- endmacro %}
+
+{#- A reference to a group. ref-cards.js shows the matching group card on
+    hover or keyboard focus. -#}
+{% macro group_ref(ip_version, group_type, name) -%}
+<span class="ref" tabindex="0" data-ref="{{ group_key(ip_version, group_type, name) }}">{{ name }}</span>
+{%- endmacro %}
+
 {#- One side of a rule match: address (or group) plus port (or port group). -#}
-{% macro endpoint(address, address_type, port, port_type, address_group="", port_group="") -%}
+{% macro endpoint(address, address_type, port, port_type, address_group="", port_group="", ip_version="ipv4") -%}
 {%- set address = address or address_group -%}
 {%- set port = port or port_group -%}
 {%- if address -%}
 {%- if address_group or (address_type and address_type != "address") -%}
-<span class="ref" title="{{ (address_type or 'group')|replace('_', ' ') }}">{{ address }}</span>
+{{ group_ref(ip_version, address_type if address_type and address_type != "address" else "address_group", address) }}
 {%- else -%}
 <span class="mono">{{ address }}</span>
 {%- endif -%}
@@ -46,7 +60,7 @@
 {%- if address and port %} {% endif -%}
 {%- if port -%}
 {%- if port_group or port_type == "port_group" -%}
-<span class="ref" title="port group">{{ port }}</span>
+{{ group_ref(ip_version, "port_group", port) }}
 {%- else -%}
 <span class="mono"><span class="muted">:</span>{{ port }}</span>
 {%- endif -%}
@@ -70,4 +84,35 @@
 {#- IPv4/IPv6 tag, colour-coded by version. -#}
 {% macro ip_tag(ip_version) -%}
 <span class="tag tag-{{ 'ipv6' if ip_version == 'ipv6' else 'ipv4' }}">{{ "IPv6" if ip_version == "ipv6" else "IPv4" }}</span>
+{%- endmacro %}
+
+{#- Hidden detail cards, one per group, cloned into a popover by
+    static/ref-cards.js when a .ref with the same data-ref is hovered. -#}
+{% macro group_cards(group_list) -%}
+<div class="ref-cards" hidden>
+    {% for group in group_list %}
+    <div class="ref-card" data-ref-card="{{ group_key(group.ip_version, group.group_type, group.group_name) }}">
+        <div class="ref-card-head">
+            <span class="mono strong">{{ group.group_name }}</span>
+            {% if group.group_type != "domain-group" %}{{ ip_tag(group.ip_version) }}{% endif %}
+        </div>
+        <div class="ref-card-meta">
+            <span>{{ group.group_type|replace("-", " ")|capitalize }}</span>
+            <span>&middot; {{ group.group_value|length }} value{{ "" if group.group_value|length == 1 else "s" }}</span>
+        </div>
+        {% if group.group_desc %}<div class="ref-card-desc">{{ group.group_desc }}</div>{% endif %}
+        <div class="ref-card-scroll">
+        <table class="grid ref-card-values">
+            <tbody>
+                {% for value in group.group_value %}
+                <tr><td class="num">{{ loop.index }}</td><td class="mono">{{ value }}</td></tr>
+                {% else %}
+                <tr><td class="muted">No values</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 {%- endmacro %}

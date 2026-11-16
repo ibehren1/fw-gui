@@ -69,12 +69,14 @@ def add_group_to_data(session, request):
     return
 
 
-def assemble_detail_list_of_groups(session):
+def assemble_detail_list_of_groups(session, flash_empty=True):
     """
     Get a detailed list of all groups in the user's data.
 
     Args:
         session: Flask session object containing data directory and firewall name
+        flash_empty: Flash a warning when there are no groups. Pages that only
+                     look groups up (the chain view's group cards) pass False.
 
     Returns:
         list: List of dictionaries containing detailed information about each group
@@ -104,7 +106,7 @@ def assemble_detail_list_of_groups(session):
         logging.info(e)
 
     # If there are no groups, flash message
-    if group_list_detail == []:
+    if flash_empty and group_list_detail == []:
         flash("There are no groups defined.", "danger")
 
     return group_list_detail

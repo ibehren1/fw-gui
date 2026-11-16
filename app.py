@@ -1362,6 +1362,7 @@ def chain_view():
     return render_template(
         "chain_view.html",
         chain_dict=chain_dict,
+        group_list=assemble_detail_list_of_groups(session, flash_empty=False),
         file_list=file_list,
         snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],

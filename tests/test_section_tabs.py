@@ -198,3 +198,24 @@ def test_version_labels_select_whole_version(auth_client, store, path, versions)
     for version in versions:
         assert f'href="#{version}" class="tab-sep tab-sep-{version} section-tab"' in body
         assert f'id="{version}" class="tab-section-group' in body
+
+
+def test_group_references_carry_cards(auth_client, store):
+    rule = store.data["ipv4"]["chains"]["WAN_LOCAL"]["10"]
+    rule.update({"source_address": "MGMT", "source_address_type": "address_group",
+                 "dest_port": "WEB", "dest_port_type": "port_group"})
+    store.data["ipv4"]["groups"]["MGMT"] = {
+        "group_desc": "Jump hosts", "group_type": "address-group",
+        "group_value": ["10.0.0.1", "10.0.0.2"]}
+    body = auth_client.get("/chain_view").get_data(as_text=True)
+    assert 'data-ref="ipv4|address-group|MGMT"' in body
+    assert 'data-ref="ipv4|port-group|WEB"' in body
+    assert 'data-ref-card="ipv4|address-group|MGMT"' in body
+    assert "10.0.0.2" in body
+    assert "ref-cards.js" in body
+
+
+def test_chain_view_does_not_flash_when_there_are_no_groups(auth_client, store):
+    store.data["ipv4"].pop("groups", None)
+    body = auth_client.get("/chain_view").get_data(as_text=True)
+    assert "There are no groups defined." not in body

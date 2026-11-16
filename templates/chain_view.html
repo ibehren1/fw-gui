@@ -70,8 +70,8 @@
                     <td class="desc">{{ rule.description }}{% if rule.rule_disable %}<span class="pill pill-off">disabled</span>{% endif %}</td>
                     <td><span class="act act-{{ rule.action }}">{{ rule.action }}</span></td>
                     <td class="mono">{% if rule.protocol %}{{ rule.protocol }}{% else %}<span class="muted">all</span>{% endif %}</td>
-                    <td>{{ ui.endpoint(rule.source_address, rule.source_address_type, rule.source_port, rule.source_port_type, rule.source_address_group, rule.source_port_group) }}</td>
-                    <td>{{ ui.endpoint(rule.dest_address, rule.dest_address_type, rule.dest_port, rule.dest_port_type, rule.dest_address_group, rule.dest_port_group) }}</td>
+                    <td>{{ ui.endpoint(rule.source_address, rule.source_address_type, rule.source_port, rule.source_port_type, rule.source_address_group, rule.source_port_group, ip_version) }}</td>
+                    <td>{{ ui.endpoint(rule.dest_address, rule.dest_address_type, rule.dest_port, rule.dest_port_type, rule.dest_address_group, rule.dest_port_group, ip_version) }}</td>
                     <td class="nowrap">{{ ui.states(rule) }}</td>
                     <td class="center">{{ ui.check(rule.logging) }}</td>
                     <td class="row-actions">
@@ -145,5 +145,7 @@
 </div>
 {% endfor %}
 
+{{ ui.group_cards(group_list or []) }}
 <script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
+<script src="{{ url_for('static', filename='ref-cards.js') }}"></script>
 {% endblock body %}
