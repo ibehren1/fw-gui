@@ -149,7 +149,7 @@ from package.napalm_ssh_functions import (
 )
 from package.ssh_key_store import migrate_legacy_key_files
 from package.start_functions import build_quick_start, config_progress
-from package.telemetry_functions import telemetry_instance
+from package.telemetry_functions import start_telemetry_heartbeat, telemetry_instance
 from package.user_migration import migrate_sqlite_users
 from package import user_store
 from package.user_store import get_user_by_session_id, list_usernames
@@ -2536,6 +2536,7 @@ if __name__ == "__main__":
     # trade-off is that an install which cannot reach MongoDB no longer reports at
     # all -- it used to post here and then exit in the check above.
     telemetry_instance("startup")
+    start_telemetry_heartbeat()
 
     # Check if running in development environment
     if os.environ.get("FLASK_ENV") == "Development":
