@@ -19,7 +19,7 @@
     <a href="#all" class="tab section-tab">All</a>
     {% for ip_version in ["ipv4", "ipv6"] %}
     {% if by_version[ip_version] %}
-    <span class="tab-sep">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</span>
+    <span class="tab-sep tab-sep-{{ ip_version }}">{{ "IPv4" if ip_version == "ipv4" else "IPv6" }}</span>
     {% for key in by_version[ip_version] %}
     <a href="#{{ ip_version }}{{ key }}" class="tab section-tab">{{ key }}</a>
     {% endfor %}
@@ -61,4 +61,9 @@
 
 {% macro check(value) -%}
 {%- if value %}<span class="yes" title="Yes">&#10003;</span>{% else %}<span class="muted">&ndash;</span>{% endif -%}
+{%- endmacro %}
+
+{#- IPv4/IPv6 tag, colour-coded by version. -#}
+{% macro ip_tag(ip_version) -%}
+<span class="tag tag-{{ 'ipv6' if ip_version == 'ipv6' else 'ipv4' }}">{{ "IPv6" if ip_version == "ipv6" else "IPv4" }}</span>
 {%- endmacro %}

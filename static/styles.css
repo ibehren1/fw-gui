@@ -72,6 +72,10 @@
     --ref: #7fb1f5;
     --nav-group: #e8b43a;
     --nav-group-line: #2a2e34;
+    --v4: #2fc6d6;
+    --v4-bg: rgba(47, 198, 214, 0.12);
+    --v6: #b197fc;
+    --v6-bg: rgba(177, 151, 252, 0.13);
 }
 
 [data-theme="light"] {
@@ -122,6 +126,10 @@
     --ref: #2463eb;
     --nav-group: #2463eb;
     --nav-group-line: #e4e8ee;
+    --v4: #0e7490;
+    --v4-bg: #e3f5f8;
+    --v6: #6d28d9;
+    --v6-bg: #f1ebfd;
 }
 
 /* Same values as [data-theme="light"]; CSS cannot share a block between a
@@ -175,6 +183,10 @@
         --ref: #2463eb;
         --nav-group: #2463eb;
         --nav-group-line: #e4e8ee;
+        --v4: #0e7490;
+        --v4-bg: #e3f5f8;
+        --v6: #6d28d9;
+        --v6-bg: #f1ebfd;
     }
 }
 
@@ -717,6 +729,11 @@ table.grid { width: 100%; border-collapse: collapse; }
     color: var(--muted);
     align-self: center;
 }
+/* IP version: teal for IPv4, violet for IPv6, wherever the version is shown */
+.tag-ipv4, .tab-sep-ipv4 { color: var(--v4); }
+.tag-ipv6, .tab-sep-ipv6 { color: var(--v6); }
+.tag-ipv4 { background: var(--v4-bg); border-color: var(--v4); }
+.tag-ipv6 { background: var(--v6-bg); border-color: var(--v6); }
 
 .empty-state {
     padding: 16px;

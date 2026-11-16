@@ -437,7 +437,7 @@ wheels = [
 
 [[package]]
 name = "fw-gui"
-version = "3.5.13"
+version = "3.5.14"
 source = { virtual = "." }
 dependencies = [
     { name = "boto3" },

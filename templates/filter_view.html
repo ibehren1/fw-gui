@@ -20,7 +20,7 @@
     <div id="{{ ip_version }}{{ key }}" class="block tab-section">
         <div class="block-head">
             <div class="block-title">
-                <span class="tag">{{ label }}</span>
+                {{ ui.ip_tag(ip_version) }}
                 <h3 class="mono">{{ key }}</h3>
                 <span class="meta">{{ filter_list|length }} rule{{ "" if filter_list|length == 1 else "s" }}</span>
             </div>

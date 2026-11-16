@@ -54,7 +54,7 @@
             {#- Domain groups are stored under ipv4 only. -#}
             {% set group_ip = "ipv4" if group_type == "domain-group" else group.ip_version %}
             <tr>
-                <td class="mono strong">{{ group.group_name }}{% if not ip_version and group_type != "domain-group" %} <span class="tag">{{ "IPv6" if group.ip_version == "ipv6" else "IPv4" }}</span>{% endif %}</td>
+                <td class="mono strong">{{ group.group_name }}{% if not ip_version and group_type != "domain-group" %} {{ ui.ip_tag(group.ip_version) }}{% endif %}</td>
                 <td class="desc">{% if group.group_desc %}{{ group.group_desc }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
                 <td class="center mono muted" title="{{ group.group_value|length }} {{ noun }}">{{ group.group_value|length }}</td>
                 <td class="chips">{% for member in group.group_value %}<span class="chip">{{ member }}</span>{% endfor %}</td>
