@@ -23,23 +23,35 @@
             <div class="block-title"><h3>Firewall configurations</h3><span class="meta">{{ file_list|length if file_list else 0 }}</span></div>
         </div>
         {% if file_list %}
-        <form action="/select_firewall_config" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <table class="grid">
-                <tbody>
-                    {% for file in file_list %}
-                    <tr>
-                        <td class="mono strong">{{ file }}</td>
-                        <td>{% if file == firewall_name %}<span class="pill pill-ok">Selected</span>{% endif %}</td>
-                        <td class="row-actions">
+        <table class="grid configs">
+            <tbody>
+                {% for file in file_list %}
+                <tr>
+                    <td>
+                        {#- Rename opens in place; <details> needs no script. -#}
+                        <details class="rename">
+                            <summary title="Rename {{ file }}"><span class="mono strong">{{ file }}</span><span class="rename-icon" aria-hidden="true">&#9998;</span></summary>
+                            <form action="/rename_config" method="post" class="rename-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="old_name" value="{{ file }}">
+                                <input type="text" name="new_name" value="{{ file }}" maxlength="50" required
+                                       class="input mono" aria-label="New name for {{ file }}">
+                                <button type="submit" class="btn btn-primary btn-sm">Rename</button>
+                            </form>
+                        </details>
+                    </td>
+                    <td>{% if file == firewall_name %}<span class="pill pill-ok">Selected</span>{% endif %}</td>
+                    <td class="row-actions">
+                        <form action="/select_firewall_config" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" name="file" value="{{ file }}" class="btn btn-sm"
                                     title="Load firewall configuration {{ file }}">Select</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </form>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% else %}
         <div class="block-body muted">No configurations yet. Create one below.</div>
         {% endif %}

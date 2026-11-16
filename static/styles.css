@@ -1120,6 +1120,14 @@ legend { padding: 0 6px; margin-left: -6px; }
     white-space: nowrap;
 }
 
+/* Configurations page: rename a config in place */
+.rename summary { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
+.rename summary::-webkit-details-marker { display: none; }
+.rename-icon { color: var(--muted); font-size: 0.95em; opacity: 0.6; }
+.rename summary:hover .rename-icon, .rename summary:focus-visible .rename-icon, .rename[open] .rename-icon { opacity: 1; }
+.rename summary:hover .rename-icon { color: var(--text); }
+.rename-form { display: flex; gap: 6px; margin-top: 6px; }
+.rename-form .input { max-width: 260px; height: 24px; }
 .error-page { max-width: 40rem; margin: 4rem auto; text-align: center; }
 .error-page h1 { font-size: 1.8em; margin-bottom: 6px; }
 

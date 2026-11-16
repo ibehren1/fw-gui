@@ -93,6 +93,7 @@ from package.data_file_functions import (
     list_user_keys,
     process_upload,
     read_user_data_file,
+    rename_user_data_file,
     restore_snapshot,
     sweep_legacy_user_files,
     tag_snapshot,
@@ -2171,6 +2172,33 @@ def delete_config():
     )
 
     return redirect(url_for("display_config"))
+
+
+@app.route("/rename_config", methods=["POST"])
+@login_required
+def rename_config():
+    """
+    Handle firewall configuration rename requests.
+
+    Renames the configuration and moves its snapshots with it. If the renamed
+    configuration is the selected one, the selection follows it.
+
+    Returns:
+        Response: Redirect to the Configurations page
+    """
+    old_name = request.form.get("old_name", "")
+    new_name = request.form.get("new_name", "")
+
+    if not is_safe_name(old_name) or not is_safe_name(new_name):
+        flash("Invalid config name.", "danger")
+        return redirect(url_for("configurations"))
+
+    ok, message = rename_user_data_file(session["data_dir"], old_name, new_name)
+    flash(message, "success" if ok else "danger")
+    if ok and session.get("firewall_name") == old_name:
+        session["firewall_name"] = new_name
+
+    return redirect(url_for("configurations"))
 
 
 @app.route("/download_config")

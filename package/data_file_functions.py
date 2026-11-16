@@ -385,6 +385,69 @@ def create_snapshot(filename, tag=""):
     return snapshot_name
 
 
+def rename_user_data_file(data_dir, old_name, new_name):
+    """
+    Renames a firewall configuration and moves its snapshots with it.
+
+    Args:
+        data_dir (str): The user's data directory, ``data/<user>``
+        old_name (str): Current configuration name
+        new_name (str): New configuration name; must already be validated
+                        with is_safe_name
+
+    Returns:
+        tuple: (ok, message) -- ok is False when nothing was changed
+
+    The working copy is a document whose _id is the name, and MongoDB _id values
+    are immutable, so the document is copied to the new _id and the old one is
+    deleted. Snapshots reference the configuration by their ``firewall`` field
+    and are repointed in place. The copy is inserted first: insert_one on an
+    existing _id raises DuplicateKeyError, which makes the name check atomic,
+    and a failure partway through leaves the configuration under both names
+    rather than under neither.
+
+    A name that still has snapshots is refused even when no configuration uses
+    it. Deleting a configuration leaves its snapshots behind, and renaming onto
+    that name would silently adopt them.
+    """
+    collection_name = data_dir.split("/")[1]
+    collection = _get_mongo_db()[collection_name]
+
+    if old_name == new_name:
+        return False, "The new name is the same as the current name."
+
+    current = collection.find_one({"_id": old_name})
+    if current is None:
+        return False, f"Configuration {old_name} does not exist."
+
+    if collection.find_one({"_id": new_name}, {"_id": 1}) is not None:
+        return False, f"A configuration named {new_name} already exists."
+
+    if collection.find_one({"firewall": new_name}, {"_id": 1}) is not None:
+        return False, (
+            f"Snapshots named for {new_name} remain from a deleted configuration. "
+            "Choose a different name."
+        )
+
+    current["_id"] = new_name
+    try:
+        collection.insert_one(current)
+    except pymongo.errors.DuplicateKeyError:
+        return False, f"A configuration named {new_name} already exists."
+
+    moved = collection.update_many(
+        {"firewall": old_name, "snapshot": {"$exists": True}},
+        {"$set": {"firewall": new_name}},
+    )
+    collection.delete_one({"_id": old_name})
+
+    logging.info(
+        f"Renamed config {collection_name}/{old_name} to {new_name} "
+        f"({moved.modified_count} snapshots moved)."
+    )
+    return True, f"Configuration {old_name} renamed to {new_name}."
+
+
 def delete_user_data_file(filename):
     """
     Deletes a user data file from MongoDB based on the provided filename path.
