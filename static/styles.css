@@ -607,6 +607,12 @@ table.grid { width: 100%; border-collapse: collapse; }
 .empty-state p { margin-bottom: 8px; }
 .grid .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; margin: 0; }
+/* Implicit default action: last row of a chain or filter, read-only */
+.grid tr.default-row td { background: var(--panel-head); border-top: 1px dashed var(--line-strong); }
+.grid tr.default-row:hover { background: transparent; }
+.default-mark { font-family: var(--font); font-size: 0.72em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.default-lock { display: inline-block; width: 22px; text-align: center; font-size: 0.85em; opacity: 0.45; filter: grayscale(1); }
+.grid tr.empty-rules td { color: var(--muted); font-style: italic; text-align: center; padding: 10px; }
 .grid tr.is-disabled td { opacity: 0.5; }
 .grid tr.is-disabled td.desc { opacity: 0.75; }
 

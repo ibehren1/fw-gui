@@ -219,3 +219,30 @@ def test_chain_view_does_not_flash_when_there_are_no_groups(auth_client, store):
     store.data["ipv4"].pop("groups", None)
     body = auth_client.get("/chain_view").get_data(as_text=True)
     assert "There are no groups defined." not in body
+
+
+def _default_row(body):
+    row = body.split('<tr class="default-row"', 1)[1].split("</tr>", 1)[0]
+    return row
+
+
+def test_chain_shows_read_only_default_row(auth_client, store):
+    body = auth_client.get("/chain_view").get_data(as_text=True)
+    row = _default_row(body)
+    assert 'act-drop' in row
+    # Read-only: no form, button or input of any kind.
+    assert "<form" not in row and "<button" not in row and "<input" not in row
+
+
+def test_filter_default_row_without_stored_action(auth_client, store):
+    body = auth_client.get("/filter_view").get_data(as_text=True)
+    row = _default_row(body)
+    assert "not set" in row
+    assert "<form" not in row and "<button" not in row
+
+
+def test_filter_default_row_with_stored_action(auth_client, store):
+    store.data["ipv4"]["filters"]["input"]["default-action"] = "accept"
+    store.data["ipv4"]["filters"]["input"]["log"] = True
+    row = _default_row(auth_client.get("/filter_view").get_data(as_text=True))
+    assert "act-accept" in row

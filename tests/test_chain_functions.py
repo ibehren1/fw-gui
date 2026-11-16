@@ -864,3 +864,17 @@ class TestFlashIpVersionMismatch:
             # The function should not raise and should flash a message.
             # We verify it completes without error; flash is tested via
             # the integration in add_rule_to_data mismatch tests above.
+
+
+def test_chain_defaults(mock_session, mock_read_write):
+    from package.chain_functions import chain_defaults
+
+    mock_read_write("package.chain_functions", {
+        "ipv4": {"chains": {
+            "A": {"rule-order": [], "default": {"default_action": "drop", "default_logging": True}},
+            "B": {"rule-order": []},
+        }},
+    })
+    assert chain_defaults(mock_session) == {
+        "ipv4": {"A": {"action": "drop", "log": True}, "B": {"action": None, "log": False}},
+    }

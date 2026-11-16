@@ -706,3 +706,12 @@ class TestResequenceFilterRulesInData:
             result = resequence_filter_rules_in_data(mock_session, req)
 
         assert result is None
+
+
+def test_filter_defaults(mock_session, mock_read_write):
+    from package.filter_functions import filter_defaults
+
+    mock_read_write("package.filter_functions", {
+        "ipv6": {"filters": {"input": {"default-action": "accept", "log": False, "rules": {}}}},
+    })
+    assert filter_defaults(mock_session) == {"ipv6": {"input": {"action": "accept", "log": False}}}

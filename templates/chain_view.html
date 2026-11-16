@@ -39,7 +39,6 @@
                 <a href="{{ url_for('chain_rule_add') }}?fw_chain={{ ip_version }},{{ key }}" class="btn btn-primary btn-sm">+ Add rule</a>
             </div>
         </div>
-        {% if chain_list %}
         <div class="table-scroll">
         <table class="grid rules">
             <thead>
@@ -132,13 +131,13 @@
                         </form>
                     </td>
                 </tr>
+                {% else %}
+                <tr class="empty-rules"><td colspan="9">No rules yet.</td></tr>
                 {% endfor %}
+                {{ ui.default_row(chain_defaults[ip_version][key] if chain_defaults and chain_defaults[ip_version] else None, "chain", ["any", "any", "any", "any"]) }}
             </tbody>
         </table>
         </div>
-        {% else %}
-        <div class="block-body muted">No rules yet.</div>
-        {% endif %}
     </div>
     {% endfor %}
     {% else %}

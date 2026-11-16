@@ -116,3 +116,18 @@
     {% endfor %}
 </div>
 {%- endmacro %}
+
+{#- The implicit last rule of a chain or filter: its default action, applied
+    when no rule matches. Shown read-only; the default is changed on the
+    chain or filter itself. middle_cells fill the columns between the action
+    and the log column; has_log=False for tables without a log column. -#}
+{% macro default_row(default, kind, middle_cells, has_log=True) -%}
+<tr class="default-row" title="Applied when no rule in this {{ kind }} matches. Not a rule, so it cannot be edited or moved here; it is set on the {{ kind }} itself.">
+    <td class="num"><span class="default-mark">default</span></td>
+    <td class="desc muted">Default action</td>
+    <td>{% if default and default.action %}<span class="act act-{{ default.action }}">{{ default.action }}</span>{% else %}<span class="muted" title="No default action is set, so the generated config sets none and VyOS applies its own.">not set</span>{% endif %}</td>
+    {% for value in middle_cells %}<td><span class="muted">{{ value }}</span></td>{% endfor %}
+    {% if has_log %}<td class="center">{{ check(default and default.log) }}</td>{% endif %}
+    <td class="row-actions"><span class="default-lock" aria-label="Not editable">&#128274;</span></td>
+</tr>
+{%- endmacro %}

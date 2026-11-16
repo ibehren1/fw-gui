@@ -69,6 +69,7 @@ from package.chain_functions import (
     add_chain_to_data,
     add_rule_to_data,
     assemble_detail_list_of_chains,
+    chain_defaults,
     assemble_list_of_chains,
     delete_rule_from_data,
     move_chain_rule_in_data,
@@ -105,6 +106,7 @@ from package.filter_functions import (
     add_filter_rule_to_data,
     add_filter_to_data,
     assemble_detail_list_of_filters,
+    filter_defaults,
     assemble_list_of_filters,
     delete_filter_rule_from_data,
     move_filter_rule_in_data,
@@ -1362,6 +1364,7 @@ def chain_view():
     return render_template(
         "chain_view.html",
         chain_dict=chain_dict,
+        chain_defaults=chain_defaults(session),
         group_list=assemble_detail_list_of_groups(session, flash_empty=False),
         file_list=file_list,
         snapshot_list=snapshot_list,
@@ -1652,6 +1655,7 @@ def filter_view():
         file_list=file_list,
         snapshot_list=snapshot_list,
         filter_dict=filter_dict,
+        filter_defaults=filter_defaults(session),
         firewall_name=session["firewall_name"],
         username=session["username"],
     )

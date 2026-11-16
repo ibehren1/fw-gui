@@ -42,7 +42,6 @@
                 </form>
             </div>
         </div>
-        {% if filter_list %}
         <div class="table-scroll">
         <table class="grid rules-filter">
             <thead>
@@ -116,13 +115,13 @@
                         </form>
                     </td>
                 </tr>
+                {% else %}
+                <tr class="empty-rules"><td colspan="7">No rules yet.</td></tr>
                 {% endfor %}
+                {{ ui.default_row(filter_defaults[ip_version][key] if filter_defaults and filter_defaults[ip_version] else None, "filter", ["–", "any", "–"], has_log=False) }}
             </tbody>
         </table>
         </div>
-        {% else %}
-        <div class="block-body muted">No rules yet.</div>
-        {% endif %}
     </div>
     {% endfor %}
     {% else %}
