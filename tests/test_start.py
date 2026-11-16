@@ -153,7 +153,8 @@ def test_quick_start_generates_expected_vyos_config(mock_session, monkeypatch):
 
 
 def _quick(client, existing=(), **form):
-    data = {"config_name": "starter", "wan_interface": "eth0", "lan_interface": "eth1"}
+    data = {"config_name": "starter", "wan_interface": "eth0", "lan_interface": "eth1",
+            "accept_responsibility": "true"}
     data.update(form)
     with patch("app.list_user_files", return_value=list(existing)), \
             patch("app.write_user_data_file") as write:
@@ -190,3 +191,17 @@ def test_quick_start_route_rejects_bad_input(auth_client, form, existing):
     write.assert_not_called()
     with auth_client.session_transaction() as sess:
         assert sess["firewall_name"] == "test_firewall"
+
+
+def test_quick_start_requires_accepting_responsibility(auth_client):
+    with patch("app.list_user_files", return_value=[]), patch("app.write_user_data_file") as write:
+        auth_client.post("/quick_start", data={
+            "config_name": "starter", "wan_interface": "eth0", "lan_interface": "eth1"})
+    write.assert_not_called()
+
+
+def test_responsibility_statement_shown(auth_client):
+    body = _get(auth_client).get_data(as_text=True)
+    assert 'name="accept_responsibility"' in body and "required" in body.split('name="accept_responsibility"', 1)[1][:40]
+    assert "Responsibility for firewall configurations." in body
+    assert "assume all risk" in body

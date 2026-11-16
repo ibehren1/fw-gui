@@ -80,6 +80,10 @@
                 <input type="checkbox" name="allow_wan_ping" value="true">
                 <span>Allow ping to the firewall from the WAN (IPv4)</span>
             </label>
+            <label class="checkbox-item quick-start-ack">
+                <input type="checkbox" name="accept_responsibility" value="true" required>
+                <span>I understand this configuration is mine: I am responsible for reviewing and testing it before deploying it, and I accept all risk of its use.</span>
+            </label>
             <button type="submit" class="btn btn-primary">Create starter config</button>
         </div>
         <div class="quick-start-explain">
@@ -94,6 +98,7 @@
                 </tbody>
             </table>
             <p class="muted small">Input and forward filters send each interface to its chain. The IPv6 WAN_LOCAL also allows ICMPv6 and DHCPv6 replies, which IPv6 needs to work; that includes answering IPv6 ping. Nothing is pushed until you deploy.</p>
+            {{ ui.responsibility_notice("A generated starting point, not security advice. The configuration and the risk of using it are yours.") }}
         </div>
     </form>
 </div>

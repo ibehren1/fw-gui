@@ -1,4 +1,5 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
 <div class="config-push">
     <div class="push-header">
@@ -126,6 +127,8 @@
                     </label>
                 </div>
                 
+                {{ ui.responsibility_notice("You are responsible for reviewing and testing this configuration; deploying it is at your own risk.") }}
+
                 <div class="auth-actions">
                     <button type="submit" name="action" value="View Diffs" class="btn">View Diffs</button>
                     <button type="submit" name="action" value="Commit" class="btn btn-danger">Commit</button>

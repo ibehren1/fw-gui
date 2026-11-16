@@ -464,6 +464,8 @@ def quick_start():
         flash("Interface names must be 1-15 letters, digits, '.', '_' or '-'.", "danger")
     elif wan == lan:
         flash("The WAN and LAN interfaces must be different.", "danger")
+    elif "accept_responsibility" not in request.form:
+        flash("Confirm that you accept responsibility for the configuration to continue.", "danger")
     else:
         data = build_quick_start(wan, lan, allow_wan_ping="allow_wan_ping" in request.form)
         write_user_data_file(f"{session['data_dir']}/{name}", data)
