@@ -40,6 +40,7 @@
             </div>
         </div>
         {% if chain_list %}
+        <div class="table-scroll">
         <table class="grid rules">
             <thead>
                 <tr>
@@ -134,6 +135,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="block-body muted">No rules yet.</div>
         {% endif %}

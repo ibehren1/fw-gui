@@ -43,6 +43,7 @@
             </div>
         </div>
         {% if filter_list %}
+        <div class="table-scroll">
         <table class="grid rules-filter">
             <thead>
                 <tr>
@@ -118,6 +119,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         {% else %}
         <div class="block-body muted">No rules yet.</div>
         {% endif %}
