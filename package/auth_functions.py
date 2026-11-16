@@ -215,7 +215,7 @@ def process_login(bcrypt, request):
                 f'{datetime.now()} User <{request.form["username"]}> logged in.'
             )
             login_user(result)
-            telemetry_instance()
+            telemetry_instance("login")
             check_version()
             username = f"{result.username}"
             data_dir = f"data/{username}"

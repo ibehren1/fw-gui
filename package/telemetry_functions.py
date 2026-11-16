@@ -1,7 +1,16 @@
 """
     Telemetry Functions to provide feedback on usage to the developer.
 
-    Only a UUID and FW-GUI version is posted to the telemetry server. 
+    Posts to telemetry.fw-gui.com:
+    - instance check-ins (startup, login, daily heartbeat): the install's random
+      UUID and FW-GUI version, plus, on startup and heartbeat, anonymous
+      deployment details, bucketed sizes and feature flags (see
+      telemetry_collect and README.md, "Telemetry")
+    - a bare counter ping, with only the UUID, for each diff, commit and
+      operational command
+
+    Never sent: usernames, emails, configuration contents, addresses, hostnames,
+    credentials or keys.
 """
 
 import json
@@ -68,15 +77,37 @@ def telemetry_diff():
     post_telemetry(body, "diff")
 
 
-def telemetry_instance():
-    local_version = get_version()
-    instance_id = get_instance_id()
+# Payload format sent to /instance. The backend accepts this and the original
+# {instance_id, version} form, which this still contains.
+TELEMETRY_SCHEMA = 2
 
-    body = json.dumps(
-        {"instance_id": instance_id, "version": local_version.replace("\n", "")}
-    )
+# Check-in events that carry the full payload. A login only says "still here",
+# so it stays cheap: no configuration scan on every login.
+_FULL_EVENTS = ("startup", "heartbeat")
 
-    post_telemetry(body, "instance")
+
+def build_instance_payload(event):
+    """Returns the /instance payload for a check-in event. Never raises."""
+    payload = {
+        "schema": TELEMETRY_SCHEMA,
+        "instance_id": get_instance_id(),
+        "version": get_version().replace("\n", ""),
+        "event": event,
+    }
+    if event in _FULL_EVENTS:
+        try:
+            from package import telemetry_collect
+
+            payload["deployment"] = telemetry_collect.collect_deployment()
+            payload["size"], payload["features"] = telemetry_collect.collect_usage()
+        except Exception as e:  # noqa: BLE001 -- send the basic check-in anyway
+            logging.debug(f"Telemetry details unavailable: {e}")
+    return payload
+
+
+def telemetry_instance(event="login"):
+    """Posts an instance check-in: event is "startup", "login" or "heartbeat"."""
+    post_telemetry(json.dumps(build_instance_payload(event)), "instance")
 
 
 def telemetry_rule_usage():

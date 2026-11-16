@@ -2535,7 +2535,7 @@ if __name__ == "__main__":
     # database before the check that exists to report it is unreachable. The
     # trade-off is that an install which cannot reach MongoDB no longer reports at
     # all -- it used to post here and then exit in the check above.
-    telemetry_instance()
+    telemetry_instance("startup")
 
     # Check if running in development environment
     if os.environ.get("FLASK_ENV") == "Development":
