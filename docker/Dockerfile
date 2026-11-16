@@ -5,8 +5,9 @@ LABEL org.opencontainers.image.authors="isaac@behrenshome.com"
 RUN apt-get update && \
     apt-get dist-upgrade -y
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv. Pinned to a minor so image builds are repeatable; 0.13 still
+# takes 0.13.x fixes. Raise it deliberately.
+COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /usr/local/bin/uv
 
 # Clean-up apt cache
 RUN apt-get clean && \
