@@ -150,7 +150,8 @@ def list_interfaces(session):
               Returns empty list if no interfaces exist.
     """
     # Get user's data
-    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}")
+    # read_user_data_file returns None when the config document is missing.
+    user_data = read_user_data_file(f"{session['data_dir']}/{session['firewall_name']}") or {}
 
     if "interfaces" not in user_data:
         interface_list = []

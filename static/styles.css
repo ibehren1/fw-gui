@@ -751,6 +751,8 @@ a.tab-sep:hover { text-decoration: none; background: var(--hover); }
 .iftype .dot, .if-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--if); flex: none; }
 .iftype-bare { border: 0; padding: 0; }
 .if-name { display: inline-flex; align-items: center; gap: 6px; }
+.chip-if { display: inline-flex; align-items: center; }
+.chip-if .mono { font-size: 1em; }
 .iftype-public_wan { --if: var(--if-public_wan); }
 .iftype-private_wan { --if: var(--if-private_wan); }
 .iftype-lan { --if: var(--if-lan); }

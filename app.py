@@ -1100,6 +1100,7 @@ def flowtable_view():
         snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         flowtable_list=flowtable_list,
+        interface_list=list_interfaces(session),
         username=session["username"],
     )
 
@@ -1661,6 +1662,7 @@ def filter_view():
         snapshot_list=snapshot_list,
         filter_dict=filter_dict,
         filter_defaults=filter_defaults(session),
+        interface_list=list_interfaces(session),
         firewall_name=session["firewall_name"],
         username=session["username"],
     )

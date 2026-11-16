@@ -129,7 +129,7 @@
                         <select name="interface" id="interface" class="form-select">
                             <option value="">Select interface</option>
                             {% for interface in interface_list %}
-                            <option value="{{ interface.name }}" {% if rule_detail.interface == interface.name %}selected{% endif %}>{{ interface.name }}{% if interface.description %} - {{ interface.description }}{% endif %}</option>
+                            <option value="{{ interface.name }}" {% if rule_detail.interface == interface.name %}selected{% endif %}>{{ interface.name }}{% if interface.description %} - {{ interface.description }}{% endif %}{% if interface.type in INTERFACE_TYPES %} [{{ interface.type_label or "Custom" if interface.type == "custom" else INTERFACE_TYPES[interface.type] }}]{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>

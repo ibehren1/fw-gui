@@ -144,3 +144,10 @@
 <span class="iftype iftype-{{ key }}{% if bare %} iftype-bare{% endif %}" title="{{ text }}"><i class="dot"></i>{% if label %}{{ text }}{% endif %}</span>
 {%- endif -%}
 {%- endmacro %}
+
+{#- An interface name with its type dot. ifaces maps name -> interface dict
+    (see interfaces_by_name); an unknown or untyped interface shows the name
+    alone. -#}
+{% macro if_name(name, ifaces) -%}
+<span class="if-name">{{ iftype(ifaces.get(name), bare=True, label=False) }}<span class="mono">{{ name }}</span></span>
+{%- endmacro %}

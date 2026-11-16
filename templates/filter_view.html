@@ -1,6 +1,8 @@
 {% extends "basic_page.html" %}
 {% import "_macros.html" as ui %}
 {% block body %}
+{%- set ifaces = {} -%}
+{%- for item in interface_list or [] %}{% set _ = ifaces.update({item.name: item}) %}{% endfor -%}
 <div class="page-head">
     <h2>Filters</h2>
     <div class="page-actions">
@@ -71,7 +73,7 @@
                     <td class="desc">{{ rule.description }}</td>
                     <td><span class="act act-{{ rule.action }}">{{ rule.action }}</span></td>
                     <td>{% if rule.fw_chain %}<span class="ref">{{ rule.fw_chain }}</span>{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
-                    <td class="mono">{% if rule.interface %}{{ rule.interface }}{% else %}<span class="muted">any</span>{% endif %}</td>
+                    <td class="nowrap">{% if rule.interface %}{{ ui.if_name(rule.interface, ifaces) }}{% else %}<span class="muted">any</span>{% endif %}</td>
                     <td>{% if rule.direction %}{{ rule.direction }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
                     <td class="row-actions">
                         {% if not loop.first %}

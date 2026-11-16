@@ -114,3 +114,31 @@ def test_interface_edit_form_preselects_type(auth_client):
     assert 'value="custom" checked' in body
     assert 'value="brown" checked' in body
     assert "readonly" in body
+
+
+def test_interface_types_show_on_flowtables_and_pickers(auth_client):
+    interfaces = [{"name": "eth0", "description": "WAN", "type": "public_wan"},
+                  {"name": "eth9", "description": "", "type": "custom", "type_label": "Guest", "type_color": "pink"}]
+    with patch("app.list_interfaces", return_value=interfaces), \
+            patch("app.list_flowtables", return_value=[{"name": "FT", "description": "", "interfaces": ["eth0", "eth9"]}]), \
+            patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        flow = auth_client.get("/flowtable_view").get_data(as_text=True)
+        form = auth_client.get("/flowtable_add").get_data(as_text=True)
+    assert flow.count('class="chip chip-if"') == 2
+    assert "iftype-public_wan" in flow and "iftype-c-pink" in flow
+    assert "iftype-public_wan" in form and ">Guest<" in form
+
+
+def test_filter_rule_interface_picker_names_the_type(auth_client):
+    interfaces = [{"name": "eth0", "description": "WAN", "type": "public_wan"},
+                  {"name": "eth9", "description": "", "type": "custom", "type_label": "Guest", "type_color": "pink"},
+                  {"name": "wg0", "description": ""}]
+    with patch("app.list_interfaces", return_value=interfaces), \
+            patch("app.list_flowtables", return_value=[]), \
+            patch("app.assemble_list_of_filters", return_value=[("ipv4", "input")]), \
+            patch("app.assemble_list_of_chains", return_value=[("ipv4", "WAN_IN")]), \
+            patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.get("/filter_rule_add?filter=ipv4,input").get_data(as_text=True)
+    assert "eth0 - WAN [Public WAN]</option>" in body
+    assert "eth9 [Guest]</option>" in body
+    assert ">wg0</option>" in body

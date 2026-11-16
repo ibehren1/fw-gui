@@ -1,6 +1,8 @@
 {% extends "basic_page.html" %}
 {% import "_macros.html" as ui %}
 {% block body %}
+{%- set ifaces = {} -%}
+{%- for item in interface_list or [] %}{% set _ = ifaces.update({item.name: item}) %}{% endfor -%}
 <div class="page-head">
     <h2>Flowtables</h2>
     <div class="page-actions">
@@ -22,7 +24,7 @@
                 <td class="mono strong col-name">{{ flowtable.name }}</td>
                 <td class="desc">{% if flowtable.description %}{{ flowtable.description }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
                 <td class="chips">
-                    {% for interface in flowtable.interfaces %}<span class="chip">{{ interface }}</span>{% else %}<span class="muted">No interfaces configured</span>{% endfor %}
+                    {% for interface in flowtable.interfaces %}<span class="chip chip-if">{{ ui.if_name(interface, ifaces) }}</span>{% else %}<span class="muted">No interfaces configured</span>{% endfor %}
                 </td>
                 <td class="row-actions">
                     <form action="/flowtable_add" method="post" class="edit-form">
