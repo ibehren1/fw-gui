@@ -1,598 +1,128 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
-<div class="filter-view">
-    <div class="view-header">
-        <h2 class="section-title">Firewall Filters</h2>
-        <a href="{{ url_for('filter_add') }}" class="btn btn-add">Add Filter</a>
-    </div>
-    
-    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-    {% if flashed_messages %}
-    <div class="flash-messages">
-        {% for category, flash_message in flashed_messages %}
-        <div class="alert alert-{{ category }}">
-            {{flash_message}}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-    
-    <!-- Quick Navigation -->
-    <div class="filter-nav">
-        <div class="nav-all">
-            <a href="#all" class="nav-link member-tag section-tab">All</a>
-        </div>
-        <div class="nav-section">
-            <h3 class="nav-title">IPv4 Filters</h3>
-            <div class="nav-links">
-                {% if filter_dict.ipv4 %}
-                {% for key, filter_list in filter_dict.ipv4.items() %}
-                <a href="#ipv4{{ key }}" class="nav-link member-tag section-tab">{{ key }}</a>
-                {% endfor %}
-                {% endif %}
-            </div>
-        </div>
-        <div class="nav-section">
-            <h3 class="nav-title">IPv6 Filters</h3>
-            <div class="nav-links">
-                {% if filter_dict.ipv6 %}
-                {% for key, filter_list in filter_dict.ipv6.items() %}
-                <a href="#ipv6{{ key }}" class="nav-link member-tag section-tab">{{ key }}</a>
-                {% endfor %}
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- IPv4 Filters -->
-    <div class="filters-section tab-section-group">
-        <h3 class="section-heading">IPv4 Filters</h3>
-        {% if filter_dict.ipv4 %}
-        {% for key, filter_list in filter_dict.ipv4.items() %}
-        <div id="ipv4{{ key }}" class="filter-group tab-section">
-            <div class="filter-group-header">
-                <h4 class="filter-group-title">{{ key }}</h4>
-                <div class="filter-group-actions">
-                    <form action="/filter_rule_add" method="get" class="add-rule-form">
-                        <input type="hidden" name="filter" value="ipv4,{{ key }}">
-                        <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
-                    </form>
-                    <form action="/filter_rules_resequence" method="post" class="resequence-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="filter" value="ipv4,{{ key }}">
-                        <button type="submit" class="btn btn-secondary btn-sm"
-                                onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the filter.')">Resequence</button>
-                    </form>
-                </div>
-            </div>
-            <div class="filters-container">
-                {% for rule in filter_list %}
-                <div class="filter-card">
-                    <img src="{{ url_for('static', filename='filter-32-yellow-layers.svg') }}" alt="" class="filter-icon">
-                    <div class="filter-content">
-                    <div class="filter-header">
-                        <div class="filter-info">
-                            <h5 class="filter-name">Rule {{ rule.number }}{% if rule.description %}<span class="filter-desc-separator">—</span><span class="filter-description-inline">{{ rule.description }}</span>{% endif %}</h5>
-                            <div class="filter-meta">
-                                <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
-                                {% if rule.interface %}
-                                <span class="filter-interface">{{ rule.interface }}</span>
-                                {% endif %}
-                                {% if rule.direction %}
-                                <span class="filter-direction">{{ rule.direction|title }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="filter-actions">
-                            <div class="reorder-actions">
-                                {% if not loop.first %}
-                                <form action="/filter_rule_move" method="post" class="move-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="move_rule" value="ipv4,{{ key }},{{ rule.number }}">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} up">↑</button>
-                                </form>
-                                {% else %}
-                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↑</span>
-                                {% endif %}
-                                {% if not loop.last %}
-                                <form action="/filter_rule_move" method="post" class="move-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="move_rule" value="ipv4,{{ key }},{{ rule.number }}">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} down">↓</button>
-                                </form>
-                                {% else %}
-                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↓</span>
-                                {% endif %}
-                                <form action="/filter_rule_reorder" method="post" class="renumber-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="reorder_rule" value="ipv4,{{ key }},{{ rule.number }}">
-                                    <input type="number" name="new_rule_number" class="rule-number-input"
-                                           value="{{ rule.number }}" min="1" max="999999"
-                                           aria-label="New number for rule {{ rule.number }}">
-                                    <button type="submit" class="btn btn-move" title="Renumber rule {{ rule.number }}">#</button>
-                                </form>
-                            </div>
-                            <form action="/filter_rule_add" method="post" class="edit-form">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="type" value="edit">
-                                <input type="hidden" name="filter" value="ipv4,{{ key }}">
-                                <input type="hidden" name="name" value="{{ rule.number }}">
-                                <input type="hidden" name="description" value="{{ rule.description }}">
-                                <input type="hidden" name="action" value="{{ rule.action }}">
-                                <input type="hidden" name="direction" value="{{ rule.direction }}">
-                                <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
-                                <input type="hidden" name="target" value="{{ rule.fw_chain }}">
-                                <input type="hidden" name="interface" value="{{ rule.interface }}">
-                                <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                            </form>
-                            <form action="/filter_rule_delete" method="post" class="delete-form">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="rule" value="ipv4,{{ key }},{{ rule.number }}">
-                                <button type="submit" class="btn btn-delete-small"
-                                        onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    {% if rule.fw_chain %}
-                    <div class="filter-target">
-                        <span class="target-label">Target Chain:</span>
-                        <span class="target-value">{{ rule.fw_chain }}</span>
-                    </div>
-                    {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
-        {% else %}
-        <div class="empty-state">
-            <p>No IPv4 filters configured.</p>
-        </div>
-        {% endif %}
-    </div>
-    
-    <!-- IPv6 Filters -->
-    <div class="filters-section tab-section-group">
-        <h3 class="section-heading">IPv6 Filters</h3>
-        {% if filter_dict.ipv6 %}
-        {% for key, filter_list in filter_dict.ipv6.items() %}
-        <div id="ipv6{{ key }}" class="filter-group tab-section">
-            <div class="filter-group-header">
-                <h4 class="filter-group-title">{{ key }}</h4>
-                <div class="filter-group-actions">
-                    <form action="/filter_rule_add" method="get" class="add-rule-form">
-                        <input type="hidden" name="filter" value="ipv6,{{ key }}">
-                        <button type="submit" class="btn btn-add btn-sm">Add Rule</button>
-                    </form>
-                    <form action="/filter_rules_resequence" method="post" class="resequence-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="filter" value="ipv6,{{ key }}">
-                        <button type="submit" class="btn btn-secondary btn-sm"
-                                onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the filter.')">Resequence</button>
-                    </form>
-                </div>
-            </div>
-            <div class="filters-container">
-                {% for rule in filter_list %}
-                <div class="filter-card">
-                    <img src="{{ url_for('static', filename='filter-32-yellow-layers.svg') }}" alt="" class="filter-icon">
-                    <div class="filter-content">
-                    <div class="filter-header">
-                        <div class="filter-info">
-                            <h5 class="filter-name">Rule {{ rule.number }}{% if rule.description %}<span class="filter-desc-separator">—</span><span class="filter-description-inline">{{ rule.description }}</span>{% endif %}</h5>
-                            <div class="filter-meta">
-                                <span class="filter-action action-{{ rule.action }}">{{ rule.action|title }}</span>
-                                {% if rule.interface %}
-                                <span class="filter-interface">{{ rule.interface }}</span>
-                                {% endif %}
-                                {% if rule.direction %}
-                                <span class="filter-direction">{{ rule.direction|title }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="filter-actions">
-                            <div class="reorder-actions">
-                                {% if not loop.first %}
-                                <form action="/filter_rule_move" method="post" class="move-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="move_rule" value="ipv6,{{ key }},{{ rule.number }}">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} up">↑</button>
-                                </form>
-                                {% else %}
-                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↑</span>
-                                {% endif %}
-                                {% if not loop.last %}
-                                <form action="/filter_rule_move" method="post" class="move-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="move_rule" value="ipv6,{{ key }},{{ rule.number }}">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" class="btn btn-move" title="Move rule {{ rule.number }} down">↓</button>
-                                </form>
-                                {% else %}
-                                <span class="btn btn-move btn-move-disabled" aria-hidden="true">↓</span>
-                                {% endif %}
-                                <form action="/filter_rule_reorder" method="post" class="renumber-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="reorder_rule" value="ipv6,{{ key }},{{ rule.number }}">
-                                    <input type="number" name="new_rule_number" class="rule-number-input"
-                                           value="{{ rule.number }}" min="1" max="999999"
-                                           aria-label="New number for rule {{ rule.number }}">
-                                    <button type="submit" class="btn btn-move" title="Renumber rule {{ rule.number }}">#</button>
-                                </form>
-                            </div>
-                            <form action="/filter_rule_add" method="post" class="edit-form">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="type" value="edit">
-                                <input type="hidden" name="filter" value="ipv6,{{ key }}">
-                                <input type="hidden" name="name" value="{{ rule.number }}">
-                                <input type="hidden" name="description" value="{{ rule.description }}">
-                                <input type="hidden" name="action" value="{{ rule.action }}">
-                                <input type="hidden" name="direction" value="{{ rule.direction }}">
-                                <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
-                                <input type="hidden" name="target" value="{{ rule.fw_chain }}">
-                                <input type="hidden" name="interface" value="{{ rule.interface }}">
-                                <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
-                            </form>
-                            <form action="/filter_rule_delete" method="post" class="delete-form">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="rule" value="ipv6,{{ key }},{{ rule.number }}">
-                                <button type="submit" class="btn btn-delete-small"
-                                        onclick="return confirm('Delete rule {{ rule.number }}?')">×</button>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    {% if rule.fw_chain %}
-                    <div class="filter-target">
-                        <span class="target-label">Target Chain:</span>
-                        <span class="target-value">{{ rule.fw_chain }}</span>
-                    </div>
-                    {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
-        {% else %}
-        <div class="empty-state">
-            <p>No IPv6 filters configured.</p>
-        </div>
-        {% endif %}
+<div class="page-head">
+    <h2>Filters</h2>
+    <div class="page-actions">
+        <a href="{{ url_for('filter_add') }}" class="btn btn-primary">+ Add filter</a>
     </div>
 </div>
 
-<style>
-.filter-view {
-    max-width: 1400px;
-}
+{{ ui.flash_messages() }}
 
-.filter-nav {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-}
+{{ ui.version_tabs(filter_dict) }}
 
-.nav-section {
-    text-align: center;
-}
+{% for ip_version in ["ipv4", "ipv6"] %}
+{% set label = "IPv4" if ip_version == "ipv4" else "IPv6" %}
+<div class="tab-section-group">
+    {% if filter_dict[ip_version] %}
+    {% for key, filter_list in filter_dict[ip_version].items() %}
+    <div id="{{ ip_version }}{{ key }}" class="block tab-section">
+        <div class="block-head">
+            <div class="block-title">
+                <span class="tag">{{ label }}</span>
+                <h3 class="mono">{{ key }}</h3>
+                <span class="meta">{{ filter_list|length }} rule{{ "" if filter_list|length == 1 else "s" }}</span>
+            </div>
+            <div class="block-actions">
+                <form action="/filter_rules_resequence" method="post" class="resequence-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="filter" value="{{ ip_version }},{{ key }}">
+                    <button type="submit" class="btn btn-sm"
+                            onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the filter.')">Resequence</button>
+                </form>
+                <form action="/filter_rule_add" method="get" class="add-rule-form">
+                    <input type="hidden" name="filter" value="{{ ip_version }},{{ key }}">
+                    <button type="submit" class="btn btn-primary btn-sm">+ Add rule</button>
+                </form>
+            </div>
+        </div>
+        {% if filter_list %}
+        <table class="grid rules-filter">
+            <thead>
+                <tr>
+                    <th class="num" title="Type a new number and press Enter to renumber">#</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                    <th>Target chain</th>
+                    <th>Interface</th>
+                    <th>Direction</th>
+                    <th class="row-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in filter_list %}
+                <tr>
+                    <td class="num">
+                        <form action="/filter_rule_reorder" method="post" class="renumber-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="reorder_rule" value="{{ ip_version }},{{ key }},{{ rule.number }}">
+                            <input type="number" name="new_rule_number" class="num-input"
+                                   value="{{ rule.number }}" min="1" max="999999"
+                                   title="Type a new number and press Enter to renumber"
+                                   aria-label="New number for rule {{ rule.number }}">
+                        </form>
+                    </td>
+                    <td class="desc">{{ rule.description }}</td>
+                    <td><span class="act act-{{ rule.action }}">{{ rule.action }}</span></td>
+                    <td>{% if rule.fw_chain %}<span class="ref">{{ rule.fw_chain }}</span>{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
+                    <td class="mono">{% if rule.interface %}{{ rule.interface }}{% else %}<span class="muted">any</span>{% endif %}</td>
+                    <td>{% if rule.direction %}{{ rule.direction }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
+                    <td class="row-actions">
+                        {% if not loop.first %}
+                        <form action="/filter_rule_move" method="post" class="move-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="move_rule" value="{{ ip_version }},{{ key }},{{ rule.number }}">
+                            <input type="hidden" name="direction" value="up">
+                            <button type="submit" class="ib" title="Move rule {{ rule.number }} up">&#8593;</button>
+                        </form>
+                        {% else %}
+                        <button type="button" class="ib" disabled aria-hidden="true">&#8593;</button>
+                        {% endif %}
+                        {% if not loop.last %}
+                        <form action="/filter_rule_move" method="post" class="move-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="move_rule" value="{{ ip_version }},{{ key }},{{ rule.number }}">
+                            <input type="hidden" name="direction" value="down">
+                            <button type="submit" class="ib" title="Move rule {{ rule.number }} down">&#8595;</button>
+                        </form>
+                        {% else %}
+                        <button type="button" class="ib" disabled aria-hidden="true">&#8595;</button>
+                        {% endif %}
+                        <form action="/filter_rule_add" method="post" class="edit-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="type" value="edit">
+                            <input type="hidden" name="filter" value="{{ ip_version }},{{ key }}">
+                            <input type="hidden" name="name" value="{{ rule.number }}">
+                            <input type="hidden" name="description" value="{{ rule.description }}">
+                            <input type="hidden" name="action" value="{{ rule.action }}">
+                            <input type="hidden" name="direction" value="{{ rule.direction }}">
+                            <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
+                            <input type="hidden" name="target" value="{{ rule.fw_chain }}">
+                            <input type="hidden" name="interface" value="{{ rule.interface }}">
+                            <button type="submit" class="ib" title="Edit rule {{ rule.number }}">&#9998;</button>
+                        </form>
+                        <form action="/filter_rule_delete" method="post" class="delete-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="rule" value="{{ ip_version }},{{ key }},{{ rule.number }}">
+                            <button type="submit" class="ib ib-danger" title="Delete rule {{ rule.number }}"
+                                    onclick="return confirm('Delete rule {{ rule.number }}?')">&times;</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="block-body muted">No rules yet.</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">No {{ label }} filters configured.</div>
+    {% endif %}
+</div>
+{% endfor %}
 
-.nav-title {
-    color: var(--primary-color);
-    font-weight: 600;
-    margin-bottom: 0.75rem;
-    font-size: 1rem;
-}
-
-.nav-links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.nav-link {
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: var(--transition);
-    font-size: 0.9rem;
-}
-
-.nav-link:hover {
-    background: rgba(255, 191, 18, 0.1);
-    color: var(--primary-color);
-}
-
-.member-tag {
-    background: rgba(255, 191, 18, 0.2) !important;
-    color: var(--primary-color) !important;
-    padding: 0.2rem 0.5rem !important;
-    border-radius: 12px !important;
-    font-size: 0.75rem !important;
-    font-weight: 500 !important;
-    font-family: monospace !important;
-    text-decoration: none !important;
-}
-
-.member-tag:hover {
-    background: rgba(255, 191, 18, 0.3) !important;
-}
-
-.filters-section {
-    margin-bottom: 3rem;
-}
-
-.section-heading {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.25rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--primary-color);
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.nav-all {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: center;
-}
-
-.section-tab.active {
-    background: var(--primary-color) !important;
-    color: var(--text-dark) !important;
-}
-
-.tab-section[hidden], .tab-section-group[hidden] {
-    display: none !important;
-}
-
-.filter-group {
-    margin-bottom: 2rem;
-}
-
-.filter-group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.filter-group-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.filter-group-title {
-    color: var(--primary-color);
-    font-weight: 600;
-    margin: 0;
-    font-size: 1.1rem;
-}
-
-.add-rule-form {
-    margin: 0;
-}
-
-.filters-container {
-    display: grid;
-    gap: 1rem;
-}
-
-.filter-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-}
-
-.filter-icon {
-    width: 2rem;
-    height: 2rem;
-    margin-right: 1rem;
-    flex-shrink: 0;
-}
-
-.filter-content {
-    flex: 1;
-}
-
-.filter-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-}
-
-.filter-info {
-    flex: 1;
-}
-
-.filter-name {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0 0 0.5rem 0;
-}
-
-.filter-meta {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-}
-
-.filter-action {
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.action-accept {
-    background: rgba(29, 189, 66, 0.2);
-    color: var(--success-color);
-}
-
-.action-jump {
-    background: rgba(29, 189, 66, 0.2);
-    color: var(--success-color);
-}
-
-.action-drop, .action-reject {
-    background: rgba(220, 34, 50, 0.2);
-    color: var(--danger-color);
-}
-
-.action-offload {
-    background: rgba(0, 123, 255, 0.2);
-    color: #007bff;
-}
-
-.filter-direction, .filter-interface {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-light);
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.filter-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.edit-form, .delete-form, .move-form, .renumber-form, .resequence-form {
-    margin: 0;
-}
-
-.reorder-actions {
-    display: flex;
-    gap: 0.25rem;
-    align-items: center;
-}
-
-.renumber-form {
-    display: flex;
-    gap: 0.25rem;
-    align-items: center;
-}
-
-.btn-move {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-light);
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-    min-width: auto;
-}
-
-.btn-move:hover {
-    background: var(--primary-color);
-    color: var(--text-dark);
-}
-
-.btn-move-disabled {
-    opacity: 0.25;
-    cursor: default;
-    pointer-events: none;
-}
-
-.rule-number-input {
-    width: 5.5rem;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius);
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-light);
-    font-size: 0.8rem;
-}
-
-.filter-desc-separator {
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0 0.5rem;
-}
-
-.filter-description-inline {
-    color: var(--text-light);
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.filter-target {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: var(--border-radius);
-}
-
-.target-label {
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.target-value {
-    color: var(--primary-color);
-    font-family: monospace;
-    font-weight: 600;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-}
-
-/* Smooth scrolling for navigation */
-html {
-    scroll-behavior: smooth;
-}
-
-@media (max-width: 768px) {
-    .filter-nav {
-        grid-template-columns: 1fr;
-    }
-    
-    .filter-group-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
-    }
-    
-    .filter-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
-    }
-    
-    .filter-actions {
-        justify-content: center;
-    }
-}
-</style>
 <script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
 {% endblock body %}

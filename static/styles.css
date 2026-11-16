@@ -627,6 +627,15 @@ table.grid { width: 100%; border-collapse: collapse; }
 .grid.rules th:nth-child(8) { width: 48px; }
 .grid.rules th:nth-child(9) { width: 128px; }
 .grid.rules td.row-actions { overflow: visible; }
+.grid.rules-filter { table-layout: fixed; }
+.grid.rules-filter td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grid.rules-filter td.row-actions { overflow: visible; }
+.grid.rules-filter th:nth-child(1) { width: 80px; }
+.grid.rules-filter th:nth-child(3) { width: 92px; }
+.grid.rules-filter th:nth-child(4) { width: 22%; }
+.grid.rules-filter th:nth-child(5) { width: 14%; }
+.grid.rules-filter th:nth-child(6) { width: 12%; }
+.grid.rules-filter th:nth-child(7) { width: 128px; }
 .grid .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; margin: 0; }
 .grid tr.is-disabled td { opacity: 0.5; }
