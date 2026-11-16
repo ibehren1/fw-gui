@@ -1,6 +1,9 @@
 <!doctype html>
 {%- set theme = current_user.theme if current_user.is_authenticated and current_user.theme else 'auto' %}
 {%- set ep = request.endpoint or '' %}
+{#- Not every route passes firewall_name; fall back to the session so the top
+    bar and nav reflect the selected config on every page. -#}
+{%- if current_user.is_authenticated and not firewall_name and session is mapping %}{% set firewall_name = session.get('firewall_name') %}{% endif %}
 <html lang="en" data-theme="{{ theme }}">
     <head>
         <meta charset="UTF-8" />
@@ -34,6 +37,10 @@
                         {% endfor %}
                     </select>
                 </form>
+                {% elif firewall_name %}
+                {#- This page did not load the config list; link to it instead. -#}
+                <span class="cfg-label">Config</span>
+                <a class="cfg-select cfg-link" href="{{ url_for('configurations') }}" title="Switch firewall configuration">{{ firewall_name }}</a>
                 {% else %}
                 <a class="cfg-label" href="{{ url_for('configurations') }}">Create a configuration</a>
                 {% endif %}

@@ -65,3 +65,18 @@ def test_configurations_without_firewall(auth_client):
     body = _get(auth_client, "/configurations").get_data(as_text=True)
     assert 'value="test_firewall/create"' not in body
     assert 'href="/chain_view"' not in body
+
+
+def test_page_without_config_list_still_shows_selected_config(auth_client):
+    # The change-password route passes neither file_list nor firewall_name;
+    # the top bar falls back to the session and links to the Configurations page.
+    body = auth_client.get("/user_change_password").get_data(as_text=True)
+    assert 'class="cfg-select cfg-link"' in body
+    assert ">test_firewall</a>" in body
+    assert 'href="/chain_view"' in body
+
+
+def test_logged_in_user_on_login_page(auth_client):
+    # user_login overrides the template's session variable with a string; the
+    # layout must not treat it as the session.
+    assert auth_client.get("/user_login").status_code == 200
