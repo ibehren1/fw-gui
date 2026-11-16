@@ -48,6 +48,9 @@ services:
   #     one-time user-creation step.)
   mongodb:
     container_name: mongodb
+    # Upgrading an existing install across a MongoDB major version needs the
+    # feature compatibility version raised first, one major at a time; see
+    # docs/mongodb-upgrade.md. Admin Settings -> MongoDB shows whether it is ready.
     image: mongo:latest
     restart: always
     volumes:

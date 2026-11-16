@@ -33,6 +33,7 @@ The web-based FW-GUI allows the user to visually:
 - [Data Architecture](docs/data-architecture.md) — how FW-GUI stores and moves data: MongoDB config/snapshot model, MongoDB-backed authentication (SQLite before 3.0.0), session store, filesystem layout, backups, and data flow (with diagrams).
 - [SSH, Password, Key & Cookie Handling](docs/ssh-credential-handling.md) — how SSH connectivity, passwords, keys, and cookies are stored, used, and disposed of (with diagrams).
 - [MongoDB Restore Procedure](docs/mongodb-restore-procedure.md) — how to restore a MongoDB dump into a running `mongodb` container (with diagram).
+- [MongoDB Major-Version Upgrade](docs/mongodb-upgrade.md) — why `mongo:latest` can stop an existing install from starting, and how to upgrade one major at a time using the feature compatibility version (with diagram).
 
 ## VyOS Release Support
 
