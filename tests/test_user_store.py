@@ -2,8 +2,8 @@
 Tests for package/user_store.py
 
 Covers: collection, User (is_active / get_id), get_user_by_username,
-        get_user_by_session_id, create_user, set_password, count_users,
-        list_usernames.
+        get_user_by_session_id, create_user, set_password, set_theme,
+        count_users, list_usernames.
 """
 
 import mongomock
@@ -20,6 +20,7 @@ from package.user_store import (
     get_user_by_username,
     list_usernames,
     set_password,
+    set_theme,
 )
 
 # ---------------------------------------------------------------------------
@@ -202,6 +203,37 @@ class TestSetPassword:
         seed(users, "alice", password="old", disabled=True)
         set_password("alice", "new")
         assert users.find_one({"_id": "alice"})["disabled"] is True
+
+
+# ---------------------------------------------------------------------------
+# set_theme / User.theme
+# ---------------------------------------------------------------------------
+
+
+class TestTheme:
+    def test_unset_theme_is_none(self, users):
+        seed(users, "alice")
+        assert get_user_by_username("alice").theme is None
+
+    def test_unknown_stored_theme_reads_as_unset(self, users):
+        seed(users, "alice", theme="neon")
+        assert get_user_by_username("alice").theme is None
+
+    @pytest.mark.parametrize("theme", ["dark", "light"])
+    def test_sets_theme(self, users, theme):
+        seed(users, "alice")
+        assert set_theme("alice", theme) is True
+        assert users.find_one({"_id": "alice"})["theme"] == theme
+        assert get_user_by_username("alice").theme == theme
+
+    def test_reports_missing_account(self, users):
+        assert set_theme("nobody", "dark") is False
+
+    def test_rejects_unknown_theme(self, users):
+        seed(users, "alice")
+        with pytest.raises(ValueError):
+            set_theme("alice", "neon")
+        assert "theme" not in users.find_one({"_id": "alice"})
 
 
 # ---------------------------------------------------------------------------
