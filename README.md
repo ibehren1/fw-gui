@@ -1,3 +1,5 @@
+![GitHub Release](https://img.shields.io/github/v/release/ibehren1/fw-gui)
+
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/ibehren1)  
 Tell me how you are using FW-GUI! [File a Usage Report](https://github.com/ibehren1/fw-gui/issues/new?assignees=ibehren1&labels=Usage+Information&projects=&template=report-usage-information.md&title=Report+Usage+Information)
 
@@ -113,6 +115,17 @@ There is still no automated restore.  Retrieving an archive, and restoring a Mon
 ### MongoDB upgrades
 
 An existing MongoDB install can only move up **one major version at a time**, and only after its *feature compatibility version* (FCV) has been raised to match the version it runs.  The compose files pin `image: mongo:8` for that reason: with `mongo:latest` a pull can skip a major and leave MongoDB unable to start.  **Admin Settings → MongoDB** shows the server version and FCV, says whether the install is ready for the next major, and can raise the FCV (taking a full backup first).  The full procedure is in [MongoDB Major-Version Upgrade](docs/mongodb-upgrade.md).
+
+## Telemetry
+
+FW-GUI reports anonymous usage to `telemetry.fw-gui.com` so the developer can see how many installs exist, which versions are in use and how FW-GUI is deployed.  It is sent in the background and never affects the app if the server is unreachable.
+
+- **Each install** is identified by a random UUID generated on first start (stored in MongoDB), not by anything about you.
+- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration).
+- **At each login:** only the UUID and version.
+- **For each View Diffs, Commit and operational command:** only the UUID, to count use.
+
+**Never sent:** usernames or emails, configuration or rule contents, the names of chains, groups or interfaces, IP addresses or hostnames from your configurations, credentials or SSH keys.  Like any web request, the telemetry server sees the IP address the request comes from.  The full list is in [Data Architecture §10](docs/data-architecture.md#10-telemetry).
 
 ## Deployment
 
