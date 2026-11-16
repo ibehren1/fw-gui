@@ -192,6 +192,22 @@
                 {% endif %}
                 Upgrade one major version at a time; see the <a href="https://github.com/ibehren1/fw-gui/blob/master/docs/mongodb-upgrade.md" target="_blank" rel="noopener">MongoDB upgrade guide</a>.
             </p>
+            {% if mongo.state in ("behind", "in_progress") %}
+            {% set fcv_target = mongo.transition_to if mongo.in_progress else mongo.target %}
+            <form action="/admin_settings#mongodb" method="post" class="fcv-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="fcv_form" value="raise">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="fcv_backup" value="true" checked>
+                    <span>Create a full backup first</span>
+                </label>
+                <label class="checkbox-item fcv-confirm">
+                    <input type="checkbox" name="fcv_confirm" value="true" required>
+                    <span>I understand this changes MongoDB for every account on this instance, and that afterwards MongoDB cannot be rolled back to a version older than {{ fcv_target }} without restoring a backup.</span>
+                </label>
+                <button type="submit" class="btn btn-danger full-width">Raise feature compatibility version to {{ fcv_target }}</button>
+            </form>
+            {% endif %}
             {% else %}
             <p class="settings-description">
                 MongoDB version information unavailable{% if mongo and mongo.error %}: <span class="mono">{{ mongo.error }}</span>{% endif %}.

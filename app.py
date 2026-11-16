@@ -60,7 +60,7 @@ from package.auth_functions import (
     process_login,
     register_user,
 )
-from package.mongo_admin import fcv_status
+from package.mongo_admin import fcv_status, raise_fcv_to_server
 from package.backup_scheduler import (
     describe_schedule,
     prune_preview,
@@ -85,6 +85,7 @@ from package.data_file_functions import (
     add_hostname,
     create_backup,
     create_snapshot,
+    perform_full_backup,
     delete_user_data_file,
     gather_instance_stats,
     get_extra_items,
@@ -526,6 +527,30 @@ def admin_settings():
         # absent "schedule_enabled" checkbox mean "off" rather than "not
         # submitted" -- without it, an unchecked box is indistinguishable from a
         # POST that never carried the field.
+        # Raise MongoDB's feature compatibility version to match the server, the
+        # prerequisite for a major upgrade. Instance-wide and not reversible
+        # from here, so it needs the explicit confirmation, and it takes a full
+        # backup first unless that box is cleared.
+        elif "fcv_form" in request.form:
+            if "fcv_confirm" not in request.form:
+                flash("Confirm the feature compatibility change to continue.", "danger")
+            else:
+                backed_up = True
+                if "fcv_backup" in request.form:
+                    try:
+                        backup_path = perform_full_backup(actor=session["username"])
+                        flash(f"Backup created: {backup_path}", "success")
+                    except Exception as e:  # noqa: BLE001
+                        backed_up = False
+                        logging.error(f"Backup before FCV change failed: {e}")
+                        flash("Backup failed, so the feature compatibility version was not changed.", "critical")
+                if backed_up:
+                    ok, message = raise_fcv_to_server()
+                    logging.warning(
+                        f"User <{session['username']}> requested an FCV raise: {message}"
+                    )
+                    flash(message, "success" if ok else "danger")
+
         elif "schedule_form" in request.form:
             enabled = "schedule_enabled" in request.form
             schedule = update_settings(

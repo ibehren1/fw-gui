@@ -1115,6 +1115,9 @@ legend { padding: 0 6px; margin-left: -6px; }
     background: var(--input-bg);
     color: var(--text);
 }
+.fcv-form { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--row-line); }
+.fcv-confirm { align-items: flex-start; }
+.fcv-confirm input { margin-top: 2px; }
 .backup-files { border: 1px solid var(--line); border-radius: var(--r); max-height: 240px; overflow: auto; }
 .backup-file { font-family: var(--mono); font-size: 0.9em; padding: 3px 10px; border-bottom: 1px solid var(--row-line); }
 .backup-file:last-child { border-bottom: 0; }

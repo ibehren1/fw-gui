@@ -73,3 +73,50 @@ def fcv_status():
         "state": state,
         "error": None,
     }
+
+
+def raise_fcv_to_server():
+    """
+    Raises the feature compatibility version to match the running server.
+
+    Only ever raises, and only to the server's own major.minor. That is the
+    step that has to happen before moving MongoDB to the next major version.
+    An interrupted change is completed by running it again with its target.
+
+    Returns:
+        tuple: (ok, message). ok is False, and nothing changed, when the FCV
+               already matches, is ahead of the server, the state cannot be
+               read, or MongoDB refuses (for example, no admin rights).
+    """
+    status = fcv_status()
+    if status["error"]:
+        return False, f"Could not read the MongoDB version: {status['error']}"
+    if status["state"] == "current":
+        return False, f"The feature compatibility version already matches the server ({status['fcv']})."
+    if status["state"] == "ahead":
+        return False, "The feature compatibility version is ahead of the server; not changing it."
+
+    target = status["transition_to"] if status["in_progress"] else status["target"]
+    if _as_tuple(target) < _as_tuple(status["fcv"]):
+        # An interrupted downgrade. Finishing it is a decision for a DBA, not
+        # for a button whose job is to prepare an upgrade.
+        return False, (
+            f"An interrupted change towards {target} is a downgrade; complete or "
+            "reverse it by hand (see docs/mongodb-upgrade.md)."
+        )
+
+    command = {"setFeatureCompatibilityVersion": target}
+    # MongoDB 7.0+ requires an explicit confirm; older servers reject the field.
+    if _as_tuple(status["target"])[0] >= 7:
+        command["confirm"] = True
+
+    try:
+        data_file_functions._get_mongo_client().admin.command(command)
+    except Exception as e:  # noqa: BLE001 -- report MongoDB's refusal to the admin
+        details = getattr(e, "details", None) or {}
+        reason = details.get("errmsg") or str(e) or e.__class__.__name__
+        logging.error(f"setFeatureCompatibilityVersion {target} failed: {reason}")
+        return False, f"MongoDB refused to change the feature compatibility version: {reason}"
+
+    logging.warning(f"Feature compatibility version raised from {status['fcv']} to {target}.")
+    return True, f"Feature compatibility version raised from {status['fcv']} to {target}."
