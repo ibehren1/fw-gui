@@ -123,6 +123,7 @@ from package.group_funtions import (
     add_group_to_data,
     assemble_detail_list_of_groups,
     delete_group_from_data,
+    group_section_anchor,
 )
 from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
 from package.interface_functions import (
@@ -688,6 +689,10 @@ def group_add():
     if request.method == "POST":
         if request.form["type"] == "add":
             add_group_to_data(session, request)
+            anchor = group_section_anchor(
+                request.form["group_type"], request.form.get("ip_version")
+            )
+            return redirect(url_for("group_view", _anchor=anchor))
 
         elif request.form["type"] == "edit":
             file_list = list_user_files(session)
@@ -736,7 +741,10 @@ def group_delete():
         Response: Redirect to group view page after deletion
     """
     delete_group_from_data(session, request)
-    return redirect(url_for("group_view"))
+    anchor = group_section_anchor(
+        request.form.get("group_type"), request.form["group"].split(",")[0]
+    )
+    return redirect(url_for("group_view", _anchor=anchor))
 
 
 @app.route("/group_view")
@@ -1048,7 +1056,12 @@ def chain_add():
     if request.method == "POST":
         add_chain_to_data(session, request)
 
-        return redirect(url_for("chain_view"))
+        return redirect(
+            url_for(
+                "chain_view",
+                _anchor=request.form["ip_version"] + request.form["fw_chain"],
+            )
+        )
 
     else:
         file_list = list_user_files(session)
@@ -1166,7 +1179,9 @@ def chain_rule_delete():
         Response: Redirect to chain view page
     """
     delete_rule_from_data(session, request)
-    return redirect(url_for("chain_view"))
+    return redirect(
+        url_for("chain_view", _anchor="".join(request.form["rule"].split(",")[:2]))
+    )
 
 
 @app.route("/chain_rule_reorder", methods=["GET", "POST"])
@@ -1311,7 +1326,12 @@ def filter_add():
     if request.method == "POST":
         add_filter_to_data(session, request)
 
-        return redirect(url_for("filter_view"))
+        return redirect(
+            url_for(
+                "filter_view",
+                _anchor=request.form["ip_version"] + request.form["type"],
+            )
+        )
 
     else:
         file_list = list_user_files(session)
@@ -1446,7 +1466,9 @@ def filter_rule_delete():
         Response: Redirect to filter view page
     """
     delete_filter_rule_from_data(session, request)
-    return redirect(url_for("filter_view"))
+    return redirect(
+        url_for("filter_view", _anchor="".join(request.form["rule"].split(",")[:2]))
+    )
 
 
 @app.route("/filter_rule_reorder", methods=["GET", "POST"])

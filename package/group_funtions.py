@@ -184,3 +184,23 @@ def delete_group_from_data(session, request):
     write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
 
     return
+
+
+def group_section_anchor(group_type, ip_version):
+    """
+    Return the group_view section id for a group, used as a redirect anchor.
+
+    Args:
+        group_type: Group type as posted by the forms (e.g. "address-group")
+        ip_version: "ipv4" or "ipv6"; only significant for address/network groups
+
+    Returns:
+        str: Section id in group_view.html, or None for an unknown type
+    """
+    if group_type in ("address-group", "network-group"):
+        if ip_version not in ("ipv4", "ipv6"):
+            return None
+        return f"{ip_version}-{group_type.removesuffix('-group')}"
+    if group_type in ("port-group", "mac-group", "domain-group"):
+        return group_type.removesuffix("-group")
+    return None

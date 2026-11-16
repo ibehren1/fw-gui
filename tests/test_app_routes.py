@@ -206,14 +206,10 @@ class TestGroupRoutes:
         with patch("app.delete_group_from_data") as mock_del:
             resp = auth_client.post(
                 "/group_delete",
-                data={
-                    "ip_version": "ipv4",
-                    "group_type": "address-group",
-                    "group_name": "test",
-                },
+                data={"group": "ipv4,test", "group_type": "address-group"},
             )
             assert resp.status_code == 302
-            assert "/group_view" in resp.headers["Location"]
+            assert resp.headers["Location"].endswith("/group_view#ipv4-address")
             mock_del.assert_called_once()
 
     def test_group_view(self, auth_client):
@@ -334,10 +330,10 @@ class TestChainRoutes:
         with patch("app.add_chain_to_data") as mock_add:
             resp = auth_client.post(
                 "/chain_add",
-                data={"chain_name": "test", "ip_version": "ipv4"},
+                data={"fw_chain": "test", "ip_version": "ipv4"},
             )
             assert resp.status_code == 302
-            assert "/chain_view" in resp.headers["Location"]
+            assert resp.headers["Location"].endswith("/chain_view#ipv4test")
             mock_add.assert_called_once()
 
     def test_chain_rule_add_get_chains_exist(self, auth_client):
@@ -397,10 +393,10 @@ class TestChainRoutes:
         with patch("app.delete_rule_from_data") as mock_del:
             resp = auth_client.post(
                 "/chain_rule_delete",
-                data={"fw_chain": "test_chain", "rule_number": "10"},
+                data={"chain": "ipv4,test_chain", "rule": "ipv4,test_chain,10"},
             )
             assert resp.status_code == 302
-            assert "/chain_view" in resp.headers["Location"]
+            assert resp.headers["Location"].endswith("/chain_view#ipv4test_chain")
             mock_del.assert_called_once()
 
     def test_chain_rule_reorder_post(self, auth_client):
@@ -495,10 +491,10 @@ class TestFilterRoutes:
         with patch("app.add_filter_to_data") as mock_add:
             resp = auth_client.post(
                 "/filter_add",
-                data={"filter_name": "test", "ip_version": "ipv4"},
+                data={"type": "input", "ip_version": "ipv4"},
             )
             assert resp.status_code == 302
-            assert "/filter_view" in resp.headers["Location"]
+            assert resp.headers["Location"].endswith("/filter_view#ipv4input")
             mock_add.assert_called_once()
 
     def test_filter_rule_add_get_all_deps(self, auth_client):
@@ -597,10 +593,10 @@ class TestFilterRoutes:
         with patch("app.delete_filter_rule_from_data") as mock_del:
             resp = auth_client.post(
                 "/filter_rule_delete",
-                data={"filter": "test_filter", "rule_number": "10"},
+                data={"rule": "ipv4,test_filter,10"},
             )
             assert resp.status_code == 302
-            assert "/filter_view" in resp.headers["Location"]
+            assert resp.headers["Location"].endswith("/filter_view#ipv4test_filter")
             mock_del.assert_called_once()
 
     def test_filter_rule_reorder_post(self, auth_client):

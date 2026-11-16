@@ -20,12 +20,15 @@
     
     <!-- Quick Navigation -->
     <div class="filter-nav">
+        <div class="nav-all">
+            <a href="#all" class="nav-link member-tag section-tab">All</a>
+        </div>
         <div class="nav-section">
             <h3 class="nav-title">IPv4 Filters</h3>
             <div class="nav-links">
                 {% if filter_dict.ipv4 %}
                 {% for key, filter_list in filter_dict.ipv4.items() %}
-                <a href="#ipv4{{ key }}" class="nav-link member-tag">{{ key }}</a>
+                <a href="#ipv4{{ key }}" class="nav-link member-tag section-tab">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -35,7 +38,7 @@
             <div class="nav-links">
                 {% if filter_dict.ipv6 %}
                 {% for key, filter_list in filter_dict.ipv6.items() %}
-                <a href="#ipv6{{ key }}" class="nav-link member-tag">{{ key }}</a>
+                <a href="#ipv6{{ key }}" class="nav-link member-tag section-tab">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -43,11 +46,11 @@
     </div>
     
     <!-- IPv4 Filters -->
-    <div class="filters-section">
+    <div class="filters-section tab-section-group">
         <h3 class="section-heading">IPv4 Filters</h3>
         {% if filter_dict.ipv4 %}
         {% for key, filter_list in filter_dict.ipv4.items() %}
-        <div id="ipv4{{ key }}" class="filter-group">
+        <div id="ipv4{{ key }}" class="filter-group tab-section">
             <div class="filter-group-header">
                 <h4 class="filter-group-title">{{ key }}</h4>
                 <div class="filter-group-actions">
@@ -61,7 +64,6 @@
                         <button type="submit" class="btn btn-secondary btn-sm"
                                 onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the filter.')">Resequence</button>
                     </form>
-                    <a href="#top" class="back-to-top">↑ Top</a>
                 </div>
             </div>
             <div class="filters-container">
@@ -155,11 +157,11 @@
     </div>
     
     <!-- IPv6 Filters -->
-    <div class="filters-section">
+    <div class="filters-section tab-section-group">
         <h3 class="section-heading">IPv6 Filters</h3>
         {% if filter_dict.ipv6 %}
         {% for key, filter_list in filter_dict.ipv6.items() %}
-        <div id="ipv6{{ key }}" class="filter-group">
+        <div id="ipv6{{ key }}" class="filter-group tab-section">
             <div class="filter-group-header">
                 <h4 class="filter-group-title">{{ key }}</h4>
                 <div class="filter-group-actions">
@@ -173,7 +175,6 @@
                         <button type="submit" class="btn btn-secondary btn-sm"
                                 onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the filter.')">Resequence</button>
                     </form>
-                    <a href="#top" class="back-to-top">↑ Top</a>
                 </div>
             </div>
             <div class="filters-container">
@@ -347,18 +348,19 @@
     margin-bottom: 1rem;
 }
 
-.back-to-top {
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    font-size: 0.9rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    transition: var(--transition);
+.nav-all {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
 }
 
-.back-to-top:hover {
-    color: var(--primary-color);
-    background: rgba(255, 191, 18, 0.1);
+.section-tab.active {
+    background: var(--primary-color) !important;
+    color: var(--text-dark) !important;
+}
+
+.tab-section[hidden], .tab-section-group[hidden] {
+    display: none !important;
 }
 
 .filter-group {
@@ -592,4 +594,5 @@ html {
     }
 }
 </style>
+<script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
 {% endblock body %}

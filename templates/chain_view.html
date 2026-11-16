@@ -1,6 +1,6 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<div class="chain-view" id="top">
+<div class="chain-view">
     <div class="view-header">
         <h2 class="section-title">Firewall Chains</h2>
         <a href="{{ url_for('chain_add') }}" class="btn btn-add">Add Chain</a>
@@ -20,12 +20,15 @@
     
     <!-- Quick Navigation -->
     <div class="chain-nav">
+        <div class="nav-all">
+            <a href="#all" class="nav-link member-tag section-tab">All</a>
+        </div>
         <div class="nav-section">
             <h3 class="nav-title">IPv4 Chains</h3>
             <div class="nav-links">
                 {% if chain_dict.ipv4 %}
                 {% for key, chain_list in chain_dict.ipv4.items() %}
-                <a href="#ipv4{{ key }}" class="nav-link member-tag">{{ key }}</a>
+                <a href="#ipv4{{ key }}" class="nav-link member-tag section-tab">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -35,7 +38,7 @@
             <div class="nav-links">
                 {% if chain_dict.ipv6 %}
                 {% for key, chain_list in chain_dict.ipv6.items() %}
-                <a href="#ipv6{{ key }}" class="nav-link member-tag">{{ key }}</a>
+                <a href="#ipv6{{ key }}" class="nav-link member-tag section-tab">{{ key }}</a>
                 {% endfor %}
                 {% endif %}
             </div>
@@ -43,13 +46,13 @@
     </div>
     
     <!-- IPv4 Chains -->
-    <div class="chains-section">
+    <div class="chains-section tab-section-group">
         <div class="section-header">
             <h3 class="section-heading">IPv4 Chains</h3>
         </div>
         {% if chain_dict.ipv4 %}
         {% for key, chain_list in chain_dict.ipv4.items() %}
-        <div id="ipv4{{ key }}" class="chain-group">
+        <div id="ipv4{{ key }}" class="chain-group tab-section">
             <div class="section-header">
                 <h4 class="chain-group-title">{{ key }}</h4>
                 <div class="chain-group-actions">
@@ -60,7 +63,6 @@
                         <button type="submit" class="btn btn-secondary btn-sm"
                                 onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the chain.')">Resequence</button>
                     </form>
-                    <a href="#top" class="back-to-top">↑ Top</a>
                 </div>
             </div>
             <div class="chains-container">
@@ -280,13 +282,13 @@
     </div>
     
     <!-- IPv6 Chains -->
-    <div class="chains-section">
+    <div class="chains-section tab-section-group">
         <div class="section-header">
             <h3 class="section-heading">IPv6 Chains</h3>
         </div>
         {% if chain_dict.ipv6 %}
         {% for key, chain_list in chain_dict.ipv6.items() %}
-        <div id="ipv6{{ key }}" class="chain-group">
+        <div id="ipv6{{ key }}" class="chain-group tab-section">
             <div class="section-header">
                 <h4 class="chain-group-title">{{ key }}</h4>
                 <div class="chain-group-actions">
@@ -297,7 +299,6 @@
                         <button type="submit" class="btn btn-secondary btn-sm"
                                 onclick="return confirm('Renumber all rules in {{ key }} to 10, 20, 30...?\n\nA config push only adds the new rule numbers. Remove the old rule numbers on the firewall, or delete and re-push the chain.')">Resequence</button>
                     </form>
-                    <a href="#top" class="back-to-top">↑ Top</a>
                 </div>
             </div>
             <div class="chains-container">
@@ -574,6 +575,15 @@
     text-decoration: none !important;
 }
 
+.section-tab.active {
+    background: var(--primary-color) !important;
+    color: var(--text-dark) !important;
+}
+
+.tab-section[hidden], .tab-section-group[hidden] {
+    display: none !important;
+}
+
 .member-tag:hover {
     background: rgba(255, 191, 18, 0.3) !important;
 }
@@ -604,18 +614,10 @@
     align-items: center;
 }
 
-.back-to-top {
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    font-size: 0.9rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    transition: var(--transition);
-}
-
-.back-to-top:hover {
-    color: var(--primary-color);
-    background: rgba(255, 191, 18, 0.1);
+.nav-all {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
 }
 
 .chain-group {
@@ -929,4 +931,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
 {% endblock body %}

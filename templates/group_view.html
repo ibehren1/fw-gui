@@ -1,6 +1,6 @@
 {% extends "basic_page.html" %}
 {% block body %}
-<div class="group-view" id="top">
+<div class="group-view">
     <div class="view-header">
         <h2 class="section-title">Firewall Groups</h2>
         <a href="{{ url_for('group_add') }}" class="btn btn-add">Add Group</a>
@@ -20,36 +20,36 @@
     
     <!-- Quick Navigation -->
     <div class="group-nav">
+        <div class="nav-all">
+            <a href="#all" class="nav-link member-tag section-tab">All</a>
+        </div>
         <div class="nav-section">
             <h3 class="nav-title">IPv4 Groups</h3>
             <div class="nav-links">
-                <a href="#ipv4-address" class="nav-link member-tag">Address Groups</a>
-                <a href="#ipv4-network" class="nav-link member-tag">Network Groups</a>
+                <a href="#ipv4-address" class="nav-link member-tag section-tab">Address Groups</a>
+                <a href="#ipv4-network" class="nav-link member-tag section-tab">Network Groups</a>
             </div>
         </div>
         <div class="nav-section">
             <h3 class="nav-title">IPv6 Groups</h3>
             <div class="nav-links">
-                <a href="#ipv6-address" class="nav-link member-tag">Address Groups</a>
-                <a href="#ipv6-network" class="nav-link member-tag">Network Groups</a>
+                <a href="#ipv6-address" class="nav-link member-tag section-tab">Address Groups</a>
+                <a href="#ipv6-network" class="nav-link member-tag section-tab">Network Groups</a>
             </div>
         </div>
         <div class="nav-section">
             <h3 class="nav-title">Other Groups</h3>
             <div class="nav-links">
-                <a href="#domain" class="nav-link member-tag">Domain Groups</a>
-                <a href="#mac" class="nav-link member-tag">MAC Groups</a>
-                <a href="#port" class="nav-link member-tag">Port Groups</a>
+                <a href="#domain" class="nav-link member-tag section-tab">Domain Groups</a>
+                <a href="#mac" class="nav-link member-tag section-tab">MAC Groups</a>
+                <a href="#port" class="nav-link member-tag section-tab">Port Groups</a>
             </div>
         </div>
     </div>
     
     <!-- IPv4 Address Groups -->
-    <div id="ipv4-address" class="group-section">
-        <div class="section-header">
-            <div class="section-header"><h3 class="section-heading">IPv4 Address Groups</h3></div>
-            <a href="#top" class="back-to-top">↑ Top</a>
-        </div>
+    <div id="ipv4-address" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">IPv4 Address Groups</h3></div>
         {% set ipv4_address_groups = group_list|selectattr('group_type', 'equalto', 'address-group')|selectattr('ip_version', 'equalto', 'ipv4')|list %}
         {% if ipv4_address_groups %}
         <div class="groups-grid">
@@ -74,6 +74,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -102,8 +103,8 @@
     </div>
     
     <!-- IPv4 Network Groups -->
-    <div id="ipv4-network" class="group-section">
-        <div class="section-header"><h3 class="section-heading">IPv4 Network Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+    <div id="ipv4-network" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">IPv4 Network Groups</h3></div>
         {% set ipv4_network_groups = group_list|selectattr('group_type', 'equalto', 'network-group')|selectattr('ip_version', 'equalto', 'ipv4')|list %}
         {% if ipv4_network_groups %}
         <div class="groups-grid">
@@ -128,6 +129,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -156,8 +158,8 @@
     </div>
     
     <!-- IPv6 Address Groups -->
-    <div id="ipv6-address" class="group-section">
-        <div class="section-header"><h3 class="section-heading">IPv6 Address Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+    <div id="ipv6-address" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">IPv6 Address Groups</h3></div>
         {% set ipv6_address_groups = group_list|selectattr('group_type', 'equalto', 'address-group')|selectattr('ip_version', 'equalto', 'ipv6')|list %}
         {% if ipv6_address_groups %}
         <div class="groups-grid">
@@ -182,6 +184,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="ipv6,{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -210,8 +213,8 @@
     </div>
     
     <!-- IPv6 Network Groups -->
-    <div id="ipv6-network" class="group-section">
-        <div class="section-header"><h3 class="section-heading">IPv6 Network Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+    <div id="ipv6-network" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">IPv6 Network Groups</h3></div>
         {% set ipv6_network_groups = group_list|selectattr('group_type', 'equalto', 'network-group')|selectattr('ip_version', 'equalto', 'ipv6')|list %}
         {% if ipv6_network_groups %}
         <div class="groups-grid">
@@ -236,6 +239,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="ipv6,{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -264,8 +268,8 @@
     </div>
     
     <!-- Port Groups -->
-    <div id="port" class="group-section">
-        <div class="section-header"><h3 class="section-heading">Port Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+    <div id="port" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">Port Groups</h3></div>
         {% set port_groups = group_list|selectattr('group_type', 'equalto', 'port-group')|list %}
         {% if port_groups %}
         <div class="groups-grid">
@@ -290,6 +294,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="{{ group.ip_version }},{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -318,8 +323,8 @@
     </div>
     
     <!-- MAC Groups -->
-    <div id="mac" class="group-section">
-        <div class="section-header"><h3 class="section-heading">MAC Address Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+    <div id="mac" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">MAC Address Groups</h3></div>
         {% set mac_groups = group_list|selectattr('group_type', 'equalto', 'mac-group')|list %}
         {% if mac_groups %}
         <div class="groups-grid">
@@ -344,6 +349,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="{{ group.ip_version }},{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -372,8 +378,8 @@
     </div>
     
     <!-- Domain Groups -->
-    <div id="domain" class="group-section">
-        <div class="section-header"><h3 class="section-heading">Domain Groups</h3><a href="#top" class="back-to-top">↑ Top</a></div>
+    <div id="domain" class="group-section tab-section">
+        <div class="section-header"><h3 class="section-heading">Domain Groups</h3></div>
         {% set domain_groups = group_list|selectattr('group_type', 'equalto', 'domain-group')|list %}
         {% if domain_groups %}
         <div class="groups-grid">
@@ -398,6 +404,7 @@
                         </form>
                         <form action="/group_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="group_type" value="{{ group.group_type }}">
                             <input type="hidden" name="group" value="ipv4,{{ group.group_name }}">
                             <button type="submit" class="btn btn-delete-small" 
                                     onclick="return confirm('Delete group {{ group.group_name }}?')">×</button>
@@ -492,18 +499,19 @@
     margin-bottom: 1rem;
 }
 
-.back-to-top {
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    font-size: 0.9rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    transition: var(--transition);
+.nav-all {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
 }
 
-.back-to-top:hover {
-    color: var(--primary-color);
-    background: rgba(255, 191, 18, 0.1);
+.section-tab.active {
+    background: var(--primary-color) !important;
+    color: var(--text-dark) !important;
+}
+
+.tab-section[hidden], .tab-section-group[hidden] {
+    display: none !important;
 }
 
 .groups-grid {
@@ -631,4 +639,5 @@ html {
     }
 }
 </style>
+<script src="{{ url_for('static', filename='section-tabs.js') }}"></script>
 {% endblock body %}
