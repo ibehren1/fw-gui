@@ -482,7 +482,9 @@ code, pre, .mono { font-family: var(--mono); }
 .tab:hover { color: var(--text); text-decoration: none; }
 .tab.active { color: var(--heading); border-bottom-color: var(--accent); }
 .tab-sep {
-    padding: 0 4px 0 14px;
+    margin-left: 10px;
+    padding: 2px 4px 2px 14px;
+    border-left: 1px solid var(--line-strong);
     font-size: 0.75em;
     font-weight: 700;
     color: var(--muted);
@@ -734,6 +736,29 @@ table.grid { width: 100%; border-collapse: collapse; }
 .tag-ipv6, .tab-sep-ipv6 { color: var(--v6); }
 .tag-ipv4 { background: var(--v4-bg); border-color: var(--v4); }
 .tag-ipv6 { background: var(--v6-bg); border-color: var(--v6); }
+
+/* Version sections on the chain, filter and group pages */
+.version-section + .version-section { margin-top: 26px; }
+.version-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid var(--line-strong);
+}
+.version-head h3 {
+    font-size: 1em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--heading);
+}
+.version-ipv4 > .version-head { border-bottom-color: var(--v4); }
+.version-ipv4 > .version-head h3 { color: var(--v4); }
+.version-ipv6 > .version-head { border-bottom-color: var(--v6); }
+.version-ipv6 > .version-head h3 { color: var(--v6); }
+.version-ipv4 > .block { border-left: 3px solid var(--v4); }
+.version-ipv6 > .block { border-left: 3px solid var(--v6); }
 
 .empty-state {
     padding: 16px;

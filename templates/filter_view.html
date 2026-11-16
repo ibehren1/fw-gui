@@ -14,7 +14,12 @@
 
 {% for ip_version in ["ipv4", "ipv6"] %}
 {% set label = "IPv4" if ip_version == "ipv4" else "IPv6" %}
-<div class="tab-section-group">
+{% set count = filter_dict[ip_version]|length if filter_dict[ip_version] else 0 %}
+<div class="tab-section-group version-section version-{{ ip_version }}">
+    <div class="version-head">
+        <h3>{{ label }} filters</h3>
+        <span class="meta">{{ count }} filter{{ "" if count == 1 else "s" }}</span>
+    </div>
     {% if filter_dict[ip_version] %}
     {% for key, filter_list in filter_dict[ip_version].items() %}
     <div id="{{ ip_version }}{{ key }}" class="block tab-section">

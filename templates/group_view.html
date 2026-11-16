@@ -1,15 +1,21 @@
 {% extends "basic_page.html" %}
 {% import "_macros.html" as ui %}
 {% block body %}
-{#- id, title, group_type, ip_version (None = any), member noun -#}
-{% set categories = [
-    ("ipv4-address", "IPv4 Address", "address-group", "ipv4", "members"),
-    ("ipv4-network", "IPv4 Network", "network-group", "ipv4", "networks"),
-    ("ipv6-address", "IPv6 Address", "address-group", "ipv6", "members"),
-    ("ipv6-network", "IPv6 Network", "network-group", "ipv6", "networks"),
-    ("port", "Port", "port-group", None, "ports"),
-    ("mac", "MAC Address", "mac-group", None, "addresses"),
-    ("domain", "Domain", "domain-group", None, "domains"),
+{#- (version id, heading, [(section id, tab label, title, group_type, ip_version or None, member noun)]) -#}
+{% set sections = [
+    ("ipv4", "IPv4", [
+        ("ipv4-address", "Address", "IPv4 Address", "address-group", "ipv4", "members"),
+        ("ipv4-network", "Network", "IPv4 Network", "network-group", "ipv4", "networks"),
+    ]),
+    ("ipv6", "IPv6", [
+        ("ipv6-address", "Address", "IPv6 Address", "address-group", "ipv6", "members"),
+        ("ipv6-network", "Network", "IPv6 Network", "network-group", "ipv6", "networks"),
+    ]),
+    ("other", "Other", [
+        ("port", "Port", "Port", "port-group", None, "ports"),
+        ("mac", "MAC Address", "MAC Address", "mac-group", None, "addresses"),
+        ("domain", "Domain", "Domain", "domain-group", None, "domains"),
+    ]),
 ] %}
 <div class="page-head">
     <h2>Groups</h2>
@@ -22,12 +28,18 @@
 
 <div class="tabs">
     <a href="#all" class="tab section-tab">All</a>
-    {% for id, title, group_type, ip_version, noun in categories %}
-    <a href="#{{ id }}" class="tab section-tab">{{ title }}</a>
+    {% for version, heading, categories in sections %}
+    <span class="tab-sep tab-sep-{{ version }}">{{ heading }}</span>
+    {% for id, tab_label, title, group_type, ip_version, noun in categories %}
+    <a href="#{{ id }}" class="tab section-tab">{{ tab_label }}</a>
+    {% endfor %}
     {% endfor %}
 </div>
 
-{% for id, title, group_type, ip_version, noun in categories %}
+{% for version, heading, categories in sections %}
+<div class="tab-section-group version-section version-{{ version }}">
+<div class="version-head"><h3>{{ heading }} groups</h3></div>
+{% for id, tab_label, title, group_type, ip_version, noun in categories %}
 {% set groups = group_list|selectattr('group_type', 'equalto', group_type) %}
 {% if ip_version %}{% set groups = groups|selectattr('ip_version', 'equalto', ip_version) %}{% endif %}
 {% set groups = groups|list %}
@@ -84,6 +96,8 @@
     {% else %}
     <div class="block-body muted">No {{ title }} groups configured.</div>
     {% endif %}
+</div>
+{% endfor %}
 </div>
 {% endfor %}
 

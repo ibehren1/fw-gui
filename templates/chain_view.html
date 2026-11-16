@@ -14,7 +14,12 @@
 
 {% for ip_version in ["ipv4", "ipv6"] %}
 {% set label = "IPv4" if ip_version == "ipv4" else "IPv6" %}
-<div class="tab-section-group">
+{% set count = chain_dict[ip_version]|length if chain_dict[ip_version] else 0 %}
+<div class="tab-section-group version-section version-{{ ip_version }}">
+    <div class="version-head">
+        <h3>{{ label }} chains</h3>
+        <span class="meta">{{ count }} chain{{ "" if count == 1 else "s" }}</span>
+    </div>
     {% if chain_dict[ip_version] %}
     {% for key, chain_list in chain_dict[ip_version].items() %}
     <div id="{{ ip_version }}{{ key }}" class="block tab-section">
