@@ -295,6 +295,62 @@ code, pre, .mono { font-family: var(--mono); }
 }
 
 /* ------------------------------------------------------------------ */
+/* First-login theme chooser                                           */
+/* ------------------------------------------------------------------ */
+.chooser-page { display: grid; place-items: center; padding: 40px 16px; }
+.chooser {
+    width: min(860px, 100%);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 24px 28px;
+}
+.chooser .brand { color: var(--heading); min-width: 0; }
+.chooser h1 { font-size: 1.5em; margin: 14px 0 4px; }
+.chooser .lead { margin-bottom: 18px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tile {
+    position: relative;
+    display: block;
+    cursor: pointer;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+}
+.tile:hover { border-color: var(--line-strong); }
+.tile input { position: absolute; opacity: 0; }
+.tile:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+.tile:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--focus); }
+.tile-cap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+}
+.tile-cap b { font-size: 1.05em; color: var(--heading); }
+.tile-cap span { color: var(--muted); font-size: 0.88em; }
+.tick { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: inline-block; }
+.tile:has(input:checked) .tick { border-color: var(--accent); background: radial-gradient(var(--accent) 45%, transparent 50%); }
+.m-bar { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; background: var(--bar-bg); color: var(--bar-text); font-size: 10px; }
+.m-bar .logo { width: 14px; height: 14px; font-size: 6px; }
+.m-cfg { margin-left: 10px; border: 1px solid var(--bar-line); padding: 0 6px; border-radius: var(--r); color: var(--bar-muted); }
+.m-body { display: grid; grid-template-columns: 70px 1fr; height: 170px; }
+.m-nav { background: var(--nav-bg); border-right: 1px solid var(--line); padding: 10px 0; }
+.m-nav i { display: block; height: 6px; margin: 7px 10px; border-radius: 2px; background: var(--line-strong); }
+.m-nav i.on { background: var(--accent); }
+.m-main { padding: 8px 10px; font-size: 10px; }
+.m-title { font-family: var(--mono); font-weight: 700; color: var(--heading); margin-bottom: 5px; }
+.m-row { display: grid; grid-template-columns: 22px 1fr 52px 70px; align-items: center; gap: 6px; padding: 3px 4px; border-bottom: 1px solid var(--row-line); background: var(--panel); }
+.m-row .act { min-width: 0; font-size: 7.5px; padding: 0 3px; }
+.m-num { font-family: var(--mono); color: var(--muted); text-align: right; }
+.m-mono { font-family: var(--mono); color: var(--muted); }
+.m-btn { display: inline-block; margin-top: 7px; padding: 2px 8px; border-radius: var(--r); background: var(--accent); color: var(--accent-text); font-weight: 600; }
+
+/* ------------------------------------------------------------------ */
 /* Shell: nav + main                                                   */
 /* ------------------------------------------------------------------ */
 .shell {
@@ -795,5 +851,6 @@ legend { padding: 0 6px; margin-left: -6px; }
     .nav-item { border-left: 0; border-radius: var(--r); padding: 4px 10px; }
     .brand { min-width: 0; }
     .brand-sub, .cfg-label { display: none; }
+    .tiles { grid-template-columns: 1fr; }
     .main { padding: 12px; }
 }

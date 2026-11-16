@@ -33,6 +33,7 @@ from io import BytesIO
 import base64
 import hashlib
 from functools import wraps
+from urllib.parse import urlsplit
 
 import certifi
 from cryptography.fernet import Fernet
@@ -48,7 +49,7 @@ from flask import (
     url_for,
 )
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, login_required, logout_user
+from flask_login import LoginManager, current_user, login_required, logout_user
 from flask_session import Session
 from flask_wtf.csrf import CSRFProtect
 from waitress import serve
@@ -141,6 +142,7 @@ from package.napalm_ssh_functions import (
 from package.ssh_key_store import migrate_legacy_key_files
 from package.telemetry_functions import telemetry_instance
 from package.user_migration import migrate_sqlite_users
+from package import user_store
 from package.user_store import get_user_by_session_id, list_usernames
 from package.validators import is_safe_name
 
@@ -575,6 +577,9 @@ def user_login():
     if request.method == "POST":
         login, session["data_dir"], session["username"] = process_login(bcrypt, request)
         if login:
+            # An account that has never picked a theme is asked once, here.
+            if current_user.is_authenticated and current_user.theme is None:
+                return redirect(url_for("choose_theme"))
             return redirect(url_for("index"))
         else:
             return redirect(url_for("user_login"))
@@ -587,6 +592,70 @@ def user_login():
             session="None",
             registration=registration,
         )
+
+
+@app.route("/choose_theme", methods=["GET", "POST"])
+@login_required
+def choose_theme():
+    """
+    Handle the theme chooser shown after login to an account without a theme.
+
+    For GET requests, renders the chooser with a preview of each theme.
+    For POST requests, stores the chosen theme on the account and continues to
+    the index page. It can also be visited later to change the theme.
+
+    Returns:
+        Response: Rendered chooser, or redirect to index once a theme is saved
+    """
+    if request.method == "POST":
+        theme = request.form.get("theme")
+        if theme in user_store.THEMES:
+            user_store.set_theme(current_user.username, theme)
+            return redirect(url_for("index"))
+        flash("Choose a theme to continue.", "warning")
+
+    return render_template(
+        "choose_theme.html",
+        themes=user_store.THEMES,
+        current=current_user.theme,
+        username=current_user.username,
+    )
+
+
+def _same_site_path(url):
+    """Returns the path and query of url if it points at this host, else None.
+
+    Used to send the user back where they came from without turning the
+    Referer header into an open redirect.
+    """
+    if not url:
+        return None
+    parts = urlsplit(url)
+    if parts.netloc and parts.netloc != request.host:
+        return None
+    if not parts.path.startswith("/") or parts.path.startswith("//"):
+        return None
+    return parts.path + (f"?{parts.query}" if parts.query else "")
+
+
+@app.route("/user_theme", methods=["POST"])
+@login_required
+def user_theme():
+    """
+    Handle the top-bar theme switch.
+
+    Stores the posted theme on the account and returns to the page the switch
+    was clicked on.
+
+    Returns:
+        Response: Redirect back to the referring page, or the index page
+    """
+    theme = request.form.get("theme")
+    if theme in user_store.THEMES:
+        user_store.set_theme(current_user.username, theme)
+    else:
+        flash("Unknown theme.", "danger")
+    return redirect(_same_site_path(request.referrer) or url_for("index"))
 
 
 @app.route("/user_logout")

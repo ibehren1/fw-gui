@@ -41,6 +41,11 @@
             </div>
 
             {% if current_user.is_authenticated %}
+            <form action="{{ url_for('user_theme') }}" method="post" class="theme-switch" aria-label="Theme">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" name="theme" value="dark" aria-pressed="{{ 'true' if theme == 'dark' else 'false' }}" title="Dark theme">&#9790; Dark</button>
+                <button type="submit" name="theme" value="light" aria-pressed="{{ 'true' if theme == 'light' else 'false' }}" title="Light theme">&#9728; Light</button>
+            </form>
             <div class="user">
                 <span class="user-name">{{ username or current_user.username }}</span>
                 <a href="{{ url_for('admin_settings') }}" title="Administrative settings">Admin</a>

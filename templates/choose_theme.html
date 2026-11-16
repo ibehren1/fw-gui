@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="{{ current or 'auto' }}">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FW-GUI · Choose your theme</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" type="text/css" />
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" />
+    </head>
+    {%- macro preview() %}
+    <div class="m-bar"><span class="logo">FW</span><b>FW-GUI</b><span class="m-cfg">edge-fw-01 &#9662;</span></div>
+    <div class="m-body">
+        <div class="m-nav"><i></i><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="m-main">
+            <div class="m-title">WAN_LOCAL</div>
+            {% for num, desc, action, src in [(10, 'Allow established', 'accept', 'any'),
+                                              (20, 'Drop invalid', 'drop', 'any'),
+                                              (30, 'SSH from mgmt', 'accept', 'MGMT_HOSTS'),
+                                              (40, 'DNS from LAN', 'accept', 'LAN_NETS'),
+                                              (50, 'Reject ident', 'reject', 'any')] %}
+            <div class="m-row"><span class="m-num">{{ num }}</span><span>{{ desc }}</span><span class="act act-{{ action }}">{{ action }}</span><span class="m-mono">{{ src }}</span></div>
+            {% endfor %}
+            <div class="m-btn">+ Add rule</div>
+        </div>
+    </div>
+    {%- endmacro %}
+    <body class="chooser-page">
+        <form class="chooser" action="{{ url_for('choose_theme') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="brand"><span class="logo">FW</span><b>FW-GUI</b></div>
+            <h1>Choose your theme</h1>
+            <p class="lead">Welcome, {{ username }}. Pick how FW-GUI should look. Your choice is saved to your account.</p>
+
+            {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+            {% if flashed_messages %}
+            <div class="flash-messages">
+                {% for category, flash_message in flashed_messages %}
+                <div class="alert alert-{{ category }}">{{ flash_message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="tiles">
+                <label class="tile" data-theme="dark">
+                    <input type="radio" name="theme" value="dark"{% if current == 'dark' %} checked{% endif %}>
+                    {{ preview() }}
+                    <div class="tile-cap"><div><b>Dark</b><br><span>Graphite console, amber accent</span></div><span class="tick"></span></div>
+                </label>
+                <label class="tile" data-theme="light">
+                    <input type="radio" name="theme" value="light"{% if current == 'light' %} checked{% endif %}>
+                    {{ preview() }}
+                    <div class="tile-cap"><div><b>Light</b><br><span>White surfaces, navy bar, blue accent</span></div><span class="tick"></span></div>
+                </label>
+            </div>
+
+            <div class="form-foot">
+                <span class="muted small">You can change this anytime from the top bar.</span>
+                <button class="btn btn-primary" type="submit">Continue</button>
+            </div>
+        </form>
+        <script>
+        // Preview the picked theme on the whole page before it is saved.
+        document.querySelectorAll('input[name="theme"]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                document.documentElement.setAttribute('data-theme', input.value);
+            });
+        });
+        </script>
+    </body>
+</html>
