@@ -60,6 +60,7 @@ from package.auth_functions import (
     process_login,
     register_user,
 )
+from package.mongo_admin import fcv_status
 from package.backup_scheduler import (
     describe_schedule,
     prune_preview,
@@ -577,6 +578,7 @@ def admin_settings():
 
     return render_template(
         "admin_settings_form.html",
+        mongo=fcv_status(),
         file_list=file_list,
         snapshot_list=snapshot_list,
         full_backup_list=full_backup_list,

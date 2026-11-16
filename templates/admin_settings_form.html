@@ -157,6 +157,47 @@
                 Counted across every account on this instance, not just your own.
             </p>
         </div>
+
+        <div class="settings-card" id="mongodb">
+            <h3 class="subsection-title">MongoDB</h3>
+            {% if mongo and not mongo.error %}
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Server version:</span>
+                    <span class="info-value">{{ mongo.server }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Feature compatibility:</span>
+                    <span class="info-value">{{ mongo.fcv }}{% if mongo.in_progress %} &rarr; {{ mongo.transition_to }}{% endif %}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Upgrade readiness:</span>
+                    <span class="info-value">
+                        {% if mongo.state == "current" %}<span class="pill pill-ok">Ready for the next major</span>
+                        {% elif mongo.state == "behind" %}<span class="pill pill-warn">FCV behind server</span>
+                        {% elif mongo.state == "in_progress" %}<span class="pill pill-warn">FCV change interrupted</span>
+                        {% else %}<span class="pill pill-danger">FCV ahead of server</span>{% endif %}
+                    </span>
+                </div>
+            </div>
+            <p class="settings-description info-note">
+                {% if mongo.state == "current" %}
+                The feature compatibility version matches the server, so this install can move to the next MongoDB major version.
+                {% elif mongo.state == "behind" %}
+                The feature compatibility version ({{ mongo.fcv }}) is behind the server ({{ mongo.target }}). Upgrading MongoDB to the next major version now would leave it unable to start. Raise the FCV first.
+                {% elif mongo.state == "in_progress" %}
+                An earlier change of the feature compatibility version to {{ mongo.transition_to }} did not finish. Running it again completes it.
+                {% else %}
+                The feature compatibility version is newer than the server, which MongoDB should not allow. Check the MongoDB logs.
+                {% endif %}
+                Upgrade one major version at a time; see the <a href="https://github.com/ibehren1/fw-gui/blob/master/docs/mongodb-upgrade.md" target="_blank" rel="noopener">MongoDB upgrade guide</a>.
+            </p>
+            {% else %}
+            <p class="settings-description">
+                MongoDB version information unavailable{% if mongo and mongo.error %}: <span class="mono">{{ mongo.error }}</span>{% endif %}.
+            </p>
+            {% endif %}
+        </div>
     </div>
 </div>
 
