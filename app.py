@@ -1876,6 +1876,28 @@ def create_config():
     return redirect(url_for("display_config"))
 
 
+@app.route("/configurations")
+@login_required
+def configurations():
+    """
+    Handle configuration management page requests.
+
+    Lists the user's firewall configurations and the selected one's snapshots,
+    with the create, delete, import and export forms. The forms post to the
+    existing routes; this page only gathers them in one place.
+
+    Returns:
+        Response: Rendered configurations template
+    """
+    return render_template(
+        "configurations.html",
+        file_list=list_user_files(session),
+        snapshot_list=list_snapshots(session) if session.get("firewall_name") else [],
+        firewall_name=session.get("firewall_name"),
+        username=session["username"],
+    )
+
+
 @app.route("/display_config")
 @login_required
 def display_config():
@@ -1897,7 +1919,7 @@ def display_config():
     snapshot_list = list_snapshots(session)
 
     if "firewall_name" not in session:
-        message = "No firewall selected.<br><br>Please select a firewall from the list on the left or create a new one."
+        message = "No firewall selected.<br><br>Select one from the Config menu in the top bar, or create one on the Configurations page."
 
         return render_template(
             "configuration_display.html",

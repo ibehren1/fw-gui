@@ -1,0 +1,151 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<div class="page-head">
+    <div>
+        <h2>Configurations</h2>
+        <p class="lead">Select, create, import or export firewall configurations, and manage snapshots of the selected one.</p>
+    </div>
+</div>
+
+{% with flashed_messages = get_flashed_messages(with_categories=true) %}
+{% if flashed_messages %}
+<div class="flash-messages">
+    {% for category, flash_message in flashed_messages %}
+    <div class="alert alert-{{ category }}">{{ flash_message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="block-grid">
+    <div class="block">
+        <div class="block-head">
+            <div class="block-title"><h3>Firewall configurations</h3><span class="meta">{{ file_list|length if file_list else 0 }}</span></div>
+        </div>
+        {% if file_list %}
+        <form action="/select_firewall_config" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <table class="grid">
+                <tbody>
+                    {% for file in file_list %}
+                    <tr>
+                        <td class="mono strong">{{ file }}</td>
+                        <td>{% if file == firewall_name %}<span class="pill pill-ok">Selected</span>{% endif %}</td>
+                        <td class="row-actions">
+                            <button type="submit" name="file" value="{{ file }}" class="btn btn-sm"
+                                    title="Load firewall configuration {{ file }}">Select</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+        {% else %}
+        <div class="block-body muted">No configurations yet. Create one below.</div>
+        {% endif %}
+    </div>
+
+    {% if firewall_name %}
+    <div class="block">
+        <div class="block-head">
+            <div class="block-title"><h3>Snapshots</h3><span class="meta mono">{{ firewall_name }}</span></div>
+            <div class="block-actions">
+                <a href="{{ url_for('snapshot_diff_choose') }}" class="btn btn-sm">Diff</a>
+                <a href="{{ url_for('snapshot_manage') }}" class="btn btn-sm">Manage</a>
+            </div>
+        </div>
+        <form action="/select_firewall_config" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="block-body">
+                <div class="form-foot flush">
+                    <span class="muted small">Loading a snapshot overwrites the working copy. The working copy is saved as a snapshot first.</span>
+                    <button type="submit" name="file" value="{{ firewall_name }}/create" class="btn btn-primary btn-sm"
+                            title="Create a new snapshot">Create snapshot</button>
+                </div>
+            </div>
+            {% if snapshot_list %}
+            <table class="grid">
+                <thead><tr><th>Snapshot</th><th>Tag</th><th class="row-actions"></th></tr></thead>
+                <tbody>
+                    {% for snapshot in snapshot_list %}
+                    <tr>
+                        <td class="mono">{{ snapshot.name }}</td>
+                        <td>{% if snapshot.tag %}{{ snapshot.tag }}{% else %}<span class="muted">–</span>{% endif %}</td>
+                        <td class="row-actions">
+                            <button type="submit" name="file" value="{{ snapshot.id }}/{{ snapshot.name }}" class="btn btn-sm"
+                                    title="Load snapshot {{ snapshot.name }}">Load</button>
+                            <button type="submit" name="file" value="{{ snapshot.id }}/delete/{{ snapshot.name }}" class="ib ib-danger"
+                                    title="Delete snapshot {{ snapshot.name }}"
+                                    onclick="return confirm('Delete snapshot {{ snapshot.name }}?')">&times;</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div class="block-grid">
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Create configuration</h3></div></div>
+        <form action="/create_config" method="post" enctype="multipart/form-data" class="block-body">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="field">
+                <span>Name</span>
+                <input type="text" id="config_name" name="config_name" maxlength="50"
+                       placeholder="Configuration name" class="input">
+            </label>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" title="Create a new firewall configuration">Create</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Import / export</h3></div></div>
+        <div class="block-body">
+            <form action="/upload_json" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="field">
+                    <span>Import datafile (JSON)</span>
+                    <input type="file" name="file" class="form-file">
+                </label>
+                <div class="form-actions">
+                    <button type="submit" class="btn" title="Upload JSON configuration">Upload</button>
+                </div>
+            </form>
+            {% if firewall_name %}
+            <div class="form-foot">
+                <span class="muted small">Export <span class="mono">{{ firewall_name }}</span> as JSON</span>
+                <a href="{{ url_for('download_json') }}" download="{{ firewall_name }}.json" class="btn"
+                   title="Download current configuration as JSON">Download datafile</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if file_list %}
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Delete configuration</h3></div></div>
+        <form action="/delete_config" method="post" class="block-body">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="field">
+                <span>Configuration</span>
+                <select id="delete_config" name="delete_config" class="input">
+                    <option value="">Select configuration…</option>
+                    {% for file in file_list %}
+                    <option value="{{ file }}">{{ file }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger" title="Delete selected configuration">Delete</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock body %}
