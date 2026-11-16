@@ -48,6 +48,8 @@ def test_configurations_page_lists_configs_and_snapshots(auth_client):
     assert "pre-bgp" in body
     for action in ("/create_config", "/delete_config", "/upload_json"):
         assert f'action="{action}"' in body
+    assert 'href="/download_config"' in body
+    assert 'href="/download_json"' in body
 
 
 def test_top_bar_switcher_and_nav(auth_client):
@@ -57,6 +59,9 @@ def test_top_bar_switcher_and_nav(auth_client):
     # A firewall is selected in auth_client, so Build/Deploy links are shown.
     assert 'href="/chain_view"' in body
     assert 'href="/configuration_push"' in body
+    # Downloads live on the Configurations page, not in the nav.
+    nav = body.split('<nav class="nav"', 1)[1].split("</nav>", 1)[0]
+    assert "download_config" not in nav
 
 
 def test_configurations_without_firewall(auth_client):

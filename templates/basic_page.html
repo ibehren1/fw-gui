@@ -77,7 +77,6 @@
                 <div class="nav-group">Deploy</div>
                 <a class="nav-item{% if ep == 'display_config' %} active{% endif %}" href="{{ url_for('display_config') }}">Display config</a>
                 <a class="nav-item{% if ep.startswith('configuration_push') or ep.startswith('configuration_host') %} active{% endif %}" href="{{ url_for('configuration_push') }}">Push to firewall</a>
-                <a class="nav-item" href="{{ url_for('download_config') }}" download="{{ firewall_name }}.cfg">Download .cfg</a>
                 {% endif %}
 
                 <div class="nav-group">Configuration</div>
