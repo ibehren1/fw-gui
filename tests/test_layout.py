@@ -26,13 +26,13 @@ def _get(client, path):
             c.stop()
 
 
-def test_logged_out_page_follows_os_theme(client, flask_app):
+def test_logged_out_page_is_dark(client, flask_app):
     # flask_app keeps an app context pushed for the whole session, and
     # Flask-Login caches the user on g; a fresh context drops any user an
     # earlier test logged in.
     with flask_app.app_context():
         body = client.get("/user_login").get_data(as_text=True)
-    assert 'data-theme="auto"' in body
+    assert 'data-theme="dark"' in body
     assert 'class="nav"' not in body
 
 

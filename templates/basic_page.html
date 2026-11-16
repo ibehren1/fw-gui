@@ -1,5 +1,5 @@
 <!doctype html>
-{%- set theme = current_user.theme if current_user.is_authenticated and current_user.theme else 'auto' %}
+{%- set theme = current_user.theme if current_user.is_authenticated and current_user.theme else 'dark' %}
 {%- set ep = request.endpoint or '' %}
 {#- Not every route passes firewall_name; fall back to the session so the top
     bar and nav reflect the selected config on every page. -#}

@@ -5,7 +5,7 @@
  * custom properties scoped by the data-theme attribute on <html>:
  *   dark  - graphite console, amber accent
  *   light - white surfaces, navy bar, blue accent
- *   auto  - follows prefers-color-scheme (pages shown before login)
+ * Pages shown before login, or to an account with no theme yet, use dark.
  * Components below this block must only use the tokens, never literal
  * colours, so that both themes stay complete.
  */
@@ -130,64 +130,6 @@
     --v4-bg: #e0f6fa;
     --v6: #6d28d9;
     --v6-bg: #f1ebfd;
-}
-
-/* Same values as [data-theme="light"]; CSS cannot share a block between a
-   selector and a media query, so keep the two in step. */
-@media (prefers-color-scheme: light) {
-    [data-theme="auto"] {
-        color-scheme: light;
-        --r: 4px;
-        --bg: #f4f5f7;
-        --panel: #ffffff;
-        --panel-head: #fafbfc;
-        --nav-bg: #ffffff;
-        --text: #1f2733;
-        --heading: #111827;
-        --muted: #6b7380;
-        --line: #dfe3e8;
-        --line-strong: #c5ccd5;
-        --row-line: #eceff3;
-        --hover: #f3f6fa;
-        --accent: #2463eb;
-        --accent-hover: #1d55cf;
-        --accent-text: #ffffff;
-        --focus: rgba(36, 99, 235, 0.2);
-        --link: #2463eb;
-        --bar-bg: #1b2a41;
-        --bar-text: #ffffff;
-        --bar-muted: #a9b5c7;
-        --bar-line: #2d3f5b;
-        --bar-field: #22344f;
-        --nav-text: #374151;
-        --nav-active-text: #1b2a41;
-        --nav-active-bg: #eef3fd;
-        --btn-bg: #ffffff;
-        --btn-line: #cfd5dd;
-        --th: #5b6472;
-        --th-bg: #f7f8fa;
-        --chip-bg: #f3f5f8;
-        --input-bg: #ffffff;
-        --input-line: #cfd5dd;
-        --seg-on: #2463eb;
-        --seg-on-text: #ffffff;
-        --code-bg: #fbfcfd;
-        --ok: #18794e;
-        --ok-bg: #e9f6ef;
-        --danger: #c8302f;
-        --danger-bg: #fdeceb;
-        --warn: #a35a00;
-        --warn-bg: #fff4e0;
-        --info: #2463eb;
-        --info-bg: #eaf0fd;
-        --ref: #2463eb;
-        --nav-group: #2463eb;
-        --nav-group-line: #e4e8ee;
-        --v4: #0891b2;
-        --v4-bg: #e0f6fa;
-        --v6: #6d28d9;
-        --v6-bg: #f1ebfd;
-    }
 }
 
 /* ------------------------------------------------------------------ */
