@@ -1166,6 +1166,15 @@ legend { padding: 0 6px; margin-left: -6px; }
 .rename-form .input { max-width: 260px; height: 24px; }
 .export { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--row-line); }
 /* Getting started */
+.quick-start { margin-bottom: 22px; }
+.quick-start-body { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.quick-start-fields { display: flex; flex-direction: column; gap: 8px; }
+.quick-start-fields .field { margin: 0; }
+.quick-start-fields .btn { align-self: flex-start; margin-top: 4px; }
+.quick-start-explain p { margin-bottom: 6px; }
+.quick-start-table { margin-bottom: 8px; border: 1px solid var(--line); }
+.quick-start-table td { padding: 3px 10px; }
+@media (max-width: 900px) { .quick-start-body { grid-template-columns: 1fr; } }
 .start-choose { margin-bottom: 22px; }
 .start-steps-head h3 { color: var(--heading); }
 .steps {

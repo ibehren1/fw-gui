@@ -56,6 +56,48 @@
     </div>
 </div>
 
+{#- Quick start -#}
+<div class="block quick-start">
+    <div class="block-head">
+        <div class="block-title"><h3>Quick start</h3><span class="meta">a new configuration with a basic WAN/LAN policy</span></div>
+    </div>
+    <form action="/quick_start" method="post" class="block-body quick-start-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="quick-start-fields">
+            <label class="field">
+                <span>Configuration name</span>
+                <input type="text" name="config_name" maxlength="50" placeholder="e.g. edge-fw-01" class="input" required>
+            </label>
+            <label class="field">
+                <span>WAN interface</span>
+                <input type="text" name="wan_interface" value="eth0" maxlength="15" class="input mono" required>
+            </label>
+            <label class="field">
+                <span>LAN interface</span>
+                <input type="text" name="lan_interface" value="eth1" maxlength="15" class="input mono" required>
+            </label>
+            <label class="checkbox-item quick-start-ping">
+                <input type="checkbox" name="allow_wan_ping" value="true">
+                <span>Allow ping to the firewall from the WAN (IPv4)</span>
+            </label>
+            <button type="submit" class="btn btn-primary">Create starter config</button>
+        </div>
+        <div class="quick-start-explain">
+            <p><b>Allows all outbound, blocks all inbound</b>, for IPv4 and IPv6:</p>
+            <table class="grid quick-start-table">
+                <tbody>
+                    <tr><td class="mono">WAN_IN</td><td>WAN &rarr; LAN</td><td>return traffic only</td><td>{{ ui.default_badge("drop") }}</td></tr>
+                    <tr><td class="mono">WAN_LOCAL</td><td>WAN &rarr; firewall</td><td>return traffic only</td><td>{{ ui.default_badge("drop") }}</td></tr>
+                    <tr><td class="mono">LAN_IN</td><td>LAN &rarr; anywhere</td><td>allow all</td><td>{{ ui.default_badge("accept") }}</td></tr>
+                    <tr><td class="mono">LAN_OUT</td><td>out to the LAN</td><td>return traffic only</td><td>{{ ui.default_badge("accept") }}</td></tr>
+                    <tr><td class="mono">LAN_LOCAL</td><td>LAN &rarr; firewall</td><td>allow all</td><td>{{ ui.default_badge("accept") }}</td></tr>
+                </tbody>
+            </table>
+            <p class="muted small">Input and forward filters send each interface to its chain. The IPv6 WAN_LOCAL also allows ICMPv6 and DHCPv6 replies, which IPv6 needs to work; that includes answering IPv6 ping. Nothing is pushed until you deploy.</p>
+        </div>
+    </form>
+</div>
+
 {#- Build order -#}
 <div class="version-head start-steps-head">
     <h3>Build order</h3>

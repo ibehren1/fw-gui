@@ -26,6 +26,7 @@ Requirements:
 # Library Imports
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -145,7 +146,7 @@ from package.napalm_ssh_functions import (
     test_connection,
 )
 from package.ssh_key_store import migrate_legacy_key_files
-from package.start_functions import config_progress
+from package.start_functions import build_quick_start, config_progress
 from package.telemetry_functions import telemetry_instance
 from package.user_migration import migrate_sqlite_users
 from package import user_store
@@ -431,6 +432,49 @@ def start():
         progress=config_progress(session) if firewall_name else None,
         username=session["username"],
     )
+
+
+# Linux interface names: at most 15 characters, no spaces or slashes.
+_INTERFACE_NAME = re.compile(r"^[A-Za-z0-9._-]{1,15}$")
+
+
+@app.route("/quick_start", methods=["POST"])
+@login_required
+def quick_start():
+    """
+    Handle quick-start requests from the Getting started page.
+
+    Creates a new configuration with WAN and LAN interfaces and the
+    WAN_IN/WAN_LOCAL/LAN_IN/LAN_OUT/LAN_LOCAL chains and input/forward
+    filters from build_quick_start, for IPv4 and IPv6, then selects it.
+    Never touches an existing configuration.
+
+    Returns:
+        Response: Redirect to the Getting started page
+    """
+    name = request.form.get("config_name", "").strip()
+    wan = request.form.get("wan_interface", "").strip()
+    lan = request.form.get("lan_interface", "").strip()
+
+    if not is_safe_name(name):
+        flash("Enter a valid configuration name.", "danger")
+    elif name in list_user_files(session):
+        flash(f"A configuration named {name} already exists.", "danger")
+    elif not _INTERFACE_NAME.match(wan) or not _INTERFACE_NAME.match(lan):
+        flash("Interface names must be 1-15 letters, digits, '.', '_' or '-'.", "danger")
+    elif wan == lan:
+        flash("The WAN and LAN interfaces must be different.", "danger")
+    else:
+        data = build_quick_start(wan, lan, allow_wan_ping="allow_wan_ping" in request.form)
+        write_user_data_file(f"{session['data_dir']}/{name}", data)
+        session["firewall_name"] = name
+        flash(
+            f"Created {name}: {wan} (WAN) and {lan} (LAN) with WAN_IN, WAN_LOCAL, "
+            "LAN_IN, LAN_OUT and LAN_LOCAL for IPv4 and IPv6. Review it, then deploy.",
+            "success",
+        )
+
+    return redirect(url_for("start"))
 
 
 def _after_selecting():
