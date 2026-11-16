@@ -76,6 +76,14 @@
     --v4-bg: rgba(47, 198, 214, 0.12);
     --v6: #b197fc;
     --v6-bg: rgba(177, 151, 252, 0.13);
+    --if-public_wan: #f0565c;
+    --if-private_wan: #f59e42;
+    --if-lan: #4cc38a;
+    --if-dmz: #f5c518;
+    --if-c-blue: #5b9df5;
+    --if-c-pink: #f06595;
+    --if-c-brown: #c4925a;
+    --if-c-gray: #9aa1ab;
 }
 
 [data-theme="light"] {
@@ -130,6 +138,14 @@
     --v4-bg: #e0f6fa;
     --v6: #6d28d9;
     --v6-bg: #f1ebfd;
+    --if-public_wan: #c8302f;
+    --if-private_wan: #ea580c;
+    --if-lan: #18794e;
+    --if-dmz: #ca8a04;
+    --if-c-blue: #2463eb;
+    --if-c-pink: #c2255c;
+    --if-c-brown: #8a5a2b;
+    --if-c-gray: #5b6472;
 }
 
 /* ------------------------------------------------------------------ */
@@ -604,6 +620,7 @@ table.grid { width: 100%; border-collapse: collapse; }
 .table-scroll > .grid.rules-filter { min-width: 820px; }
 .grid .chips { white-space: normal; }
 .grid .col-name { width: 200px; }
+.grid .col-type { width: 160px; }
 .empty-state p { margin-bottom: 8px; }
 .grid .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; margin: 0; }
@@ -714,6 +731,38 @@ a.tab-sep:hover { text-decoration: none; background: var(--hover); }
 .tab-sep-ipv6.active { background: var(--v6-bg); box-shadow: inset 0 -2px 0 var(--v6); }
 .tag-ipv4, .tab-sep-ipv4 { color: var(--v4); }
 .tag-ipv6, .tab-sep-ipv6 { color: var(--v6); }
+/* Interface types: a coloured dot and outlined label. Deliberately never a
+   filled badge, so red/orange/green interfaces don't read as drop, reject
+   or accept actions. */
+.iftype {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font);
+    font-size: 0.82em;
+    font-weight: 600;
+    line-height: 18px;
+    padding: 0 7px;
+    color: var(--if);
+    border: 1px solid var(--if);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.iftype .dot, .if-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--if); flex: none; }
+.iftype-bare { border: 0; padding: 0; }
+.if-name { display: inline-flex; align-items: center; gap: 6px; }
+.iftype-public_wan { --if: var(--if-public_wan); }
+.iftype-private_wan { --if: var(--if-private_wan); }
+.iftype-lan { --if: var(--if-lan); }
+.iftype-dmz { --if: var(--if-dmz); }
+.iftype-custom, .iftype-c-blue { --if: var(--if-c-blue); }
+.iftype-c-pink { --if: var(--if-c-pink); }
+.iftype-c-brown { --if: var(--if-c-brown); }
+.iftype-c-gray { --if: var(--if-c-gray); }
+.iftype-none { --if: var(--muted); }
+/* Interface form: custom label and colour only apply to the Custom type */
+.custom-type-fields { display: none; }
+form:has(input[name="interface_type"][value="custom"]:checked) .custom-type-fields { display: block; }
 .tag-ipv4 { background: var(--v4-bg); border-color: var(--v4); }
 .tag-ipv6 { background: var(--v6-bg); border-color: var(--v6); }
 
@@ -865,6 +914,14 @@ legend { padding: 0 6px; margin-left: -6px; }
 .radio-group .radio-item input { position: absolute; opacity: 0; pointer-events: none; }
 .radio-group .radio-item:has(input:checked) { background: var(--seg-on); border-color: var(--accent); color: var(--seg-on-text); font-weight: 600; }
 .radio-group .radio-item:has(input:focus-visible) { box-shadow: inset 0 0 0 2px var(--focus); }
+/* Chips whose label carries its own colour (interface types): mark the
+   selection with an outline so the colour stays readable. */
+.radio-group .radio-item:has(.iftype):has(input:checked) {
+    background: var(--input-bg);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    color: var(--text);
+}
 .radio-group-vertical, .action-targets, .radio-column, .input-column {
     display: flex;
     flex-direction: column;

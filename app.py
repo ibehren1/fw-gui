@@ -131,6 +131,8 @@ from package.group_funtions import (
 )
 from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
 from package.interface_functions import (
+    CUSTOM_TYPE_COLORS,
+    INTERFACE_TYPES,
     add_interface_to_data,
     delete_interface_from_data,
     list_interfaces,
@@ -219,6 +221,9 @@ if not app.secret_key:
     )
 app.config["VERSION"] = os.environ.get("FWGUI_VERSION")
 app.config["UPLOAD_FOLDER"] = "./data/uploads"
+# Interface type names and custom colours for the templates, from one source.
+app.jinja_env.globals["INTERFACE_TYPES"] = INTERFACE_TYPES
+app.jinja_env.globals["CUSTOM_TYPE_COLORS"] = CUSTOM_TYPE_COLORS
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=session_lifetime)
 
 # Session cookie hardening. HttpOnly blocks JavaScript from reading the cookie;

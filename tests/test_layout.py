@@ -85,3 +85,32 @@ def test_logged_in_user_on_login_page(auth_client):
     # user_login overrides the template's session variable with a string; the
     # layout must not treat it as the session.
     assert auth_client.get("/user_login").status_code == 200
+
+
+def test_interfaces_page_shows_types_and_edit(auth_client):
+    interfaces = [
+        {"name": "eth0", "description": "WAN", "type": "public_wan"},
+        {"name": "eth9", "description": "", "type": "custom", "type_label": "Guest", "type_color": "pink"},
+        {"name": "wg0", "description": ""},
+    ]
+    with patch("app.list_interfaces", return_value=interfaces), \
+            patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.get("/interface_view").get_data(as_text=True)
+    assert 'iftype iftype-public_wan' in body and "Public WAN" in body
+    assert 'iftype iftype-c-pink' in body and ">Guest<" not in body.split("iftype-c-pink", 1)[0][-5:]
+    assert "Unassigned" in body
+    assert 'name="interface_type" value="custom"' in body
+    assert 'name="interface_type" value=""' in body  # untyped interface posts no type
+    assert 'value="None"' not in body
+
+
+def test_interface_edit_form_preselects_type(auth_client):
+    with patch("app.list_user_files", return_value=[]), patch("app.list_snapshots", return_value=[]):
+        body = auth_client.post("/interface_add", data={
+            "type": "edit", "interface_name": "eth9", "interface_desc": "",
+            "interface_type": "custom", "type_label": "Guest", "type_color": "brown",
+        }).get_data(as_text=True)
+    assert "Edit Interface" in body
+    assert 'value="custom" checked' in body
+    assert 'value="brown" checked' in body
+    assert "readonly" in body

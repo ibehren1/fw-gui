@@ -14,14 +14,25 @@
 <div class="block">
     <table class="grid">
         <thead>
-            <tr><th>Interface</th><th>Description</th><th class="row-actions"></th></tr>
+            <tr><th>Interface</th><th>Type</th><th>Description</th><th class="row-actions"></th></tr>
         </thead>
         <tbody>
             {% for interface in interface_list|sort(attribute='name') %}
             <tr>
-                <td class="mono strong col-name">{{ interface.name }}</td>
+                <td class="mono strong col-name"><span class="if-name">{{ ui.iftype(interface, bare=True, label=False) }}{{ interface.name }}</span></td>
+                <td class="col-type">{% if interface.type in INTERFACE_TYPES %}{{ ui.iftype(interface) }}{% else %}<span class="muted">Unassigned</span>{% endif %}</td>
                 <td class="desc">{% if interface.description %}{{ interface.description }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
                 <td class="row-actions">
+                    <form action="/interface_add" method="post" class="edit-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="type" value="edit">
+                        <input type="hidden" name="interface_name" value="{{ interface.name }}">
+                        <input type="hidden" name="interface_desc" value="{{ interface.description }}">
+                        <input type="hidden" name="interface_type" value="{{ interface.type or '' }}">
+                        <input type="hidden" name="type_label" value="{{ interface.type_label or '' }}">
+                        <input type="hidden" name="type_color" value="{{ interface.type_color or '' }}">
+                        <button type="submit" class="ib" title="Edit interface">&#9998;</button>
+                    </form>
                     <form action="/interface_delete" method="post" class="delete-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="interface" value="{{ interface.name }}">

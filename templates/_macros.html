@@ -131,3 +131,16 @@
     <td class="row-actions"><span class="default-lock" aria-label="Not editable">&#128274;</span></td>
 </tr>
 {%- endmacro %}
+
+{#- An interface's type as a coloured dot plus label. interface is a stored
+    interface dict (or anything with type / type_label / type_color); nothing
+    is rendered when it has no type. bare drops the outline (for use beside
+    an interface name). -#}
+{% macro iftype(interface, bare=False, label=True) -%}
+{%- if interface and interface.type in INTERFACE_TYPES -%}
+{%- set custom = interface.type == "custom" -%}
+{%- set key = ("c-" ~ interface.type_color) if custom and interface.type_color in CUSTOM_TYPE_COLORS else interface.type -%}
+{%- set text = (interface.type_label or "Custom") if custom else INTERFACE_TYPES[interface.type] -%}
+<span class="iftype iftype-{{ key }}{% if bare %} iftype-bare{% endif %}" title="{{ text }}"><i class="dot"></i>{% if label %}{{ text }}{% endif %}</span>
+{%- endif -%}
+{%- endmacro %}
