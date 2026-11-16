@@ -644,6 +644,8 @@ table.grid { width: 100%; border-collapse: collapse; }
 .grid.groups td { overflow: hidden; text-overflow: ellipsis; }
 .grid.groups td.row-actions { overflow: visible; }
 .grid .chips { white-space: normal; }
+.grid .col-name { width: 200px; }
+.empty-state p { margin-bottom: 8px; }
 .grid .row-actions { width: 1%; text-align: right; white-space: nowrap; }
 .row-actions form { display: inline; margin: 0; }
 .grid tr.is-disabled td { opacity: 0.5; }

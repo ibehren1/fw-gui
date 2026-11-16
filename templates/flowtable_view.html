@@ -1,32 +1,30 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
-<div class="flowtable-view">
-    <div class="view-header">
-        <h2 class="section-title">Flowtables</h2>
-        <a href="{{ url_for('flowtable_add') }}" class="btn btn-add">Add Flowtable</a>
+<div class="page-head">
+    <h2>Flowtables</h2>
+    <div class="page-actions">
+        <a href="{{ url_for('flowtable_add') }}" class="btn btn-primary">+ Add flowtable</a>
     </div>
-    
-    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-    {% if flashed_messages %}
-    <div class="flash-messages">
-        {% for category, flash_message in flashed_messages %}
-        <div class="alert alert-{{ category }}">
-            {{flash_message}}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-    
-    {% if flowtable_list %}
-    <div class="flowtables-grid">
-        {% for flowtable in flowtable_list|sort(attribute='name') %}
-        <div class="flowtable-card">
-            <img src="{{ url_for('static', filename='flowtable-32-yellow.svg') }}" alt="" class="flowtable-icon">
-            <div class="flowtable-content">
-            <div class="card-header">
-                <h3 class="flowtable-name">{{ flowtable.name }}{% if flowtable.description %}<span class="flowtable-desc-separator">—</span><span class="flowtable-description-inline">{{ flowtable.description }}</span>{% endif %}</h3>
-                <div class="card-actions">
+</div>
+
+{{ ui.flash_messages() }}
+
+{% if flowtable_list %}
+<div class="block">
+    <table class="grid">
+        <thead>
+            <tr><th>Flowtable</th><th>Description</th><th>Interfaces</th><th class="row-actions"></th></tr>
+        </thead>
+        <tbody>
+            {% for flowtable in flowtable_list|sort(attribute='name') %}
+            <tr>
+                <td class="mono strong col-name">{{ flowtable.name }}</td>
+                <td class="desc">{% if flowtable.description %}{{ flowtable.description }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
+                <td class="chips">
+                    {% for interface in flowtable.interfaces %}<span class="chip">{{ interface }}</span>{% else %}<span class="muted">No interfaces configured</span>{% endfor %}
+                </td>
+                <td class="row-actions">
                     <form action="/flowtable_add" method="post" class="edit-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="type" value="edit">
@@ -35,179 +33,25 @@
                         {% for interface in flowtable.interfaces %}
                         <input type="hidden" name="interface_{{ interface }}" value="checked">
                         {% endfor %}
-                        <button type="submit" class="btn btn-secondary btn-sm" title="Edit flowtable">Edit</button>
+                        <button type="submit" class="ib" title="Edit flowtable">&#9998;</button>
                     </form>
                     <form action="/flowtable_delete" method="post" class="delete-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="flowtable" value="{{ flowtable.name }}">
-                        <button type="submit" class="btn btn-delete-small" 
-                                onclick="return confirm('Delete flowtable {{ flowtable.name }}?')" 
-                                title="Delete flowtable">×</button>
+                        <button type="submit" class="ib ib-danger"
+                                onclick="return confirm('Delete flowtable {{ flowtable.name }}?')"
+                                title="Delete flowtable">&times;</button>
                     </form>
-                </div>
-            </div>
-            
-            
-            <div class="flowtable-interfaces">
-                <span class="interfaces-label">Interfaces:</span>
-                <div class="interfaces-list">
-                    {% if flowtable.interfaces %}
-                        {% for interface in flowtable.interfaces %}
-                        <span class="interface-tag">{{ interface }}</span>
-                        {% endfor %}
-                    {% else %}
-                        <span class="no-interfaces">No interfaces configured</span>
-                    {% endif %}
-                </div>
-            </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-        <p>No flowtables configured. Add a flowtable to get started.</p>
-        <a href="{{ url_for('flowtable_add') }}" class="btn btn-primary">Add First Flowtable</a>
-    </div>
-    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
-
-<style>
-.flowtable-view {
-    max-width: 1200px;
-}
-
-.flowtables-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-}
-
-.flowtable-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-}
-
-.flowtable-icon {
-    width: 2rem;
-    height: 2rem;
-    margin-right: 1rem;
-    flex-shrink: 0;
-}
-
-.flowtable-content {
-    flex: 1;
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-}
-
-.flowtable-name {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0;
-    flex: 1;
-}
-
-.card-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.btn-sm {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-}
-
-.edit-form, .delete-form {
-    margin: 0;
-}
-
-.flowtable-desc-separator {
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0 0.5rem;
-}
-
-.flowtable-description-inline {
-    color: var(--text-light);
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.flowtable-interfaces {
-    margin-top: 1rem;
-}
-
-.interfaces-label {
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.interfaces-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.interface-tag {
-    background: rgba(255, 191, 18, 0.2);
-    color: var(--primary-color);
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.no-interfaces {
-    color: rgba(255, 255, 255, 0.5);
-    font-style: italic;
-}
-
-.debug-info {
-    margin-top: 0.5rem;
-    color: rgba(255, 255, 255, 0.4);
-    font-family: monospace;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-}
-
-.empty-state p {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 1rem;
-}
-
-@media (max-width: 768px) {
-    .flowtables-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .card-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
-    }
-    
-    .card-actions {
-        justify-content: center;
-    }
-}
-</style>
+{% else %}
+<div class="empty-state">
+    <p>No flowtables configured. Add a flowtable to get started.</p>
+    <a href="{{ url_for('flowtable_add') }}" class="btn btn-primary">Add first flowtable</a>
+</div>
+{% endif %}
 {% endblock body %}

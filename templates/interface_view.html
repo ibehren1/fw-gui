@@ -1,123 +1,44 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
-<div class="interface-view">
-    <div class="view-header">
-        <h2 class="section-title">Interfaces</h2>
-        <a href="{{ url_for('interface_add') }}" class="btn btn-add">Add Interface</a>
+<div class="page-head">
+    <h2>Interfaces</h2>
+    <div class="page-actions">
+        <a href="{{ url_for('interface_add') }}" class="btn btn-primary">+ Add interface</a>
     </div>
-    
-    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
-    {% if flashed_messages %}
-    <div class="flash-messages">
-        {% for category, flash_message in flashed_messages %}
-        <div class="alert alert-{{ category }}">
-            {{flash_message}}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-    
-    {% if interface_list %}
-    <div class="interfaces-grid">
-        {% for interface in interface_list|sort(attribute='name') %}
-        <div class="interface-card">
-            <div class="interface-header">
-                <img src="{{ url_for('static', filename='network-interface-32-yellow.svg') }}" alt="" class="interface-icon">
-                <div class="interface-info">
-                    <h3 class="interface-name">{{ interface.name }}</h3>
-                    {% if interface.description %}
-                    <p class="interface-subtitle">{{ interface.description }}</p>
-                    {% endif %}
-                </div>
-                <form action="/interface_delete" method="post" class="delete-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="interface" value="{{ interface.name }}">
-                    <button type="submit" class="btn btn-delete-small"
-                            onclick="return confirm('Delete interface {{ interface.name }}?')"
-                            title="Delete interface">×</button>
-                </form>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-        <p>No interfaces configured. Add an interface to get started.</p>
-        <a href="{{ url_for('interface_add') }}" class="btn btn-primary">Add First Interface</a>
-    </div>
-    {% endif %}
 </div>
 
-<style>
-.interface-view {
-    max-width: 1000px;
-}
+{{ ui.flash_messages() }}
 
-.view-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.interfaces-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-}
-
-.interface-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.interface-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.interface-info {
-    flex: 1;
-}
-
-.interface-icon {
-    width: 1.8rem;
-    height: 1.8rem;
-    margin-right: 0.75rem;
-}
-
-.interface-name {
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0;
-}
-
-.interface-subtitle {
-    color: var(--text-light);
-    margin: 0.25rem 0 0 0;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.delete-form {
-    margin: 0;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-}
-
-.empty-state p {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 1rem;
-}
-</style>
+{% if interface_list %}
+<div class="block">
+    <table class="grid">
+        <thead>
+            <tr><th>Interface</th><th>Description</th><th class="row-actions"></th></tr>
+        </thead>
+        <tbody>
+            {% for interface in interface_list|sort(attribute='name') %}
+            <tr>
+                <td class="mono strong col-name">{{ interface.name }}</td>
+                <td class="desc">{% if interface.description %}{{ interface.description }}{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
+                <td class="row-actions">
+                    <form action="/interface_delete" method="post" class="delete-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="interface" value="{{ interface.name }}">
+                        <button type="submit" class="ib ib-danger"
+                                onclick="return confirm('Delete interface {{ interface.name }}?')"
+                                title="Delete interface">&times;</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No interfaces configured. Add an interface to get started.</p>
+    <a href="{{ url_for('interface_add') }}" class="btn btn-primary">Add first interface</a>
+</div>
+{% endif %}
 {% endblock body %}
