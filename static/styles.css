@@ -1128,6 +1128,7 @@ legend { padding: 0 6px; margin-left: -6px; }
 .rename summary:hover .rename-icon { color: var(--text); }
 .rename-form { display: flex; gap: 6px; margin-top: 6px; }
 .rename-form .input { max-width: 260px; height: 24px; }
+.export { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--row-line); }
 .error-page { max-width: 40rem; margin: 4rem auto; text-align: center; }
 .error-page h1 { font-size: 1.8em; margin-bottom: 6px; }
 

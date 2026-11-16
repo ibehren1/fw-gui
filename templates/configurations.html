@@ -130,8 +130,8 @@
                 </div>
             </form>
             {% if firewall_name %}
-            <div class="form-foot">
-                <span class="muted small">Export <span class="mono">{{ firewall_name }}</span></span>
+            <div class="export">
+                <span class="field-label">Export <span class="mono">{{ firewall_name }}</span></span>
                 <div class="block-actions">
                     <a href="{{ url_for('download_json') }}" download="{{ firewall_name }}.json" class="btn"
                        title="Download the FW-GUI datafile (JSON), for import">Datafile (.json)</a>
