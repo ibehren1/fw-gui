@@ -35,7 +35,7 @@
                         {% for interface in flowtable.interfaces %}
                         <input type="hidden" name="interface_{{ interface }}" value="checked">
                         {% endfor %}
-                        <button type="submit" class="ib" title="Edit flowtable">&#9998;</button>
+                        <button type="submit" class="ib" title="Edit flowtable">{{ ui.icon_edit() }}</button>
                     </form>
                     <form action="/flowtable_delete" method="post" class="delete-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

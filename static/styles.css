@@ -72,6 +72,7 @@
     --ref: #7fb1f5;
     --nav-group: #e8b43a;
     --nav-group-line: #2a2e34;
+    --icon: #c9ced6;
     --v4: #2fc6d6;
     --v4-bg: rgba(47, 198, 214, 0.12);
     --v6: #b197fc;
@@ -134,6 +135,7 @@
     --ref: #2463eb;
     --nav-group: #2463eb;
     --nav-group-line: #e4e8ee;
+    --icon: #3b4554;
     --v4: #0891b2;
     --v4-bg: #e0f6fa;
     --v6: #6d28d9;
@@ -501,20 +503,24 @@ code, pre, .mono { font-family: var(--mono); }
     display: inline-grid;
     place-items: center;
     font: inherit;
-    font-size: 0.95em;
-    width: 22px;
-    min-width: 22px;
-    height: 22px;
+    font-size: 1.1em;
+    line-height: 1;
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
     padding: 0;
     border: 1px solid transparent;
     border-radius: var(--r);
     background: transparent;
-    color: var(--muted);
+    color: var(--icon);
     cursor: pointer;
     text-decoration: none;
 }
 .ib:hover { border-color: var(--btn-line); color: var(--text); background: var(--btn-bg); }
-.ib:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+.icon { display: block; }
+.ib .icon { transform: translateY(1px); }
+.rename-icon .icon { display: inline-block; vertical-align: -2px; }
+.ib:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 .ib-danger:hover { color: var(--danger); border-color: var(--danger); background: transparent; }
 
 /* ------------------------------------------------------------------ */
@@ -605,14 +611,14 @@ table.grid { width: 100%; border-collapse: collapse; }
 .grid.rules th:nth-child(4) { width: 96px; }                                       /* proto: tcp_udp */
 .grid.rules th:nth-child(7) { width: 148px; }                                      /* state: EST REL NEW INV */
 .grid.rules th:nth-child(8) { width: 56px; }                                       /* log */
-.grid.rules th:nth-child(9), .grid.rules-filter th:nth-child(7) { width: 136px; }  /* row actions */
+.grid.rules th:nth-child(9), .grid.rules-filter th:nth-child(7) { width: 144px; }  /* row actions */
 .grid.rules-filter th:nth-child(4) { width: 22%; }
 .grid.rules-filter th:nth-child(5) { width: 14%; }
 .grid.rules-filter th:nth-child(6) { width: 12%; }
 .grid.groups th:nth-child(1) { width: 200px; }
 .grid.groups th:nth-child(2) { width: 24%; }
 .grid.groups th:nth-child(3) { width: 72px; }
-.grid.groups th:nth-child(5) { width: 76px; }
+.grid.groups th:nth-child(5) { width: 80px; }
 /* Below these widths the free-text columns would be narrower than their
    headers; scroll the table inside its panel instead. */
 .table-scroll { overflow-x: auto; }

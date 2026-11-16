@@ -151,3 +151,9 @@
 {% macro if_name(name, ifaces) -%}
 <span class="if-name">{{ iftype(ifaces.get(name), bare=True, label=False) }}<span class="mono">{{ name }}</span></span>
 {%- endmacro %}
+
+{#- Pencil icon for Edit buttons. An SVG rather than the U+270E glyph, which
+    most fonts draw hatched and too faint to read at row-icon size. -#}
+{% macro icon_edit() -%}
+<svg class="icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M11.2 2.3a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1L6 12.5 2.5 13.5l1-3.5 7.7-7.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.8 3.7l2.5 2.5" stroke="currentColor" stroke-width="1.6"/></svg>
+{%- endmacro %}

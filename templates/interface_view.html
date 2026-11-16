@@ -31,7 +31,7 @@
                         <input type="hidden" name="interface_type" value="{{ interface.type or '' }}">
                         <input type="hidden" name="type_label" value="{{ interface.type_label or '' }}">
                         <input type="hidden" name="type_color" value="{{ interface.type_color or '' }}">
-                        <button type="submit" class="ib" title="Edit interface">&#9998;</button>
+                        <button type="submit" class="ib" title="Edit interface">{{ ui.icon_edit() }}</button>
                     </form>
                     <form action="/interface_delete" method="post" class="delete-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

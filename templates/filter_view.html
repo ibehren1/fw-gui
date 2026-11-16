@@ -107,7 +107,7 @@
                             <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
                             <input type="hidden" name="target" value="{{ rule.fw_chain }}">
                             <input type="hidden" name="interface" value="{{ rule.interface }}">
-                            <button type="submit" class="ib" title="Edit rule {{ rule.number }}">&#9998;</button>
+                            <button type="submit" class="ib" title="Edit rule {{ rule.number }}">{{ ui.icon_edit() }}</button>
                         </form>
                         <form action="/filter_rule_delete" method="post" class="delete-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -83,7 +83,7 @@
                         <input type="hidden" name="group_name" value="{{ group.group_name }}">
                         <input type="hidden" name="group_value" value="{{ group.group_value }}">
                         <input type="hidden" name="group_type" value="{{ group.group_type }}">
-                        <button type="submit" class="ib" title="Edit group {{ group.group_name }}">&#9998;</button>
+                        <button type="submit" class="ib" title="Edit group {{ group.group_name }}">{{ ui.icon_edit() }}</button>
                     </form>
                     <form action="/group_delete" method="post" class="delete-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

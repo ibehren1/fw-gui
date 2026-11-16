@@ -1,4 +1,5 @@
 {% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
 {% block body %}
 <div class="page-head">
     <div>
@@ -30,7 +31,7 @@
                     <td>
                         {#- Rename opens in place; <details> needs no script. -#}
                         <details class="rename">
-                            <summary title="Rename {{ file }}"><span class="mono strong">{{ file }}</span><span class="rename-icon" aria-hidden="true">&#9998;</span></summary>
+                            <summary title="Rename {{ file }}"><span class="mono strong">{{ file }}</span><span class="rename-icon" aria-hidden="true">{{ ui.icon_edit() }}</span></summary>
                             <form action="/rename_config" method="post" class="rename-form">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="old_name" value="{{ file }}">
