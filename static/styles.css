@@ -58,8 +58,8 @@
     --chip-bg: #202429;
     --input-bg: #121417;
     --input-line: #343940;
-    --seg-on: #2c3138;
-    --seg-on-text: #ffffff;
+    --seg-on: rgba(255, 191, 18, 0.14);
+    --seg-on-text: #ffcc3d;
     --code-bg: #121417;
     --ok: #4cc38a;
     --ok-bg: rgba(76, 195, 138, 0.10);
@@ -106,7 +106,7 @@
     --chip-bg: #f3f5f8;
     --input-bg: #ffffff;
     --input-line: #cfd5dd;
-    --seg-on: #1b2a41;
+    --seg-on: #2463eb;
     --seg-on-text: #ffffff;
     --code-bg: #fbfcfd;
     --ok: #18794e;
@@ -157,7 +157,7 @@
         --chip-bg: #f3f5f8;
         --input-bg: #ffffff;
         --input-line: #cfd5dd;
-        --seg-on: #1b2a41;
+        --seg-on: #2463eb;
         --seg-on-text: #ffffff;
         --code-bg: #fbfcfd;
         --ok: #18794e;
@@ -786,8 +786,9 @@ legend { padding: 0 6px; margin-left: -6px; }
 .fgrid,
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 8px 14px;
+    align-items: start;
 }
 .field,
 .form-group {
@@ -796,7 +797,8 @@ legend { padding: 0 6px; margin-left: -6px; }
     gap: 3px;
     margin: 0 0 8px;
 }
-.fgrid .field, .fgrid .form-group, .form-grid .form-group { margin: 0; }
+.fgrid > .field, .fgrid > .form-group, .form-grid > .form-group { margin: 0; }
+.form-grid > .form-section { margin-bottom: 0; }
 .field.wide, .form-group.wide, .form-group.full-width { grid-column: 1 / -1; }
 .field > span,
 .form-label,
@@ -843,6 +845,100 @@ legend { padding: 0 6px; margin-left: -6px; }
 
 .checks { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .check, .checkbox-label, .radio-label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* ------------------------------------------------------------------ */
+/* Form pages                                                          */
+/* ------------------------------------------------------------------ */
+.chain-form, .rule-form, .filter-form, .filter-rule-form, .flowtable-form,
+.group-form, .extra-config, .snapshot-diff, .form-page { max-width: 1100px; }
+.form-header { display: block; }
+.form-header .section-title { margin-bottom: 4px; }
+.section-description { color: var(--muted); max-width: 90ch; margin-bottom: 4px; }
+.form-section > .subsection-title:first-child { margin-top: 0; }
+.form-content > .form-section:last-of-type, .form > .form-section:last-of-type { margin-bottom: 0; }
+
+/* Radio choices: a segmented control inside .radio-group, a plain list elsewhere */
+.radio-item, .checkbox-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    cursor: pointer;
+    color: var(--text);
+}
+.radio-group { display: flex; flex-wrap: wrap; gap: 4px; }
+.radio-group .radio-item {
+    padding: 3px 12px;
+    color: var(--muted);
+    background: var(--input-bg);
+    border: 1px solid var(--input-line);
+    border-radius: var(--r);
+}
+.radio-group .radio-item:hover { border-color: var(--line-strong); color: var(--text); }
+.radio-group .radio-item input { position: absolute; opacity: 0; pointer-events: none; }
+.radio-group .radio-item:has(input:checked) { background: var(--seg-on); border-color: var(--accent); color: var(--seg-on-text); font-weight: 600; }
+.radio-group .radio-item:has(input:focus-visible) { box-shadow: inset 0 0 0 2px var(--focus); }
+.radio-group-vertical, .action-targets, .radio-column, .input-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.checkbox-grid, .checkbox-group { display: flex; flex-wrap: wrap; gap: 2px 18px; }
+.field-description { color: var(--muted); font-size: 0.88em; margin-bottom: 4px; }
+
+/* Group form: the IP version only applies to address and network groups */
+.ip-version-group { opacity: 0.55; }
+.ip-version-group.active { opacity: 1; }
+
+/* Chain rule form: Source and Destination side by side, options below.
+   The tab buttons and their script stay in the page but are not needed. */
+.basic-config-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px 14px;
+}
+.basic-config-grid .form-group { margin: 0; }
+.basic-config-grid .full-width { grid-column: span 2; margin: 0; }
+.basic-config-grid .form-group:last-child { grid-column: span 3; }
+.tabs-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+.tabs-nav { display: none; }
+.tab-content {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+    padding: 10px 14px 12px;
+}
+#advanced-tab { grid-column: 1 / -1; }
+.tab-title {
+    font-size: 0.78em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--th);
+    margin: 0 0 8px;
+}
+.source-config, .destination-config { display: flex; flex-direction: column; gap: 12px; }
+.config-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px; align-items: start; }
+.config-grid, .advanced-config { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.state-column, .options-column { display: flex; flex-direction: column; gap: 8px; }
+
+/* Small single-card forms (interface, hostname, login) */
+.form-container { max-width: 560px; }
+.form-card, .login-form {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 14px 16px;
+}
+.login-container { max-width: 380px; margin: 40px auto; }
+.login-container .section-title { font-size: 1.45em; }
+.register-link { margin-top: 10px; color: var(--muted); }
+
+/* Snapshot diff chooser */
+.snapshot-selectors { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.selector-group { display: flex; flex-direction: column; gap: 3px; min-width: 260px; }
+.vs-indicator { color: var(--muted); font-weight: 700; padding-bottom: 6px; }
 
 /* ------------------------------------------------------------------ */
 /* Alerts (flash messages)                                             */
@@ -892,6 +988,8 @@ legend { padding: 0 6px; margin-left: -6px; }
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
 @media (max-width: 900px) {
+    .tabs-container, .basic-config-grid { grid-template-columns: 1fr; }
+    .basic-config-grid .full-width, .basic-config-grid .form-group:last-child { grid-column: auto; }
     .shell { grid-template-columns: minmax(0, 1fr); }
     .nav { border-right: 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; padding: 6px; }
     .nav-group { width: 100%; padding: 6px 10px 2px; }
