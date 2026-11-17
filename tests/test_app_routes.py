@@ -1067,6 +1067,51 @@ class TestConfigRoutes:
             assert resp.status_code == 200
             assert mock_commit.call_args[0][2] == "delete firewall\nline"
 
+    def test_configuration_push_op_output_escaped_and_spaced(self, auth_client):
+        """Device output is escaped text in a <pre>, with its spacing intact.
+
+        Pre-4.0.56 it was injected as raw HTML with newlines turned into <br>,
+        so column-aligned tables collapsed and markup in output (a rule or
+        interface description) executed in the browser.
+        """
+        output = "Rule    Action\n----    ------\n10      accept <script>x</script>"
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.run_operational_command",
+            return_value=output,
+        ), patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": "Run Operational Command",
+                    "op_command": "show firewall",
+                },
+            )
+            assert resp.status_code == 200
+            assert b"<script>x</script>" not in resp.data
+            assert b"&lt;script&gt;x&lt;/script&gt;" in resp.data
+            assert (
+                b'<pre class="results-content" id="results-content">'
+                b"Rule    Action\n----    ------\n10      accept" in resp.data
+            )
+
+    def test_configuration_push_get_shows_commands_as_text(self, auth_client):
+        """The generated commands are newline-joined text, not <br> HTML."""
+        with patch(
+            "app.generate_config",
+            return_value=("a<br>b<br>", ["a", "b"]),
+        ), patch("app.test_connection", return_value=True), patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.get("/configuration_push")
+            assert b'id="results-content">a\nb</pre>' in resp.data
+
     def test_configuration_push_post_commit_all_comments(self, auth_client):
         """A config of only banners and blanks forwards an empty string.
 

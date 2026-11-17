@@ -166,7 +166,7 @@
     {% if message %}
     <!-- <div class="results-section">
         <h3 class="subsection-title">Results</h3> -->
-        <div class="results-content">{% autoescape false %}{{ message|replace('\n', '<br>') }}{% endautoescape %}</div>
+        <pre class="results-content" id="results-content">{{ message }}</pre>
     <!-- </div> -->
     {% endif %}
     

@@ -1945,12 +1945,15 @@ def configuration_push():
         if ssh_key_name:
             session["ssh_keyname"] = ssh_key_name
 
-        # generate_config() also supplies the message rendered when the action is
-        # unrecognized, so it stays outside the branches below. build_merge_config
+        # The generated commands are also the message rendered when the action is
+        # unrecognized, so they stay outside the branches below. The results
+        # block is escaped plain text, so the message is the newline-joined
+        # commands, not generate_config()'s <br>-joined HTML. build_merge_config
         # optionally includes 'delete firewall' before the set commands; it is
         # pure string work, so computing it up front costs nothing even for the
         # operational-command action that does not use it.
-        message, config = generate_config(session)
+        _, config = generate_config(session)
+        message = "\n".join(config)
         merge_config = build_merge_config(
             config, delete="delete_before_set" in request.form
         )
@@ -1998,7 +2001,9 @@ def configuration_push():
 
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
-        message, config = generate_config(session)
+        # Escaped plain text in the results block; see the POST branch.
+        _, config = generate_config(session)
+        message = "\n".join(config)
         firewall_reachable = test_connection(session)
         snapshot_list = list_snapshots(session)
 

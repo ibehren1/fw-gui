@@ -1042,8 +1042,9 @@ legend { padding: 0 6px; margin-left: -6px; }
     border: 1px solid var(--line);
     border-radius: var(--r);
     padding: 10px 14px;
-    margin-bottom: 14px;
+    margin: 0 0 14px;
     overflow-x: auto;
+    white-space: pre;
 }
 .loading-overlay {
     position: fixed;
