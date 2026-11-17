@@ -2,6 +2,7 @@
     #results-content; op_view (package/op_output.py) adds a table view over
     it when the output contains tables. static/op-output.js wires the
     toolbar: view toggle, filter, sort, copy. -#}
+{% import "_macros.html" as ui %}
 
 {#- One generic table cell. A few columns VyOS prints in every version get a
     light touch; everything else is text, one line per value. -#}
@@ -58,6 +59,76 @@
 {%- endfor -%}
 {%- endmacro %}
 
+{#- A rule's condensed conditions (package/op_firewall.py condition_parts). -#}
+{% macro conditions(rule, family) -%}
+{%- for part in rule.parts -%}
+{%- if part.t == "state" %}<span class="chip">{{ part.v }}</span>
+{%- elif part.t == "group" %}{{ ui.group_ref(part.ip_version, part.type, part.name) }}
+{%- else %}<span class="op-cond-text">{{ part.v }}</span>{% endif %} {% endfor -%}
+{%- if rule.jump %}<span class="muted">&rarr;</span> <a class="op-jump" href="#op-chain-{{ family }}-name-{{ rule.jump }}">{{ rule.jump }}</a> {% endif -%}
+{%- if rule.log %}<span class="pill pill-info">LOG</span>{% endif -%}
+{%- if not rule.parts and not rule.jump and not rule.log %}<span class="muted">&mdash;</span>{% endif -%}
+{%- endmacro %}
+
+{#- show firewall: one panel per ruleset, rules matched to the config. -#}
+{% macro firewall_view(op_view) -%}
+{%- set s = op_view.stats -%}
+<div class="op-stats">
+    <div class="op-stat"><b>{{ s.chains }}</b><span>chains &amp; filters</span></div>
+    <div class="op-stat"><b>{{ s.rules }}</b><span>rules</span></div>
+    <div class="op-stat op-stat-warn"><b>{{ s.never_hit }}</b><span>rules never hit</span></div>
+    <div class="op-stat op-stat-danger"><b title="{{ '{:,}'.format(s.dropped) }} packets">{{ s.dropped_h }}</b><span>packets dropped</span></div>
+</div>
+{%- for chain in op_view.chains %}
+{%- set edit_url = url_for("chain_view" if chain.kind == "name" else "filter_view", _anchor=chain.family ~ chain.name) %}
+<section class="block op-block op-chain" id="op-chain-{{ chain.family }}-{{ chain.kind }}-{{ chain.name }}">
+    <div class="block-head op-toggle" title="Collapse or expand">
+        <div class="block-title">
+            <span class="op-caret" aria-hidden="true">&#9662;</span>
+            {{ ui.ip_tag(chain.family) }}
+            <h3 class="mono">{{ chain.label }}</h3>
+            {% if chain.description %}<span class="meta">{{ chain.description }}</span>{% endif %}
+            <span class="meta"><b>{{ chain.rules|rejectattr("is_default")|list|length }}</b> rules &middot; <b>{{ chain.packets_h }}</b> packets</span>
+        </div>
+        <div class="block-actions">
+            {% if chain.default_action %}<span class="meta">default</span><span class="act act-{{ chain.default_action }}">{{ chain.default_action }}</span>{% endif %}
+            {% if chain.in_config %}<a class="btn btn-sm" href="{{ edit_url }}">Edit {{ "chain" if chain.kind == "name" else "filter" }}</a>{% endif %}
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table class="grid op-grid op-fw">
+            <thead><tr>
+                <th class="r" data-sort data-numeric>#</th>
+                <th>Description</th>
+                <th>Action</th>
+                <th>Proto</th>
+                <th class="r" data-sort data-numeric>Packets</th>
+                <th class="r" data-sort data-numeric>Bytes</th>
+                <th class="r">Share</th>
+                <th>Conditions</th>
+                <th></th>
+            </tr></thead>
+            <tbody>
+                {%- for rule in chain.rules %}
+                <tr class="{{ 'op-zero' if rule.zero }}{{ ' default-row op-pinned' if rule.is_default }}">
+                    <td class="num" data-v="{{ rule.number }}">{% if rule.is_default %}<span class="default-mark">default</span>{% else %}{{ rule.number }}{% endif %}</td>
+                    <td class="desc">{% if rule.is_default %}<span class="muted">Default action</span>{% elif rule.description %}{{ rule.description }}{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+                    <td><span class="act act-{{ rule.action }}">{{ rule.action }}</span></td>
+                    <td class="mono">{{ rule.protocol }}</td>
+                    <td class="r op-hit" data-v="{{ rule.packets }}"><span class="mono" title="{{ '{:,}'.format(rule.packets) }} packets">{{ rule.packets_h }}</span><span class="op-bar"><i style="width: {{ rule.bar }}%"></i></span></td>
+                    <td class="r" data-v="{{ rule.bytes }}"><span class="mono" title="{{ '{:,}'.format(rule.bytes) }} bytes">{{ rule.bytes_h }}</span></td>
+                    <td class="r muted small">{{ rule.share }}</td>
+                    <td class="op-cond">{{ conditions(rule, chain.family) }}</td>
+                    <td class="row-actions">{% if chain.in_config and not rule.is_default %}<a class="ib" href="{{ edit_url }}" title="Edit in {{ chain.label }}">{{ ui.icon_edit() }}</a>{% endif %}</td>
+                </tr>
+                {%- endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{%- endfor %}
+{%- endmacro %}
+
 {#- The results area: toolbar, structured view (if any) and the raw text. -#}
 {% macro op_result(message, op_view, op_command, firewall_name, ran_at) -%}
 <div class="op-result" id="op-result">
@@ -67,6 +138,10 @@
         <span class="meta">{{ firewall_name }}{% if ran_at %} &middot; ran <b>{{ ran_at }}</b>{% endif %} &middot; {{ op_view.table_count }} table{{ "" if op_view.table_count == 1 else "s" }} parsed</span>
         <div class="op-tools">
             <input class="input" id="op-filter" type="search" placeholder="Filter rows&hellip;" aria-label="Filter rows">
+            {%- if op_view.kind == "firewall" %}
+            <label class="op-check"><input type="checkbox" id="op-zero"> Hide zero-hit</label>
+            <button type="button" class="btn btn-sm" id="op-collapse">Collapse all</button>
+            {%- endif %}
             <div class="seg" role="group" aria-label="View">
                 <button type="button" data-op-view="table" aria-pressed="true">Table</button>
                 <button type="button" data-op-view="raw" aria-pressed="false">Raw</button>
@@ -74,7 +149,7 @@
             <button type="button" class="btn btn-sm" id="op-copy">Copy raw</button>
         </div>
     </div>
-    <div id="op-table">{{ generic_tables(op_view) }}</div>
+    <div id="op-table">{% if op_view.kind == "firewall" %}{{ firewall_view(op_view) }}{% else %}{{ generic_tables(op_view) }}{% endif %}</div>
     {%- endif %}
     <pre class="results-content" id="results-content"{% if op_view %} hidden{% endif %}>{{ message }}</pre>
 </div>

@@ -1963,11 +1963,21 @@ def configuration_push():
         # output stays raw text.
         op_view = None
         op_ran_at = None
+        op_group_list = []
         if request.form["action"] == "Run Operational Command":
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
-            op_view = build_op_view(message)
+            op_view = build_op_view(
+                message,
+                read_user_data_file(
+                    f'{session["data_dir"]}/{session["firewall_name"]}'
+                ),
+            )
+            if op_view and op_view["kind"] == "firewall":
+                op_group_list = assemble_detail_list_of_groups(
+                    session, flash_empty=False
+                )
             op_ran_at = datetime.now().strftime("%H:%M:%S")
         elif request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session, merge_config)
@@ -1992,6 +2002,7 @@ def configuration_push():
             op_command=op_command,
             op_view=op_view,
             op_ran_at=op_ran_at,
+            op_group_list=op_group_list,
             ssh_user_name=session["ssh_user"],
             ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),

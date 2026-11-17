@@ -6,6 +6,9 @@
 // with no matching rows; clicking a header sorts that table's rows. Cells
 // carry their unformatted value in data-v so sorting ignores the display
 // formatting. A row marked "op-pinned" (a chain's default action) stays last.
+// The show firewall view adds: hide zero-hit rules, collapse a ruleset by
+// its header or all at once, and jump links that expand and scroll to the
+// target chain.
 (function () {
     const tableView = document.getElementById('op-table');
     const raw = document.getElementById('results-content');
@@ -84,6 +87,33 @@
             sortBy(th);
             return;
         }
+        const jump = e.target.closest('.op-jump');
+        if (jump) {
+            const target = document.getElementById(jump.getAttribute('href').slice(1));
+            if (target) {
+                e.preventDefault();
+                target.classList.remove('collapsed');
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+            return;
+        }
+        if (e.target.closest('#op-collapse')) {
+            const button = e.target.closest('#op-collapse');
+            const chains = tableView.querySelectorAll('.op-chain');
+            const collapse = Array.prototype.some.call(chains, function (c) {
+                return !c.classList.contains('collapsed');
+            });
+            chains.forEach(function (c) {
+                c.classList.toggle('collapsed', collapse);
+            });
+            button.textContent = collapse ? 'Expand all' : 'Collapse all';
+            return;
+        }
+        const head = e.target.closest('.op-toggle');
+        if (head && !e.target.closest('a, button')) {
+            head.parentNode.classList.toggle('collapsed');
+            return;
+        }
         const copy = e.target.closest('#op-copy');
         if (copy) {
             navigator.clipboard.writeText(raw.textContent).then(function () {
@@ -95,6 +125,13 @@
             });
         }
     });
+
+    const zero = document.getElementById('op-zero');
+    if (zero) {
+        zero.addEventListener('change', function () {
+            tableView.classList.toggle('op-hide-zero', zero.checked);
+        });
+    }
 
     const filter = document.getElementById('op-filter');
     if (filter) {

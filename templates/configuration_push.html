@@ -214,6 +214,10 @@
 </div>
 
 {% if op_view %}<script src="{{ url_for('static', filename='op-output.js', v=ASSET_VERSION) }}"></script>{% endif %}
+{% if op_view and op_view.kind == "firewall" %}
+{{ ui.group_cards(op_group_list) }}
+<script src="{{ url_for('static', filename='ref-cards.js', v=ASSET_VERSION) }}"></script>
+{% endif %}
 <script>
 function copyConfig() {
     const text = document.getElementById('config-preview').textContent;

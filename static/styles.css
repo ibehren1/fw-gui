@@ -1066,6 +1066,38 @@ legend { padding: 0 6px; margin-left: -6px; }
 .op-up { color: var(--ok); }
 .op-down { color: var(--danger); }
 .op-pill { margin: 0; text-transform: none; letter-spacing: 0; font-size: 0.78em; }
+.op-check { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 0.92em; cursor: pointer; }
+/* show firewall view */
+.op-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.op-stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; }
+.op-stat b { display: block; font-size: 1.35em; color: var(--heading); font-family: var(--mono); }
+.op-stat span { color: var(--muted); font-size: 0.85em; }
+.op-stat-warn b { color: var(--warn); }
+.op-stat-danger b { color: var(--danger); }
+.op-toggle { cursor: pointer; user-select: none; }
+.op-caret { display: inline-block; width: 12px; color: var(--muted); transition: transform 0.12s; }
+.op-chain.collapsed .op-caret { transform: rotate(-90deg); }
+.op-chain.collapsed > .table-scroll { display: none; }
+.op-chain.collapsed > .block-head { border-bottom: 0; }
+.op-fw { table-layout: fixed; min-width: 1020px; }
+.op-fw td { overflow-wrap: anywhere; }
+.op-fw th:nth-child(1) { width: 70px; }
+.op-fw th:nth-child(2) { width: 22%; }
+.op-fw th:nth-child(3) { width: 90px; }
+.op-fw th:nth-child(4) { width: 80px; }
+.op-fw th:nth-child(5) { width: 120px; }
+.op-fw th:nth-child(6) { width: 100px; }
+.op-fw th:nth-child(7) { width: 56px; }
+.op-fw th:nth-child(9) { width: 34px; }
+.op-hit { position: relative; }
+.op-bar { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 3px; background: var(--row-line); border-radius: 2px; }
+.op-bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.op-grid tr.op-zero td { color: var(--muted); }
+.op-grid tr.op-zero .act { opacity: 0.55; }
+.op-hide-zero tr.op-zero:not(.op-pinned) { display: none; }
+.op-cond { font-size: 0.92em; }
+.op-cond-text { font-family: var(--mono); color: var(--muted); }
+.op-jump { font-family: var(--mono); }
 .loading-overlay {
     position: fixed;
     inset: 0;

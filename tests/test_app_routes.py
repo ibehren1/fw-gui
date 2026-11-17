@@ -1143,6 +1143,37 @@ class TestConfigRoutes:
         assert b"<script>x</script>" not in resp.data
         assert resp.data.count(b"&lt;script&gt;x&lt;/script&gt;") >= 2
 
+    def test_configuration_push_firewall_view(self, auth_client):
+        """show firewall output becomes rulesets with config descriptions."""
+        output = (
+            "---------------------------------\n"
+            'ipv4 Firewall "name wan_local"\n'
+            "\n"
+            "Rule     Action    Protocol      Packets    Bytes  Conditions\n"
+            "-------  --------  ----------  ---------  -------  ------------------------------\n"
+            "10       accept    tcp               824    53916  ct state new tcp dport @P_ssh  accept\n"
+            'default  drop      all                21     2044  prefix "[ipv4-NAM-wan_local-default-D]"\n'
+        )
+        config = {"ipv4": {"chains": {"wan_local": {
+            "default": {"description": "WAN <b>Local</b>"},
+            "10": {"description": "Allow SSH"},
+        }}}}
+        with patch("app.read_user_data_file", return_value=config), patch(
+            "app.assemble_detail_list_of_groups",
+            return_value=[{"ip_version": "ipv4", "group_name": "ssh", "group_desc": "",
+                           "group_type": "port-group", "group_value": ["22"]}],
+        ):
+            resp = self._run_op(auth_client, output)
+        assert resp.status_code == 200
+        assert b'id="op-chain-ipv4-name-wan_local"' in resp.data
+        assert b"Allow SSH" in resp.data
+        assert b"WAN &lt;b&gt;Local&lt;/b&gt;" in resp.data
+        assert b'data-ref="ipv4|port-group|ssh"' in resp.data
+        assert b'data-ref-card="ipv4|port-group|ssh"' in resp.data
+        assert b"ref-cards.js" in resp.data
+        assert b"/chain_view#ipv4wan_local" in resp.data
+        assert b'id="op-zero"' in resp.data
+
     def test_configuration_push_diff_output_stays_raw(self, auth_client):
         """Only operational output is parsed; diff text is never a table."""
         output = "A    B\n---  ---\n1    2\n"
