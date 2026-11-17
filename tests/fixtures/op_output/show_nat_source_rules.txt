@@ -1,0 +1,10 @@
+Rule    Source     Destination     Proto    Out-Int    Translation
+------  ---------  --------------  -------  ---------  -------------
+10      0.0.0.0/0  10.0.0.0/8      any      any        exclude
+        sport any  dport any
+100     0.0.0.0/0  100.64.0.0/10   any      any        exclude
+        sport any  dport any
+189     0.0.0.0/0  192.168.1.0/24  any      any        masquerade
+        sport any  dport any
+1000    0.0.0.0/0  0.0.0.0/0       any      any        masquerade
+        sport any  dport any
