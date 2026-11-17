@@ -1081,14 +1081,15 @@ legend { padding: 0 6px; margin-left: -6px; }
 .op-chain.collapsed > .block-head { border-bottom: 0; }
 .op-fw { table-layout: fixed; min-width: 1020px; }
 .op-fw td { overflow-wrap: anywhere; }
-.op-fw th:nth-child(1) { width: 70px; }
-.op-fw th:nth-child(2) { width: 22%; }
-.op-fw th:nth-child(3) { width: 90px; }
-.op-fw th:nth-child(4) { width: 80px; }
-.op-fw th:nth-child(5) { width: 120px; }
-.op-fw th:nth-child(6) { width: 100px; }
-.op-fw th:nth-child(7) { width: 56px; }
-.op-fw th:nth-child(9) { width: 34px; }
+.op-fw .op-w-num { width: 70px; }
+.op-fw .op-w-desc { width: 22%; }
+.op-fw .op-w-act { width: 90px; }
+.op-fw .op-w-proto { width: 80px; }
+.op-fw .op-w-pk { width: 120px; }
+.op-fw .op-w-by { width: 100px; }
+.op-fw .op-w-share { width: 56px; }
+.op-fw .op-w-delta { width: 80px; }
+.op-fw .op-w-actions { width: 34px; }
 .op-hit { position: relative; }
 .op-bar { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 3px; background: var(--row-line); border-radius: 2px; }
 .op-bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
@@ -1098,6 +1099,8 @@ legend { padding: 0 6px; margin-left: -6px; }
 .op-cond { font-size: 0.92em; }
 .op-cond-text { font-family: var(--mono); color: var(--muted); }
 .op-jump { font-family: var(--mono); }
+.op-delta { color: var(--ok); font-family: var(--mono); font-size: 0.92em; }
+.op-no-delta .op-delta-col { display: none; }
 .loading-overlay {
     position: fixed;
     inset: 0;

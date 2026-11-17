@@ -147,7 +147,11 @@ from package.napalm_ssh_functions import (
     run_operational_command,
     test_connection,
 )
-from package.op_output import build_op_view
+from package.op_output import (
+    build_op_view,
+    counter_history_key,
+    remember_counters,
+)
 from package.ssh_key_store import migrate_legacy_key_files
 from package.start_functions import build_quick_start, config_progress
 from package.telemetry_functions import start_telemetry_heartbeat, telemetry_instance
@@ -1968,17 +1972,31 @@ def configuration_push():
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
+            op_ran_at = datetime.now().strftime("%H:%M:%S")
+            # Firewall counters from the last run of this command against this
+            # config, for the change-since-last-run column.
+            history_key = counter_history_key(
+                session["firewall_name"], request.form["op_command"]
+            )
+            last_run = session.get("op_counters", {}).get(history_key) or {}
             op_view = build_op_view(
                 message,
                 read_user_data_file(
                     f'{session["data_dir"]}/{session["firewall_name"]}'
                 ),
+                previous=last_run.get("counters"),
             )
             if op_view and op_view["kind"] == "firewall":
+                op_view["previous_at"] = last_run.get("at")
+                session["op_counters"] = remember_counters(
+                    session.get("op_counters"),
+                    history_key,
+                    op_view["counters"],
+                    op_ran_at,
+                )
                 op_group_list = assemble_detail_list_of_groups(
                     session, flash_empty=False
                 )
-            op_ran_at = datetime.now().strftime("%H:%M:%S")
         elif request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session, merge_config)
         elif request.form["action"] == "Commit":

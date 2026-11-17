@@ -104,6 +104,8 @@ HTTP Request → Flask route (app.py) → package function
 
 Flask session stores `data_dir`, `firewall_name`, and `username`. Each user has isolated data directories under `data/`.
 
+The push page also keeps `op_counters` in the session: the last `show firewall` packet counters per (config, command), at most 8 entries, so the next run can show each rule's change since then. Logging out discards them.
+
 ### Environment Configuration
 
 Configured via `.env` file (loaded by python-dotenv). Key variables:

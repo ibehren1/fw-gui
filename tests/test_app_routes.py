@@ -1174,6 +1174,30 @@ class TestConfigRoutes:
         assert b"/chain_view#ipv4wan_local" in resp.data
         assert b'id="op-zero"' in resp.data
 
+    def test_configuration_push_firewall_delta_on_second_run(self, auth_client):
+        """The second run of a command shows packets since the first."""
+        def output(packets):
+            return (
+                'ipv4 Firewall "name wan_local"\n'
+                "\n"
+                "Rule     Action    Protocol      Packets    Bytes  Conditions\n"
+                "-------  --------  ----------  ---------  -------  ----------\n"
+                f"10       accept    tcp         {packets:>9}    53916  accept\n"
+            )
+
+        with patch("app.read_user_data_file", return_value={}), patch(
+            "app.assemble_detail_list_of_groups", return_value=[]
+        ):
+            first = self._run_op(auth_client, output(800))
+            second = self._run_op(auth_client, output(1250))
+        assert "on next run".encode() in first.data
+        assert b'id="op-delta"' not in first.data
+        assert b'id="op-delta"' in second.data
+        assert b"+450" in second.data
+        with auth_client.session_transaction() as sess:
+            saved = sess["op_counters"]["test_firewall|show interfaces"]
+        assert saved["counters"] == {"ipv4|name|wan_local|10": 1250}
+
     def test_configuration_push_diff_output_stays_raw(self, auth_client):
         """Only operational output is parsed; diff text is never a table."""
         output = "A    B\n---  ---\n1    2\n"

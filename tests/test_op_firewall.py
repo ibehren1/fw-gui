@@ -190,3 +190,34 @@ def test_build_op_view_prefers_firewall_view():
     assert view["table_count"] == 10
     assert len(view["chains"]) == 10
     assert build_op_view((FIXTURES / "show_interfaces.txt").read_text())["kind"] == "tables"
+
+
+class TestDeltas:
+    def test_first_run_has_no_deltas(self, chains):
+        from package.op_firewall import apply_deltas
+
+        apply_deltas(chains, None)
+        assert all(r["delta"] is None for c in chains for r in c["rules"])
+
+    def test_deltas_against_previous_counters(self, chains):
+        from package.op_firewall import apply_deltas, counter_key, counter_snapshot
+
+        previous = counter_snapshot(chains)
+        forward = by_label(chains, "ipv4", "forward filter")
+        previous[counter_key(forward, forward["rules"][0])] -= 399
+        # A counter that went down (reset) shows no delta, not a negative one.
+        previous[counter_key(forward, forward["rules"][1])] += 5
+        del previous[counter_key(forward, forward["rules"][2])]
+        apply_deltas(chains, previous)
+        assert forward["rules"][0]["delta"] == 399
+        assert forward["rules"][0]["delta_h"] == "399"
+        assert forward["rules"][1]["delta"] is None
+        assert forward["rules"][2]["delta"] is None
+        assert forward["rules"][3]["delta"] == 0
+
+    def test_same_rule_number_in_other_family_is_separate(self, chains):
+        from package.op_firewall import counter_snapshot
+
+        keys = counter_snapshot(chains)
+        assert "ipv4|name|wan_out|10" in keys
+        assert "ipv6|name|wan_out|10" in keys

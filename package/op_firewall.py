@@ -246,3 +246,34 @@ def stats(chains):
         "dropped": dropped,
         "dropped_h": human_count(dropped),
     }
+
+
+def counter_key(chain, rule):
+    return f'{chain["family"]}|{chain["kind"]}|{chain["name"]}|{rule["number"]}'
+
+
+def counter_snapshot(chains):
+    """Packet counters by ruleset and rule, for the next run's deltas."""
+    return {counter_key(c, r): r["packets"] for c in chains for r in c["rules"]}
+
+
+def apply_deltas(chains, previous):
+    """
+    Set each rule's ``delta`` (packets since ``previous``), in place.
+
+    ``delta`` is None for a rule not in ``previous`` (new since then, or no
+    previous run) and for a counter that went down (reset or rule replaced),
+    where a negative change would be misleading. ``delta_h`` is its display
+    form.
+    """
+    previous = previous or {}
+    for chain in chains:
+        for rule in chain["rules"]:
+            before = previous.get(counter_key(chain, rule))
+            if isinstance(before, int) and rule["packets"] >= before:
+                rule["delta"] = rule["packets"] - before
+                rule["delta_h"] = human_count(rule["delta"])
+            else:
+                rule["delta"] = None
+                rule["delta_h"] = ""
+    return chains

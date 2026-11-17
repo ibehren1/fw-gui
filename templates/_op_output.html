@@ -98,15 +98,18 @@
     <div class="table-scroll">
         <table class="grid op-grid op-fw">
             <thead><tr>
-                <th class="r" data-sort data-numeric>#</th>
-                <th>Description</th>
-                <th>Action</th>
-                <th>Proto</th>
-                <th class="r" data-sort data-numeric>Packets</th>
-                <th class="r" data-sort data-numeric>Bytes</th>
-                <th class="r">Share</th>
+                <th class="r op-w-num" data-sort data-numeric>#</th>
+                <th class="op-w-desc">Description</th>
+                <th class="op-w-act">Action</th>
+                <th class="op-w-proto">Proto</th>
+                <th class="r op-w-pk" data-sort data-numeric>Packets</th>
+                <th class="r op-w-by" data-sort data-numeric>Bytes</th>
+                <th class="r op-w-share">Share</th>
+                {%- if op_view.has_previous %}
+                <th class="r op-w-delta op-delta-col" data-sort data-numeric title="Packets since the last run at {{ op_view.previous_at }}">&Delta;</th>
+                {%- endif %}
                 <th>Conditions</th>
-                <th></th>
+                <th class="op-w-actions"></th>
             </tr></thead>
             <tbody>
                 {%- for rule in chain.rules %}
@@ -118,6 +121,9 @@
                     <td class="r op-hit" data-v="{{ rule.packets }}"><span class="mono" title="{{ '{:,}'.format(rule.packets) }} packets">{{ rule.packets_h }}</span><span class="op-bar"><i style="width: {{ rule.bar }}%"></i></span></td>
                     <td class="r" data-v="{{ rule.bytes }}"><span class="mono" title="{{ '{:,}'.format(rule.bytes) }} bytes">{{ rule.bytes_h }}</span></td>
                     <td class="r muted small">{{ rule.share }}</td>
+                    {%- if op_view.has_previous %}
+                    <td class="r op-delta-col" data-v="{{ rule.delta if rule.delta is not none else -1 }}">{% if rule.delta is none %}<span class="muted" title="No earlier count to compare">&ndash;</span>{% elif rule.delta %}<span class="op-delta" title="+{{ '{:,}'.format(rule.delta) }} packets">+{{ rule.delta_h }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+                    {%- endif %}
                     <td class="op-cond">{{ conditions(rule, chain.family) }}</td>
                     <td class="row-actions">{% if chain.in_config and not rule.is_default %}<a class="ib" href="{{ edit_url }}" title="Edit in {{ chain.label }}">{{ ui.icon_edit() }}</a>{% endif %}</td>
                 </tr>
@@ -140,6 +146,11 @@
             <input class="input" id="op-filter" type="search" placeholder="Filter rows&hellip;" aria-label="Filter rows">
             {%- if op_view.kind == "firewall" %}
             <label class="op-check"><input type="checkbox" id="op-zero"> Hide zero-hit</label>
+            {%- if op_view.has_previous %}
+            <label class="op-check" title="Packets since the last run at {{ op_view.previous_at }}"><input type="checkbox" id="op-delta" checked> Change since {{ op_view.previous_at }}</label>
+            {%- else %}
+            <span class="meta" title="Run the same command again to see each rule's packets since this run.">&Delta; on next run</span>
+            {%- endif %}
             <button type="button" class="btn btn-sm" id="op-collapse">Collapse all</button>
             {%- endif %}
             <div class="seg" role="group" aria-label="View">

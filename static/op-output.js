@@ -7,8 +7,8 @@
 // carry their unformatted value in data-v so sorting ignores the display
 // formatting. A row marked "op-pinned" (a chain's default action) stays last.
 // The show firewall view adds: hide zero-hit rules, collapse a ruleset by
-// its header or all at once, and jump links that expand and scroll to the
-// target chain.
+// its header or all at once, jump links that expand and scroll to the target
+// chain, and show/hide the change-since-last-run column.
 (function () {
     const tableView = document.getElementById('op-table');
     const raw = document.getElementById('results-content');
@@ -130,6 +130,13 @@
     if (zero) {
         zero.addEventListener('change', function () {
             tableView.classList.toggle('op-hide-zero', zero.checked);
+        });
+    }
+
+    const delta = document.getElementById('op-delta');
+    if (delta) {
+        delta.addEventListener('change', function () {
+            tableView.classList.toggle('op-no-delta', !delta.checked);
         });
     }
 
