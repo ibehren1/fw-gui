@@ -273,6 +273,15 @@ def test_group_sections_match_chain_headers(auth_client, store):
     assert "group_type=address-group" in body and "ip_version=ipv4" in body
 
 
+def test_shared_group_rows_have_no_ip_tag(auth_client, store):
+    # Port, MAC, domain and interface groups serve both IP versions, so their
+    # rows in the "Other" section carry no IPv4/IPv6 tag.
+    body = auth_client.get("/group_view").get_data(as_text=True)
+    port = body.split('id="port"', 1)[1].split("</table>", 1)[0]
+    assert "WEB" in port
+    assert "tag-ipv4" not in port and "tag-ipv6" not in port
+
+
 @pytest.mark.parametrize("query, gtype, ipv", [
     ("?group_type=network-group&ip_version=ipv6", "network-group", "ipv6"),
     ("?group_type=port-group&ip_version=ipv4", "port-group", "ipv4"),
