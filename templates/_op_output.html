@@ -1,0 +1,81 @@
+{#- Operational command output on the push page. The raw output is always in
+    #results-content; op_view (package/op_output.py) adds a table view over
+    it when the output contains tables. static/op-output.js wires the
+    toolbar: view toggle, filter, sort, copy. -#}
+
+{#- One generic table cell. A few columns VyOS prints in every version get a
+    light touch; everything else is text, one line per value. -#}
+{% macro cell(column, value) -%}
+{%- set lines = value.split("\n") if value else [] -%}
+{%- if not lines -%}
+<span class="muted">&mdash;</span>
+{%- elif column == "S/L" and value|length == 3 and value[1] == "/" -%}
+{%- for code in [value[0], value[2]] -%}
+{%- if code == "u" %}<span class="op-up">up</span>{% elif code == "A" %}<span class="muted">admin down</span>{% else %}<span class="op-down">down</span>{% endif -%}
+{%- if loop.first %} / {% endif -%}
+{%- endfor -%}
+{%- elif column == "IP Address" -%}
+<div class="op-stack">{% for line in lines %}<span>{% if line == "-" %}<span class="muted">&mdash;</span>{% else %}<span class="tag tag-{{ 'ipv6' if ':' in line else 'ipv4' }}">{{ '6' if ':' in line else '4' }}</span> {{ line }}{% endif %}</span>{% endfor %}</div>
+{%- elif column == "Translation" and value in ("exclude", "masquerade") -%}
+<span class="pill {{ 'pill-off' if value == 'exclude' else 'pill-ok' }} op-pill">{{ value }}</span>
+{%- elif lines|length > 1 -%}
+<div class="op-stack">{% for line in lines %}<span{% if not loop.first %} class="muted small"{% endif %}>{{ line }}</span>{% endfor %}</div>
+{%- else -%}
+{{ value }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro generic_tables(op_view) -%}
+{%- for segment in op_view.segments -%}
+{%- if segment.kind == "text" -%}
+<pre class="op-text">{{ segment.text.strip("\n") }}</pre>
+{%- else -%}
+<section class="block op-block">
+    <div class="block-head">
+        <div class="block-title"><span class="meta"><b>{{ segment.rows|length }}</b> row{{ "" if segment.rows|length == 1 else "s" }}</span></div>
+    </div>
+    <div class="table-scroll">
+        <table class="grid op-grid">
+            <thead><tr>
+                {%- for column in segment.columns %}
+                <th data-sort="{{ loop.index0 }}"{% if segment.numeric[loop.index0] %} class="r" data-numeric{% endif %}>{{ column }}</th>
+                {%- endfor %}
+            </tr></thead>
+            <tbody>
+                {%- for row in segment.rows %}
+                <tr>
+                    {%- for value in row %}
+                    {%- set column = segment.columns[loop.index0] %}
+                    <td{% if segment.numeric[loop.index0] %} class="r mono"{% elif segment.multiline[loop.index0] %} class="mono"{% endif %} data-v="{{ value }}">{{ cell(column, value) }}</td>
+                    {%- endfor %}
+                </tr>
+                {%- endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{%- endif -%}
+{%- endfor -%}
+{%- endmacro %}
+
+{#- The results area: toolbar, structured view (if any) and the raw text. -#}
+{% macro op_result(message, op_view, op_command, firewall_name, ran_at) -%}
+<div class="op-result" id="op-result">
+    {%- if op_view %}
+    <div class="op-head">
+        <span class="op-cmd">{{ op_command }}</span>
+        <span class="meta">{{ firewall_name }}{% if ran_at %} &middot; ran <b>{{ ran_at }}</b>{% endif %} &middot; {{ op_view.table_count }} table{{ "" if op_view.table_count == 1 else "s" }} parsed</span>
+        <div class="op-tools">
+            <input class="input" id="op-filter" type="search" placeholder="Filter rows&hellip;" aria-label="Filter rows">
+            <div class="seg" role="group" aria-label="View">
+                <button type="button" data-op-view="table" aria-pressed="true">Table</button>
+                <button type="button" data-op-view="raw" aria-pressed="false">Raw</button>
+            </div>
+            <button type="button" class="btn btn-sm" id="op-copy">Copy raw</button>
+        </div>
+    </div>
+    <div id="op-table">{{ generic_tables(op_view) }}</div>
+    {%- endif %}
+    <pre class="results-content" id="results-content"{% if op_view %} hidden{% endif %}>{{ message }}</pre>
+</div>
+{%- endmacro %}

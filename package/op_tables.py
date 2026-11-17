@@ -53,8 +53,9 @@ def parse_segments(text):
     Returns:
         list[dict]: each either ``{"kind": "text", "text": str}`` or
         ``{"kind": "table", "columns": [str], "numeric": [bool],
-        "rows": [[str]]}``. A multi-line cell holds its lines joined by
-        ``"\\n"``. Returns ``[]`` for empty input.
+        "multiline": [bool], "rows": [[str]]}``. A multi-line cell holds its
+        lines joined by ``"\\n"``; ``multiline`` flags the columns that have
+        one. Returns ``[]`` for empty input.
     """
     if not isinstance(text, str) or not text.strip():
         return []
@@ -93,6 +94,10 @@ def parse_segments(text):
                     "kind": "table",
                     "columns": columns,
                     "numeric": _numeric_columns(rows, len(columns)),
+                    "multiline": [
+                        any("\n" in row[k] for row in rows)
+                        for k in range(len(columns))
+                    ],
                     "rows": rows,
                 }
             )

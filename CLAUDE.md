@@ -71,6 +71,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `napalm_ssh_functions.py` | SSH connectivity, config push, diffs, operational commands |
 | `diff_functions.py` | Configuration diff generation |
 | `op_tables.py` | Splits operational command output into text and table segments (VyOS tabulate tables: header, dash-run line, rows; blank-first-column continuation lines) |
+| `op_output.py` | Chooses the push page's view of operational output: a table view when it parses into tables, else raw text (`None`) |
 | `mongo_converter.py` | Legacy pre-1.4.0 JSON-to-MongoDB config migration (runs at startup) |
 | `start_functions.py` | Getting started page: build-order progress for the selected config, and the quick-start starter config |
 | `mongo_admin.py` | MongoDB server version and feature compatibility version (FCV) for Admin Settings; raising the FCV to match the server before a major upgrade (docs/mongodb-upgrade.md) |

@@ -1046,6 +1046,26 @@ legend { padding: 0 6px; margin-left: -6px; }
     overflow-x: auto;
     white-space: pre;
 }
+
+/* Operational command output: toolbar, parsed tables (op-output.js) */
+.op-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 4px 0 10px; }
+.op-cmd { font-family: var(--mono); font-weight: 700; color: var(--heading); font-size: 1.05em; }
+.op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-left: auto; }
+.op-tools .input { width: 220px; height: 26px; }
+.seg { display: inline-flex; border: 1px solid var(--btn-line); border-radius: var(--r); overflow: hidden; }
+.seg button { font: inherit; font-size: 0.88em; border: 0; background: var(--btn-bg); color: var(--muted); padding: 0 10px; height: 26px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--seg-on-text); font-weight: 600; }
+.op-text { font-family: var(--mono); font-size: 0.88em; color: var(--muted); white-space: pre; overflow-x: auto; margin: 0 0 8px; }
+.op-grid th[data-sort] { cursor: pointer; }
+.op-grid th[data-sort]:hover { color: var(--text); }
+.op-grid th.sorted::after { content: " \25BE"; }
+.op-grid th.sorted.asc::after { content: " \25B4"; }
+.op-grid td.r, .op-grid th.r { text-align: right; }
+.op-grid tr.op-filtered { display: none; }
+.op-stack { display: flex; flex-direction: column; gap: 1px; }
+.op-up { color: var(--ok); }
+.op-down { color: var(--danger); }
+.op-pill { margin: 0; text-transform: none; letter-spacing: 0; font-size: 0.78em; }
 .loading-overlay {
     position: fixed;
     inset: 0;

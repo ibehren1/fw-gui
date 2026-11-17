@@ -147,6 +147,7 @@ from package.napalm_ssh_functions import (
     run_operational_command,
     test_connection,
 )
+from package.op_output import build_op_view
 from package.ssh_key_store import migrate_legacy_key_files
 from package.start_functions import build_quick_start, config_progress
 from package.telemetry_functions import start_telemetry_heartbeat, telemetry_instance
@@ -1958,10 +1959,16 @@ def configuration_push():
             config, delete="delete_before_set" in request.form
         )
 
+        # Only operational output gets a structured view; diff and commit
+        # output stays raw text.
+        op_view = None
+        op_ran_at = None
         if request.form["action"] == "Run Operational Command":
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
+            op_view = build_op_view(message)
+            op_ran_at = datetime.now().strftime("%H:%M:%S")
         elif request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session, merge_config)
         elif request.form["action"] == "Commit":
@@ -1983,6 +1990,8 @@ def configuration_push():
             firewall_port=session["port"],
             firewall_reachable=True,
             op_command=op_command,
+            op_view=op_view,
+            op_ran_at=op_ran_at,
             ssh_user_name=session["ssh_user"],
             ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),

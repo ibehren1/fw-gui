@@ -111,3 +111,10 @@ class TestContinuationRows:
         segments = parse_segments(text)
         assert [s["kind"] for s in segments] == ["table", "text"]
         assert segments[1]["text"].strip() == "Total: 1"
+
+
+def test_multiline_flags_columns_with_continuation_values():
+    [table] = tables(parse_segments(fixture("show_interfaces.txt")))
+    flags = dict(zip(table["columns"], table["multiline"]))
+    assert flags["IP Address"] is True
+    assert flags["MAC"] is False

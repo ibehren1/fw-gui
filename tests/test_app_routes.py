@@ -1074,7 +1074,7 @@ class TestConfigRoutes:
         so column-aligned tables collapsed and markup in output (a rule or
         interface description) executed in the browser.
         """
-        output = "Rule    Action\n----    ------\n10      accept <script>x</script>"
+        output = "Version:          VyOS 1.5\nBuilt by:         <script>x</script>"
         with patch(
             "app.generate_config",
             return_value=("config", ["line"]),
@@ -1098,8 +1098,58 @@ class TestConfigRoutes:
             assert b"&lt;script&gt;x&lt;/script&gt;" in resp.data
             assert (
                 b'<pre class="results-content" id="results-content">'
-                b"Rule    Action\n----    ------\n10      accept" in resp.data
+                b"Version:          VyOS 1.5\nBuilt by:" in resp.data
             )
+            # No tables, so no table view or toolbar.
+            assert b'id="op-table"' not in resp.data
+            assert b"op-output.js" not in resp.data
+
+    def _run_op(self, auth_client, output, action="Run Operational Command"):
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.run_operational_command",
+            return_value=output,
+        ), patch(
+            "app.get_diffs_from_firewall",
+            return_value=output,
+        ), patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            return auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": action,
+                    "op_command": "show interfaces",
+                },
+            )
+
+    def test_configuration_push_op_output_tables_render(self, auth_client):
+        """Tabulated output gets a table view; the raw text is kept, hidden."""
+        output = (
+            "Interface    MTU  Description\n"
+            "-----------  ---  ----------------------\n"
+            "eth0         1500 <script>x</script>\n"
+        )
+        resp = self._run_op(auth_client, output)
+        assert resp.status_code == 200
+        assert b'id="op-table"' in resp.data
+        assert b"op-output.js" in resp.data
+        assert b'<pre class="results-content" id="results-content" hidden>' in resp.data
+        assert b"<th data-sort=\"0\">Interface</th>" in resp.data
+        assert b"<script>x</script>" not in resp.data
+        assert resp.data.count(b"&lt;script&gt;x&lt;/script&gt;") >= 2
+
+    def test_configuration_push_diff_output_stays_raw(self, auth_client):
+        """Only operational output is parsed; diff text is never a table."""
+        output = "A    B\n---  ---\n1    2\n"
+        resp = self._run_op(auth_client, output, action="View Diffs")
+        assert resp.status_code == 200
+        assert b'id="op-table"' not in resp.data
+        assert b'<pre class="results-content" id="results-content">A    B' in resp.data
 
     def test_configuration_push_get_shows_commands_as_text(self, auth_client):
         """The generated commands are newline-joined text, not <br> HTML."""
