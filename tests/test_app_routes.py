@@ -1067,6 +1067,156 @@ class TestConfigRoutes:
             assert resp.status_code == 200
             assert mock_commit.call_args[0][2] == "delete firewall\nline"
 
+    def test_configuration_push_op_output_escaped_and_spaced(self, auth_client):
+        """Device output is escaped text in a <pre>, with its spacing intact.
+
+        Pre-4.0.56 it was injected as raw HTML with newlines turned into <br>,
+        so column-aligned tables collapsed and markup in output (a rule or
+        interface description) executed in the browser.
+        """
+        output = "Version:          VyOS 1.5\nBuilt by:         <script>x</script>"
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.run_operational_command",
+            return_value=output,
+        ), patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": "Run Operational Command",
+                    "op_command": "show firewall",
+                },
+            )
+            assert resp.status_code == 200
+            assert b"<script>x</script>" not in resp.data
+            assert b"&lt;script&gt;x&lt;/script&gt;" in resp.data
+            assert (
+                b'<pre class="results-content" id="results-content">'
+                b"Version:          VyOS 1.5\nBuilt by:" in resp.data
+            )
+            # No tables, so no table view or toolbar.
+            assert b'id="op-table"' not in resp.data
+            assert b"op-output.js" not in resp.data
+
+    def _run_op(self, auth_client, output, action="Run Operational Command"):
+        with patch(
+            "app.generate_config",
+            return_value=("config", ["line"]),
+        ), patch(
+            "app.run_operational_command",
+            return_value=output,
+        ), patch(
+            "app.get_diffs_from_firewall",
+            return_value=output,
+        ), patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            return auth_client.post(
+                "/configuration_push",
+                data={
+                    "username": "vyos",
+                    "password": "vyos",
+                    "action": action,
+                    "op_command": "show interfaces",
+                },
+            )
+
+    def test_configuration_push_op_output_tables_render(self, auth_client):
+        """Tabulated output gets a table view; the raw text is kept, hidden."""
+        output = (
+            "Interface    MTU  Description\n"
+            "-----------  ---  ----------------------\n"
+            "eth0         1500 <script>x</script>\n"
+        )
+        resp = self._run_op(auth_client, output)
+        assert resp.status_code == 200
+        assert b'id="op-table"' in resp.data
+        assert b"op-output.js" in resp.data
+        assert b'<pre class="results-content" id="results-content" hidden>' in resp.data
+        assert b"<th data-sort=\"0\">Interface</th>" in resp.data
+        assert b"<script>x</script>" not in resp.data
+        assert resp.data.count(b"&lt;script&gt;x&lt;/script&gt;") >= 2
+
+    def test_configuration_push_firewall_view(self, auth_client):
+        """show firewall output becomes rulesets with config descriptions."""
+        output = (
+            "---------------------------------\n"
+            'ipv4 Firewall "name wan_local"\n'
+            "\n"
+            "Rule     Action    Protocol      Packets    Bytes  Conditions\n"
+            "-------  --------  ----------  ---------  -------  ------------------------------\n"
+            "10       accept    tcp               824    53916  ct state new tcp dport @P_ssh  accept\n"
+            'default  drop      all                21     2044  prefix "[ipv4-NAM-wan_local-default-D]"\n'
+        )
+        config = {"ipv4": {"chains": {"wan_local": {
+            "default": {"description": "WAN <b>Local</b>"},
+            "10": {"description": "Allow SSH"},
+        }}}}
+        with patch("app.read_user_data_file", return_value=config), patch(
+            "app.assemble_detail_list_of_groups",
+            return_value=[{"ip_version": "ipv4", "group_name": "ssh", "group_desc": "",
+                           "group_type": "port-group", "group_value": ["22"]}],
+        ):
+            resp = self._run_op(auth_client, output)
+        assert resp.status_code == 200
+        assert b'id="op-chain-ipv4-name-wan_local"' in resp.data
+        assert b"Allow SSH" in resp.data
+        assert b"WAN &lt;b&gt;Local&lt;/b&gt;" in resp.data
+        assert b'data-ref="ipv4|port-group|ssh"' in resp.data
+        assert b'data-ref-card="ipv4|port-group|ssh"' in resp.data
+        assert b"ref-cards.js" in resp.data
+        assert b"/chain_view#ipv4wan_local" in resp.data
+        assert b'id="op-zero"' in resp.data
+
+    def test_configuration_push_firewall_delta_on_second_run(self, auth_client):
+        """The second run of a command shows packets since the first."""
+        def output(packets):
+            return (
+                'ipv4 Firewall "name wan_local"\n'
+                "\n"
+                "Rule     Action    Protocol      Packets    Bytes  Conditions\n"
+                "-------  --------  ----------  ---------  -------  ----------\n"
+                f"10       accept    tcp         {packets:>9}    53916  accept\n"
+            )
+
+        with patch("app.read_user_data_file", return_value={}), patch(
+            "app.assemble_detail_list_of_groups", return_value=[]
+        ):
+            first = self._run_op(auth_client, output(800))
+            second = self._run_op(auth_client, output(1250))
+        assert "on next run".encode() in first.data
+        assert b'id="op-delta"' not in first.data
+        assert b'id="op-delta"' in second.data
+        assert b"+450" in second.data
+        with auth_client.session_transaction() as sess:
+            saved = sess["op_counters"]["test_firewall|show interfaces"]
+        assert saved["counters"] == {"ipv4|name|wan_local|10": 1250}
+
+    def test_configuration_push_diff_output_stays_raw(self, auth_client):
+        """Only operational output is parsed; diff text is never a table."""
+        output = "A    B\n---  ---\n1    2\n"
+        resp = self._run_op(auth_client, output, action="View Diffs")
+        assert resp.status_code == 200
+        assert b'id="op-table"' not in resp.data
+        assert b'<pre class="results-content" id="results-content">A    B' in resp.data
+
+    def test_configuration_push_get_shows_commands_as_text(self, auth_client):
+        """The generated commands are newline-joined text, not <br> HTML."""
+        with patch(
+            "app.generate_config",
+            return_value=("a<br>b<br>", ["a", "b"]),
+        ), patch("app.test_connection", return_value=True), patch(
+            "app.list_user_keys", return_value=[]
+        ):
+            resp = auth_client.get("/configuration_push")
+            assert b'id="results-content">a\nb</pre>' in resp.data
+
     def test_configuration_push_post_commit_all_comments(self, auth_client):
         """A config of only banners and blanks forwards an empty string.
 

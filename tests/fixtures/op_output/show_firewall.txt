@@ -1,0 +1,108 @@
+Rulesets Information
+
+---------------------------------
+ipv4 Firewall "forward filter"
+
+Rule     Action    Protocol      Packets       Bytes  Conditions
+-------  --------  ----------  ---------  ----------  -------------------------------------------------
+1        jump      all             40199    24742474  iifname "eth0"  jump NAME_wan_in
+5        jump      all             41802    26688093  oifname "eth0"  jump NAME_wan_out
+10       jump      all            988642  1066207523  oifname "bond0"  jump NAME_mgmt_out
+120      jump      all             20827     2599285  oifname "bond0.12"  jump NAME_example_home_out
+241      jump      all                 0           0  iifname "bond0.24"  jump NAME_example_iot_in
+default  accept    all              5391      500987  accept comment "FWD-filter default-action accept"
+
+---------------------------------
+ipv4 Firewall "input filter"
+
+Rule     Action    Protocol      Packets       Bytes  Conditions
+-------  --------  ----------  ---------  ----------  -------------------------------------------------
+1        jump      all            747768  1003790041  iifname "eth0"  jump NAME_wan_local
+120      jump      all              3216      746582  iifname "bond0.12"  jump NAME_example_home_local
+default  accept    all             14126      741221  accept comment "INP-filter default-action accept"
+
+---------------------------------
+ipv4 Firewall "name aws_vpnpeer1_vpn_in"
+
+Rule     Action    Protocol      Packets    Bytes  Conditions
+-------  --------  ----------  ---------  -------  ------------------------------------------------------------------------------------------------
+10       accept    all               470    28905  ct state { established, related }  accept
+11       accept    all                 0        0  ct state { established, related }  accept
+20       drop      all                 0        0  ct state invalid
+30       drop      all                 0        0  ct state new ip saddr @A_blocked_vpn_hosts_
+100      accept    all              8937   464724  ct state new  accept
+default  drop      all                 0        0  prefix "[ipv4-NAM-aws_vpnpeer1_vp-default-D]"  comment "NAM-aws_vpnpeer1_vpn_in default-action "
+
+---------------------------------
+ipv4 Firewall "name example_home_local"
+
+Rule     Action    Protocol      Packets    Bytes  Conditions
+-------  --------  ----------  ---------  -------  -----------------------------------------------------------------------------------------------
+10       accept    all               824    53916  ct state { established, related }  accept
+20       drop      all                 0        0  ct state invalid  prefix "[ipv4-NAM-example_home_local-20-D]"
+30       accept    tcp                 0        0  ct state new tcp dport @P_ssh_ports  accept
+35       accept    tcp_udp            11     3876  ct state new meta l4proto { tcp, udp } th dport @P_dhcp_ports  accept
+40       accept    icmp                3      460  meta l4proto icmp  accept
+50       accept    udp              2357   686286  udp dport @P_mdns_ports udp sport @P_mdns_ports  accept
+200      accept    tcp                 0        0  ct state new tcp dport @P_web_ports  prefix "[ipv4-NAM-example_home_local-200-A]"  accept
+default  drop      all                21     2044  prefix "[ipv4-NAM-example_home_lo-default-D]"  comment "NAM-example_home_local default-action "
+
+---------------------------------
+ipv4 Firewall "name example_iot_in"
+
+Rule     Action    Protocol      Packets    Bytes  Conditions
+-------  --------  ----------  ---------  -------  --------------------------------------------------------------------------------------------------------
+10       drop      all                 0        0  ct state { invalid, established, related, new } ip saddr @A_tvs  prefix "[ipv4-NAM-example_iot_in-10-D]"
+default  accept    all                 0        0  accept comment "NAM-example_iot_in default-action accept"
+
+---------------------------------
+ipv4 Firewall "name data_center_out"
+
+Rule     Action    Protocol      Packets       Bytes  Conditions
+-------  --------  ----------  ---------  ----------  -----------------------------------------------------------------------------------------------------------------
+10       accept    all            649304  1670473490  ct state { established, related }  accept
+20       drop      all                59        2500  ct state invalid  prefix "[ipv4-NAM-data_center_out-20-D]"
+30       drop      tcp                 0           0  ct state new ip daddr @A_nas tcp dport @P_smb_ports ip saddr @N_example_home_vpn
+40       accept    tcp_udp         15752     1171225  ct state new meta l4proto { tcp, udp } ip daddr @A_dns_servers th dport @P_dns_ports  accept
+50       accept    tcp_udp          1683     1312666  ct state new meta l4proto { tcp, udp } th dport 514 ip daddr @A_syslog_host_lan_  accept
+100      accept    all                 0           0  ct state new ip saddr 192.168.250.0/24  accept
+130      accept    tcp                 0           0  ct state new tcp dport { 111, 139, 445 } ip daddr @A_nas ip saddr @N_remote_home  accept
+default  drop      all                58        1848  prefix "[ipv4-NAM-data_center_out-default-D]"  comment "NAM-data_center_out default-action "
+
+---------------------------------
+ipv4 Firewall "name wan_out"
+
+Rule     Action    Protocol      Packets     Bytes  Conditions
+-------  --------  ----------  ---------  --------  -------------------------------------------------------------
+10       drop      udp                 0         0  udp dport @P_mdns_ports  prefix "[ipv4-NAM-wan_out-10-D]"
+20       drop      udp                 0         0  udp dport 1900  prefix "[ipv4-NAM-wan_out-20-D]"
+30       drop      udp                 3       234  udp dport { 137, 138, 139 }  prefix "[ipv4-NAM-wan_out-30-D]"
+default  accept    all             41808  26691985  accept comment "NAM-wan_out default-action accept"
+
+---------------------------------
+ipv6 Firewall "forward filter"
+
+Rule     Action    Protocol      Packets       Bytes  Conditions
+-------  --------  ----------  ---------  ----------  -------------------------------------------------
+1        jump      all            509506  1200486051  iifname "eth0"  jump NAME6_wan_in
+12       jump      all              2214      189079  oifname "bond0.12"  jump NAME6_client_lans_out
+default  accept    all                 0           0  accept comment "FWD-filter default-action accept"
+
+---------------------------------
+ipv6 Firewall "name data_center_out"
+
+Rule     Action    Protocol      Packets    Bytes  Conditions
+-------  --------  ----------  ---------  -------  ----------------------------------------------------------------------------------------------
+10       accept    all                18     4452  ct state { established, related }  accept
+30       accept    ipv6-icmp           0        0  meta l4proto ipv6-icmp  accept
+40       accept    tcp_udp           444    41094  ct state new meta l4proto { tcp, udp } ip6 daddr @A6_dns_servers th dport @P_dns_ports  accept
+default  drop      all                 0        0  prefix "[ipv6-NAM-data_center_out-default-D]"  comment "NAM-data_center_out default-action "
+
+---------------------------------
+ipv6 Firewall "name wan_out"
+
+Rule     Action    Protocol      Packets      Bytes  Conditions
+-------  --------  ----------  ---------  ---------  --------------------------------------------------------------
+10       drop      icmpv6              0          0  icmpv6 type nd-router-advert  prefix "[ipv6-NAM-wan_out-10-D]"
+default  accept    all            218986  106423352  accept comment "NAM-wan_out default-action accept"
+

@@ -147,6 +147,11 @@ from package.napalm_ssh_functions import (
     run_operational_command,
     test_connection,
 )
+from package.op_output import (
+    build_op_view,
+    counter_history_key,
+    remember_counters,
+)
 from package.ssh_key_store import migrate_legacy_key_files
 from package.start_functions import build_quick_start, config_progress
 from package.telemetry_functions import start_telemetry_heartbeat, telemetry_instance
@@ -1945,20 +1950,53 @@ def configuration_push():
         if ssh_key_name:
             session["ssh_keyname"] = ssh_key_name
 
-        # generate_config() also supplies the message rendered when the action is
-        # unrecognized, so it stays outside the branches below. build_merge_config
+        # The generated commands are also the message rendered when the action is
+        # unrecognized, so they stay outside the branches below. The results
+        # block is escaped plain text, so the message is the newline-joined
+        # commands, not generate_config()'s <br>-joined HTML. build_merge_config
         # optionally includes 'delete firewall' before the set commands; it is
         # pure string work, so computing it up front costs nothing even for the
         # operational-command action that does not use it.
-        message, config = generate_config(session)
+        _, config = generate_config(session)
+        message = "\n".join(config)
         merge_config = build_merge_config(
             config, delete="delete_before_set" in request.form
         )
 
+        # Only operational output gets a structured view; diff and commit
+        # output stays raw text.
+        op_view = None
+        op_ran_at = None
+        op_group_list = []
         if request.form["action"] == "Run Operational Command":
             message = run_operational_command(
                 connection_string, session, request.form["op_command"]
             )
+            op_ran_at = datetime.now().strftime("%H:%M:%S")
+            # Firewall counters from the last run of this command against this
+            # config, for the change-since-last-run column.
+            history_key = counter_history_key(
+                session["firewall_name"], request.form["op_command"]
+            )
+            last_run = session.get("op_counters", {}).get(history_key) or {}
+            op_view = build_op_view(
+                message,
+                read_user_data_file(
+                    f'{session["data_dir"]}/{session["firewall_name"]}'
+                ),
+                previous=last_run.get("counters"),
+            )
+            if op_view and op_view["kind"] == "firewall":
+                op_view["previous_at"] = last_run.get("at")
+                session["op_counters"] = remember_counters(
+                    session.get("op_counters"),
+                    history_key,
+                    op_view["counters"],
+                    op_ran_at,
+                )
+                op_group_list = assemble_detail_list_of_groups(
+                    session, flash_empty=False
+                )
         elif request.form["action"] == "View Diffs":
             message = get_diffs_from_firewall(connection_string, session, merge_config)
         elif request.form["action"] == "Commit":
@@ -1980,6 +2018,9 @@ def configuration_push():
             firewall_port=session["port"],
             firewall_reachable=True,
             op_command=op_command,
+            op_view=op_view,
+            op_ran_at=op_ran_at,
+            op_group_list=op_group_list,
             ssh_user_name=session["ssh_user"],
             ssh_pass_cached=bool(session.get("ssh_pass")),
             ssh_keyname=session.get("ssh_keyname", ""),
@@ -1998,7 +2039,9 @@ def configuration_push():
 
         file_list = list_user_files(session)
         key_list = list_user_keys(session)
-        message, config = generate_config(session)
+        # Escaped plain text in the results block; see the POST branch.
+        _, config = generate_config(session)
+        message = "\n".join(config)
         firewall_reachable = test_connection(session)
         snapshot_list = list_snapshots(session)
 

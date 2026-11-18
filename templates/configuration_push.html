@@ -1,5 +1,6 @@
 {% extends "basic_page.html" %}
 {% import "_macros.html" as ui %}
+{% import "_op_output.html" as op %}
 {% block body %}
 <div class="config-push">
     <div class="push-header">
@@ -164,10 +165,7 @@
     
     <!-- Results -->
     {% if message %}
-    <!-- <div class="results-section">
-        <h3 class="subsection-title">Results</h3> -->
-        <div class="results-content">{% autoescape false %}{{ message|replace('\n', '<br>') }}{% endautoescape %}</div>
-    <!-- </div> -->
+    {{ op.op_result(message, op_view, op_command, firewall_name, op_ran_at) }}
     {% endif %}
     
     <!-- Configuration Preview -->
@@ -215,6 +213,11 @@
     {% endif %}
 </div>
 
+{% if op_view %}<script src="{{ url_for('static', filename='op-output.js', v=ASSET_VERSION) }}"></script>{% endif %}
+{% if op_view and op_view.kind == "firewall" %}
+{{ ui.group_cards(op_group_list) }}
+<script src="{{ url_for('static', filename='ref-cards.js', v=ASSET_VERSION) }}"></script>
+{% endif %}
 <script>
 function copyConfig() {
     const text = document.getElementById('config-preview').textContent;
@@ -287,7 +290,7 @@ function copyAuthCredentials(form) {
 
 // Auto-scroll to results section only after form submissions
 document.addEventListener('DOMContentLoaded', function() {
-    const resultsContent = document.querySelector('.results-content');
+    const resultsContent = document.getElementById('op-result');
     
     // Only scroll if we just submitted a form
     if (resultsContent && sessionStorage.getItem('scrollToResults') === 'true') {

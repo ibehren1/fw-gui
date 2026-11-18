@@ -34,10 +34,12 @@
 
 {#- Key that ties a group reference to its card. Rule data names the type with
     underscores (address_group); group data with hyphens (address-group).
-    Domain groups are only stored under ipv4. -#}
+    Only address and network groups are per IP version; every other type
+    (port, MAC, domain, interface) is stored under ipv4 and shared by IPv4
+    and IPv6 rules. -#}
 {% macro group_key(ip_version, group_type, name) -%}
 {%- set group_type = group_type|replace("_", "-") -%}
-{{ "ipv4" if group_type == "domain-group" else ip_version }}|{{ group_type }}|{{ name }}
+{{ ip_version if group_type in ("address-group", "network-group") else "ipv4" }}|{{ group_type }}|{{ name }}
 {%- endmacro %}
 
 {#- A reference to a group. ref-cards.js shows the matching group card on
@@ -94,7 +96,7 @@
     <div class="ref-card" data-ref-card="{{ group_key(group.ip_version, group.group_type, group.group_name) }}">
         <div class="ref-card-head">
             <span class="mono strong">{{ group.group_name }}</span>
-            {% if group.group_type != "domain-group" %}{{ ip_tag(group.ip_version) }}{% endif %}
+            {% if group.group_type in ("address-group", "network-group") %}{{ ip_tag(group.ip_version) }}{% endif %}
         </div>
         <div class="ref-card-meta">
             <span>{{ group.group_type|replace("-", " ")|capitalize }}</span>

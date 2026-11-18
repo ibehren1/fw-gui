@@ -215,6 +215,23 @@ def test_group_references_carry_cards(auth_client, store):
     assert "ref-cards.js" in body
 
 
+def test_ipv6_rules_reference_shared_port_groups(auth_client, store):
+    # Port groups are stored under ipv4 only and shared by both versions, so
+    # an IPv6 rule's reference must key to the ipv4 card. Address groups stay
+    # per version.
+    store.data["ipv6"] = {"chains": {"WAN6_LOCAL": {
+        "rule-order": ["10"],
+        "default": {"default_action": "drop", "default_logging": False,
+                    "description": "d"},
+        "10": {"description": "SSH", "action": "accept", "protocol": "tcp",
+               "source_address": "MGMT6", "source_address_type": "address_group",
+               "dest_port": "WEB", "dest_port_type": "port_group"}}}}
+    body = auth_client.get("/chain_view").get_data(as_text=True)
+    assert 'data-ref="ipv4|port-group|WEB"' in body
+    assert 'data-ref="ipv6|port-group|WEB"' not in body
+    assert 'data-ref="ipv6|address-group|MGMT6"' in body
+
+
 def test_chain_view_does_not_flash_when_there_are_no_groups(auth_client, store):
     store.data["ipv4"].pop("groups", None)
     body = auth_client.get("/chain_view").get_data(as_text=True)
@@ -254,6 +271,15 @@ def test_group_sections_match_chain_headers(auth_client, store):
     head = "".join(ipv4[:3])
     assert "tag tag-ipv4" in head
     assert "group_type=address-group" in body and "ip_version=ipv4" in body
+
+
+def test_shared_group_rows_have_no_ip_tag(auth_client, store):
+    # Port, MAC, domain and interface groups serve both IP versions, so their
+    # rows in the "Other" section carry no IPv4/IPv6 tag.
+    body = auth_client.get("/group_view").get_data(as_text=True)
+    port = body.split('id="port"', 1)[1].split("</table>", 1)[0]
+    assert "WEB" in port
+    assert "tag-ipv4" not in port and "tag-ipv6" not in port
 
 
 @pytest.mark.parametrize("query, gtype, ipv", [
