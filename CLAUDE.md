@@ -33,8 +33,9 @@ make local    # Local Docker image only
 make dev      # Push to internal registry
 make pubdev   # Push dev build to Docker Hub (PRs also publish dev-{VERSION} + dev-latest via ci.yml)
 make prod     # Push production build to Docker Hub (manual fallback)
-# Releases: publishing a GitHub release (tag v{VERSION}) runs
-# .github/workflows/publish.yml, which pushes {VERSION} + latest to GHCR and Docker Hub
+# Releases: every push to master whose version has no release yet runs
+# .github/workflows/publish.yml: tests, push {VERSION} + latest to GHCR and
+# Docker Hub, then create GitHub release v{VERSION}
 
 # Install dependencies
 uv sync
