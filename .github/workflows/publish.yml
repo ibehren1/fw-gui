@@ -1,29 +1,73 @@
-name: Publish image
+name: Publish release
 
-# Build the multi-arch (ARM64/AMD64) container image and publish it to the
-# GitHub Container Registry and Docker Hub when a GitHub release is published.
-# Tags: <version> and latest on both registries (prereleases get <version>
-# only). The release tag must be v<pyproject version>, so the image version,
-# .version and the release always agree.
+# On every push to master (i.e. every merged pull request): if pyproject's
+# version has no GitHub release yet, run the tests and Bandit, build the
+# multi-arch (ARM64/AMD64) image, push <version> and latest to the GitHub
+# Container Registry and Docker Hub, then tag and create release v<version>
+# with generated notes. Edit the release title/notes afterwards as needed.
+#
+# A push whose version already has a release (e.g. a Dependabot merge that
+# did not bump the version) does nothing. The image is pushed before the
+# release is created, so a release always has its image.
+#
+# Manual dispatch re-runs the whole thing for the current version even when
+# its release exists (e.g. to re-push the image); the release step is then
+# skipped.
 #
 # `make dev|pubdev` (scripts/build.sh) remain for internal-registry and dev
 # builds; this workflow replaces `make prod` for releases.
 on:
-  release:
-    types: [published]
-  # Re-publish the current pyproject version by hand (e.g. after a failed run).
+  push:
+    branches: [master]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# Never run two releases at once; queue instead of cancelling a half-done one.
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
 
 env:
   GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/fw-gui
   DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/fw-gui
 
 jobs:
+  check:
+    name: Check for existing release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      released: ${{ steps.release.outputs.released }}
+      run: ${{ steps.release.outputs.released == 'false' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Look up release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "${TAG}" -R "${GITHUB_REPOSITORY}" > /dev/null 2>&1; then
+            echo "Release ${TAG} already exists."
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     name: Tests & security scan
+    needs: check
+    if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -49,7 +93,7 @@ jobs:
 
   publish:
     name: Build & push image
-    needs: test
+    needs: [check, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,23 +102,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "v${VERSION}" > .version
-
-      - name: Check release tag matches version
-        if: github.event_name == 'release'
-        env:
-          TAG: ${{ github.event.release.tag_name }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          if [ "${TAG}" != "v${VERSION}" ]; then
-            echo "::error::Release tag ${TAG} does not match pyproject version v${VERSION}"
-            exit 1
-          fi
+      - name: Write .version
+        run: echo "v${{ needs.check.outputs.version }}" > .version
 
       - name: Image metadata
         id: meta
@@ -86,8 +115,8 @@ jobs:
           # Labels include org.opencontainers.image.source, which links the
           # GHCR package to this repository.
           tags: |
-            type=raw,value=${{ steps.version.outputs.version }}
-            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+            type=raw,value=${{ needs.check.outputs.version }}
+            type=raw,value=latest
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -119,3 +148,26 @@ jobs:
           no-cache: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  release:
+    name: Create GitHub release
+    needs: [check, publish]
+    if: needs.check.outputs.released == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.check.outputs.version }}
+        run: |
+          # Title the release after the merged pull request when there is one,
+          # matching the "v<version> – <summary>" style of earlier releases.
+          PR_TITLE=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '.[0].title // empty' || true)
+          TITLE="${TAG}${PR_TITLE:+ – ${PR_TITLE}}"
+          gh release create "${TAG}" -R "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "${TITLE}" \
+            --generate-notes \
+            --latest
