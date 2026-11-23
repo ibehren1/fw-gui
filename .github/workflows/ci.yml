@@ -1,10 +1,21 @@
 name: CI
 
-# Validation only: run the test suite and the Bandit security scan on every
-# push and pull request. Does NOT build or publish the Docker image — that
-# stays in `make local|dev|pubdev|prod` (scripts/build.sh).
+# Every pull request: run the test suite and the Bandit security scan, then
+# build the multi-arch image and publish it as dev-<version> and dev-latest
+# to GHCR and Docker Hub. Releases are published by publish.yml.
+#
+# The publish job runs only for branches of this repository: pull requests
+# from forks and Dependabot get no registry secrets, and must never be given
+# them (no pull_request_target), so they stop after the tests.
 on:
   pull_request:
+
+permissions:
+  contents: read
+
+env:
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/fw-gui
+  DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/fw-gui
 
 jobs:
   test:
@@ -37,3 +48,73 @@ jobs:
 
       - name: Run Bandit security scan
         run: uv run --extra test bandit -c pyproject.toml -r .
+
+  publish-dev:
+    name: Build & push dev image
+    needs: test
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # One dev publish per PR at a time; a newer push cancels the older build.
+    concurrency:
+      group: publish-dev-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "v${VERSION}" > .version
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ env.GHCR_IMAGE }}
+            ${{ env.DOCKERHUB_IMAGE }}
+          tags: |
+            type=raw,value=dev-${{ steps.version.outputs.version }}
+            type=raw,value=dev-latest
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          # Local checkout context, so the .version written above is included.
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Dev builds reuse the Actions layer cache to keep PR checks quick;
+          # release builds (publish.yml) always build from scratch.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

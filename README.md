@@ -52,6 +52,7 @@ The web-based FW-GUI allows the user to visually:
 | Status | | |
 | - | - | - |
 | Source Code | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_github---https:--github-com-ibehren1-fw-gui/health/badge.svg) | [https://github.com/ibehren1/fw-gui](https://github.com/ibehren1/fw-gui)  |
+| GitHub Container Registry | | [https://github.com/ibehren1/fw-gui/pkgs/container/fw-gui](https://github.com/ibehren1/fw-gui/pkgs/container/fw-gui) |
 | Docker Hub | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_dockerhub---https:--hub-docker-com-repository-docker-ibehren1-fw-gui-general/health/badge.svg) | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
 | Working Demo | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_fw-gui---https:--fw-gui-com/health/badge.svg) | [https://fw-gui.com](https://fw-gui.com) |
 
@@ -145,7 +146,7 @@ See below for updated Docker Compose configuration settings.
 ```diff
 services:
   fw-gui:
-    image: ibehren1/fw-gui:latest
+    image: ghcr.io/ibehren1/fw-gui:latest
     container_name: fw-gui
 +    depends_on:
 +     - mongodb
@@ -214,7 +215,7 @@ No longer recommended with additional MongoDB container needed.
 ```yaml
 services:
   fw-gui:
-    image: ibehren1/fw-gui:latest
+    image: ghcr.io/ibehren1/fw-gui:latest
     container_name: fw-gui
     depends_on:
       - mongodb
