@@ -31,8 +31,10 @@ bandit -c pyproject.toml -r .
 # Docker builds (run bandit + pytest first, then buildx)
 make local    # Local Docker image only
 make dev      # Push to internal registry
-make pubdev   # Push dev build to Docker Hub
-make prod     # Push production build to Docker Hub
+make pubdev   # Push dev build to Docker Hub (PRs also publish dev-{VERSION} + dev-latest via ci.yml)
+make prod     # Push production build to Docker Hub (manual fallback)
+# Releases: publishing a GitHub release (tag v{VERSION}) runs
+# .github/workflows/publish.yml, which pushes {VERSION} + latest to GHCR and Docker Hub
 
 # Install dependencies
 uv sync

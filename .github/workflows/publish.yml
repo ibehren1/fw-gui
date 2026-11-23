@@ -1,0 +1,121 @@
+name: Publish image
+
+# Build the multi-arch (ARM64/AMD64) container image and publish it to the
+# GitHub Container Registry and Docker Hub when a GitHub release is published.
+# Tags: <version> and latest on both registries (prereleases get <version>
+# only). The release tag must be v<pyproject version>, so the image version,
+# .version and the release always agree.
+#
+# `make dev|pubdev` (scripts/build.sh) remain for internal-registry and dev
+# builds; this workflow replaces `make prod` for releases.
+on:
+  release:
+    types: [published]
+  # Re-publish the current pyproject version by hand (e.g. after a failed run).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/fw-gui
+  DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/fw-gui
+
+jobs:
+  test:
+    name: Tests & security scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        # setup-uv publishes exact versions only (no floating major tag), so pin
+        # the release commit; the comment records the version it is.
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: uv sync --extra test
+
+      - name: Run tests
+        env:
+          FWGUI_INSTANCE_ID: github-actions-ci
+        run: uv run --extra test pytest
+
+      - name: Run Bandit security scan
+        run: uv run --extra test bandit -c pyproject.toml -r .
+
+  publish:
+    name: Build & push image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "v${VERSION}" > .version
+
+      - name: Check release tag matches version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ "${TAG}" != "v${VERSION}" ]; then
+            echo "::error::Release tag ${TAG} does not match pyproject version v${VERSION}"
+            exit 1
+          fi
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ env.GHCR_IMAGE }}
+            ${{ env.DOCKERHUB_IMAGE }}
+          # Labels include org.opencontainers.image.source, which links the
+          # GHCR package to this repository.
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          # Local checkout context, so the .version written above is included.
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          no-cache: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
