@@ -73,6 +73,7 @@ from package.chain_functions import (
     assemble_detail_list_of_chains,
     chain_defaults,
     assemble_list_of_chains,
+    chain_next_rule_numbers,
     delete_rule_from_data,
     move_chain_rule_in_data,
     reorder_chain_rule_in_data,
@@ -112,6 +113,7 @@ from package.filter_functions import (
     filter_defaults,
     assemble_list_of_filters,
     delete_filter_rule_from_data,
+    filter_next_rule_numbers,
     move_filter_rule_in_data,
     reorder_filter_rule_in_data,
     resequence_filter_rules_in_data,
@@ -1341,6 +1343,7 @@ def chain_rule_add():
                 firewall_name=session["firewall_name"],
                 username=session["username"],
                 **session_release_context(session),
+                next_rule_numbers=chain_next_rule_numbers(session),
                 rule_detail=request.form,
             )
 
@@ -1371,6 +1374,7 @@ def chain_rule_add():
             firewall_name=session["firewall_name"],
             username=session["username"],
             **session_release_context(session),
+            next_rule_numbers=chain_next_rule_numbers(session),
             rule_detail=rule_detail_defaults,
         )
 
@@ -1614,6 +1618,7 @@ def filter_rule_add():
                 interface_list=interface_list,
                 username=session["username"],
                 **session_release_context(session),
+                next_rule_numbers=filter_next_rule_numbers(session),
                 rule_detail=request.form,
             )
 
@@ -1663,6 +1668,7 @@ def filter_rule_add():
             interface_list=interface_list,
             username=session["username"],
             **session_release_context(session),
+            next_rule_numbers=filter_next_rule_numbers(session),
             rule_detail={},
         )
 

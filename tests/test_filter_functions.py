@@ -729,3 +729,12 @@ def test_filter_defaults(mock_session, mock_read_write):
         "ipv6": {"filters": {"input": {"default-action": "accept", "log": False, "rules": {}}}},
     })
     assert filter_defaults(mock_session) == {"ipv6": {"input": {"action": "accept", "log": False}}}
+
+
+def test_filter_next_rule_numbers(mock_session, mock_read_write):
+    from package.filter_functions import filter_next_rule_numbers
+    mock_read_write("package.filter_functions", {
+        "ipv4": {"filters": {"input": {"rule-order": ["10"], "rules": {}}}},
+        "ipv6": {"filters": {"forward": {"rule-order": [], "rules": {}}}},
+    })
+    assert filter_next_rule_numbers(mock_session) == {"ipv4,input": 20, "ipv6,forward": 10}

@@ -234,12 +234,20 @@ def test_filter_rule_edit_keeps_log_and_disable_checked(auth_client):
     assert 'name="logging" value="True" checked' in body
 
 
+def test_filter_rule_add_defaults_to_next_number(auth_client):
+    with patch("app.filter_next_rule_numbers", return_value={"ipv4,forward": 40}):
+        body = _filter_rule_form(auth_client).get_data(as_text=True)
+    assert 'value="40"' in body
+    assert "Add Filter Rule</button>" in body
+
+
 def test_filter_rule_edit_says_update(auth_client):
-    body = _filter_rule_form(auth_client, "post", {
-        "type": "edit", "filter": "ipv4,forward", "name": "20", "description": "",
-        "action": "accept", "direction": "", "ip_version": "ipv4",
-        "target": "", "interface": "",
-    }).get_data(as_text=True)
+    with patch("app.filter_next_rule_numbers", return_value={"ipv4,forward": 40}):
+        body = _filter_rule_form(auth_client, "post", {
+            "type": "edit", "filter": "ipv4,forward", "name": "20", "description": "",
+            "action": "accept", "direction": "", "ip_version": "ipv4",
+            "target": "", "interface": "",
+        }).get_data(as_text=True)
     assert "Update Filter Rule</button>" in body
     assert "Edit Filter Rule" in body
-    assert "Add Filter Rule</button>" in _filter_rule_form(auth_client).get_data(as_text=True)
+    assert 'value="20"' in body and 'value="40"' not in body

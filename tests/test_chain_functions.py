@@ -894,3 +894,12 @@ def test_chain_defaults(mock_session, mock_read_write):
     assert chain_defaults(mock_session) == {
         "ipv4": {"A": {"action": "drop", "log": True}, "B": {"action": None, "log": False}},
     }
+
+
+def test_chain_next_rule_numbers(mock_session, mock_read_write):
+    from package.chain_functions import chain_next_rule_numbers
+    mock_read_write("package.chain_functions", {
+        "ipv4": {"chains": {"A": {"rule-order": ["10", "20"]}, "B": {"rule-order": []}}},
+        "ipv6": {"chains": {"C": {"rule-order": ["5"]}}},
+    })
+    assert chain_next_rule_numbers(mock_session) == {"ipv4,A": 30, "ipv4,B": 10, "ipv6,C": 10}

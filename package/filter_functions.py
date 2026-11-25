@@ -18,6 +18,7 @@ from flask import flash
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from package.rule_order_functions import (
+    next_rule_number,
     apply_renumber_map,
     build_renumber_map,
     build_resequence_map,
@@ -176,6 +177,17 @@ def filter_defaults(session):
                 "log": bool(filt.get("log", False)),
             }
     return defaults
+
+
+def filter_next_rule_numbers(session):
+    """{"ipv4,input": next rule number} for every filter (see next_rule_number)."""
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    numbers = {}
+    for ip_version in ("ipv4", "ipv6"):
+        for name, filt in ((user_data or {}).get(ip_version, {}).get("filters") or {}).items():
+            if isinstance(filt, dict):
+                numbers[f"{ip_version},{name}"] = next_rule_number(filt.get("rule-order"))
+    return numbers
 
 
 def assemble_detail_list_of_filters(session):

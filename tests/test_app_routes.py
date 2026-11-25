@@ -418,17 +418,24 @@ class TestChainRoutes:
             )
             assert resp.status_code == 200
 
-    def test_chain_rule_add_says_add(self, auth_client):
+    def test_chain_rule_add_get_defaults_to_next_number(self, auth_client):
         with patch(
             "app.assemble_list_of_chains", return_value=[["ipv4", "test_chain"]]
-        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
-            body = auth_client.get("/chain_rule_add").get_data(as_text=True)
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.chain_next_rule_numbers", return_value={"ipv4,test_chain": 30}
+        ):
+            body = auth_client.get("/chain_rule_add?fw_chain=ipv4,test_chain").get_data(as_text=True)
+            assert 'value="30"' in body
+            assert "data-next='{\"ipv4,test_chain\": 30}'" in body
             assert "Add Rule</button>" in body
+            assert "data-edit" not in body
 
-    def test_chain_rule_edit_says_update(self, auth_client):
+    def test_chain_rule_edit_says_update_and_keeps_number(self, auth_client):
         with patch(
             "app.assemble_list_of_chains", return_value=[["ipv4", "test_chain"]]
-        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.chain_next_rule_numbers", return_value={"ipv4,test_chain": 30}
+        ):
             body = auth_client.post(
                 "/chain_rule_add",
                 data={"type": "edit", "chain": "ipv4,test_chain", "name": "10",
@@ -436,6 +443,8 @@ class TestChainRoutes:
             ).get_data(as_text=True)
             assert "Update Rule</button>" in body
             assert "Edit Firewall Rule" in body
+            assert 'value="10"' in body
+            assert 'data-edit="1"' in body
 
     def test_chain_rule_delete(self, auth_client):
         with patch("app.delete_rule_from_data") as mock_del:

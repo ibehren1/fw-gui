@@ -48,8 +48,9 @@
                 
                 <div class="form-group">
                     <label for="rule" class="form-label">Rule Number</label>
-                    <input type="number" name="rule" id="rule" class="form-input" 
-                           value="{{ rule_detail.name if rule_detail.name else '1' }}" 
+                    <input type="number" name="rule" id="rule" class="form-input"
+                           value="{{ rule_detail.name if rule_detail.name else next_rule_numbers.get(rule_detail.chain, 10) }}"
+                           data-next='{{ next_rule_numbers|tojson }}'{% if rule_detail.type == "edit" %} data-edit="1"{% endif %}
                            min="1" max="999999" required>
                 </div>
                 
@@ -353,6 +354,24 @@
     </form>
 </div>
 
+
+<script>
+// A new rule defaults to the end of the selected chain; switching chains
+// follows along unless the number was changed by hand.
+(function () {
+    const select = document.getElementById('fw_chain');
+    const rule = document.getElementById('rule');
+    if (!select || !rule || rule.dataset.edit) return;
+    const next = JSON.parse(rule.dataset.next || '{}');
+    let suggested = rule.value;
+    select.addEventListener('change', function () {
+        if (rule.value === suggested && select.value in next) {
+            suggested = String(next[select.value]);
+            rule.value = suggested;
+        }
+    });
+})();
+</script>
 
 <script>
 // Tab functionality

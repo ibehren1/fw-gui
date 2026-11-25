@@ -21,6 +21,7 @@ from flask import flash
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from package.rule_order_functions import (
+    next_rule_number,
     apply_renumber_map,
     build_renumber_map,
     build_resequence_map,
@@ -457,6 +458,17 @@ def assemble_list_of_chains(session):
         flash("There are no chains defined.", "danger")
 
     return chain_list
+
+
+def chain_next_rule_numbers(session):
+    """{"ipv4,NAME": next rule number} for every chain (see next_rule_number)."""
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    numbers = {}
+    for ip_version in ("ipv4", "ipv6"):
+        for name, chain in ((user_data or {}).get(ip_version, {}).get("chains") or {}).items():
+            if isinstance(chain, dict):
+                numbers[f"{ip_version},{name}"] = next_rule_number(chain.get("rule-order"))
+    return numbers
 
 
 def delete_rule_from_data(session, request):
