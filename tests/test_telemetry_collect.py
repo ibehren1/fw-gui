@@ -72,8 +72,26 @@ def test_collect_usage(db):
     assert features == {
         "light_theme": True, "quick_start": True, "flowtables": True,
         "interface_types": True, "scheduled_backup": True, "s3_backup": False,
-        "ssh_keys": False, "registration_open": False,
+        "ssh_keys": False, "registration_open": False, "rolling_release": False,
     }
+
+
+def test_collect_usage_rolling_release(db):
+    db["bob"].update_one(
+        {"_id": "lab"},
+        {"$set": {"system": {"vyos_release": {"rolling": True, "milestone": "2026-08"}}}},
+    )
+    assert telemetry_collect.collect_usage()[1]["rolling_release"] is True
+
+
+def test_rolling_release_ignores_rolling_off_and_snapshots(db):
+    db["bob"].update_one(
+        {"_id": "lab"},
+        {"$set": {"system": {"vyos_release": {"rolling": False, "milestone": "2026-08"}}}},
+    )
+    db["bob"].insert_one({"firewall": "lab", "snapshot": "s1",
+                          "system": {"vyos_release": {"rolling": True}}})
+    assert telemetry_collect.collect_usage()[1]["rolling_release"] is False
 
 
 def test_collect_usage_never_reports_names(db):

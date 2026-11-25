@@ -132,7 +132,7 @@ An existing MongoDB install can only move up **one major version at a time**, an
 FW-GUI reports anonymous usage to `telemetry.fw-gui.com` so the developer can see how many installs exist, which versions are in use and how FW-GUI is deployed.  It is sent in the background and never affects the app if the server is unreachable.
 
 - **Each install** is identified by a random UUID generated on first start (stored in MongoDB), not by anything about you.
-- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration).
+- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration, VyOS rolling release).
 - **At each login:** only the UUID and version.
 - **For each View Diffs, Commit and operational command:** only the UUID, to count use.
 

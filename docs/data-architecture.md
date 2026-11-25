@@ -910,7 +910,7 @@ and swallows every failure.
 
 - **deployment:** `type` (`docker` / `kubernetes` / `source`), CPU `arch`, `python` version, `mongodb` server major.minor
 - **size:** accounts, firewall configurations, and rules (chain and filter `rule-order` entries in working copies; snapshots excluded), each bucketed `0` / `1` / `2-5` / `6-20` / `21-100` / `101+`. Never an exact count.
-- **features:** yes/no for: light theme in use, quick start used (`origin: quick_start`), flowtables, interface types, scheduled backup, S3 backup, stored SSH keys, registration open
+- **features:** yes/no for: light theme in use, quick start used (`origin: quick_start`), flowtables, interface types, scheduled backup, S3 backup, stored SSH keys, registration open, VyOS rolling release targeted by any configuration (`system.vyos_release.rolling`; as of 4.1.7)
 
 **Never sent:** usernames, emails, configuration or rule contents, names of chains/groups/interfaces, addresses, hostnames, credentials or keys. Each collector is isolated, and its MongoDB reads time-bounded, so one that fails reports `null` and the rest still go out.
 
