@@ -418,6 +418,25 @@ class TestChainRoutes:
             )
             assert resp.status_code == 200
 
+    def test_chain_rule_add_says_add(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=[["ipv4", "test_chain"]]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+            body = auth_client.get("/chain_rule_add").get_data(as_text=True)
+            assert "Add Rule</button>" in body
+
+    def test_chain_rule_edit_says_update(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=[["ipv4", "test_chain"]]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+            body = auth_client.post(
+                "/chain_rule_add",
+                data={"type": "edit", "chain": "ipv4,test_chain", "name": "10",
+                      "action": "accept", "protocol": "tcp"},
+            ).get_data(as_text=True)
+            assert "Update Rule</button>" in body
+            assert "Edit Firewall Rule" in body
+
     def test_chain_rule_delete(self, auth_client):
         with patch("app.delete_rule_from_data") as mock_del:
             resp = auth_client.post(

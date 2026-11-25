@@ -232,3 +232,14 @@ def test_filter_rule_edit_keeps_log_and_disable_checked(auth_client):
     body = resp.get_data(as_text=True)
     assert 'name="rule_disable" value="True" checked' in body
     assert 'name="logging" value="True" checked' in body
+
+
+def test_filter_rule_edit_says_update(auth_client):
+    body = _filter_rule_form(auth_client, "post", {
+        "type": "edit", "filter": "ipv4,forward", "name": "20", "description": "",
+        "action": "accept", "direction": "", "ip_version": "ipv4",
+        "target": "", "interface": "",
+    }).get_data(as_text=True)
+    assert "Update Filter Rule</button>" in body
+    assert "Edit Filter Rule" in body
+    assert "Add Filter Rule</button>" in _filter_rule_form(auth_client).get_data(as_text=True)

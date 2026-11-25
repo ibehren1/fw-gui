@@ -2,7 +2,7 @@
 {% block body %}
 <div class="rule-form">
     <div class="form-header">
-        <h2 class="section-title">Add Firewall Rule</h2>
+        <h2 class="section-title">{% if rule_detail.type == "edit" %}Edit{% else %}Add{% endif %} Firewall Rule</h2>
         <p class="section-description">
             Create firewall rules with specific criteria and actions. Rules are processed in numerical order (1-999999), 
             so ordering is crucial. The first matching rule's action will be executed.
@@ -347,7 +347,7 @@
         </div>
         
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Add Rule</button>
+            <button type="submit" class="btn btn-primary">{% if rule_detail.type == "edit" %}Update Rule{% else %}Add Rule{% endif %}</button>
             <a href="{{ url_for('chain_view') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>

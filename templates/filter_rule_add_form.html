@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <div class="filter-rule-form">
-    <h2 class="section-title">Add Filter Rule</h2>
+    <h2 class="section-title">{% if rule_detail.type == "edit" %}Edit{% else %}Add{% endif %} Filter Rule</h2>
     
     <p class="section-description">
         Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
@@ -172,7 +172,7 @@
         </div>
         
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Add Filter Rule</button>
+            <button type="submit" class="btn btn-primary">{% if rule_detail.type == "edit" %}Update Filter Rule{% else %}Add Filter Rule{% endif %}</button>
         </div>
     </form>
 </div>
