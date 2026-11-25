@@ -88,39 +88,41 @@
 }
 
 [data-theme="light"] {
+    /* "Framed" (4.1.12): gray canvas, white bordered panels, tinted headers,
+       darker ink; the top bar matches the dark theme. */
     color-scheme: light;
     --r: 4px;
-    --bg: #f4f5f7;
+    --bg: #dde1e7;
     --panel: #ffffff;
-    --panel-head: #fafbfc;
-    --nav-bg: #ffffff;
-    --text: #1f2733;
-    --heading: #111827;
-    --muted: #6b7380;
-    --line: #dfe3e8;
-    --line-strong: #c5ccd5;
-    --row-line: #eceff3;
-    --hover: #f3f6fa;
+    --panel-head: #e9edf2;
+    --nav-bg: #f7f8fa;
+    --text: #141a22;
+    --heading: #0b1220;
+    --muted: #4a5260;
+    --line: #b3bcc8;
+    --line-strong: #8f9aa8;
+    --row-line: #d9dee5;
+    --hover: #e6eefb;
     --accent: #2463eb;
     --accent-hover: #1d55cf;
     --accent-text: #ffffff;
     --focus: rgba(36, 99, 235, 0.2);
     --link: #2463eb;
-    --bar-bg: #1b2a41;
-    --bar-text: #ffffff;
-    --bar-muted: #a9b5c7;
-    --bar-line: #2d3f5b;
-    --bar-field: #22344f;
-    --nav-text: #374151;
+    --bar-bg: #101215;
+    --bar-text: #eef0f3;
+    --bar-muted: #8d94a0;
+    --bar-line: #2a2e34;
+    --bar-field: #1d2024;
+    --nav-text: #1f2733;
     --nav-active-text: #1b2a41;
-    --nav-active-bg: #eef3fd;
+    --nav-active-bg: #dfe8fb;
     --btn-bg: #ffffff;
-    --btn-line: #cfd5dd;
-    --th: #5b6472;
-    --th-bg: #f7f8fa;
-    --chip-bg: #f3f5f8;
+    --btn-line: #aab3bf;
+    --th: #2f3743;
+    --th-bg: #e1e5eb;
+    --chip-bg: #e9ecf0;
     --input-bg: #ffffff;
-    --input-line: #cfd5dd;
+    --input-line: #aab3bf;
     --seg-on: #2463eb;
     --seg-on-text: #ffffff;
     --code-bg: #fbfcfd;
@@ -134,8 +136,8 @@
     --info-bg: #eaf0fd;
     --ref: #2463eb;
     --nav-group: #2463eb;
-    --nav-group-line: #e4e8ee;
-    --icon: #3b4554;
+    --nav-group-line: #d3d8df;
+    --icon: #252c36;
     --v4: #0891b2;
     --v4-bg: #e0f6fa;
     --v6: #6d28d9;
@@ -577,6 +579,11 @@ table.grid { width: 100%; border-collapse: collapse; }
 }
 .grid tbody tr:last-child td { border-bottom: 0; }
 .grid tbody tr:hover { background: var(--hover); }
+/* Light theme: striped rows and heavier headers. Cells carry the stripe, so
+   hover is set on the cells too. */
+[data-theme="light"] .grid tbody tr:nth-child(even):not(.default-row) > td { background: #f2f4f7; }
+[data-theme="light"] .grid tbody tr:not(.default-row):hover > td { background: var(--hover); }
+[data-theme="light"] .grid th { font-weight: 650; }
 .grid .num { width: 56px; text-align: right; color: var(--muted); font-family: var(--mono); }
 .grid td.nowrap, .grid td.mono { white-space: nowrap; }
 .grid td.desc { min-width: 160px; }
