@@ -1072,3 +1072,23 @@ def test_rolling_without_flags_matches_stable(mock_session, patch_read):
     _, rolling_config = generate_config(mock_session)
 
     assert rolling_config == stable_config
+
+
+def test_last_used_all_rules(mock_session, patch_read):
+    patch_read(_last_used_data({**ROLLING_AUG, "last_used_all": True}))
+
+    _, config = generate_config(mock_session)
+
+    assert "set firewall ipv4 name LU rule 10 last-used" in config
+    assert "set firewall ipv4 name LU rule 20 last-used" in config
+    assert "set firewall ipv4 input filter rule 10 last-used" in config
+
+
+def test_last_used_all_rules_ignored_when_rolling_off(mock_session, patch_read):
+    patch_read(
+        _last_used_data({**ROLLING_AUG, "rolling": False, "last_used_all": True})
+    )
+
+    _, config = generate_config(mock_session)
+
+    assert not any("last-used" in line for line in config)

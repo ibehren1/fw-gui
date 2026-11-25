@@ -352,6 +352,17 @@ class TestChainRoutes:
             resp = auth_client.get("/chain_rule_add")
             assert b'name="last_used"' in resp.data
 
+    def test_chain_rule_add_get_last_used_all_rules(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["test_chain"]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.session_release_context",
+            return_value={"rolling_features": {"last_used"}, "last_used_all": True},
+        ):
+            resp = auth_client.get("/chain_rule_add")
+            assert b"Enabled for all rules on the VyOS release page" in resp.data
+            assert b'name="last_used"' not in resp.data
+
     def test_chain_rule_add_get_last_used_hidden_on_stable(self, auth_client):
         with patch(
             "app.assemble_list_of_chains", return_value=["test_chain"]
@@ -903,6 +914,13 @@ class TestConfigRoutes:
             assert b"Rolling: Aug 2026+" in resp.data
             assert b"Rule last-used tracking" in resp.data
             assert b"Enabled" in resp.data
+
+    def test_configuration_release_get_all_rules_switch(self, auth_client):
+        release = {"rolling": True, "milestone": "2026-08", "last_used_all": True}
+        with patch("app.get_session_release", return_value=(release, {"last_used"})):
+            resp = auth_client.get("/configuration_release")
+            assert b'name="last_used_all"' in resp.data
+            assert b'data-last-used="true"' in resp.data
 
     def test_configuration_release_get_stable(self, auth_client):
         release = {"rolling": False, "milestone": None, "last_used_all": False}

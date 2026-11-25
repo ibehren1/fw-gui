@@ -79,9 +79,14 @@
                 <div class="form-group">
                     <label class="form-label">Last used</label>
                     <label class="checkbox-item">
+                        {% if last_used_all %}
+                        <input type="checkbox" id="last_used" checked disabled>
+                        {% if rule_detail.last_used %}<input type="hidden" name="last_used" value="True">{% endif %}
+                        {% else %}
                         <input type="checkbox" id="last_used" name="last_used" value="True" {% if rule_detail.last_used %}checked{% endif %}>
+                        {% endif %}
                         <span class="checkbox-label">Track last used</span>
-                        <small class="option-help">VyOS rolling Aug 2026+</small>
+                        <small class="option-help">{% if last_used_all %}Enabled for all rules on the VyOS release page{% else %}VyOS rolling Aug 2026+{% endif %}</small>
                     </label>
                 </div>
                 {% endif %}

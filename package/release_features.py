@@ -98,16 +98,14 @@ def set_release(user_data, rolling, milestone, last_used_all=False):
 
 
 def milestone_rows():
-    """Dropdown rows: each milestone with the feature labels it turns on."""
-    return [
-        {
-            **m,
-            "features": [
-                FEATURES[key]["label"] for key in sorted(features_for(True, m["id"]))
-            ],
-        }
-        for m in MILESTONES
-    ]
+    """Dropdown rows: each milestone with the feature keys and labels it turns on."""
+    rows = []
+    for m in MILESTONES:
+        keys = sorted(features_for(True, m["id"]))
+        rows.append(
+            {**m, "keys": keys, "features": [FEATURES[k]["label"] for k in keys]}
+        )
+    return rows
 
 
 def _config_path(session):

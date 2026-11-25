@@ -328,10 +328,15 @@
                                 </label>
                                 {% if 'last_used' in rolling_features %}
                                 <label class="checkbox-item">
+                                    {% if last_used_all %}
+                                    <input type="checkbox" checked disabled>
+                                    {% if rule_detail.last_used %}<input type="hidden" name="last_used" value="True">{% endif %}
+                                    {% else %}
                                     <input type="checkbox" name="last_used" value="True"
                                            {% if rule_detail.last_used %}checked{% endif %}>
+                                    {% endif %}
                                     <span class="checkbox-label">Track last used</span>
-                                    <small class="option-help">VyOS rolling Aug 2026+</small>
+                                    <small class="option-help">{% if last_used_all %}Enabled for all rules on the VyOS release page{% else %}VyOS rolling Aug 2026+{% endif %}</small>
                                 </label>
                                 {% endif %}
                             </div>

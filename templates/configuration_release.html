@@ -36,12 +36,21 @@
                 <label for="milestone" class="form-label">Rolling build from</label>
                 <select name="milestone" id="milestone" class="form-select">
                     {% for m in milestones %}
-                    <option value="{{ m.id }}" {% if release.milestone == m.id %}selected{% endif %}>{{ m.label }}{% if m.features %} ({{ m.features|join(', ') }}){% endif %}</option>
+                    <option value="{{ m.id }}" data-last-used="{{ 'true' if 'last_used' in m['keys'] else 'false' }}" {% if release.milestone == m.id %}selected{% endif %}>{{ m.label }}{% if m.features %} ({{ m.features|join(', ') }}){% endif %}</option>
                     {% endfor %}
                 </select>
                 <p class="field-description">
                     Pick the oldest rolling build you run. Features from that month and earlier are enabled.
                 </p>
+            </div>
+
+            <div class="form-group" id="last-used-all-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="last_used_all" id="last_used_all" value="True"
+                           {% if release.last_used_all %}checked{% endif %}>
+                    <span class="checkbox-label">Track last used on every rule</span>
+                    <small class="option-help">Adds 'last-used' to all chain and filter rules; per-rule settings are kept for when this is off</small>
+                </label>
             </div>
 
             <div class="form-actions">
@@ -70,4 +79,18 @@
     </div>
 </div>
 
+<script>
+(function () {
+    const rolling = document.getElementById('rolling');
+    const milestone = document.getElementById('milestone');
+    const group = document.getElementById('last-used-all-group');
+    function sync() {
+        const opt = milestone.options[milestone.selectedIndex];
+        group.hidden = !(rolling.checked && opt && opt.dataset.lastUsed === 'true');
+    }
+    rolling.addEventListener('change', sync);
+    milestone.addEventListener('change', sync);
+    sync();
+})();
+</script>
 {% endblock body %}

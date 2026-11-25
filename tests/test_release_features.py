@@ -111,3 +111,17 @@ class TestSessionHelpers:
         err = rf.save_session_release(mock_session, {"rolling": "True", "milestone": ""})
         assert err
         assert capture.written_data is None
+
+
+def test_save_all_rules_switch(mock_session, mock_read_write):
+    capture = mock_read_write("package.release_features", {"system": {}})
+    rf.save_session_release(
+        mock_session,
+        {"rolling": "True", "milestone": "2026-08", "last_used_all": "True"},
+    )
+    assert capture.written_data["system"]["vyos_release"]["last_used_all"] is True
+
+
+def test_milestone_rows_carry_keys():
+    aug = next(r for r in rf.milestone_rows() if r["id"] == "2026-08")
+    assert "last_used" in aug["keys"]
