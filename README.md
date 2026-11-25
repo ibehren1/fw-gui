@@ -62,7 +62,7 @@ Some VyOS features reach the rolling (daily) builds well before a stable release
 
 | Rolling build | Feature | What FW-GUI adds |
 |---------------|---------|------------------|
-| Aug 2026+ | Rule last-used tracking ([T8221](https://vyos.dev/T8221)) | A **Track last used** option on chain and filter rules, plus a switch on the VyOS release page that applies it to every rule. Generates `set firewall ... rule N last-used`, after which `show firewall ... detail` reports when each rule last matched. |
+| Aug 2026+ | Rule last-used tracking ([T8221](https://vyos.dev/T8221)) | A **Track last used** option on chain and filter rules, plus a switch on the VyOS release page that applies it to every rule. Generates `set firewall ... rule N last-used`, after which `show firewall ... detail` reports when each rule last matched. Run e.g. `show firewall ipv4 name WAN_LOCAL detail` or `show firewall ipv4 forward filter detail` from the push page to get a sortable **Last used** column. |
 
 Rule settings for a rolling feature are kept if you switch back to stable or pick an earlier build. They are just not generated, because a stable release would reject them.
 

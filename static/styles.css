@@ -1089,6 +1089,7 @@ legend { padding: 0 6px; margin-left: -6px; }
 .op-fw .op-w-by { width: 100px; }
 .op-fw .op-w-share { width: 56px; }
 .op-fw .op-w-delta { width: 80px; }
+.op-fw .op-w-last { width: 96px; }
 .op-fw .op-w-actions { width: 34px; }
 .op-hit { position: relative; }
 .op-bar { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 3px; background: var(--row-line); border-radius: 2px; }

@@ -24,11 +24,17 @@ def build_op_view(output, user_data=None, previous=None):
 
     Returns:
         dict | None: ``{"kind": "firewall", "chains": [...], "stats": {...},
-        "table_count": int, "counters": {...}, "has_previous": bool}`` for
-        ``show firewall`` output,
+        "table_count": int, "counters": {...}, "has_previous": bool,
+        "has_last_used": bool}`` for ``show firewall`` output (table or
+        ``detail`` form),
         ``{"kind": "tables", "segments": [...], "table_count": int}`` for
         other output with at least one table, else None.
     """
+    # "show firewall ... detail" prints key/value blocks, not tables.
+    chains = op_firewall.parse_firewall_detail(output)
+    if chains:
+        return _firewall_view(chains, len(chains), user_data, previous)
+
     segments = parse_segments(output)
     if not has_tables(segments):
         return None
@@ -36,18 +42,23 @@ def build_op_view(output, user_data=None, previous=None):
 
     chains = op_firewall.parse_firewall(segments)
     if chains:
-        op_firewall.enrich(chains, user_data)
-        op_firewall.apply_deltas(chains, previous)
-        return {
-            "kind": "firewall",
-            "chains": chains,
-            "stats": op_firewall.stats(chains),
-            "table_count": table_count,
-            "counters": op_firewall.counter_snapshot(chains),
-            "has_previous": bool(previous),
-        }
+        return _firewall_view(chains, table_count, user_data, previous)
 
     return {"kind": "tables", "segments": segments, "table_count": table_count}
+
+
+def _firewall_view(chains, table_count, user_data, previous):
+    op_firewall.enrich(chains, user_data)
+    op_firewall.apply_deltas(chains, previous)
+    return {
+        "kind": "firewall",
+        "chains": chains,
+        "stats": op_firewall.stats(chains),
+        "table_count": table_count,
+        "counters": op_firewall.counter_snapshot(chains),
+        "has_previous": bool(previous),
+        "has_last_used": op_firewall.has_last_used(chains),
+    }
 
 
 # Saved firewall counters kept per session, one entry per (config, command).

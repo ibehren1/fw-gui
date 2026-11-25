@@ -75,7 +75,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `diff_functions.py` | Configuration diff generation |
 | `op_tables.py` | Splits operational command output into text and table segments (VyOS tabulate tables: header, dash-run line, rows; blank-first-column continuation lines) |
 | `op_output.py` | Chooses the push page's view of operational output: a table view when it parses into tables, else raw text (`None`) |
-| `op_firewall.py` | `show firewall` view: rulesets with numeric counters, nftables conditions condensed (states, group refs, jump target, log flag), matched to the selected config by IP version + chain/filter + rule number for descriptions |
+| `op_firewall.py` | `show firewall` view: rulesets with numeric counters, nftables conditions condensed (states, group refs, jump target, log flag), matched to the selected config by IP version + chain/filter + rule number for descriptions. Also parses `show firewall <family> <name X / hook filter> detail` (vertical key/value blocks), the only output with VyOS's "Last Used" field; the view then adds a Last used column |
 | `release_features.py` | VyOS rolling-release target per config (`system.vyos_release`): the `FEATURES` / `MILESTONES` tables, `enabled_features()` used by forms and `generate_config`, and the VyOS release page's read/save |
 | `mongo_converter.py` | Legacy pre-1.4.0 JSON-to-MongoDB config migration (runs at startup) |
 | `start_functions.py` | Getting started page: build-order progress for the selected config, and the quick-start starter config |
