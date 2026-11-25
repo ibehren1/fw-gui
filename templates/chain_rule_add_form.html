@@ -63,15 +63,18 @@
                 
                 <div class="form-group">
                     <label class="form-label">IP Version</label>
+                    {#- The chain decides the rule's IP version; fall back to the posted one. -#}
+                    {%- set chain_ip = (rule_detail.chain or '').split(',')[0] %}
+                    {%- set rule_ip = chain_ip if chain_ip in ('ipv4', 'ipv6') else rule_detail.ip_version %}
                     <div class="radio-group">
                         <label class="radio-item">
-                            <input type="radio" name="ip_version" value="ipv4" 
-                                   {% if rule_detail.ip_version == 'ipv4' or not rule_detail.ip_version %}checked{% endif %}>
+                            <input type="radio" name="ip_version" value="ipv4"
+                                   {% if rule_ip != 'ipv6' %}checked{% endif %}>
                             <span>IPv4</span>
                         </label>
                         <label class="radio-item">
-                            <input type="radio" name="ip_version" value="ipv6" 
-                                   {% if rule_detail.ip_version == 'ipv6' %}checked{% endif %}>
+                            <input type="radio" name="ip_version" value="ipv6"
+                                   {% if rule_ip == 'ipv6' %}checked{% endif %}>
                             <span>IPv6</span>
                         </label>
                     </div>
@@ -422,6 +425,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // The selected chain ("ipv6,NAME") sets the IP version.
+    const chainSelect = document.getElementById('fw_chain');
+    function syncIpVersionToChain() {
+        const version = (chainSelect.value || '').split(',')[0];
+        const radio = document.querySelector('input[name="ip_version"][value="' + version + '"]');
+        if (radio && !radio.checked) {
+            radio.checked = true;
+            filterGroupSelects(version);
+        }
+    }
+    if (chainSelect) {
+        chainSelect.addEventListener('change', syncIpVersionToChain);
+        syncIpVersionToChain();
+    }
 
     // Initialize on page load with the currently selected IP version
     const checkedIpVersion = document.querySelector('input[name="ip_version"]:checked');

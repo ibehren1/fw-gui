@@ -446,6 +446,40 @@ class TestChainRoutes:
             assert 'value="10"' in body
             assert 'data-edit="1"' in body
 
+    def _chain_rule_form_body(self, auth_client, query):
+        with patch(
+            "app.assemble_list_of_chains",
+            return_value=[["ipv4", "WAN_IN"], ["ipv6", "WAN6_IN"]],
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+            return auth_client.get("/chain_rule_add" + query).get_data(as_text=True)
+
+    @staticmethod
+    def _checked_ip(body):
+        import re
+        return re.findall(r'name="ip_version" value="(ipv\d)"\s*checked', body)
+
+    def test_chain_rule_add_ipv6_chain_selects_ipv6(self, auth_client):
+        body = self._chain_rule_form_body(auth_client, "?fw_chain=ipv6,WAN6_IN")
+        assert self._checked_ip(body) == ["ipv6"]
+
+    def test_chain_rule_add_ipv4_chain_selects_ipv4(self, auth_client):
+        body = self._chain_rule_form_body(auth_client, "?fw_chain=ipv4,WAN_IN")
+        assert self._checked_ip(body) == ["ipv4"]
+
+    def test_chain_rule_add_no_chain_defaults_ipv4(self, auth_client):
+        assert self._checked_ip(self._chain_rule_form_body(auth_client, "")) == ["ipv4"]
+
+    def test_chain_rule_edit_ipv6_chain_selects_ipv6(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=[["ipv6", "WAN6_IN"]]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+            body = auth_client.post(
+                "/chain_rule_add",
+                data={"type": "edit", "chain": "ipv6,WAN6_IN", "name": "10",
+                      "action": "accept", "protocol": "", "ip_version": "ipv6"},
+            ).get_data(as_text=True)
+        assert self._checked_ip(body) == ["ipv6"]
+
     def test_chain_rule_delete(self, auth_client):
         with patch("app.delete_rule_from_data") as mock_del:
             resp = auth_client.post(
