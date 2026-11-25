@@ -294,6 +294,22 @@ class TestAddRuleToData:
         assert rule["rule_disable"] is True
         assert rule["logging"] is True
 
+    def test_rule_with_last_used(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.chain_functions", _data_with_chain())
+        form = _base_rule_form(rule="30")
+        form["last_used"] = "True"
+        with app.test_request_context():
+            add_rule_to_data(mock_session, make_request(form))
+
+        assert capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]["30"]["last_used"] is True
+
+    def test_rule_without_last_used(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.chain_functions", _data_with_chain())
+        with app.test_request_context():
+            add_rule_to_data(mock_session, make_request(_base_rule_form(rule="30")))
+
+        assert "last_used" not in capture.written_data["ipv4"]["chains"]["OUTSIDE-IN"]["30"]
+
     def test_ip_version_mismatch_address_group(self, app, mock_session, mock_read_write):
         data = _data_with_chain()
         capture = mock_read_write("package.chain_functions", data)

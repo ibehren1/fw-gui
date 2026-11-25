@@ -326,6 +326,14 @@
                                            {% if rule_detail.rule_disable %}checked{% endif %}>
                                     <span class="checkbox-label">Disable Rule</span>
                                 </label>
+                                {% if 'last_used' in rolling_features %}
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="last_used" value="True"
+                                           {% if rule_detail.last_used %}checked{% endif %}>
+                                    <span class="checkbox-label">Track last used</span>
+                                    <small class="option-help">VyOS rolling Aug 2026+</small>
+                                </label>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

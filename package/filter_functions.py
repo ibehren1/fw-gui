@@ -58,6 +58,10 @@ def add_filter_rule_to_data(session, request):
         rule_dict["rule_disable"] = True
     if "logging" in request.form:
         rule_dict["log"] = True
+    # Stored whatever the VyOS release; generate_config only emits it when
+    # the config's rolling release has the feature (release_features).
+    if "last_used" in request.form:
+        rule_dict["last_used"] = True
     rule_dict["action"] = request.form["action"]
     if request.form["action"] == "jump":
         jump_target = request.form["jump_target"].split(",")

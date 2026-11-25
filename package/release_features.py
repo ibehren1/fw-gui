@@ -47,7 +47,8 @@ _MILESTONE_IDS = {m["id"] for m in MILESTONES}
 
 def get_release(user_data):
     """Return the config's release settings, defaulting to stable."""
-    stored = (user_data.get("system") or {}).get("vyos_release") or {}
+    system = (user_data or {}).get("system") or {}
+    stored = system.get("vyos_release") or {}
     milestone = stored.get("milestone")
     return {
         "rolling": bool(stored.get("rolling")),
@@ -131,3 +132,16 @@ def save_session_release(session, form):
     if error is None:
         write_user_data_file(_config_path(session), user_data)
     return error
+
+
+def session_release_context(session):
+    """
+    Template variables for pages that offer rolling features: the enabled
+    feature keys (``rolling_features``) and whether last-used is applied to
+    every rule (``last_used_all``).
+    """
+    release, feats = get_session_release(session)
+    return {
+        "rolling_features": feats,
+        "last_used_all": "last_used" in feats and release["last_used_all"],
+    }

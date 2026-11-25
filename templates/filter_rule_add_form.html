@@ -74,6 +74,17 @@
                         <span class="checkbox-label">Enable logging</span>
                     </label>
                 </div>
+
+                {% if 'last_used' in rolling_features %}
+                <div class="form-group">
+                    <label class="form-label">Last used</label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="last_used" name="last_used" value="True" {% if rule_detail.last_used %}checked{% endif %}>
+                        <span class="checkbox-label">Track last used</span>
+                        <small class="option-help">VyOS rolling Aug 2026+</small>
+                    </label>
+                </div>
+                {% endif %}
             </div>
         </div>
         

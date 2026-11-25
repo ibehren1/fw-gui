@@ -343,6 +343,24 @@ class TestChainRoutes:
             resp = auth_client.get("/chain_rule_add")
             assert resp.status_code == 200
 
+    def test_chain_rule_add_get_last_used_rolling(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["test_chain"]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.session_release_context", return_value={"rolling_features": {"last_used"}, "last_used_all": False}
+        ):
+            resp = auth_client.get("/chain_rule_add")
+            assert b'name="last_used"' in resp.data
+
+    def test_chain_rule_add_get_last_used_hidden_on_stable(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["test_chain"]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.session_release_context", return_value={"rolling_features": set(), "last_used_all": False}
+        ):
+            resp = auth_client.get("/chain_rule_add")
+            assert b'name="last_used"' not in resp.data
+
     def test_chain_rule_add_get_no_chains(self, auth_client):
         with patch("app.assemble_list_of_chains", return_value=[]), patch(
             "app.assemble_detail_list_of_groups", return_value=[]
@@ -510,6 +528,22 @@ class TestFilterRoutes:
         ):
             resp = auth_client.get("/filter_rule_add")
             assert resp.status_code == 200
+
+    def test_filter_rule_add_get_last_used_rolling(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["chain1"]
+        ), patch(
+            "app.assemble_list_of_filters", return_value=["filter1"]
+        ), patch(
+            "app.list_interfaces",
+            return_value=[{"interface_name": "eth0"}],
+        ), patch(
+            "app.list_flowtables", return_value=[]
+        ), patch(
+            "app.session_release_context", return_value={"rolling_features": {"last_used"}, "last_used_all": False}
+        ):
+            resp = auth_client.get("/filter_rule_add")
+            assert b'name="last_used"' in resp.data
 
     def test_filter_rule_add_get_no_filters(self, auth_client):
         with patch(

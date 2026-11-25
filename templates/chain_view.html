@@ -67,7 +67,7 @@
                                    aria-label="New number for rule {{ rule.number }}">
                         </form>
                     </td>
-                    <td class="desc">{{ rule.description }}{% if rule.rule_disable %}<span class="pill pill-off">disabled</span>{% endif %}</td>
+                    <td class="desc">{{ rule.description }}{% if rule.rule_disable %}<span class="pill pill-off">disabled</span>{% endif %}{% if 'last_used' in rolling_features and (rule.last_used or last_used_all) %}<span class="pill pill-info">last-used</span>{% endif %}</td>
                     <td><span class="act act-{{ rule.action }}">{{ rule.action }}</span></td>
                     <td class="mono">{% if rule.protocol %}{{ rule.protocol }}{% else %}<span class="muted">all</span>{% endif %}</td>
                     <td>{{ ui.endpoint(rule.source_address, rule.source_address_type, rule.source_port, rule.source_port_type, rule.source_address_group, rule.source_port_group, ip_version) }}</td>
@@ -110,6 +110,7 @@
                             <input type="hidden" name="logging" value="{{ rule.logging }}">
                             <input type="hidden" name="ip_version" value="{{ ip_version }}">
                             <input type="hidden" name="rule_disable" value="{{ rule.rule_disable }}">
+                            {% if rule.last_used %}<input type="hidden" name="last_used" value="True">{% endif %}
                             <input type="hidden" name="dest_address_type" value="{{ rule.dest_address_type }}">
                             <input type="hidden" name="dest_address" value="{{ rule.dest_address }}">
                             <input type="hidden" name="dest_address_group" value="{{ rule.dest_address_group }}">

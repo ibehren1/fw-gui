@@ -979,3 +979,96 @@ class TestBuildMergeConfig:
         result = build_merge_config(["delete firewall", "set one"])
 
         assert result == "delete firewall\nset one"
+
+
+# ===========================================================================
+# generate_config -- rolling release: last-used
+# ===========================================================================
+def _last_used_data(release=None):
+    data = {
+        "ipv4": {
+            "chains": {
+                "LU": {
+                    "rule-order": ["10", "20"],
+                    "default": {"description": "Test", "default_action": "drop"},
+                    "10": _make_chain_rule(description="tracked", last_used=True),
+                    "20": _make_chain_rule(description="untracked"),
+                }
+            },
+            "filters": {
+                "input": {
+                    "rule-order": ["10"],
+                    "description": "Input",
+                    "default-action": "drop",
+                    "log": False,
+                    "rules": {
+                        "10": {
+                            "description": "to LU",
+                            "action": "jump",
+                            "interface": "eth0",
+                            "direction": "inbound",
+                            "fw_chain": "LU",
+                            "last_used": True,
+                        }
+                    },
+                }
+            },
+        },
+        "system": {"hostname": "None", "port": "None"},
+    }
+    if release is not None:
+        data["system"]["vyos_release"] = release
+    return data
+
+
+ROLLING_AUG = {"rolling": True, "milestone": "2026-08", "last_used_all": False}
+
+
+def test_last_used_emitted_on_rolling(mock_session, patch_read):
+    patch_read(_last_used_data(ROLLING_AUG))
+
+    _, config = generate_config(mock_session)
+
+    assert "set firewall ipv4 name LU rule 10 last-used" in config
+    assert "set firewall ipv4 name LU rule 20 last-used" not in config
+    assert "set firewall ipv4 input filter rule 10 last-used" in config
+
+
+def test_last_used_not_emitted_on_stable(mock_session, patch_read):
+    patch_read(_last_used_data())
+
+    _, config = generate_config(mock_session)
+
+    assert not any("last-used" in line for line in config)
+
+
+def test_last_used_not_emitted_when_rolling_off(mock_session, patch_read):
+    patch_read(_last_used_data({**ROLLING_AUG, "rolling": False}))
+
+    _, config = generate_config(mock_session)
+
+    assert not any("last-used" in line for line in config)
+
+
+def test_last_used_not_emitted_for_unknown_milestone(mock_session, patch_read):
+    patch_read(_last_used_data({**ROLLING_AUG, "milestone": "2026-07"}))
+
+    _, config = generate_config(mock_session)
+
+    assert not any("last-used" in line for line in config)
+
+
+def test_rolling_without_flags_matches_stable(mock_session, patch_read):
+    stable = _last_used_data()
+    for chain_rule in ("10",):
+        stable["ipv4"]["chains"]["LU"][chain_rule].pop("last_used")
+    stable["ipv4"]["filters"]["input"]["rules"]["10"].pop("last_used")
+    patch_read(stable)
+    _, stable_config = generate_config(mock_session)
+
+    rolling = copy.deepcopy(stable)
+    rolling["system"]["vyos_release"] = ROLLING_AUG
+    patch_read(rolling)
+    _, rolling_config = generate_config(mock_session)
+
+    assert rolling_config == stable_config

@@ -138,6 +138,7 @@ from package.release_features import (
     get_session_release,
     milestone_rows,
     save_session_release,
+    session_release_context,
 )
 from package.interface_functions import (
     CUSTOM_TYPE_COLORS,
@@ -1339,6 +1340,7 @@ def chain_rule_add():
                 group_list=group_list,
                 firewall_name=session["firewall_name"],
                 username=session["username"],
+                **session_release_context(session),
                 rule_detail=request.form,
             )
 
@@ -1368,6 +1370,7 @@ def chain_rule_add():
             group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            **session_release_context(session),
             rule_detail=rule_detail_defaults,
         )
 
@@ -1508,6 +1511,7 @@ def chain_view():
         snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         username=session["username"],
+        **session_release_context(session),
     )
 
 
@@ -1609,6 +1613,7 @@ def filter_rule_add():
                 firewall_name=session["firewall_name"],
                 interface_list=interface_list,
                 username=session["username"],
+                **session_release_context(session),
                 rule_detail=request.form,
             )
 
@@ -1657,6 +1662,7 @@ def filter_rule_add():
             firewall_name=session["firewall_name"],
             interface_list=interface_list,
             username=session["username"],
+            **session_release_context(session),
             rule_detail={},
         )
 
@@ -1797,6 +1803,7 @@ def filter_view():
         interface_list=list_interfaces(session),
         firewall_name=session["firewall_name"],
         username=session["username"],
+        **session_release_context(session),
     )
 
 
