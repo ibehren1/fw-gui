@@ -56,6 +56,16 @@ The web-based FW-GUI allows the user to visually:
 | Docker Hub | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_dockerhub---https:--hub-docker-com-repository-docker-ibehren1-fw-gui-general/health/badge.svg) | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
 | Working Demo | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_fw-gui---https:--fw-gui-com/health/badge.svg) | [https://fw-gui.com](https://fw-gui.com) |
 
+### Rolling release features
+
+Some VyOS features reach the rolling (daily) builds well before a stable release. To use them, open **VyOS release** in the sidebar for a configuration, turn on **Target a VyOS rolling release**, and choose the oldest rolling build you run. Each choice in the list names the features it enables. Configurations that leave rolling off target stable and generate exactly the same commands as before.
+
+| Rolling build | Feature | What FW-GUI adds |
+|---------------|---------|------------------|
+| Aug 2026+ | Rule last-used tracking ([T8221](https://vyos.dev/T8221)) | A **Track last used** option on chain and filter rules, plus a switch on the VyOS release page that applies it to every rule. Generates `set firewall ... rule N last-used`, after which `show firewall ... detail` reports when each rule last matched. |
+
+Rule settings for a rolling feature are kept if you switch back to stable or pick an earlier build. They are just not generated, because a stable release would reject them.
+
 ### Recommended Usage
 
 Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encryption between client (web browser) and FW-GUI. Recommend adding `proxy_read_timeout 30m;` as a custom Nginx configuration.
