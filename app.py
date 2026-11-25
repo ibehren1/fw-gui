@@ -78,6 +78,7 @@ from package.chain_functions import (
     move_chain_rule_in_data,
     reorder_chain_rule_in_data,
     resequence_chain_rules_in_data,
+    toggle_chain_rule_logging_in_data,
 )
 from package.data_file_functions import (
     AUTO_SNAPSHOT_TAG,
@@ -1432,6 +1433,19 @@ def chain_rule_reorder():
         return redirect(url_for("chain_view"))
     else:
         return redirect(url_for("chain_view"))
+
+
+@app.route("/chain_rule_log_toggle", methods=["POST"])
+@login_required
+@requires_firewall
+def chain_rule_log_toggle():
+    """Turn logging on or off for a chain rule from the chain view's Log column."""
+    anchor = toggle_chain_rule_logging_in_data(session, request)
+
+    if anchor:
+        return redirect(url_for("chain_view", _anchor=anchor))
+
+    return redirect(url_for("chain_view"))
 
 
 @app.route("/chain_rule_move", methods=["POST"])

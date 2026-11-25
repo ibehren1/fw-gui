@@ -73,7 +73,13 @@
                     <td>{{ ui.endpoint(rule.source_address, rule.source_address_type, rule.source_port, rule.source_port_type, rule.source_address_group, rule.source_port_group, ip_version) }}</td>
                     <td>{{ ui.endpoint(rule.dest_address, rule.dest_address_type, rule.dest_port, rule.dest_port_type, rule.dest_address_group, rule.dest_port_group, ip_version) }}</td>
                     <td class="nowrap">{{ ui.states(rule) }}</td>
-                    <td class="center">{{ ui.check(rule.logging) }}</td>
+                    <td class="center">
+                        <form action="/chain_rule_log_toggle" method="post" class="toggle-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="toggle_rule" value="{{ ip_version }},{{ key }},{{ rule.number }}">
+                            <button type="submit" class="cell-toggle" title="Turn logging {{ 'off' if rule.logging else 'on' }} for rule {{ rule.number }}" aria-pressed="{{ 'true' if rule.logging else 'false' }}">{{ ui.check(rule.logging) }}</button>
+                        </form>
+                    </td>
                     <td class="row-actions">
                         {% if not loop.first %}
                         <form action="/chain_rule_move" method="post" class="move-form">

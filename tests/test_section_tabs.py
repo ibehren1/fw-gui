@@ -311,3 +311,16 @@ def test_filter_edit_carries_log_and_disable(auth_client, store):
     assert 'name="rule_disable" value="True"' in form
     plain = _filter_edit_form(body, "2")
     assert 'name="logging"' not in plain and 'name="rule_disable"' not in plain
+
+
+def test_chain_log_column_toggles(auth_client, store):
+    store.data["ipv4"]["chains"]["WAN_LOCAL"]["10"]["logging"] = True
+    body = auth_client.get("/chain_view").get_data(as_text=True)
+    assert body.count('action="/chain_rule_log_toggle"') == 2
+    assert 'name="toggle_rule" value="ipv4,WAN_LOCAL,10"' in body
+    assert 'title="Turn logging off for rule 10"' in body
+    assert 'title="Turn logging on for rule 20"' in body
+
+    resp = auth_client.post("/chain_rule_log_toggle", data={"toggle_rule": "ipv4,WAN_LOCAL,20"})
+    assert resp.headers["Location"].endswith("/chain_view#ipv4WAN_LOCAL")
+    assert store.data["ipv4"]["chains"]["WAN_LOCAL"]["20"]["logging"] is True

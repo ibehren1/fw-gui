@@ -903,3 +903,41 @@ def test_chain_next_rule_numbers(mock_session, mock_read_write):
         "ipv6": {"chains": {"C": {"rule-order": ["5"]}}},
     })
     assert chain_next_rule_numbers(mock_session) == {"ipv4,A": 30, "ipv4,B": 10, "ipv6,C": 10}
+
+
+class TestToggleChainRuleLogging:
+    def _data(self):
+        return {"ipv4": {"chains": {"WAN": {
+            "rule-order": ["10", "20"],
+            "10": {"description": "a", "action": "accept", "logging": True},
+            "20": {"description": "b", "action": "accept"},
+        }}}}
+
+    def _toggle(self, app, mock_session, value):
+        from package.chain_functions import toggle_chain_rule_logging_in_data
+        with app.test_request_context():
+            return toggle_chain_rule_logging_in_data(
+                mock_session, make_request({"toggle_rule": value})
+            )
+
+    def test_turns_on(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.chain_functions", self._data())
+        assert self._toggle(app, mock_session, "ipv4,WAN,20") == "ipv4WAN"
+        assert capture.written_data["ipv4"]["chains"]["WAN"]["20"]["logging"] is True
+
+    def test_turns_off(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.chain_functions", self._data())
+        assert self._toggle(app, mock_session, "ipv4,WAN,10") == "ipv4WAN"
+        assert "logging" not in capture.written_data["ipv4"]["chains"]["WAN"]["10"]
+
+    def test_other_rules_untouched(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.chain_functions", self._data())
+        self._toggle(app, mock_session, "ipv4,WAN,20")
+        assert capture.written_data["ipv4"]["chains"]["WAN"]["10"]["logging"] is True
+
+    def test_invalid_input_does_not_write(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.chain_functions", self._data())
+        for value in ("", "ipv4,WAN", "ipv4,WAN,30", "ipv4,NOPE,10", "ipv6,WAN,10",
+                      "ipv4,WAN,rule-order"):
+            assert self._toggle(app, mock_session, value) is None
+        assert capture.written_data is None

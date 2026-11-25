@@ -668,6 +668,10 @@ table.grid { width: 100%; border-collapse: collapse; }
 .ref-card-values td { padding: 3px 10px; }
 .ref-card-values .num { width: 32px; }
 .yes { color: var(--ok); }
+/* A table cell value that toggles on click (chain view Log column). */
+.toggle-form { display: inline; margin: 0; }
+.cell-toggle { background: none; border: 0; padding: 0 4px; font: inherit; color: inherit; cursor: pointer; border-radius: 4px; }
+.cell-toggle:hover, .cell-toggle:focus-visible { background: var(--btn-bg); }
 .chip {
     display: inline-block;
     font-family: var(--mono);

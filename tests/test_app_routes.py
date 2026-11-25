@@ -480,6 +480,20 @@ class TestChainRoutes:
             ).get_data(as_text=True)
         assert self._checked_ip(body) == ["ipv6"]
 
+    def test_chain_rule_log_toggle(self, auth_client):
+        with patch("app.toggle_chain_rule_logging_in_data", return_value="ipv4WAN") as mock_t:
+            resp = auth_client.post(
+                "/chain_rule_log_toggle", data={"toggle_rule": "ipv4,WAN,10"}
+            )
+            assert resp.status_code == 302
+            assert resp.headers["Location"].endswith("/chain_view#ipv4WAN")
+            mock_t.assert_called_once()
+
+    def test_chain_rule_log_toggle_invalid(self, auth_client):
+        with patch("app.toggle_chain_rule_logging_in_data", return_value=None):
+            resp = auth_client.post("/chain_rule_log_toggle", data={})
+            assert resp.headers["Location"].endswith("/chain_view")
+
     def test_chain_rule_delete(self, auth_client):
         with patch("app.delete_rule_from_data") as mock_del:
             resp = auth_client.post(

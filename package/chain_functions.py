@@ -679,6 +679,48 @@ def move_chain_rule_in_data(session, request):
     return f"{ip_version}{fw_chain}"
 
 
+def toggle_chain_rule_logging_in_data(session, request):
+    """
+    Turns logging on or off for one chain rule (the Log column toggle).
+
+    Form Parameters:
+        toggle_rule: Comma-separated string containing "ip_version,chain,rule_number"
+
+    Returns:
+        str: Concatenated ip_version and chain name on success
+        None: If validation fails
+    """
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    parts = request.form.get("toggle_rule", "").split(",")
+    if len(parts) != 3:
+        return None
+    ip_version, fw_chain, rule_number = parts
+
+    chain = _get_chain(user_data, ip_version, fw_chain)
+    if chain is None or rule_number not in chain["rule-order"]:
+        return None
+    rule = chain.get(rule_number)
+    if not isinstance(rule, dict):
+        return None
+
+    # Stored like the rule form does: the key is present only when on.
+    if rule.pop("logging", None):
+        state = "disabled"
+    else:
+        rule["logging"] = True
+        state = "enabled"
+
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    flash(
+        f"Logging {state} for rule {rule_number} in chain {ip_version}/{fw_chain}.",
+        "success",
+    )
+
+    return f"{ip_version}{fw_chain}"
+
+
 def resequence_chain_rules_in_data(session, request):
     """
     Resequences every rule in a firewall chain to 10, 20, 30, ...
