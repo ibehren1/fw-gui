@@ -133,6 +133,12 @@ from package.group_funtions import (
     group_section_anchor,
 )
 from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
+from package.release_features import (
+    FEATURES,
+    get_session_release,
+    milestone_rows,
+    save_session_release,
+)
 from package.interface_functions import (
     CUSTOM_TYPE_COLORS,
     INTERFACE_TYPES,
@@ -1840,6 +1846,39 @@ def configuration_extra_items():
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
+
+
+@app.route("/configuration_release", methods=["GET", "POST"])
+@login_required
+@requires_firewall
+def configuration_release():
+    """
+    Choose the VyOS release the selected config targets.
+
+    POST stores the rolling flag and milestone (and the all-rules last-used
+    switch) on the config document; GET shows the form and which rolling
+    features the current choice enables. See package/release_features.py.
+    """
+    if request.method == "POST":
+        error = save_session_release(session, request.form)
+        if error:
+            flash(error, "danger")
+        else:
+            flash("VyOS release settings saved.", "success")
+        return redirect(url_for("configuration_release"))
+
+    release, features = get_session_release(session)
+    return render_template(
+        "configuration_release.html",
+        release=release,
+        enabled=features,
+        features=FEATURES,
+        milestones=milestone_rows(),
+        file_list=list_user_files(session),
+        snapshot_list=list_snapshots(session),
+        firewall_name=session["firewall_name"],
+        username=session["username"],
+    )
 
 
 @app.route("/configuration_hostname_add", methods=["GET", "POST"])

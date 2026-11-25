@@ -1,0 +1,73 @@
+{% extends "basic_page.html" %}
+{% block body %}
+<div class="extra-config">
+    <h2 class="section-title">VyOS Release</h2>
+    <p class="section-description">
+        VyOS rolling builds gain features before the stable releases (1.4, 1.5) do.
+        Mark this configuration as targeting a rolling build to use the features
+        FW-GUI supports from that build onward. Leave rolling off for a stable release.
+    </p>
+
+    {% with flashed_messages = get_flashed_messages(with_categories=true) %}
+    {% if flashed_messages %}
+    <div class="flash-messages">
+        {% for category, flash_message in flashed_messages %}
+        <div class="alert alert-{{ category }}">
+            {{flash_message}}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form action="/configuration_release" method="post" class="extra-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="extra-form-content">
+            <div class="form-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="rolling" id="rolling" value="True"
+                           {% if release.rolling %}checked{% endif %}>
+                    <span class="checkbox-label">Target a VyOS rolling release</span>
+                    <small class="option-help">Generated commands may not be accepted by stable releases</small>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="milestone" class="form-label">Rolling build from</label>
+                <select name="milestone" id="milestone" class="form-select">
+                    {% for m in milestones %}
+                    <option value="{{ m.id }}" {% if release.milestone == m.id %}selected{% endif %}>{{ m.label }}{% if m.features %} ({{ m.features|join(', ') }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                <p class="field-description">
+                    Pick the oldest rolling build you run. Features from that month and earlier are enabled.
+                </p>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save VyOS Release</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Rolling release features</h3></div></div>
+        <table class="grid">
+            <thead>
+                <tr><th>Feature</th><th>Rolling since</th><th>VyOS task</th><th>This configuration</th></tr>
+            </thead>
+            <tbody>
+                {% for key, f in features.items() %}
+                <tr>
+                    <td><span class="strong">{{ f.label }}</span><br><small class="muted">{{ f.description }}</small></td>
+                    <td class="mono">{{ f.since }}</td>
+                    <td><a href="{{ f.ref_url }}" target="_blank" rel="noopener noreferrer">{{ f.ref }}</a></td>
+                    <td>{% if key in enabled %}<span class="pill pill-ok">Enabled</span>{% else %}<span class="pill pill-off">Off</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock body %}

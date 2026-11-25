@@ -861,6 +861,32 @@ class TestConfigRoutes:
             assert "/display_config" in resp.headers["Location"]
             mock_add.assert_called_once()
 
+    def test_configuration_release_get(self, auth_client):
+        release = {"rolling": True, "milestone": "2026-08", "last_used_all": False}
+        with patch("app.get_session_release", return_value=(release, {"last_used"})):
+            resp = auth_client.get("/configuration_release")
+            assert resp.status_code == 200
+            assert b"Rolling: Aug 2026+" in resp.data
+            assert b"Rule last-used tracking" in resp.data
+            assert b"Enabled" in resp.data
+
+    def test_configuration_release_get_stable(self, auth_client):
+        release = {"rolling": False, "milestone": None, "last_used_all": False}
+        with patch("app.get_session_release", return_value=(release, set())):
+            resp = auth_client.get("/configuration_release")
+            assert resp.status_code == 200
+            assert b"pill-ok" not in resp.data
+
+    def test_configuration_release_post(self, auth_client):
+        with patch("app.save_session_release", return_value=None) as mock_save:
+            resp = auth_client.post(
+                "/configuration_release",
+                data={"rolling": "True", "milestone": "2026-08"},
+            )
+            assert resp.status_code == 302
+            assert "/configuration_release" in resp.headers["Location"]
+            mock_save.assert_called_once()
+
     def test_configuration_hostname_add_get(self, auth_client):
         resp = auth_client.get("/configuration_hostname_add")
         assert resp.status_code == 200
