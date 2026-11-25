@@ -125,3 +125,20 @@ def test_save_all_rules_switch(mock_session, mock_read_write):
 def test_milestone_rows_carry_keys():
     aug = next(r for r in rf.milestone_rows() if r["id"] == "2026-08")
     assert "last_used" in aug["keys"]
+
+
+def test_later_milestone_includes_earlier_features(monkeypatch):
+    # Picking a later rolling build enables everything up to it, not just
+    # that month's additions: Sept 2026 carries Aug 2026's last-used too.
+    monkeypatch.setitem(
+        rf.FEATURES, "sept_feature", {"label": "Sept", "since": "2026-09"}
+    )
+    monkeypatch.setattr(
+        rf, "MILESTONES", rf.MILESTONES + [{"id": "2026-09", "label": "Rolling: Sep 2026+"}]
+    )
+    monkeypatch.setattr(rf, "_MILESTONE_IDS", {"2026-08", "2026-09"})
+
+    assert rf.features_for(True, "2026-09") == {"last_used", "sept_feature"}
+    assert rf.features_for(True, "2026-08") == {"last_used"}
+    sept = next(r for r in rf.milestone_rows() if r["id"] == "2026-09")
+    assert sept["keys"] == ["last_used", "sept_feature"]
