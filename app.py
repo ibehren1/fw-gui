@@ -2351,6 +2351,32 @@ def snapshot_manage():
         firewall_name=session["firewall_name"],
         message=message,
         username=session["username"],
+        # Just created (see _snapshot_created): highlighted, tag field focused.
+        new_snapshot=request.args.get("new", ""),
+    )
+
+
+def _snapshot_created(snapshot_name):
+    """Flash the result of creating a snapshot and go to Snapshots to tag it."""
+    if not snapshot_name:
+        flash("There is nothing to snapshot yet.", "warning")
+        return redirect(url_for("snapshot_manage"))
+    flash(f"Created snapshot {snapshot_name}. Add a tag to record why.", "success")
+    return redirect(url_for("snapshot_manage", new=snapshot_name))
+
+
+@app.route("/snapshot_create", methods=["POST"])
+@login_required
+@requires_firewall
+def snapshot_create():
+    """
+    Snapshot the selected config's working copy from the Snapshots page.
+
+    Returns:
+        Response: Redirect to the Snapshots page with the new snapshot selected
+    """
+    return _snapshot_created(
+        create_snapshot(f"{session['data_dir']}/{session['firewall_name']}")
     )
 
 
@@ -2548,8 +2574,11 @@ def select_firewall_config():
         flash(f"Loaded snapshot {snapshot}.", "success")
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
+    created_snapshot = None
     if snapshot == "create":
-        create_snapshot(f"{session['data_dir']}/{session['firewall_name']}")
+        created_snapshot = create_snapshot(
+            f"{session['data_dir']}/{session['firewall_name']}"
+        )
 
     # If snapshot name is "delete" then delete a snapshot
     if snapshot == "delete":
@@ -2565,6 +2594,10 @@ def select_firewall_config():
     session["ssh_user"] = ""
     session["ssh_pass"] = ""  # nosec
     session["ssh_keyname"] = ""
+
+    # A new snapshot goes straight to the Snapshots page so it can be tagged.
+    if snapshot == "create":
+        return _snapshot_created(created_snapshot)
 
     return _after_selecting()
 

@@ -1,9 +1,15 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <div class="snapshot-manage">
-    <h2 class="section-title">
-        Manage Snapshots
-    </h2>
+    <div class="page-head">
+        <h2>Manage Snapshots</h2>
+        <div class="page-actions">
+            <form action="{{ url_for('snapshot_create') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary" title="Snapshot the working copy of {{ firewall_name }}">+ Create snapshot</button>
+            </form>
+        </div>
+    </div>
     <p class="section-description">
         Tag a snapshot to record why it was taken, or load, compare and delete
         snapshots of <strong>{{ firewall_name }}</strong>. Saving an empty tag
@@ -41,7 +47,8 @@
             read are ignored.
         #}
         {% for snapshot in snapshot_list %}
-        <form method="post" class="snapshot-row">
+        {%- set is_new = new_snapshot and snapshot.name == new_snapshot %}
+        <form method="post" class="snapshot-row{% if is_new %} is-new{% endif %}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="firewall_name" value="{{ snapshot.id }}">
             <input type="hidden" name="snapshot_name" value="{{ snapshot.name }}">
@@ -62,6 +69,7 @@
                     maxlength="100"
                     placeholder="No tag"
                     value="{{ snapshot.tag }}"
+                    {% if is_new %}autofocus{% endif %}
                 >
             </div>
 
@@ -116,7 +124,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <p>No snapshots yet. Use Create snapshot on the Configurations page.</p>
+        <p>No snapshots yet. Use Create snapshot above to save the working copy.</p>
         <a href="{{ url_for('chain_view') }}" class="btn btn-primary">Back to Configuration</a>
     </div>
     {% endif %}

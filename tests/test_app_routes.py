@@ -881,7 +881,7 @@ class TestConfigRoutes:
             assert "/display_config" in resp.headers["Location"]
 
     def test_select_firewall_config_snapshot_create(self, auth_client):
-        with patch("app.create_snapshot") as mock_create, patch(
+        with patch("app.create_snapshot", return_value="11-25-2026 12:00:00") as mock_create, patch(
             "app.get_system_name", return_value=("192.168.1.1", "22")
         ):
             resp = auth_client.post(
@@ -889,6 +889,8 @@ class TestConfigRoutes:
                 data={"file": "my_fw/create"},
             )
             assert resp.status_code == 302
+            # Straight to Snapshots, with the new one picked out for tagging.
+            assert resp.headers["Location"] == "/snapshots?new=11-25-2026+12:00:00"
             mock_create.assert_called_once_with("data/testuser/my_fw")
 
     def test_select_firewall_config_snapshot_load_auto_snapshots_first(
@@ -1450,6 +1452,42 @@ class TestConfigRoutes:
 
         assert resp.status_code == 200
         assert 'value="my-tag"' in body
+
+    def test_snapshot_manage_has_create_button(self, auth_client):
+        with patch("app.generate_config", return_value=("config", ["line"])), patch(
+            "app.list_snapshots", return_value=[]
+        ):
+            body = auth_client.get("/snapshots").get_data(as_text=True)
+        assert 'action="/snapshot_create"' in body
+        assert "+ Create snapshot" in body
+
+    def test_snapshot_manage_highlights_new_snapshot(self, auth_client):
+        snaps = [{"name": "11-25-2026 11:00:00", "id": "test_firewall", "tag": ""},
+                 {"name": "11-25-2026 12:00:00", "id": "test_firewall", "tag": ""}]
+        with patch("app.generate_config", return_value=("config", ["line"])), patch(
+            "app.list_snapshots", return_value=snaps
+        ):
+            body = auth_client.get("/snapshots?new=11-25-2026+12:00:00").get_data(as_text=True)
+        assert body.count("snapshot-row is-new") == 1
+        assert body.count("autofocus") == 1
+        new_row = body.split("snapshot-row is-new", 1)[1].split("</form>", 1)[0]
+        assert "11-25-2026 12:00:00" in new_row and "autofocus" in new_row
+
+    def test_snapshot_create_redirects_to_manage(self, auth_client):
+        with patch("app.create_snapshot", return_value="11-25-2026 12:00:00") as mock_create:
+            resp = auth_client.post("/snapshot_create")
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/snapshots?new=11-25-2026+12:00:00"
+        mock_create.assert_called_once_with("data/testuser/test_firewall")
+        with auth_client.session_transaction() as sess:
+            assert ("success", "Created snapshot 11-25-2026 12:00:00. Add a tag to record why.") in sess["_flashes"]
+
+    def test_snapshot_create_nothing_to_snapshot(self, auth_client):
+        with patch("app.create_snapshot", return_value=None):
+            resp = auth_client.post("/snapshot_create")
+        assert resp.headers["Location"] == "/snapshots"
+        with auth_client.session_transaction() as sess:
+            assert sess["_flashes"][-1][0] == "warning"
 
     def test_snapshot_tag_post_updates_and_redirects(self, auth_client):
         with patch("app.tag_snapshot", return_value=True) as mock_tag:
