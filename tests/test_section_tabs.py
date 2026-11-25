@@ -293,3 +293,21 @@ def test_group_add_preselects_from_query(auth_client, store, query, gtype, ipv):
     assert "checked" in gt
     iv = body.split('name="ip_version" value="' + ipv + '"', 1)[1][:200]
     assert "checked" in iv
+
+
+def _filter_edit_form(body, rule):
+    marker = f'title="Edit rule {rule}"'
+    return body[: body.index(marker)].rsplit('<form action="/filter_rule_add"', 1)[1]
+
+
+def test_filter_edit_carries_log_and_disable(auth_client, store):
+    # Pre-4.1.4 the edit button dropped both, so editing cleared them.
+    store.data["ipv4"]["filters"]["input"]["rules"]["1"].update(
+        {"log": True, "rule_disable": True}
+    )
+    body = auth_client.get("/filter_view").get_data(as_text=True)
+    form = _filter_edit_form(body, "1")
+    assert 'name="logging" value="True"' in form
+    assert 'name="rule_disable" value="True"' in form
+    plain = _filter_edit_form(body, "2")
+    assert 'name="logging"' not in plain and 'name="rule_disable"' not in plain

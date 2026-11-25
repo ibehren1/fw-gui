@@ -221,3 +221,14 @@ def test_static_urls_carry_the_version(auth_client, flask_app):
         body = auth_client.get("/configurations").get_data(as_text=True)
     assert f"/static/styles.css?v={version}" in body
     assert "/static/styles.css\"" not in body
+
+
+def test_filter_rule_edit_keeps_log_and_disable_checked(auth_client):
+    resp = _filter_rule_form(auth_client, "post", {
+        "type": "edit", "filter": "ipv4,forward", "name": "20", "description": "",
+        "action": "accept", "direction": "", "ip_version": "ipv4",
+        "target": "", "interface": "", "logging": "True", "rule_disable": "True",
+    })
+    body = resp.get_data(as_text=True)
+    assert 'name="rule_disable" value="True" checked' in body
+    assert 'name="logging" value="True" checked' in body
