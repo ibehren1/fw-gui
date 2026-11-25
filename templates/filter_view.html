@@ -70,7 +70,7 @@
                                    aria-label="New number for rule {{ rule.number }}">
                         </form>
                     </td>
-                    <td class="desc">{{ rule.description }}</td>
+                    <td class="desc">{{ rule.description }}{% if 'last_used' in rolling_features and (rule.last_used or last_used_all) %}<span class="pill pill-info">last-used</span>{% endif %}</td>
                     <td><span class="act act-{{ rule.action }}">{{ rule.action }}</span></td>
                     <td>{% if rule.fw_chain %}<span class="ref">{{ rule.fw_chain }}</span>{% else %}<span class="muted">&ndash;</span>{% endif %}</td>
                     <td class="nowrap">{% if rule.interface %}{{ ui.if_name(rule.interface, ifaces) }}{% else %}<span class="muted">any</span>{% endif %}</td>
@@ -107,6 +107,9 @@
                             <input type="hidden" name="ip_version" value="{{ rule.ip_version }}">
                             <input type="hidden" name="target" value="{{ rule.fw_chain }}">
                             <input type="hidden" name="interface" value="{{ rule.interface }}">
+                            {% if rule.log %}<input type="hidden" name="logging" value="True">{% endif %}
+                            {% if rule.rule_disable %}<input type="hidden" name="rule_disable" value="True">{% endif %}
+                            {% if rule.last_used %}<input type="hidden" name="last_used" value="True">{% endif %}
                             <button type="submit" class="ib" title="Edit rule {{ rule.number }}">{{ ui.icon_edit() }}</button>
                         </form>
                         <form action="/filter_rule_delete" method="post" class="delete-form">

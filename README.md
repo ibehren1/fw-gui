@@ -56,6 +56,16 @@ The web-based FW-GUI allows the user to visually:
 | Docker Hub | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_dockerhub---https:--hub-docker-com-repository-docker-ibehren1-fw-gui-general/health/badge.svg) | [https://hub.docker.com/repository/docker/ibehren1/fw-gui/general](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general)  |
 | Working Demo | ![](https://status.behrenshome.com/api/v1/endpoints/web---fw-gui_fw-gui---https:--fw-gui-com/health/badge.svg) | [https://fw-gui.com](https://fw-gui.com) |
 
+### Rolling release features
+
+Some VyOS features reach the rolling (daily) builds well before a stable release. To use them, open **VyOS release** in the sidebar for a configuration, turn on **Target a VyOS rolling release**, and choose the oldest rolling build you run. Each choice in the list names the features it enables. Configurations that leave rolling off target stable and generate exactly the same commands as before.
+
+| Rolling build | Feature | What FW-GUI adds |
+|---------------|---------|------------------|
+| Aug 2026+ | Rule last-used tracking ([T8221](https://vyos.dev/T8221)) | A **Track last used** option on chain and filter rules, plus a switch on the VyOS release page that applies it to every rule. Generates `set firewall ... rule N last-used`, after which `show firewall ... detail` reports when each rule last matched. Run e.g. `show firewall ipv4 name WAN_LOCAL detail` or `show firewall ipv4 forward filter detail` from the push page to get a sortable **Last used** column. |
+
+Rule settings for a rolling feature are kept if you switch back to stable or pick an earlier build. They are just not generated, because a stable release would reject them.
+
 ### Recommended Usage
 
 Deploy via Docker on a server/VM that will be used to manage multiple VyOS Firewall instances.  Use [Nginx Proxy Manager](https://nginxproxymanager.com/) (also via Docker) on the same host to provide LetsEncrypt TLS encryption between client (web browser) and FW-GUI. Recommend adding `proxy_read_timeout 30m;` as a custom Nginx configuration.
@@ -122,7 +132,7 @@ An existing MongoDB install can only move up **one major version at a time**, an
 FW-GUI reports anonymous usage to `telemetry.fw-gui.com` so the developer can see how many installs exist, which versions are in use and how FW-GUI is deployed.  It is sent in the background and never affects the app if the server is unreachable.
 
 - **Each install** is identified by a random UUID generated on first start (stored in MongoDB), not by anything about you.
-- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration).
+- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration, VyOS rolling release).
 - **At each login:** only the UUID and version.
 - **For each View Diffs, Commit and operational command:** only the UUID, to count use.
 

@@ -21,6 +21,7 @@ from flask import flash
 
 from package.data_file_functions import read_user_data_file, write_user_data_file
 from package.rule_order_functions import (
+    next_rule_number,
     apply_renumber_map,
     build_renumber_map,
     build_resequence_map,
@@ -96,6 +97,10 @@ def add_rule_to_data(session, request):
         rule_dict["rule_disable"] = True
     if "logging" in request.form:
         rule_dict["logging"] = True
+    # Stored whatever the VyOS release; generate_config only emits it when
+    # the config's rolling release has the feature (release_features).
+    if "last_used" in request.form:
+        rule_dict["last_used"] = True
     rule_dict["action"] = request.form["action"]
 
     # Process destination
@@ -455,6 +460,17 @@ def assemble_list_of_chains(session):
     return chain_list
 
 
+def chain_next_rule_numbers(session):
+    """{"ipv4,NAME": next rule number} for every chain (see next_rule_number)."""
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+    numbers = {}
+    for ip_version in ("ipv4", "ipv6"):
+        for name, chain in ((user_data or {}).get(ip_version, {}).get("chains") or {}).items():
+            if isinstance(chain, dict):
+                numbers[f"{ip_version},{name}"] = next_rule_number(chain.get("rule-order"))
+    return numbers
+
+
 def delete_rule_from_data(session, request):
     """
     Deletes a firewall rule from the user's data and updates the data file.
@@ -657,6 +673,48 @@ def move_chain_rule_in_data(session, request):
 
     flash(
         f"Moved rule {rule_number} {direction} in chain {ip_version}/{fw_chain}.",
+        "success",
+    )
+
+    return f"{ip_version}{fw_chain}"
+
+
+def toggle_chain_rule_logging_in_data(session, request):
+    """
+    Turns logging on or off for one chain rule (the Log column toggle).
+
+    Form Parameters:
+        toggle_rule: Comma-separated string containing "ip_version,chain,rule_number"
+
+    Returns:
+        str: Concatenated ip_version and chain name on success
+        None: If validation fails
+    """
+    user_data = read_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}')
+
+    parts = request.form.get("toggle_rule", "").split(",")
+    if len(parts) != 3:
+        return None
+    ip_version, fw_chain, rule_number = parts
+
+    chain = _get_chain(user_data, ip_version, fw_chain)
+    if chain is None or rule_number not in chain["rule-order"]:
+        return None
+    rule = chain.get(rule_number)
+    if not isinstance(rule, dict):
+        return None
+
+    # Stored like the rule form does: the key is present only when on.
+    if rule.pop("logging", None):
+        state = "disabled"
+    else:
+        rule["logging"] = True
+        state = "enabled"
+
+    write_user_data_file(f'{session["data_dir"]}/{session["firewall_name"]}', user_data)
+
+    flash(
+        f"Logging {state} for rule {rule_number} in chain {ip_version}/{fw_chain}.",
         "success",
     )
 

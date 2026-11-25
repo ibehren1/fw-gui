@@ -73,10 +73,12 @@ from package.chain_functions import (
     assemble_detail_list_of_chains,
     chain_defaults,
     assemble_list_of_chains,
+    chain_next_rule_numbers,
     delete_rule_from_data,
     move_chain_rule_in_data,
     reorder_chain_rule_in_data,
     resequence_chain_rules_in_data,
+    toggle_chain_rule_logging_in_data,
 )
 from package.data_file_functions import (
     AUTO_SNAPSHOT_TAG,
@@ -112,6 +114,7 @@ from package.filter_functions import (
     filter_defaults,
     assemble_list_of_filters,
     delete_filter_rule_from_data,
+    filter_next_rule_numbers,
     move_filter_rule_in_data,
     reorder_filter_rule_in_data,
     resequence_filter_rules_in_data,
@@ -133,6 +136,13 @@ from package.group_funtions import (
     group_section_anchor,
 )
 from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
+from package.release_features import (
+    FEATURES,
+    get_session_release,
+    milestone_rows,
+    save_session_release,
+    session_release_context,
+)
 from package.interface_functions import (
     CUSTOM_TYPE_COLORS,
     INTERFACE_TYPES,
@@ -1333,6 +1343,8 @@ def chain_rule_add():
                 group_list=group_list,
                 firewall_name=session["firewall_name"],
                 username=session["username"],
+                **session_release_context(session),
+                next_rule_numbers=chain_next_rule_numbers(session),
                 rule_detail=request.form,
             )
 
@@ -1362,6 +1374,8 @@ def chain_rule_add():
             group_list=group_list,
             firewall_name=session["firewall_name"],
             username=session["username"],
+            **session_release_context(session),
+            next_rule_numbers=chain_next_rule_numbers(session),
             rule_detail=rule_detail_defaults,
         )
 
@@ -1419,6 +1433,19 @@ def chain_rule_reorder():
         return redirect(url_for("chain_view"))
     else:
         return redirect(url_for("chain_view"))
+
+
+@app.route("/chain_rule_log_toggle", methods=["POST"])
+@login_required
+@requires_firewall
+def chain_rule_log_toggle():
+    """Turn logging on or off for a chain rule from the chain view's Log column."""
+    anchor = toggle_chain_rule_logging_in_data(session, request)
+
+    if anchor:
+        return redirect(url_for("chain_view", _anchor=anchor))
+
+    return redirect(url_for("chain_view"))
 
 
 @app.route("/chain_rule_move", methods=["POST"])
@@ -1502,6 +1529,7 @@ def chain_view():
         snapshot_list=snapshot_list,
         firewall_name=session["firewall_name"],
         username=session["username"],
+        **session_release_context(session),
     )
 
 
@@ -1603,6 +1631,8 @@ def filter_rule_add():
                 firewall_name=session["firewall_name"],
                 interface_list=interface_list,
                 username=session["username"],
+                **session_release_context(session),
+                next_rule_numbers=filter_next_rule_numbers(session),
                 rule_detail=request.form,
             )
 
@@ -1651,6 +1681,8 @@ def filter_rule_add():
             firewall_name=session["firewall_name"],
             interface_list=interface_list,
             username=session["username"],
+            **session_release_context(session),
+            next_rule_numbers=filter_next_rule_numbers(session),
             rule_detail={},
         )
 
@@ -1791,6 +1823,7 @@ def filter_view():
         interface_list=list_interfaces(session),
         firewall_name=session["firewall_name"],
         username=session["username"],
+        **session_release_context(session),
     )
 
 
@@ -1840,6 +1873,39 @@ def configuration_extra_items():
             firewall_name=session["firewall_name"],
             username=session["username"],
         )
+
+
+@app.route("/configuration_release", methods=["GET", "POST"])
+@login_required
+@requires_firewall
+def configuration_release():
+    """
+    Choose the VyOS release the selected config targets.
+
+    POST stores the rolling flag and milestone (and the all-rules last-used
+    switch) on the config document; GET shows the form and which rolling
+    features the current choice enables. See package/release_features.py.
+    """
+    if request.method == "POST":
+        error = save_session_release(session, request.form)
+        if error:
+            flash(error, "danger")
+        else:
+            flash("VyOS release settings saved.", "success")
+        return redirect(url_for("configuration_release"))
+
+    release, features = get_session_release(session)
+    return render_template(
+        "configuration_release.html",
+        release=release,
+        enabled=features,
+        features=FEATURES,
+        milestones=milestone_rows(),
+        file_list=list_user_files(session),
+        snapshot_list=list_snapshots(session),
+        firewall_name=session["firewall_name"],
+        username=session["username"],
+    )
 
 
 @app.route("/configuration_hostname_add", methods=["GET", "POST"])
@@ -2285,6 +2351,32 @@ def snapshot_manage():
         firewall_name=session["firewall_name"],
         message=message,
         username=session["username"],
+        # Just created (see _snapshot_created): highlighted, tag field focused.
+        new_snapshot=request.args.get("new", ""),
+    )
+
+
+def _snapshot_created(snapshot_name):
+    """Flash the result of creating a snapshot and go to Snapshots to tag it."""
+    if not snapshot_name:
+        flash("There is nothing to snapshot yet.", "warning")
+        return redirect(url_for("snapshot_manage"))
+    flash(f"Created snapshot {snapshot_name}. Add a tag to record why.", "success")
+    return redirect(url_for("snapshot_manage", new=snapshot_name))
+
+
+@app.route("/snapshot_create", methods=["POST"])
+@login_required
+@requires_firewall
+def snapshot_create():
+    """
+    Snapshot the selected config's working copy from the Snapshots page.
+
+    Returns:
+        Response: Redirect to the Snapshots page with the new snapshot selected
+    """
+    return _snapshot_created(
+        create_snapshot(f"{session['data_dir']}/{session['firewall_name']}")
     )
 
 
@@ -2482,8 +2574,11 @@ def select_firewall_config():
         flash(f"Loaded snapshot {snapshot}.", "success")
 
     # If snapshot name is "create", then create a snapshot with date/time stamp
+    created_snapshot = None
     if snapshot == "create":
-        create_snapshot(f"{session['data_dir']}/{session['firewall_name']}")
+        created_snapshot = create_snapshot(
+            f"{session['data_dir']}/{session['firewall_name']}"
+        )
 
     # If snapshot name is "delete" then delete a snapshot
     if snapshot == "delete":
@@ -2499,6 +2594,10 @@ def select_firewall_config():
     session["ssh_user"] = ""
     session["ssh_pass"] = ""  # nosec
     session["ssh_keyname"] = ""
+
+    # A new snapshot goes straight to the Snapshots page so it can be tagged.
+    if snapshot == "create":
+        return _snapshot_created(created_snapshot)
 
     return _after_selecting()
 

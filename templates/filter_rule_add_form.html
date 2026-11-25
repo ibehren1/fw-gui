@@ -1,7 +1,7 @@
 {% extends "basic_page.html" %}
 {% block body %}
 <div class="filter-rule-form">
-    <h2 class="section-title">Add Filter Rule</h2>
+    <h2 class="section-title">{% if rule_detail.type == "edit" %}Edit{% else %}Add{% endif %} Filter Rule</h2>
     
     <p class="section-description">
         Filters are tables of rules pointing to other chains of rules based on interface and traffic direction.
@@ -48,8 +48,10 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label for="rule" class="form-label">Rule Number</label>
-                    <input type="text" id="rule" name="rule" class="form-input" 
-                           maxlength="6" value="{{ rule_detail.name if rule_detail.name else '1' }}" required>
+                    {%- set default_filter = filter_name if filter_name in next_rule_numbers else (filter_list[0]|join(',') if filter_list else '') %}
+                    <input type="text" id="rule" name="rule" class="form-input"
+                           maxlength="6" value="{{ rule_detail.name if rule_detail.name else next_rule_numbers.get(default_filter, 10) }}"
+                           data-next='{{ next_rule_numbers|tojson }}'{% if rule_detail.type == "edit" %} data-edit="1"{% endif %} required>
                 </div>
                 
                 <div class="form-group">
@@ -74,6 +76,22 @@
                         <span class="checkbox-label">Enable logging</span>
                     </label>
                 </div>
+
+                {% if 'last_used' in rolling_features %}
+                <div class="form-group">
+                    <label class="form-label">Last used</label>
+                    <label class="checkbox-item">
+                        {% if last_used_all %}
+                        <input type="checkbox" id="last_used" checked disabled>
+                        {% if rule_detail.last_used %}<input type="hidden" name="last_used" value="True">{% endif %}
+                        {% else %}
+                        <input type="checkbox" id="last_used" name="last_used" value="True" {% if rule_detail.last_used %}checked{% endif %}>
+                        {% endif %}
+                        <span class="checkbox-label">Track last used</span>
+                        <small class="option-help">{% if last_used_all %}Enabled for all rules on the VyOS release page{% else %}VyOS rolling Aug 2026+{% endif %}</small>
+                    </label>
+                </div>
+                {% endif %}
             </div>
         </div>
         
@@ -156,9 +174,26 @@
         </div>
         
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Add Filter Rule</button>
+            <button type="submit" class="btn btn-primary">{% if rule_detail.type == "edit" %}Update Filter Rule{% else %}Add Filter Rule{% endif %}</button>
         </div>
     </form>
 </div>
 
+<script>
+// A new rule defaults to the end of the selected filter; switching filters
+// follows along unless the number was changed by hand.
+(function () {
+    const select = document.getElementById('filter');
+    const rule = document.getElementById('rule');
+    if (!select || !rule || rule.dataset.edit) return;
+    const next = JSON.parse(rule.dataset.next || '{}');
+    let suggested = rule.value;
+    select.addEventListener('change', function () {
+        if (rule.value === suggested && select.value in next) {
+            suggested = String(next[select.value]);
+            rule.value = suggested;
+        }
+    });
+})();
+</script>
 {% endblock body %}

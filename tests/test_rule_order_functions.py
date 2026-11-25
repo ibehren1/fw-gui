@@ -8,6 +8,7 @@ Covers: sorted_rule_order, build_swap_map, build_renumber_map,
 import pytest
 
 from package.rule_order_functions import (
+    next_rule_number,
     MAX_RULE_NUMBER,
     apply_renumber_map,
     build_renumber_map,
@@ -244,3 +245,17 @@ class TestApplyRenumberMap:
 
         assert chain["rule-order"] == ["10", "20"]
         assert chain["10"]["description"] == "rule 10"
+
+
+@pytest.mark.parametrize("order, expected", [
+    ([], 10),
+    (None, 10),
+    (["10", "20"], 30),
+    (["20", "10"], 30),
+    (["1", "2", "3"], 10),
+    (["25"], 30),
+    (["9999"], 10000),
+    (["10", "bogus"], 20),
+])
+def test_next_rule_number(order, expected):
+    assert next_rule_number(order) == expected

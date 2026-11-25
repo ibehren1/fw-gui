@@ -1,0 +1,42 @@
+Ruleset Information
+
+---------------------------------
+ipv4 Firewall "name WAN_LOCAL"
+
+ Rule        | 10
+ Description | SSH
+ Action      | accept
+ Protocol    | tcp
+ Packets     | 1520
+ Bytes       | 91200
+ Last Used   | 1s174ms
+ Conditions  | tcp dport 22 ct state { established, related } ip saddr
+             | @A_TRUSTED
+
+ Rule        | 20
+ Description | DNS
+ Action      | accept
+ Protocol    | udp
+ Packets     | 0
+ Bytes       | 0
+ Last Used   | never
+ Conditions  | udp dport 53
+
+ Rule        | 30
+ Description | Untracked
+ Action      | drop
+ Protocol    | all
+ Packets     | 7
+ Bytes       | 420
+ Last Used   | N/A
+ Conditions  | ct state invalid
+
+ Rule        | default
+ Description |
+ Action      | drop
+ Protocol    | all
+ Packets     | 99
+ Bytes       | 5940
+ Last Used   | N/A
+ Conditions  |
+

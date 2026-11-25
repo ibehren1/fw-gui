@@ -288,6 +288,20 @@ class TestAddFilterRuleToData:
         assert rule["rule_disable"] is True
         assert rule["log"] is True
 
+    def test_rule_with_last_used(self, app, mock_session, mock_read_write):
+        capture = mock_read_write("package.filter_functions", _data_with_empty_filter())
+        req = make_request({
+            "filter": "ipv4,input",
+            "rule": "10",
+            "description": "Tracked",
+            "action": "accept",
+            "last_used": "True",
+        })
+        with app.test_request_context():
+            add_filter_rule_to_data(mock_session, req)
+
+        assert capture.written_data["ipv4"]["filters"]["input"]["rules"]["10"]["last_used"] is True
+
     def test_rule_order_sorted(self, app, mock_session, mock_read_write):
         data = _data_with_filter()  # Has rule 10 already
         capture = mock_read_write("package.filter_functions", data)
@@ -715,3 +729,12 @@ def test_filter_defaults(mock_session, mock_read_write):
         "ipv6": {"filters": {"input": {"default-action": "accept", "log": False, "rules": {}}}},
     })
     assert filter_defaults(mock_session) == {"ipv6": {"input": {"action": "accept", "log": False}}}
+
+
+def test_filter_next_rule_numbers(mock_session, mock_read_write):
+    from package.filter_functions import filter_next_rule_numbers
+    mock_read_write("package.filter_functions", {
+        "ipv4": {"filters": {"input": {"rule-order": ["10"], "rules": {}}}},
+        "ipv6": {"filters": {"forward": {"rule-order": [], "rules": {}}}},
+    })
+    assert filter_next_rule_numbers(mock_session) == {"ipv4,input": 20, "ipv6,forward": 10}

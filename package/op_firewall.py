@@ -10,6 +10,11 @@ version, chain/filter name and rule number to add its description.
 
 Only tables with exactly the ``show firewall`` columns and a recognised title
 are used; anything else is ignored here and left to the generic table view.
+
+``show firewall <family> <name X | hook filter> detail`` prints each rule as
+a vertical key/value block instead (``parse_firewall_detail``). That is the
+only output carrying the "Last Used" field of rules with ``last-used`` set
+(VyOS rolling Aug 2026+); the plain table strips it from the conditions.
 """
 
 import re
@@ -40,6 +45,13 @@ _LOG_PREFIX = re.compile(r'\s*prefix "\[[^"]*"')
 _COMMENT = re.compile(r'\s*comment "[^"]*"')
 _JUMP = re.compile(r"\s*jump NAME6?_(\S+)")
 _VERDICT = re.compile(r"\s*\b(accept|drop|reject|return|continue)\s*$")
+
+# One line of a detail block (tabulate "presto" with no header): " Key | value",
+# or "     | more" continuing the previous value.
+_DETAIL_LINE = re.compile(r"^ (?P<key>[A-Za-z][A-Za-z -]*?)?\s*\|(?: (?P<value>.*))?$")
+# nftables duration, e.g. "2h3m4s174ms".
+_DURATION = re.compile(r"(\d+)(ms|d|h|m|s)")
+_DURATION_MS = {"d": 86_400_000, "h": 3_600_000, "m": 60_000, "s": 1_000, "ms": 1}
 
 
 def human_count(n):
@@ -151,41 +163,122 @@ def parse_firewall(segments):
         match = _TITLE.match(title_lines[-1]) if title_lines else None
         if not match:
             continue
-        family, chain_name, hook = match.groups()
-        rules = []
-        default_action = None
-        for row in segment["rows"]:
-            number, action, protocol, packets, byte_count, conditions = row
-            parts, log, jump = condition_parts(conditions)
-            is_default = number == "default"
-            if is_default:
-                default_action = action
-            rules.append(
-                {
-                    "number": number,
-                    "is_default": is_default,
-                    "action": action,
-                    "protocol": protocol,
-                    "packets": _int(packets),
-                    "bytes": _int(byte_count),
-                    "conditions": conditions,
-                    "parts": parts,
-                    "log": log,
-                    "jump": jump,
-                }
-            )
-        chains.append(
-            {
-                "family": family,
-                "kind": "name" if chain_name else "filter",
-                "name": chain_name or hook,
-                "label": chain_name or f"{hook} filter",
-                "rules": rules,
-                "default_action": default_action,
-                "packets": sum(r["packets"] for r in rules),
-            }
-        )
+        rules = [_rule(*row) for row in segment["rows"]]
+        chains.append(_chain(match, rules))
     return chains
+
+
+def _rule(number, action, protocol, packets, byte_count, conditions, last_used=None):
+    parts, log, jump = condition_parts(conditions)
+    return {
+        "number": number,
+        "is_default": number == "default",
+        "action": action,
+        "protocol": protocol,
+        "packets": _int(packets),
+        "bytes": _int(byte_count),
+        "conditions": conditions,
+        "parts": parts,
+        "log": log,
+        "jump": jump,
+        "last_used": last_used,
+    }
+
+
+def _chain(title_match, rules):
+    family, chain_name, hook = title_match.groups()
+    default_action = next((r["action"] for r in rules if r["is_default"]), None)
+    return {
+        "family": family,
+        "kind": "name" if chain_name else "filter",
+        "name": chain_name or hook,
+        "label": chain_name or f"{hook} filter",
+        "rules": rules,
+        "default_action": default_action,
+        "packets": sum(r["packets"] for r in rules),
+    }
+
+
+def _detail_rule(record):
+    if not record.get("Rule"):
+        return None
+    return _rule(
+        record["Rule"],
+        record.get("Action", ""),
+        record.get("Protocol") or "all",
+        record.get("Packets"),
+        record.get("Bytes"),
+        record.get("Conditions", ""),
+        record.get("Last Used"),
+    )
+
+
+def parse_firewall_detail(output):
+    """
+    Extract rulesets from ``show firewall ... detail`` output.
+
+    Each ruleset is a title line followed by one key/value block per rule,
+    blocks separated by blank lines, long values wrapped onto lines with an
+    empty key. Returns the same structure as ``parse_firewall`` (each rule's
+    ``last_used`` is the device's "Last Used" text, or None if the output has
+    no such field); empty when the output is not detail output.
+    """
+    chains = []
+    title = None
+    rules = []
+    record = {}
+    key = None
+
+    def end_record():
+        nonlocal record, key
+        rule = _detail_rule(record)
+        if rule is not None and title is not None:
+            rules.append(rule)
+        record, key = {}, None
+
+    def end_ruleset():
+        nonlocal rules
+        end_record()
+        if title is not None and rules:
+            chains.append(_chain(title, rules))
+        rules = []
+
+    for line in str(output).splitlines():
+        stripped = line.strip()
+        match = _TITLE.match(stripped)
+        if match:
+            end_ruleset()
+            title = match
+            continue
+        detail = _DETAIL_LINE.match(line.rstrip())
+        if detail and title is not None:
+            value = (detail.group("value") or "").strip()
+            if detail.group("key"):
+                key = detail.group("key").strip()
+                record[key] = value
+            elif key and value:
+                record[key] = f"{record[key]} {value}".strip()
+            continue
+        end_record()
+        if stripped.startswith("---"):
+            end_ruleset()
+            title = None
+    end_ruleset()
+    return chains
+
+
+def last_used_age_ms(value):
+    """
+    Sort key for a "Last Used" value: elapsed milliseconds, a huge number for
+    "never" (least recently used of all) and -1 when not tracked or unknown.
+    """
+    text = (value or "").strip().lower()
+    if text == "never":
+        return 10**15
+    matches = _DURATION.findall(text)
+    if not matches or _DURATION.sub("", text):
+        return -1
+    return sum(int(n) * _DURATION_MS[unit] for n, unit in matches)
 
 
 def _config_ruleset(user_data, chain):
@@ -225,6 +318,7 @@ def enrich(chains, user_data):
             )
             rule["packets_h"] = human_count(rule["packets"])
             rule["bytes_h"] = human_bytes(rule["bytes"])
+            rule["last_used_ms"] = last_used_age_ms(rule.get("last_used"))
             rule["zero"] = rule["packets"] == 0
             rule["bar"] = round(rule["packets"] / busiest * 100, 1)
             if not chain["packets"] or not rule["packets"]:
@@ -233,6 +327,11 @@ def enrich(chains, user_data):
                 share = rule["packets"] / chain["packets"] * 100
                 rule["share"] = "<1%" if share < 1 else f"{share:.0f}%"
     return chains
+
+
+def has_last_used(chains):
+    """True when the output carried a Last Used field (detail output)."""
+    return any(r.get("last_used") is not None for c in chains for r in c["rules"])
 
 
 def stats(chains):

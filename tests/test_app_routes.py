@@ -343,6 +343,35 @@ class TestChainRoutes:
             resp = auth_client.get("/chain_rule_add")
             assert resp.status_code == 200
 
+    def test_chain_rule_add_get_last_used_rolling(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["test_chain"]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.session_release_context", return_value={"rolling_features": {"last_used"}, "last_used_all": False}
+        ):
+            resp = auth_client.get("/chain_rule_add")
+            assert b'name="last_used"' in resp.data
+
+    def test_chain_rule_add_get_last_used_all_rules(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["test_chain"]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.session_release_context",
+            return_value={"rolling_features": {"last_used"}, "last_used_all": True},
+        ):
+            resp = auth_client.get("/chain_rule_add")
+            assert b"Enabled for all rules on the VyOS release page" in resp.data
+            assert b'name="last_used"' not in resp.data
+
+    def test_chain_rule_add_get_last_used_hidden_on_stable(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["test_chain"]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.session_release_context", return_value={"rolling_features": set(), "last_used_all": False}
+        ):
+            resp = auth_client.get("/chain_rule_add")
+            assert b'name="last_used"' not in resp.data
+
     def test_chain_rule_add_get_no_chains(self, auth_client):
         with patch("app.assemble_list_of_chains", return_value=[]), patch(
             "app.assemble_detail_list_of_groups", return_value=[]
@@ -388,6 +417,82 @@ class TestChainRoutes:
                 },
             )
             assert resp.status_code == 200
+
+    def test_chain_rule_add_get_defaults_to_next_number(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=[["ipv4", "test_chain"]]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.chain_next_rule_numbers", return_value={"ipv4,test_chain": 30}
+        ):
+            body = auth_client.get("/chain_rule_add?fw_chain=ipv4,test_chain").get_data(as_text=True)
+            assert 'value="30"' in body
+            assert "data-next='{\"ipv4,test_chain\": 30}'" in body
+            assert "Add Rule</button>" in body
+            assert "data-edit" not in body
+
+    def test_chain_rule_edit_says_update_and_keeps_number(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=[["ipv4", "test_chain"]]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]), patch(
+            "app.chain_next_rule_numbers", return_value={"ipv4,test_chain": 30}
+        ):
+            body = auth_client.post(
+                "/chain_rule_add",
+                data={"type": "edit", "chain": "ipv4,test_chain", "name": "10",
+                      "action": "accept", "protocol": "tcp"},
+            ).get_data(as_text=True)
+            assert "Update Rule</button>" in body
+            assert "Edit Firewall Rule" in body
+            assert 'value="10"' in body
+            assert 'data-edit="1"' in body
+
+    def _chain_rule_form_body(self, auth_client, query):
+        with patch(
+            "app.assemble_list_of_chains",
+            return_value=[["ipv4", "WAN_IN"], ["ipv6", "WAN6_IN"]],
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+            return auth_client.get("/chain_rule_add" + query).get_data(as_text=True)
+
+    @staticmethod
+    def _checked_ip(body):
+        import re
+        return re.findall(r'name="ip_version" value="(ipv\d)"\s*checked', body)
+
+    def test_chain_rule_add_ipv6_chain_selects_ipv6(self, auth_client):
+        body = self._chain_rule_form_body(auth_client, "?fw_chain=ipv6,WAN6_IN")
+        assert self._checked_ip(body) == ["ipv6"]
+
+    def test_chain_rule_add_ipv4_chain_selects_ipv4(self, auth_client):
+        body = self._chain_rule_form_body(auth_client, "?fw_chain=ipv4,WAN_IN")
+        assert self._checked_ip(body) == ["ipv4"]
+
+    def test_chain_rule_add_no_chain_defaults_ipv4(self, auth_client):
+        assert self._checked_ip(self._chain_rule_form_body(auth_client, "")) == ["ipv4"]
+
+    def test_chain_rule_edit_ipv6_chain_selects_ipv6(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=[["ipv6", "WAN6_IN"]]
+        ), patch("app.assemble_detail_list_of_groups", return_value=[]):
+            body = auth_client.post(
+                "/chain_rule_add",
+                data={"type": "edit", "chain": "ipv6,WAN6_IN", "name": "10",
+                      "action": "accept", "protocol": "", "ip_version": "ipv6"},
+            ).get_data(as_text=True)
+        assert self._checked_ip(body) == ["ipv6"]
+
+    def test_chain_rule_log_toggle(self, auth_client):
+        with patch("app.toggle_chain_rule_logging_in_data", return_value="ipv4WAN") as mock_t:
+            resp = auth_client.post(
+                "/chain_rule_log_toggle", data={"toggle_rule": "ipv4,WAN,10"}
+            )
+            assert resp.status_code == 302
+            assert resp.headers["Location"].endswith("/chain_view#ipv4WAN")
+            mock_t.assert_called_once()
+
+    def test_chain_rule_log_toggle_invalid(self, auth_client):
+        with patch("app.toggle_chain_rule_logging_in_data", return_value=None):
+            resp = auth_client.post("/chain_rule_log_toggle", data={})
+            assert resp.headers["Location"].endswith("/chain_view")
 
     def test_chain_rule_delete(self, auth_client):
         with patch("app.delete_rule_from_data") as mock_del:
@@ -510,6 +615,22 @@ class TestFilterRoutes:
         ):
             resp = auth_client.get("/filter_rule_add")
             assert resp.status_code == 200
+
+    def test_filter_rule_add_get_last_used_rolling(self, auth_client):
+        with patch(
+            "app.assemble_list_of_chains", return_value=["chain1"]
+        ), patch(
+            "app.assemble_list_of_filters", return_value=["filter1"]
+        ), patch(
+            "app.list_interfaces",
+            return_value=[{"interface_name": "eth0"}],
+        ), patch(
+            "app.list_flowtables", return_value=[]
+        ), patch(
+            "app.session_release_context", return_value={"rolling_features": {"last_used"}, "last_used_all": False}
+        ):
+            resp = auth_client.get("/filter_rule_add")
+            assert b'name="last_used"' in resp.data
 
     def test_filter_rule_add_get_no_filters(self, auth_client):
         with patch(
@@ -760,7 +881,7 @@ class TestConfigRoutes:
             assert "/display_config" in resp.headers["Location"]
 
     def test_select_firewall_config_snapshot_create(self, auth_client):
-        with patch("app.create_snapshot") as mock_create, patch(
+        with patch("app.create_snapshot", return_value="11-25-2026 12:00:00") as mock_create, patch(
             "app.get_system_name", return_value=("192.168.1.1", "22")
         ):
             resp = auth_client.post(
@@ -768,6 +889,8 @@ class TestConfigRoutes:
                 data={"file": "my_fw/create"},
             )
             assert resp.status_code == 302
+            # Straight to Snapshots, with the new one picked out for tagging.
+            assert resp.headers["Location"] == "/snapshots?new=11-25-2026+12:00:00"
             mock_create.assert_called_once_with("data/testuser/my_fw")
 
     def test_select_firewall_config_snapshot_load_auto_snapshots_first(
@@ -860,6 +983,39 @@ class TestConfigRoutes:
             assert resp.status_code == 302
             assert "/display_config" in resp.headers["Location"]
             mock_add.assert_called_once()
+
+    def test_configuration_release_get(self, auth_client):
+        release = {"rolling": True, "milestone": "2026-08", "last_used_all": False}
+        with patch("app.get_session_release", return_value=(release, {"last_used"})):
+            resp = auth_client.get("/configuration_release")
+            assert resp.status_code == 200
+            assert b"Rolling: Aug 2026+" in resp.data
+            assert b"Rule last-used tracking" in resp.data
+            assert b"Enabled" in resp.data
+
+    def test_configuration_release_get_all_rules_switch(self, auth_client):
+        release = {"rolling": True, "milestone": "2026-08", "last_used_all": True}
+        with patch("app.get_session_release", return_value=(release, {"last_used"})):
+            resp = auth_client.get("/configuration_release")
+            assert b'name="last_used_all"' in resp.data
+            assert b'data-last-used="true"' in resp.data
+
+    def test_configuration_release_get_stable(self, auth_client):
+        release = {"rolling": False, "milestone": None, "last_used_all": False}
+        with patch("app.get_session_release", return_value=(release, set())):
+            resp = auth_client.get("/configuration_release")
+            assert resp.status_code == 200
+            assert b"pill-ok" not in resp.data
+
+    def test_configuration_release_post(self, auth_client):
+        with patch("app.save_session_release", return_value=None) as mock_save:
+            resp = auth_client.post(
+                "/configuration_release",
+                data={"rolling": "True", "milestone": "2026-08"},
+            )
+            assert resp.status_code == 302
+            assert "/configuration_release" in resp.headers["Location"]
+            mock_save.assert_called_once()
 
     def test_configuration_hostname_add_get(self, auth_client):
         resp = auth_client.get("/configuration_hostname_add")
@@ -1296,6 +1452,42 @@ class TestConfigRoutes:
 
         assert resp.status_code == 200
         assert 'value="my-tag"' in body
+
+    def test_snapshot_manage_has_create_button(self, auth_client):
+        with patch("app.generate_config", return_value=("config", ["line"])), patch(
+            "app.list_snapshots", return_value=[]
+        ):
+            body = auth_client.get("/snapshots").get_data(as_text=True)
+        assert 'action="/snapshot_create"' in body
+        assert "+ Create snapshot" in body
+
+    def test_snapshot_manage_highlights_new_snapshot(self, auth_client):
+        snaps = [{"name": "11-25-2026 11:00:00", "id": "test_firewall", "tag": ""},
+                 {"name": "11-25-2026 12:00:00", "id": "test_firewall", "tag": ""}]
+        with patch("app.generate_config", return_value=("config", ["line"])), patch(
+            "app.list_snapshots", return_value=snaps
+        ):
+            body = auth_client.get("/snapshots?new=11-25-2026+12:00:00").get_data(as_text=True)
+        assert body.count("snapshot-row is-new") == 1
+        assert body.count("autofocus") == 1
+        new_row = body.split("snapshot-row is-new", 1)[1].split("</form>", 1)[0]
+        assert "11-25-2026 12:00:00" in new_row and "autofocus" in new_row
+
+    def test_snapshot_create_redirects_to_manage(self, auth_client):
+        with patch("app.create_snapshot", return_value="11-25-2026 12:00:00") as mock_create:
+            resp = auth_client.post("/snapshot_create")
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/snapshots?new=11-25-2026+12:00:00"
+        mock_create.assert_called_once_with("data/testuser/test_firewall")
+        with auth_client.session_transaction() as sess:
+            assert ("success", "Created snapshot 11-25-2026 12:00:00. Add a tag to record why.") in sess["_flashes"]
+
+    def test_snapshot_create_nothing_to_snapshot(self, auth_client):
+        with patch("app.create_snapshot", return_value=None):
+            resp = auth_client.post("/snapshot_create")
+        assert resp.headers["Location"] == "/snapshots"
+        with auth_client.session_transaction() as sess:
+            assert sess["_flashes"][-1][0] == "warning"
 
     def test_snapshot_tag_post_updates_and_redirects(self, auth_client):
         with patch("app.tag_snapshot", return_value=True) as mock_tag:

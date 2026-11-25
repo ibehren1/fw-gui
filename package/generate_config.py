@@ -21,6 +21,7 @@ import logging
 import re
 
 from package.data_file_functions import read_user_data_file
+from package.release_features import enabled_features, last_used_all
 
 # Names that appear as bareword tokens in `set firewall ...` commands (chain,
 # filter, group, flowtable names, group types). VyOS identifiers are limited to
@@ -87,6 +88,12 @@ def generate_config(session, snapshot="current", diff=False):
             snapshot=snapshot,
             diff=diff,
         )
+
+    # Rolling-release features this config (or snapshot) targets; empty for
+    # stable, which leaves the output unchanged.
+    rolling_features = enabled_features(user_data)
+    # The release page can switch last-used on for every rule at once.
+    last_used_every_rule = last_used_all(user_data)
 
     # Create firewall configuration
     config = []
@@ -296,6 +303,14 @@ def generate_config(session, snapshot="current", diff=False):
                         config.append(
                             f"set firewall {ip_version} {filter_name} filter rule {rule} log"
                         )
+
+                    # Last used (VyOS rolling Aug 2026+)
+                    if "last_used" in rolling_features and (
+                        last_used_every_rule or "last_used" in rule_data
+                    ):
+                        config.append(
+                            f"set firewall {ip_version} {filter_name} filter rule {rule} last-used"
+                        )
                     config.append("\n")
 
         if "chains" in user_data[ip_version]:
@@ -454,6 +469,14 @@ def generate_config(session, snapshot="current", diff=False):
                     if rule_logging:
                         config.append(
                             f"set firewall {ip_version} name {fw_chain} rule {rule} log"
+                        )
+
+                    # Last used (VyOS rolling Aug 2026+)
+                    if "last_used" in rolling_features and (
+                        last_used_every_rule or "last_used" in rule_data
+                    ):
+                        config.append(
+                            f"set firewall {ip_version} name {fw_chain} rule {rule} last-used"
                         )
 
                     # States

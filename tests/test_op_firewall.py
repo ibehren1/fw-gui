@@ -221,3 +221,112 @@ class TestDeltas:
         keys = counter_snapshot(chains)
         assert "ipv4|name|wan_out|10" in keys
         assert "ipv6|name|wan_out|10" in keys
+
+
+# ---------------------------------------------------------------------------
+# show firewall ... detail (vertical blocks with Last Used)
+# ---------------------------------------------------------------------------
+from package.op_firewall import (  # noqa: E402
+    has_last_used,
+    last_used_age_ms,
+    parse_firewall_detail,
+)
+
+
+def _detail_text():
+    return (FIXTURES / "show_firewall_detail.txt").read_text()
+
+
+class TestParseFirewallDetail:
+    def test_ruleset_and_rules(self):
+        chains = parse_firewall_detail(_detail_text())
+        assert len(chains) == 1
+        chain = chains[0]
+        assert (chain["family"], chain["kind"], chain["name"]) == ("ipv4", "name", "WAN_LOCAL")
+        assert [r["number"] for r in chain["rules"]] == ["10", "20", "30", "default"]
+        assert chain["default_action"] == "drop"
+        assert chain["packets"] == 1520 + 7 + 99
+
+    def test_last_used_values(self):
+        rules = parse_firewall_detail(_detail_text())[0]["rules"]
+        assert [r["last_used"] for r in rules] == ["1s174ms", "never", "N/A", "N/A"]
+
+    def test_wrapped_conditions_joined(self):
+        rule = parse_firewall_detail(_detail_text())[0]["rules"][0]
+        assert rule["conditions"].endswith("ip saddr @A_TRUSTED")
+        assert {"t": "group", "type": "address-group", "name": "TRUSTED",
+                "ip_version": "ipv4"} in rule["parts"]
+        assert {"t": "state", "v": "EST"} in rule["parts"]
+
+    def test_filter_title(self):
+        text = _detail_text().replace('"name WAN_LOCAL"', '"forward filter"')
+        chain = parse_firewall_detail(text)[0]
+        assert (chain["kind"], chain["name"], chain["label"]) == ("filter", "forward", "forward filter")
+
+    def test_plain_show_firewall_is_not_detail(self):
+        assert parse_firewall_detail((FIXTURES / "show_firewall.txt").read_text()) == []
+
+    def test_blocks_without_title_ignored(self):
+        assert parse_firewall_detail(" Rule | 10\n Action | accept\n") == []
+
+    def test_has_last_used(self):
+        assert has_last_used(parse_firewall_detail(_detail_text()))
+        text = (FIXTURES / "show_firewall.txt").read_text()
+        assert not has_last_used(parse_firewall(parse_segments(text)))
+
+
+class TestLastUsedAge:
+    @pytest.mark.parametrize("value, expected", [
+        ("174ms", 174),
+        ("1s174ms", 1174),
+        ("2h3m4s", 2 * 3_600_000 + 3 * 60_000 + 4_000),
+        ("1d", 86_400_000),
+        ("never", 10**15),
+        ("N/A", -1),
+        ("", -1),
+        (None, -1),
+        ("soon", -1),
+    ])
+    def test_values(self, value, expected):
+        assert last_used_age_ms(value) == expected
+
+
+def test_build_op_view_detail():
+    view = build_op_view(_detail_text(), {
+        "ipv4": {"chains": {"WAN_LOCAL": {"default": {"description": "Local"},
+                                          "10": {"description": "SSH in"}}}}
+    })
+    assert view["kind"] == "firewall"
+    assert view["has_last_used"] is True
+    assert view["table_count"] == 1
+    rule = view["chains"][0]["rules"][0]
+    assert rule["description"] == "SSH in"
+    assert rule["last_used_ms"] == 1174
+
+
+def test_build_op_view_plain_has_no_last_used():
+    view = build_op_view((FIXTURES / "show_firewall.txt").read_text(), {})
+    assert view["has_last_used"] is False
+
+
+class TestLastUsedColumnRender:
+    def _render(self, app, text):
+        from flask import render_template_string
+        with app.test_request_context():
+            return render_template_string(
+                '{% import "_op_output.html" as op %}{{ op.firewall_view(v) }}',
+                v=build_op_view(text, {}),
+            )
+
+    def test_detail_shows_column(self):
+        from app import app
+        html = self._render(app, _detail_text())
+        assert ">Last used</th>" in html
+        assert "1s174ms ago" in html
+        assert 'data-v="1174"' in html
+        assert "pill-warn\">never" in html
+
+    def test_plain_has_no_column(self):
+        from app import app
+        html = self._render(app, (FIXTURES / "show_firewall.txt").read_text())
+        assert "Last used" not in html

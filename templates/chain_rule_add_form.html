@@ -2,7 +2,7 @@
 {% block body %}
 <div class="rule-form">
     <div class="form-header">
-        <h2 class="section-title">Add Firewall Rule</h2>
+        <h2 class="section-title">{% if rule_detail.type == "edit" %}Edit{% else %}Add{% endif %} Firewall Rule</h2>
         <p class="section-description">
             Create firewall rules with specific criteria and actions. Rules are processed in numerical order (1-999999), 
             so ordering is crucial. The first matching rule's action will be executed.
@@ -48,8 +48,9 @@
                 
                 <div class="form-group">
                     <label for="rule" class="form-label">Rule Number</label>
-                    <input type="number" name="rule" id="rule" class="form-input" 
-                           value="{{ rule_detail.name if rule_detail.name else '1' }}" 
+                    <input type="number" name="rule" id="rule" class="form-input"
+                           value="{{ rule_detail.name if rule_detail.name else next_rule_numbers.get(rule_detail.chain, 10) }}"
+                           data-next='{{ next_rule_numbers|tojson }}'{% if rule_detail.type == "edit" %} data-edit="1"{% endif %}
                            min="1" max="999999" required>
                 </div>
                 
@@ -62,15 +63,18 @@
                 
                 <div class="form-group">
                     <label class="form-label">IP Version</label>
+                    {#- The chain decides the rule's IP version; fall back to the posted one. -#}
+                    {%- set chain_ip = (rule_detail.chain or '').split(',')[0] %}
+                    {%- set rule_ip = chain_ip if chain_ip in ('ipv4', 'ipv6') else rule_detail.ip_version %}
                     <div class="radio-group">
                         <label class="radio-item">
-                            <input type="radio" name="ip_version" value="ipv4" 
-                                   {% if rule_detail.ip_version == 'ipv4' or not rule_detail.ip_version %}checked{% endif %}>
+                            <input type="radio" name="ip_version" value="ipv4"
+                                   {% if rule_ip != 'ipv6' %}checked{% endif %}>
                             <span>IPv4</span>
                         </label>
                         <label class="radio-item">
-                            <input type="radio" name="ip_version" value="ipv6" 
-                                   {% if rule_detail.ip_version == 'ipv6' %}checked{% endif %}>
+                            <input type="radio" name="ip_version" value="ipv6"
+                                   {% if rule_ip == 'ipv6' %}checked{% endif %}>
                             <span>IPv6</span>
                         </label>
                     </div>
@@ -326,6 +330,19 @@
                                            {% if rule_detail.rule_disable %}checked{% endif %}>
                                     <span class="checkbox-label">Disable Rule</span>
                                 </label>
+                                {% if 'last_used' in rolling_features %}
+                                <label class="checkbox-item">
+                                    {% if last_used_all %}
+                                    <input type="checkbox" checked disabled>
+                                    {% if rule_detail.last_used %}<input type="hidden" name="last_used" value="True">{% endif %}
+                                    {% else %}
+                                    <input type="checkbox" name="last_used" value="True"
+                                           {% if rule_detail.last_used %}checked{% endif %}>
+                                    {% endif %}
+                                    <span class="checkbox-label">Track last used</span>
+                                    <small class="option-help">{% if last_used_all %}Enabled for all rules on the VyOS release page{% else %}VyOS rolling Aug 2026+{% endif %}</small>
+                                </label>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -334,12 +351,30 @@
         </div>
         
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Add Rule</button>
+            <button type="submit" class="btn btn-primary">{% if rule_detail.type == "edit" %}Update Rule{% else %}Add Rule{% endif %}</button>
             <a href="{{ url_for('chain_view') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
 
+
+<script>
+// A new rule defaults to the end of the selected chain; switching chains
+// follows along unless the number was changed by hand.
+(function () {
+    const select = document.getElementById('fw_chain');
+    const rule = document.getElementById('rule');
+    if (!select || !rule || rule.dataset.edit) return;
+    const next = JSON.parse(rule.dataset.next || '{}');
+    let suggested = rule.value;
+    select.addEventListener('change', function () {
+        if (rule.value === suggested && select.value in next) {
+            suggested = String(next[select.value]);
+            rule.value = suggested;
+        }
+    });
+})();
+</script>
 
 <script>
 // Tab functionality
@@ -390,6 +425,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // The selected chain ("ipv6,NAME") sets the IP version.
+    const chainSelect = document.getElementById('fw_chain');
+    function syncIpVersionToChain() {
+        const version = (chainSelect.value || '').split(',')[0];
+        const radio = document.querySelector('input[name="ip_version"][value="' + version + '"]');
+        if (radio && !radio.checked) {
+            radio.checked = true;
+            filterGroupSelects(version);
+        }
+    }
+    if (chainSelect) {
+        chainSelect.addEventListener('change', syncIpVersionToChain);
+        syncIpVersionToChain();
+    }
 
     // Initialize on page load with the currently selected IP version
     const checkedIpVersion = document.querySelector('input[name="ip_version"]:checked');

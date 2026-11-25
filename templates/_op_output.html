@@ -108,6 +108,9 @@
                 {%- if op_view.has_previous %}
                 <th class="r op-w-delta op-delta-col" data-sort data-numeric title="Packets since the last run at {{ op_view.previous_at }}">&Delta;</th>
                 {%- endif %}
+                {%- if op_view.has_last_used %}
+                <th class="r op-w-last" data-sort data-numeric title="Time since the rule last matched (VyOS rule last-used)">Last used</th>
+                {%- endif %}
                 <th>Conditions</th>
                 <th class="op-w-actions"></th>
             </tr></thead>
@@ -123,6 +126,9 @@
                     <td class="r muted small">{{ rule.share }}</td>
                     {%- if op_view.has_previous %}
                     <td class="r op-delta-col" data-v="{{ rule.delta if rule.delta is not none else -1 }}">{% if rule.delta is none %}<span class="muted" title="No earlier count to compare">&ndash;</span>{% elif rule.delta %}<span class="op-delta" title="+{{ '{:,}'.format(rule.delta) }} packets">+{{ rule.delta_h }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+                    {%- endif %}
+                    {%- if op_view.has_last_used %}
+                    <td class="r" data-v="{{ rule.last_used_ms }}">{% if rule.last_used is none or rule.last_used_ms < 0 %}<span class="muted" title="last-used is not set on this rule">&ndash;</span>{% elif rule.last_used|lower == "never" %}<span class="pill pill-warn">never</span>{% else %}<span class="mono" title="Last matched {{ rule.last_used }} ago">{{ rule.last_used }} ago</span>{% endif %}</td>
                     {%- endif %}
                     <td class="op-cond">{{ conditions(rule, chain.family) }}</td>
                     <td class="row-actions">{% if chain.in_config and not rule.is_default %}<a class="ib" href="{{ edit_url }}" title="Edit in {{ chain.label }}">{{ ui.icon_edit() }}</a>{% endif %}</td>

@@ -31,6 +31,18 @@ MAX_RULE_NUMBER = 999999
 RESEQUENCE_STEP = 10
 
 
+def next_rule_number(rule_order, step=RESEQUENCE_STEP):
+    """
+    Suggested number for a rule added at the end: the next multiple of
+    ``step`` above the highest existing rule (``step`` when there are none).
+    Non-numeric entries are ignored.
+    """
+    numbers = [int(r) for r in rule_order or [] if str(r).isdigit()]
+    if not numbers:
+        return step
+    return (max(numbers) // step + 1) * step
+
+
 def sorted_rule_order(rule_order):
     """
     Returns the rule order list sorted numerically.
