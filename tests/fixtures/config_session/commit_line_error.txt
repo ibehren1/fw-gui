@@ -1,0 +1,15 @@
+@@FWGUI-0123456789abcdef L 1
+@@FWGUI-0123456789abcdef L 2
+
+  Configuration path: firewall ipv4 [nosuchnode] is not valid
+  Set failed
+
+@@FWGUI-0123456789abcdef COMPARE
+[firewall ipv4 name]
++ FWGUI_PROBE {
++     default-action "drop"
++ }
+
+@@FWGUI-0123456789abcdef ABORT
+calling discardChanges() without config session
+@@FWGUI-0123456789abcdef END

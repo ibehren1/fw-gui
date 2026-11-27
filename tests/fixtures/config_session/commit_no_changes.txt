@@ -1,0 +1,10 @@
+@@FWGUI-0123456789abcdef L 1
+
+  Nothing to delete (the specified node does not exist)
+
+@@FWGUI-0123456789abcdef COMPARE
+No changes between working and active configurations.
+
+@@FWGUI-0123456789abcdef NO_CHANGES
+calling discardChanges() without config session
+@@FWGUI-0123456789abcdef END

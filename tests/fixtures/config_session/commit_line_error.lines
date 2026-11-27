@@ -1,0 +1,2 @@
+set firewall ipv4 name FWGUI_PROBE default-action 'drop'
+set firewall ipv4 nosuchnode foo

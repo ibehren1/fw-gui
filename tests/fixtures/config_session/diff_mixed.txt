@@ -1,0 +1,33 @@
+@@FWGUI-0123456789abcdef L 1
+@@FWGUI-0123456789abcdef L 2
+@@FWGUI-0123456789abcdef L 3
+
+  Configuration path: firewall ipv4 [nosuchnode] is not valid
+  Set failed
+
+@@FWGUI-0123456789abcdef L 4
+
+  
+  
+  Invalid value
+  Value validation failed
+  Set failed
+
+@@FWGUI-0123456789abcdef L 5
+
+  Invalid command: [bogusverb]
+
+@@FWGUI-0123456789abcdef L 6
+
+  Nothing to delete (the specified node does not exist)
+
+@@FWGUI-0123456789abcdef COMPARE
+[firewall ipv4 name]
++ FWGUI_PROBE {
++     default-action "drop"
++     description "probe chain"
++ }
+
+@@FWGUI-0123456789abcdef DISCARD
+calling discardChanges() without config session
+@@FWGUI-0123456789abcdef END
