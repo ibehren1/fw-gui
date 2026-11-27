@@ -1237,6 +1237,9 @@ legend { padding: 0 6px; margin-left: -6px; }
 .rename-form { display: flex; gap: 6px; margin-top: 6px; }
 .rename-form .input { max-width: 260px; height: 24px; }
 .export { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--row-line); }
+/* Config import: the paste / upload form under the SSH form */
+.import-text { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--row-line); }
+.import-text > .field-label { display: block; margin-bottom: 6px; }
 /* Responsibility notice and statement */
 .legal-notice { margin: 8px 0; font-size: 0.88em; color: var(--muted); }
 .legal-notice summary { cursor: pointer; list-style: none; }

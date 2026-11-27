@@ -1,0 +1,87 @@
+{% extends "basic_page.html" %}
+{% import "_macros.html" as ui %}
+{% block body %}
+<div class="page-head">
+    <div>
+        <h2>Import report</h2>
+        <p class="lead">What was imported into <span class="mono strong">{{ firewall_name }}</span>{% if source == "ssh" %} from the firewall{% endif %}. The configuration is saved and selected.</p>
+    </div>
+</div>
+
+{{ ui.flash_messages() }}
+
+{% set counts = report.counts %}
+{% set divergence = report.divergence %}
+<div class="block-grid">
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Imported</h3></div></div>
+        <table class="grid">
+            <tbody>
+                <tr><td>Interfaces</td><td class="mono">{{ counts.interfaces }}</td><td><a href="{{ url_for('interface_view') }}" class="link">View</a>{% if report.interfaces_from == "rules" %} <span class="muted small">(names used by rules; descriptions were not in the input)</span>{% endif %}</td></tr>
+                <tr><td>Groups</td><td class="mono">{{ counts.groups }}</td><td><a href="{{ url_for('group_view') }}" class="link">View</a></td></tr>
+                <tr><td>Chains</td><td class="mono">{{ counts.chains }} <span class="muted">({{ counts.chain_rules }} rules)</span></td><td><a href="{{ url_for('chain_view') }}" class="link">View</a></td></tr>
+                <tr><td>Filters</td><td class="mono">{{ counts.filters }} <span class="muted">({{ counts.filter_rules }} rules)</span></td><td><a href="{{ url_for('filter_view') }}" class="link">View</a></td></tr>
+                <tr><td>Flowtables</td><td class="mono">{{ counts.flowtables }}</td><td><a href="{{ url_for('flowtable_view') }}" class="link">View</a></td></tr>
+                <tr><td>Extra items</td><td class="mono">{{ counts.extra_items }}</td><td><a href="{{ url_for('configuration_extra_items') }}" class="link">View</a></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Check</h3></div></div>
+        <div class="block-body">
+            {% if not divergence.not_on_device and not divergence.missing %}
+            <div class="alert alert-success">A push of this configuration sends exactly the firewall's current rules.</div>
+            {% else %}
+            <div class="alert alert-warning">A push of this configuration would not match the firewall exactly. Review the lines below before deploying.</div>
+            {% endif %}
+            {% if report.rolling_release %}
+            <p class="form-help">Rules use <span class="mono">last-used</span>, so the configuration targets a VyOS rolling release. <a href="{{ url_for('configuration_release') }}" class="link">VyOS release</a></p>
+            {% endif %}
+            <div class="form-actions">
+                <a href="{{ url_for('display_config') }}" class="btn">Display config</a>
+                <a href="{{ url_for('configuration_push') }}" class="btn btn-primary">Deploy page (View Diffs)</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if report.warnings %}
+<div class="block">
+    <div class="block-head"><div class="block-title"><h3>Warnings</h3><span class="meta">{{ report.warnings|length }}</span></div></div>
+    <div class="block-body">
+        <ul>
+            {% for warning in report.warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% if divergence.not_on_device or divergence.missing %}
+<div class="block">
+    <div class="block-head"><div class="block-title"><h3>Differences from the firewall</h3></div></div>
+    <div class="block-body">
+        {% if divergence.not_on_device %}
+        <span class="field-label">A push would add</span>
+        <pre class="configuration">{{ divergence.not_on_device|join("\n") }}</pre>
+        {% endif %}
+        {% if divergence.missing %}
+        <span class="field-label">A push would not send</span>
+        <pre class="configuration">{{ divergence.missing|join("\n") }}</pre>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if report.extra_items %}
+<div class="block">
+    <div class="block-head"><div class="block-title"><h3>Kept as extra items</h3><span class="meta">{{ report.extra_items|length }}</span></div></div>
+    <div class="block-body">
+        <p class="form-help">FW-GUI has no fields for these settings. They are stored as extra items and pushed exactly as they are.</p>
+        <pre class="configuration">{{ report.extra_items|join("\n") }}</pre>
+    </div>
+</div>
+{% endif %}
+{% endblock body %}
