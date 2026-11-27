@@ -251,3 +251,11 @@ def test_filter_rule_edit_says_update(auth_client):
     assert "Update Filter Rule</button>" in body
     assert "Edit Filter Rule" in body
     assert 'value="20"' in body and 'value="40"' not in body
+
+
+def test_footer_links_to_the_github_container_package(client, flask_app):
+    with flask_app.app_context():
+        body = client.get("/user_login").get_data(as_text=True)
+    footer = body.split('<footer class="foot">', 1)[1].split("</footer>", 1)[0]
+    assert 'href="https://github.com/ibehren1/fw-gui/pkgs/container/fw-gui">GitHub Package</a>' in footer
+    assert "hub.docker.com" not in footer
