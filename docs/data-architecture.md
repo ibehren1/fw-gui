@@ -227,7 +227,8 @@ erDiagram
 
 Top-level keys: `version`, `ipv4`, `ipv6`, `flowtables` (list of
 `{name, interfaces[], description}`), `extra-items` (list of raw VyOS `set`
-strings), `interfaces`, `system` (`{hostname, port}`), and on snapshot docs
+strings), `interfaces`, `system` (`{hostname, port}`), `origin` (`quick_start` or
+`import`, only on configs created that way), and on snapshot docs
 `firewall`/`snapshot`/`tag`. Under each `ipv4`/`ipv6`: `groups`, `chains`,
 `filters` (identical shape for both IP versions).
 

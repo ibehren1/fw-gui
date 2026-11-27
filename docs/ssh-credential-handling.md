@@ -193,6 +193,18 @@ stale plaintext private key staged there.
 trusted automatically. This is intentional today (marked `# nosec B507`) but is
 a MITM exposure; see Threats.
 
+### Config import fetch (as of 4.2.1)
+
+`fetch_running_config()` runs the fixed command `show configuration json` over
+the same Paramiko/vbash path. Nothing user-supplied reaches the script. The
+config does not exist yet, so there is no pin to check: the route probes the
+host key (`probe_host_key`), passes it as `host_key=` to
+`assemble_paramiko_driver_string()` (enforced with `RejectPolicy`), and on a
+successful import writes it into the new config as `system.host_key`
+(`pin_record`). The output is the whole device config, WireGuard private keys
+and password hashes included, so it is never logged, and `config_import` keeps
+only the `firewall` subtree and interface names/descriptions.
+
 ### Operational command execution
 
 `run_operational_command()` wraps the user-supplied `op_command` into a VyOS
@@ -317,6 +329,8 @@ flowchart LR
   (`data_file_functions.py:242`).
 - `run_operational_command()` logs the operational command text and its output
   at INFO/DEBUG (`napalm_ssh_functions.py:257,276`).
+- `fetch_running_config()` (config import) never logs its output; it holds the
+  device's secrets.
 - Note (tracked separately): several route handlers still log the entire
   `request.form` at debug/info elsewhere in the app; those forms are not on the
   SSH path but are a general log-hygiene item.
