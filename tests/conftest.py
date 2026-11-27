@@ -143,6 +143,27 @@ def user_model():
 
 
 @pytest.fixture(scope="session", autouse=True)
+def no_real_network_requests():
+    """Block urllib3.request, the call telemetry and the version check use.
+
+    Without this every test that reached commit_to_firewall /
+    get_diffs_from_firewall (or a login) posted a real check-in or counter to
+    telemetry.fw-gui.com from a background thread. telemetry_functions._send
+    swallows the error, so blocked posts are silent; tests that exercise the
+    request patch urllib3.request themselves, which overrides this.
+    """
+    import urllib3
+
+    def blocked(*args, **kwargs):
+        raise RuntimeError("network access is blocked in tests")
+
+    mp = pytest.MonkeyPatch()
+    mp.setattr(urllib3, "request", blocked)
+    yield
+    mp.undo()
+
+
+@pytest.fixture(scope="session", autouse=True)
 def no_real_sqlite_migration(tmp_path_factory):
     """Keep the legacy-user migration away from the real data directory.
 
