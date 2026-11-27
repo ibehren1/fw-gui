@@ -63,7 +63,7 @@ AUTO_SNAPSHOT_TAG = "auto-snapshot before reloading snapshot"
 
 # Per-user files written by releases that no longer produce them. Nothing reads
 # either one, and both were swept into full-backup zips.
-#   conf -- generated command files; NAPALM now takes the commands as a string
+#   conf -- generated command files; pushes now send the commands as a string
 #   old  -- JSON configs already imported into MongoDB by mongo_converter
 # "json" must never be added here: mongo_converter still imports those.
 _LEGACY_USER_FILE_SUFFIXES = ("conf", "old")
@@ -699,7 +699,7 @@ def sweep_legacy_user_files(usernames):
     ``.conf`` -- before 3.0.0 every configuration push wrote
     data/<username>/<firewall_name>.conf purely to hand the commands to NAPALM,
     and nothing ever deleted them. They accumulated per firewall name and
-    outlived the configs they were generated from. NAPALM is now given the
+    outlived the configs they were generated from. Pushes now send the
     commands as a string, so nothing reads or writes them.
 
     ``.old`` -- mongo_converter renames each imported data/<username>/*.json to

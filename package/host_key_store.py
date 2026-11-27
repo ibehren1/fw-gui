@@ -33,9 +33,7 @@ hostname re-pins instead of locking the user out.
 import base64
 import hashlib
 import logging
-import os
 import socket
-import tempfile
 from datetime import datetime, timezone
 
 import paramiko
@@ -172,19 +170,3 @@ def add_to_host_keys(host_keys, hostname, port, key):
     """Adds ``key`` for this address to a paramiko HostKeys object."""
     for name in _known_host_names(hostname, port):
         host_keys.add(name, key.get_name(), key)
-
-
-def write_known_hosts(hostname, port, key):
-    """Stages a known_hosts file holding only ``key``, for netmiko.
-
-    Returns:
-        str: Path to the file; the caller must delete it in a ``finally`` block.
-
-    Like decrypted SSH keys, it goes to the system temp dir, not data/.
-    """
-    host_keys = paramiko.HostKeys()
-    add_to_host_keys(host_keys, hostname, port, key)
-    fd, path = tempfile.mkstemp(prefix="fwgui-known-hosts-")
-    os.close(fd)
-    host_keys.save(path)
-    return path

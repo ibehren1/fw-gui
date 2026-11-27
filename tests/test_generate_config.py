@@ -888,12 +888,11 @@ def test_snapshot_tag_does_not_break_generation(mock_session, patch_read, tag):
 # build_merge_config
 # ---------------------------------------------------------------------------
 class TestBuildMergeConfig:
-    """The command list is rendered into the string handed to NAPALM.
+    """The command list is rendered into the string sent to the device.
 
     generate_config emits comment banners and blank separators for the humans
     reading the download and the snapshot diff. Those must not reach the device:
-    VyOS rejects them and napalm-vyos only greps its output for "Set failed" /
-    "Delete failed", so the rejection is swallowed silently.
+    VyOS rejects them, and config_session refuses an unquoted comment line.
     """
 
     SET_CMD = "set firewall ipv4 name FOO rule 10 action accept"
@@ -955,8 +954,7 @@ class TestBuildMergeConfig:
     def test_all_comments_returns_empty_string(self):
         """The seeded extra-items placeholder is three comment lines.
 
-        Callers must guard on this: napalm-vyos raises MergeConfigException for
-        a falsy config.
+        Callers guard on this and do not connect for an empty config.
         """
         assert build_merge_config(["# one", "# two", ""]) == ""
 
