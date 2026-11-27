@@ -2,8 +2,9 @@
 
 How FW-GUI stores and moves data: the databases, the document schema, the
 filesystem layout, sessions, backups, and how a request turns into a stored
-change. Written for developers and auditors — sections carry `file:line`
-references — with diagrams for a quick mental model.
+change. Written for developers and auditors — sections name the module and
+function responsible (search for the function; line numbers drift) — with
+diagrams for a quick mental model.
 
 Related: `docs/ssh-credential-handling.md` covers SSH credentials/keys/cookies
 in depth; this document covers the overall data model.
@@ -32,7 +33,7 @@ store:
 
 | Store | Technology | Holds |
 |-------|-----------|-------|
-| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots (one collection per user), **plus `users` (accounts), `keys` (encrypted SSH keys) and `instance` (telemetry id)** |
+| Application DB | **MongoDB** (PyMongo) | All firewall configs + their snapshots (one collection per user), **plus `users` (accounts), `keys` (encrypted SSH keys) and `instance` (telemetry id and the weekly backup schedule)** |
 | Session store | **MongoDB** (`sessions` collection, via Flask-Session) | Per-session state; browser holds only an opaque id |
 | Filesystem (`data/`) | Local volume | Backups, logs, Mongo dumps — **outputs only, no durable state and no secrets** |
 
@@ -45,7 +46,8 @@ flowchart TD
     App -->|"session state (Flask-Session)"| Sessions[("Mongo sessions")]
     App -->|"backups / logs / dumps"| FS[/"Filesystem data dir"/]
 
-    App -->|"generated set commands via SSH"| VyOS[("VyOS device")]
+    App -->|"set commands via a Paramiko vbash config session"| VyOS[("VyOS device")]
+    VyOS -->|"running config for an import (show configuration json)"| App
     FS -.->|"optional backup upload"| S3[("AWS S3 (BUCKET_NAME)")]
     App -.->|"anonymous check-ins (§10)"| Tele[("telemetry.fw-gui.com")]
 ```
@@ -95,10 +97,10 @@ flowchart TD
 
 - Single shared client, lazily created and reused: `_mongo_client` /
   `_get_mongo_client()` → `pymongo.MongoClient(os.environ.get("MONGODB_URI"))`
-  (`package/data_file_functions.py:34,78-85`).
+  (`package/data_file_functions.py`).
 - **`serverSelectionTimeoutMS` is 5 s**, not pymongo's 30 s default
-  (`SERVER_SELECTION_TIMEOUT_MS`, `:49`), and the Flask-Session client in
-  `app.py:242-245` carries the same bound. A database on the same Docker network
+  (`SERVER_SELECTION_TIMEOUT_MS`), and the Flask-Session client in
+  `app.py` carries the same bound. A database on the same Docker network
   either answers in milliseconds or is not coming, and every stalled request
   holds a waitress thread — a handful of retrying browsers during an outage would
   wedge a finite pool. Measured against a killed MongoDB with the app already
@@ -110,14 +112,15 @@ flowchart TD
   imported: Flask-Session's `MongoDBSessionInterface` creates the `expiration` TTL
   index in its constructor. Long-standing behaviour, now surfacing in ~6 s rather
   than ~31 s.
-- Database handle from `_get_mongo_db()` (`:88-100`), which every call site uses
-  (`:122,366,653,732,788,933,1008,1273`). `MONGODB_DATABASE` defaults to
-  `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"` (`:38`), matching the
-  session-store default at `app.py:246-248`. The default matters: pymongo raises
+- Database handle from `_get_mongo_db()`, which every call site uses
+  (including `ssh_key_store`, `host_key_store` and `telemetry_collect`).
+  `MONGODB_DATABASE` defaults to
+  `DEFAULT_MONGODB_DATABASE` = `"fwgui_database"`, matching the
+  session-store default at `app.py`. The default matters: pymongo raises
   `TypeError: name must be an instance of str` on `client[None]`, and since
   3.0.0 accounts live here too, an unset variable would take the login page down
   rather than only the config routes.
-- `validate_mongodb_connection()` (`:1196-1236`) probes at startup and
+- `validate_mongodb_connection()` probes at startup and
   `sys.exit()`s on failure, using the same `SERVER_SELECTION_TIMEOUT_MS`. It used
   to pass `serverSelectionTimeoutMS=1`, which is shorter than a real connection
   takes: a mongod that is up but still starting — the normal case behind Compose's
@@ -136,8 +139,8 @@ Throughout the data layer a config is referenced by the string
 - `split("/")[2]` → **document = config (firewall) name**
 - `split("/")[3]` (delete only) → **snapshot name**
 
-(`read_user_data_file:929-930`, `write_user_data_file:1269-1270`,
-`delete_user_data_file:362-370`.)
+(`read_user_data_file`, `write_user_data_file`,
+`delete_user_data_file`.)
 
 ```mermaid
 flowchart LR
@@ -159,15 +162,15 @@ flowchart LR
 
 - **Current config** = a document whose `_id` is the config name, with **no**
   `firewall`/`snapshot` fields. `list_user_files` finds these with
-  `{"firewall": {"$exists": False}, "snapshot": {"$exists": False}}` (`:561-595`).
+  `{"firewall": {"$exists": False}, "snapshot": {"$exists": False}}`.
 - **Snapshot** = a separate document in the same collection carrying `firewall`
   (the config name) and `snapshot` (a timestamp string), plus optional `tag`.
 
 ### Config document schema
 
-`version` is a schema version (`"0"` legacy → `"1"`; `update_schema:1069-1130`
+`version` is a schema version (`"0"` legacy → `"1"`; `update_schema`
 renamed legacy `tables`→`chains` and `fw_table`→`fw_chain`). `system` is
-auto-added on read if missing (`read_user_data_file:948-953`).
+auto-added on read if missing (`read_user_data_file`).
 
 ```mermaid
 erDiagram
@@ -195,7 +198,7 @@ erDiagram
         string description
         string action
         string protocol
-        string flags "state_*, rule_disable, logging"
+        string flags "state_*, rule_disable, logging, last_used"
     }
     FILTER {
         list rule_order "rule-order: ordered ids"
@@ -205,10 +208,13 @@ erDiagram
     }
     FILTER_RULE {
         string id
+        string ip_version "ipv4 | ipv6"
+        string filter "hook: input | forward | output"
         string action "jump | offload"
         string fw_chain "target chain"
         string interface "jump"
         string direction "inbound|outbound"
+        string flags "log, rule_disable, last_used"
     }
     FLOWTABLE {
         string name
@@ -227,7 +233,13 @@ erDiagram
 
 Top-level keys: `version`, `ipv4`, `ipv6`, `flowtables` (list of
 `{name, interfaces[], description}`), `extra-items` (list of raw VyOS `set`
-strings), `interfaces`, `system` (`{hostname, port}`), and on snapshot docs
+strings), `interfaces` (list of `{name, description}`, plus `type` and for a
+custom type `type_label` / `type_color` — display only), `system`
+(`{hostname, port}`, plus `host_key` `{host, type, key, pinned}` once the
+device's SSH host key is pinned — on the first connection, or by the config
+import — and optional `vyos_release` `{rolling, milestone, last_used_all}`,
+absent meaning stable), `origin` (`quick_start` or `import`, only on configs
+created that way), and on snapshot docs
 `firewall`/`snapshot`/`tag`. Under each `ipv4`/`ipv6`: `groups`, `chains`,
 `filters` (identical shape for both IP versions).
 
@@ -241,10 +253,16 @@ strings), `interfaces`, `system` (`{hostname, port}`), and on snapshot docs
 | `source_address`/`source_port` (+ `_type`) | same, source side |
 | `state_est` / `state_inv` / `state_new` / `state_rel` | presence flags |
 | `rule_disable`, `logging` | presence flags |
+| `last_used` | presence flag; stored whatever the release, emitted only while the config's VyOS release enables it |
 
 **Filter rule** (under `filters[name]["rules"][id]`; a thin dispatch rule):
-`description`, `action` (`jump` \| `offload`), `fw_chain` (target chain), and for
-`jump`: `interface` + `direction`. Optional flags: `log`, `rule_disable`.
+`ip_version`, `filter` (the hook), `description`, `action` (`jump` \| `offload`),
+`fw_chain` (target chain, or flowtable for `offload`), and for `jump`:
+`interface` + `direction`. Optional flags: `log`, `rule_disable`, `last_used`.
+
+**Imported configs** (as of 4.2.0, `config_import.py`) use exactly these
+shapes. Anything the shapes cannot hold is kept as raw `set firewall ...` lines
+in `extra-items`, so a push sends it back unchanged.
 
 ---
 
@@ -265,7 +283,8 @@ flowchart TD
     Cur -.->|"auto-snapshot taken first,<br/>tag='auto-snapshot before reloading snapshot'"| Snap3["Snapshot doc: firewall='home-fw', snapshot='09-06 09:15'"]
 ```
 
-- **Create** (`create_snapshot`, called by `app.py select_firewall_config`):
+- **Create** (`create_snapshot`, called by `POST /snapshot_create` on the
+  Snapshots page and by `select_firewall_config`):
   reads current, writes a new doc keyed `{firewall, snapshot=<timestamp>}`.
   Names have one-second granularity and are the only thing identifying a
   snapshot, so `_unique_snapshot_name` steps the timestamp forward a second at a
@@ -297,11 +316,15 @@ flowchart TD
 (`_SNAPSHOT_ONLY_KEYS` in `package/data_file_functions.py`). When
 `write_user_data_file` writes a `current` document it pops them from the data
 **and** `$unset`s them on the stored document; `$set` alone would leave a key
-that had already leaked in place permanently. This matters because
-`generate_config` walks the document's top-level keys: a `tag` string sitting
-next to `ipv4`/`ipv6` used to be treated as an IP version and crashed config
-generation with `TypeError: string indices must be integers`. `generate_config`
-now also allow-lists `ipv4`/`ipv6` as a second line of defence.
+that had already leaked in place permanently. This matters because config
+rendering used to walk the document's top-level keys: a `tag` string sitting
+next to `ipv4`/`ipv6` was treated as an IP version and crashed config
+generation with `TypeError: string indices must be integers`. Rendering (now
+`render_config(user_data)`, which `generate_config` calls after reading the
+document) iterates only `ipv4`/`ipv6` as a second line of defence.
+- **Rename** (`rename_user_data_file`): copies the working copy to the new
+  `_id`, repoints its snapshots' `firewall`, and refuses a name that still has
+  orphaned snapshots.
 
 ---
 
@@ -318,6 +341,7 @@ Accounts live in the collection named by `MONGODB_USERS_COLLECTION` (default
  "email":     "alice@example.com",
  "password":  "$2b$12$...",         # bcrypt hash, always str
  "disabled":  false,                # absent means enabled
+ "theme":     "dark",               # "dark" or "light"; absent until chosen
  "legacy_id": 1,                    # rows migrated from SQLite only
  "created":   ISODate(...)}         # new registrations only
 ```
@@ -327,7 +351,7 @@ Accounts live in the collection named by `MONGODB_USERS_COLLECTION` (default
 - Uniqueness is free. No index is created at startup, so there is no index build
   to fail, and `register_user` does not pre-check the name — `create_user()`
   inserts and `DuplicateKeyError` *is* the duplicate check
-  (`auth_functions.py:294-306`). The pre-3.0.0 query-then-insert had a window in
+  (`auth_functions.py`). The pre-3.0.0 query-then-insert had a window in
   which two simultaneous registrations of one name could both succeed.
 - `_id` matching is binary, which preserves exactly the case-sensitive
   uniqueness the SQLite `unique` column gave: `Bob` and `bob` are distinct. No
@@ -337,15 +361,17 @@ Accounts live in the collection named by `MONGODB_USERS_COLLECTION` (default
   Mongo collection name and the `data/<username>` directory name, and there is
   no rename feature.
 
-**Reserved usernames.** Because a username is a collection name, `users` and
-`sessions` are rejected — hardcoded in `validators.py`
+**Reserved usernames.** Because a username is a collection name, `users`,
+`sessions`, `keys` and `instance` are rejected — hardcoded in `validators.py`
 (`_RESERVED_USERNAMES` / `is_reserved_username`), matched lowercased and
 stripped, and honoured *in addition to* whatever `MONGODB_USERS_COLLECTION` is
 set to. A user holding one of those names would be handed an application
 collection as their config collection, and the ordinary config routes would then
 let them list, read and delete other users' accounts or session documents.
-`is_valid_username()` calls the guard, so every caller inherits it, and the
-startup migration refuses to boot if a legacy account already holds such a name.
+`is_valid_username()` calls the guard, so every caller inherits it. The startup
+migration refuses to boot if a legacy account holds an *auth-critical* name
+(`users`, `sessions`, `keys` or the configured accounts collection); `instance`
+only degrades telemetry (§10).
 
 **Disabling, not deleting.** There is no delete-user feature, by design. Removing
 a document would free the username, and the next person to register it would
@@ -359,9 +385,9 @@ The field is `disabled` rather than `enabled` so that an absent value means
 usable — documents predating the field keep working. It is enforced in three
 places, because checking only at login would leave an already-authenticated
 session alive: `process_login` before `login_user()`
-(`auth_functions.py:172-181`), `get_user_by_session_id` used by the `user_loader`
-(`user_store.py:83-95`, so disabling takes effect on the user's *next request*),
-and `change_password` (`auth_functions.py:84-90`, so a disabled account cannot
+(`auth_functions.py`), `get_user_by_session_id` used by the `user_loader`
+(`user_store.py`, so disabling takes effect on the user's *next request*),
+and `change_password` (`auth_functions.py`, so a disabled account cannot
 rotate its way back in). `User.is_active` returns `not disabled`, which
 Flask-Login consults in `login_user()`, as a fourth free layer. A refused login
 flashes the same "Login incorrect." as a bad password — saying "disabled" would
@@ -375,7 +401,7 @@ integer primary key that pre-3.0.0 sessions carry, and a stale session holding
 
 Passwords are hashed with Flask-Bcrypt and stored as `str` — both write paths
 `.decode("utf-8")` the bytes `generate_password_hash()` returns
-(`auth_functions.py:113,213`). `_password_matches()` (`:38-52`) traps the
+(`auth_functions.py`). `_password_matches()` traps the
 `ValueError` bcrypt raises on an empty or malformed stored hash, so such an
 account fails its login instead of 500ing the login page.
 
@@ -495,13 +521,17 @@ mv data/database/instance.id.migrated data/database/instance.id
 ## 5. Session store
 
 Flask-Session stores session state **server-side**; the browser cookie holds
-only an opaque, signed session id (`app.py:221-245`).
+only an opaque random session id (unsigned: Flask-Session's
+`SESSION_USE_SIGNER` is off; the cookie is `HttpOnly`, `SameSite=Lax`, and
+`Secure` with `SESSION_COOKIE_SECURE=True`).
 
 - `SESSION_TYPE` (env, default `mongodb`) → collection `sessions` in the same
   Mongo database (`SESSION_MONGODB*`). Tests use `filesystem`.
 - Keys: `data_dir`, `username`, `firewall_name`, `hostname`, `port`, `ssh_user`,
   `ssh_pass` (**Fernet-encrypted at rest**, `encrypt_secret`/`decrypt_secret`,
-  `app.py:248-274`), `ssh_keyname`, `_user_id`.
+  `app.py`), `ssh_keyname`, `_user_id`, and `op_counters` (the last
+  `show firewall` packet counters per config + command, at most 8 entries, for
+  the push page's change-since-last-run column).
 - `_user_id` is Flask-Login's token. **3.0.0+:** `u:<username>`. **Pre-3.0.0:**
   the SQLite integer primary key as a string. The formats are disjoint on
   purpose (§4).
@@ -519,7 +549,7 @@ only an opaque, signed session id (`app.py:221-245`).
 
 ## 6. Filesystem layout (`data/`)
 
-Created by `initialize_data_dir()` (`data_file_functions.py:452-526`):
+Created by `initialize_data_dir()` (`data_file_functions.py`):
 
 ```mermaid
 flowchart TD
@@ -529,19 +559,24 @@ flowchart TD
     data --> backups["backups/<br/>full-backup-&lt;timestamp&gt;.zip"]
     data --> dumps["mongo_dumps/<br/>&lt;timestamp&gt;/&lt;db&gt;/&lt;collection&gt;.bson"]
     data --> uploads["uploads/<br/>(transient upload staging)"]
-    data --> tmp["tmp/<br/>(legacy scratch, no longer written;<br/>wiped on startup)"]
+    data --> tmp["tmp/<br/>(full-backup zip staging;<br/>wiped on startup)"]
     data --> ex["example.json (reference copy)"]
     data --> userdir["&lt;username&gt;/"]
     userdir --> keys["&lt;name&gt;.key.migrated<br/>(pre-3.0.0, retained for downgrade)"]
-    userdir --> ubk["user-&lt;user&gt;-backup-&lt;timestamp&gt;.zip"]
+    userdir --> ubk["user-&lt;user&gt;-backup-&lt;timestamp&gt;.zip<br/>(legacy; no longer created from the UI)"]
 ```
 
-- Per-user dir `data/<username>/` created on first login (`auth_functions.py:218-233`);
-  path stored in the session as `data_dir`.
-- `data/tmp/` is created and cleared on every startup (`:507-514`), but **nothing
-  writes to it as of 3.0.0** — decrypted SSH keys are staged in the system temp
-  directory instead (see below). The wipe is kept so an upgraded install does not
-  keep a pre-3.0.0 plaintext key that a hard kill left behind.
+- Per-user dir `data/<username>/` created on first login (`auth_functions.py`),
+  when an `example` configuration is also seeded into MongoDB from
+  `examples/example.json`; path stored in the session as `data_dir`.
+- `data/tmp/` is created and cleared on every startup. Its only writer is
+  `perform_full_backup()`, which builds the zip there and moves it into
+  `backups/` (§7.1); decrypted SSH keys are staged in the system temp directory
+  instead (see below). The wipe removes a killed backup's partial zip and any
+  pre-3.0.0 plaintext key a hard kill left behind.
+- `data/uploads/` stages uploaded files. A `.key` upload is deleted once its
+  ciphertext is stored; if encryption or storage fails, the raw file stays until
+  removed by hand (see `docs/ssh-credential-handling.md`, Threats).
 - Nothing in the app serves arbitrary files out of `data/`. The `POST /download`
   route, which read any path under `data/` for any logged-in user, was removed
   in 3.0.0; it had no caller in the UI. The two real download endpoints,
@@ -558,12 +593,13 @@ flowchart TD
 - The `<name>.key.migrated` files are excluded from backups: the live ciphertext
   already arrives via `keys.bson` in the Mongo dump, so the on-disk copy would be
   a redundant second copy of the same secret.
-- `sweep_legacy_user_files()` (`:529-586`) removes two kinds of leftover from the
+- `sweep_legacy_user_files()` removes two kinds of leftover from the
   per-user dir on the first startup after upgrade, both of which earlier releases
   created and never deleted, and both of which shipped in every full-backup zip:
   - `<firewall_name>.conf` — the generated set commands, written on every push
-    purely to give NAPALM a file path. NAPALM is now handed the commands as a
-    string (`build_merge_config`), so nothing writes or reads them.
+    purely to give NAPALM a file path. Pushes now send the commands as a
+    string (`build_merge_config`) over a Paramiko vbash config session (NAPALM
+    was removed in 4.2.6), so nothing writes or reads them.
   - `<name>.old` — a JSON config already imported into MongoDB by
     `mongo_converter` (§8.3). Safe to delete because the rename happens only
     after the write succeeds, so a `.old` file means that config *is* in
@@ -587,9 +623,10 @@ flowchart LR
     U -->|no| Skip["skip upload (logged)"]
 ```
 
-- `create_backup(session, user=False)` (`data_file_functions.py:225-301`): runs
-  `mongo_dump()` (`:767-798`), zips `data/` **excluding** `backups/`, `tmp/`,
-  `uploads/`, any `*.key` or `*.key.migrated`, and `auth.db*` (`:257-274`), then
+- `perform_full_backup()` (`data_file_functions.py`; called by `create_backup()`
+  for the Admin button, which adds the flash messages, and by the scheduler):
+  runs `mongo_dump()`, zips `data/` **excluding** `backups/`, `tmp/`,
+  `uploads/`, any `*.key` or `*.key.migrated`, and `auth.db*`, then
   `upload_backup_file()`.
 - `mongo_dump()` sweeps `list_collection_names()`, so since 3.0.0 every dump
   includes `users.bson` — the full bcrypt hash set — and `keys.bson`, every user's
@@ -613,7 +650,7 @@ flowchart LR
   reached 944 MB of archives across 18 zips and 119 dump directories this way.
   The scheduled backup (§7.1) is what bounds this; for manual-only use,
   housekeeping remains an operator task.
-- S3 (`upload_backup_file:1133-1193`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
+- S3 (`upload_backup_file`): env `BUCKET_NAME`, `AWS_ACCESS_KEY_ID`,
   `AWS_SECRET_ACCESS_KEY`; skipped if `BUCKET_NAME` unset; key prefix
   `fw-gui/backups/`.
 - **No in-app restore**: backups are created/uploaded/listed only. Retrieving a
@@ -739,7 +776,7 @@ load.
 ## 8. Startup migrations
 
 Four steps run from `app.py`'s `__main__` block, all inside the MongoDB
-connection check:
+connection check, followed by the backup scheduler:
 
 ```python
 if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
@@ -748,7 +785,12 @@ if validate_mongodb_connection(os.environ.get("MONGODB_URI")):
     migrate_legacy_key_files(accounts)
     sweep_legacy_user_files(accounts)
     mongo_converter()
+    start_backup_scheduler()
 ```
+
+`start_backup_scheduler()` (§7.1) is last so its thread cannot claim a run while
+the migrations are still writing. The startup telemetry check-in and the daily
+heartbeat follow, outside the block.
 
 **The order is load-bearing, in both directions.**
 
@@ -782,8 +824,9 @@ No operator action required.
    querying `FROM user` — SQLAlchemy's implicit table name. An unreadable or
    corrupt file is logged and skipped **without** renaming, so the next boot
    retries.
-4. Abort (CRITICAL + exit) if any legacy username is reserved (§4). The operator
-   has to rename the account.
+4. Abort (CRITICAL + exit) if any legacy username collides with an auth-critical
+   name — `users`, `sessions`, `keys` or the configured accounts collection (§4).
+   The operator has to rename the account.
 5. For each row, normalise the hash to `str` (the column holds a TEXT/BLOB mix)
    and upsert with **`$setOnInsert`**. Rows with no username or no password are
    skipped with a warning.
@@ -887,11 +930,18 @@ sequenceDiagram
     P->>P: mutate the dict (add/edit/delete/reorder)
     P->>M: write_user_data_file(...) upsert _id=<config>
     R-->>U: redirect / render template
-    Note over R,M: Push flow instead calls generate_config()<br/>then napalm_ssh_functions to send `set` commands to VyOS
+    Note over R,M: Push: generate_config() → build_merge_config() →<br/>commit_to_firewall() / get_diffs_from_firewall(), which run a<br/>Paramiko vbash config session (config_session.py)
 ```
 
 Matches the documented flow in `CLAUDE.md`: HTTP → route → package function →
 `read_user_data_file` → mutate → `write_user_data_file` → render/redirect.
+
+**Import** (`POST /import_config`, as of 4.2.2) creates a document instead of
+mutating one: over SSH it probes the host key and runs `fetch_running_config()`
+(`show configuration json`, never logged), or it takes pasted / uploaded text;
+`config_import.import_config()` builds the document and its report, and only on
+success the route sets `system.hostname` / `port` / `host_key` (SSH) and calls
+`write_user_data_file()` for the new name. An existing config is never touched.
 
 ---
 
@@ -910,7 +960,7 @@ and swallows every failure.
 
 - **deployment:** `type` (`docker` / `kubernetes` / `source`), CPU `arch`, `python` version, `mongodb` server major.minor
 - **size:** accounts, firewall configurations, and rules (chain and filter `rule-order` entries in working copies; snapshots excluded), each bucketed `0` / `1` / `2-5` / `6-20` / `21-100` / `101+`. Never an exact count.
-- **features:** yes/no for: light theme in use, quick start used (`origin: quick_start`), flowtables, interface types, scheduled backup, S3 backup, stored SSH keys, registration open, VyOS rolling release targeted by any configuration (`system.vyos_release.rolling`; as of 4.1.7)
+- **features:** yes/no for: light theme in use, quick start used (`origin: quick_start`), flowtables, interface types, scheduled backup, S3 backup, stored SSH keys, registration open, VyOS rolling release targeted by any configuration (`system.vyos_release.rolling`; as of 4.1.7), a configuration imported from a running firewall (`origin: import`; as of 4.2.4)
 
 **Never sent:** usernames, emails, configuration or rule contents, names of chains/groups/interfaces, addresses, hostnames, credentials or keys. Each collector is isolated, and its MongoDB reads time-bounded, so one that fails reports `null` and the rest still go out.
 
@@ -948,14 +998,15 @@ never runs `app.py`'s `__main__`.
 
 `instance` is a reserved username (§4) — a username is also a collection name, so
 otherwise a user could be handed this collection as their config collection. The
-collision is *not* auth-critical, so unlike `users`/`sessions` it does not abort
+collision is *not* auth-critical, so unlike `users`/`sessions`/`keys` it does not abort
 the startup migration; `instance_id.py` logs an ERROR and telemetry degrades.
 
 **Two invariants, both mutation-tested:**
 
 - **Nothing in `instance_id.py` raises.** `telemetry_commit()` and
-  `telemetry_diff()` are called from `napalm_ssh_functions.py:128` and `:199`
-  *outside* the try blocks that guard a firewall push, so an escaping exception
+  `telemetry_diff()` are called at the top of `commit_to_firewall()` and
+  `get_diffs_from_firewall()` (and `telemetry_rule_usage()` in
+  `run_operational_command()`), *outside* the try blocks that guard a firewall push, so an escaping exception
   would turn a telemetry lookup into a failed commit. An unavailable id is `""`.
 - **The lookup is time-bounded** by `pymongo.timeout(2.0)`, tighter than the
   shared client's 5 s (§2) because this used to be a free file read and

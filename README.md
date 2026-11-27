@@ -12,20 +12,29 @@ The FW-GUI project is not affiliated with VyOS in any way.  It is a wholly separ
 FW-GUI is developed and maintained by [@ibehren1](https://www.github.com/ibehren1).  
 Copyright © 2023-2026 Isaac Behrens. All rights reserved.
 
+## What's new in 4.2
+
+- **Bring your existing firewall into FW-GUI.** Import the configuration of a running VyOS firewall, either straight over **SSH** or by **copying and pasting** (or uploading) the output of `show configuration json`. No more rebuilding every group, chain and filter by hand. See [Importing an existing firewall](#importing-an-existing-firewall).
+- **Clearer, safer pushes.** View Diffs and Commit now run in a single VyOS configure session. If the firewall rejects a line, you see that line and VyOS's own message, and nothing is committed. A commit only reports success once the firewall shows nothing left uncommitted.
+- **Lighter install.** NAPALM and its multi-vendor libraries are gone (25 fewer packages); every connection to the firewall uses the same SSH path, with the pinned host key enforced in one place.
+
 ## FW-GUI for Managing Firewall Rule Configurations on VyOS Firewalls
 
 The web-based FW-GUI allows the user to visually:
+- **Import an existing firewall's configuration** over SSH or by copy/paste of `show configuration json` output, so a firewall you already run can be managed in FW-GUI straight away ([details](#importing-an-existing-firewall))
 - Get started quickly: a **Getting started** page shows the build order (interfaces, groups, chains, filters, extra configuration, deploy) and how far the selected configuration has got, and **Quick start** creates a ready-made WAN/LAN policy for IPv4 and IPv6 that allows all outbound and blocks all inbound
 - Create and manage interfaces, colour-coded by type (Public WAN, Private WAN, LAN, DMZ, or a custom label and colour)
-- Create and manage group objects (address, network, port, MAC and domain groups)
+- Create and manage group objects (address, network, port, MAC, domain and interface groups)
 - Create and manage firewall chains and filters, shown as compact rule tables with each chain's or filter's default action as its last row
 - See a group's type and values by hovering over it in a rule
 - Create and manage flowtables
 - Manage multiple firewall configurations: create, rename, import/export (JSON) and delete them on the **Configurations** page
 - Create and compare (diff) snapshots of firewall configurations
-- Tag snapshots with a note describing why they were taken, and load or delete them from the Manage Snapshots page
+- Create, tag (with a note describing why it was taken), load and delete snapshots on the **Snapshots** page
 - Loading a snapshot automatically snapshots the working copy first (tagged "auto-snapshot before reloading snapshot"), so nothing is lost
-- Push the created policy configurations to the firewall(s) via SSH connectivity from the web interface, with the firewall's SSH host key pinned on first use
+- Push the created policy configurations to the firewall(s) via SSH from the web interface, with a password or a stored SSH key, and the firewall's SSH host key pinned on first use
+- See exactly what a push would change (View Diffs) before committing; rejected lines are reported with the firewall's own error message
+- Run operational `show` commands from the push page; tabular output becomes sortable tables, and `show firewall` is shown per rule with packet counts, the change since the last run and each rule's description
 - Download the generated VyOS configuration (`.cfg`)
 - Work in a dark or light theme, chosen at first login and switchable from the top bar
 
@@ -80,9 +89,38 @@ When deployed behind HAProxy (VyOS load-balancing reverse-proxy) timeouts can pr
 
 Resolution: TBD
 
+## Importing an existing firewall
+
+Already running a VyOS firewall? Import its configuration instead of rebuilding it. Open **Configurations → Import from firewall** (also linked from **Getting started**), give the new configuration a name, and pick one of two ways:
+
+**Over SSH.** Enter the firewall's hostname or IP, SSH port, username, and either the password or one of your stored SSH keys (with its key). FW-GUI connects, runs `show configuration json`, and builds the new configuration from it. The firewall's SSH host key is pinned to the new configuration, exactly as on a first push, and its hostname and port are filled in so it is ready to deploy.
+
+**By copy and paste (or upload).** On the firewall, run:
+
+```
+show configuration json
+```
+
+and paste the output into the form, or save it to a file and upload it. The whole configuration or just its firewall part (for example `show configuration json | jq .firewall`) both work. This is handy for a firewall FW-GUI cannot reach, or for a saved copy.
+
+What you get:
+
+- Groups, chains, input/forward/output filters, flowtables and interfaces (with their descriptions, VLANs included) become normal, editable FW-GUI objects.
+- Anything FW-GUI has no field for (for example `global-options`, ICMP types or TCP flags on a rule) is kept verbatim under **Extra configuration**, so a push sends it back unchanged.
+- An **import report** lists what was imported, what went to extra configuration, any warnings, and a check that a push of the new configuration would send exactly the firewall's current rules.
+- If the firewall's rules use `last-used`, the configuration is set to target the VyOS rolling release that supports it.
+
+The import always creates a **new** configuration; it never changes an existing one or the firewall. Only the firewall rules and interface names and descriptions are kept: the rest of the device configuration, including keys and password hashes, is discarded and never stored or logged. A good first step after importing is **View Diffs** on the push page, which should report no changes.
+
 ## Committing to the Firewall
 
-Connections to the firewall are made using the [Napalm-VyOS library](https://github.com/napalm-automation-community/napalm-vyos) via SSH.  Napalm for VyOS only allows merging configurations (changes with existing) and does not allow for replacing configurations (new replacing existing).  As such, by default, if you remove an item from the config and push, it will not be removed from the firewall as the configs are merged.  To work around this, the View Diffs and Commit interface has the option to preface the firewall configuration with a 'delete firewall' command.  This causes the configuration to remove all firewall configuration and then add the specified configuration settings so that the net configuration is a replacement of the existing configuration.  You will __NOT__ want to use this feature unless you are managing __ALL__ firewall configurations via the GUI.
+Connections to the firewall are made over SSH, running the generated commands in a VyOS configure session.  View Diffs always discards the session.  Commit commits and saves only if the firewall accepted every line and the commit fully applied; otherwise it reports each rejected line, or the commit error, with the firewall's message, and nothing is committed.
+
+You can log in with a password or with an SSH key.  To use a key, upload the private key file (ending in `.key`) with **Import / export** on the Configurations page; FW-GUI encrypts it and shows you its encryption key **once**.  Keep that key: on the push page you choose the stored SSH key and enter its encryption key in the password field.  FW-GUI never stores the encryption key, so it cannot read your SSH key without you.
+
+The first connection to a firewall pins its SSH host key, and the push page shows its fingerprint.  A later connection presenting a different key is refused before any credentials are sent; if the key changed legitimately (for example after a reinstall), reset the pin on the push page.
+
+Pushes merge configurations (changes with existing) rather than replacing them.  As such, by default, if you remove an item from the config and push, it will not be removed from the firewall as the configs are merged.  To work around this, the View Diffs and Commit interface has the option to preface the firewall configuration with a 'delete firewall' command.  This causes the configuration to remove all firewall configuration and then add the specified configuration settings so that the net configuration is a replacement of the existing configuration.  You will __NOT__ want to use this feature unless you are managing __ALL__ firewall configurations via the GUI.
 
 ![images](./images/commit.png)
 
@@ -90,7 +128,7 @@ Connections to the firewall are made using the [Napalm-VyOS library](https://git
 
 There is no initial username and password.  After starting the application, use the "Register as a new user" link to create your username and password.  Once you have registered your user(s), you can disable user registration by updating the environment variable in Docker configuration to `DISABLE_REGISTRATION=True`. Doing this will remove the link to the registration page and stop any POSTS to the route /user_registration from being processed.  This can be reenabled anytime you need to setup users.
 
-The first time you log in you are asked to choose a dark or light theme; it is saved to your account and can be changed at any time from the top bar.  You then land on the **Getting started** page: open or create a configuration, or use **Quick start**, and follow the build order from there.
+The first time you log in you are asked to choose a dark or light theme; it is saved to your account and can be changed at any time from the top bar.  You then land on the **Getting started** page: open or create a configuration, use **Quick start**, or import an existing firewall's configuration, and follow the build order from there.
 
 Configurations generated by FW-GUI, including Quick start, are a starting point and not security advice.  You are responsible for reviewing and testing any configuration before deploying it, and deploying it is at your own risk (FW-GUI is provided as-is under the MIT License).
 
@@ -132,7 +170,7 @@ An existing MongoDB install can only move up **one major version at a time**, an
 FW-GUI reports anonymous usage to `telemetry.fw-gui.com` so the developer can see how many installs exist, which versions are in use and how FW-GUI is deployed.  It is sent in the background and never affects the app if the server is unreachable.
 
 - **Each install** is identified by a random UUID generated on first start (stored in MongoDB), not by anything about you.
-- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration, VyOS rolling release).
+- **At startup and once a day:** the FW-GUI version; how it is deployed (Docker, Kubernetes or from source), CPU architecture, Python and MongoDB versions; the number of accounts, configurations and rules **in ranges** (e.g. `2-5`), never exact; and yes/no flags for which features are in use (light theme, quick start, flowtables, interface types, scheduled and S3 backups, stored SSH keys, open registration, VyOS rolling release, configuration imported from a firewall).
 - **At each login:** only the UUID and version.
 - **For each View Diffs, Commit and operational command:** only the UUID, to count use.
 
@@ -140,32 +178,24 @@ FW-GUI reports anonymous usage to `telemetry.fw-gui.com` so the developer can se
 
 ## Deployment
 
-### Breaking Upgrade for version v1.4.0+
-
-FW-GUI v1.4.0+ uses a separate MongoDB database to store configurations.  If you first deployed with a version lower than 1.4.0, you will need to update your deployment to connect to either an external MongoDB database or deploy a second container to host MongoDB.
-
-See below for updated Docker Compose configuration settings.
-
+FW-GUI needs MongoDB (as of v1.4.0 for configurations, and as of 3.0.0 for accounts, SSH keys and sessions too).  The Compose files below are also in [`docker/`](docker/), with comments on each setting.  Images are published to the [GitHub Container Registry](https://github.com/ibehren1/fw-gui/pkgs/container/fw-gui) (`ghcr.io/ibehren1/fw-gui`) and to [Docker Hub](https://hub.docker.com/repository/docker/ibehren1/fw-gui/general) (`ibehren1/fw-gui`).
 
 ### Recommended Deployment -- Docker Compose for combined FW-GUI, MongoDB and Nginx Proxy Manager
 
-```diff
-+ Lines highlighted in green are the additions for v1.4.0+ to add MongoDB.
-```
-
-```diff
+```yaml
 services:
   fw-gui:
     image: ghcr.io/ibehren1/fw-gui:latest
     container_name: fw-gui
-+    depends_on:
-+     - mongodb
+    depends_on:
+      - mongodb
     environment:
       # Change this default to a unique random value before any non-local use.
       - APP_SECRET_KEY='This is the secret key.'
       - DISABLE_REGISTRATION=<True|False>
       - SESSION_TIMEOUT=<number-of-minutes> # Default 120 minutes
-+     - MONGODB_URI=mongodb
+      - MONGODB_URI=mongodb
+      - MONGODB_DATABASE=fwgui_database
       - BUCKET_NAME=<bucket-name>
       - AWS_ACCESS_KEY_ID=<access-key>
       - AWS_SECRET_ACCESS_KEY=<secret-access-key>
@@ -200,25 +230,25 @@ services:
       MYSQL_PASSWORD: 'npm'
     volumes:
       - mysql-data:/var/lib/mysql
-+ mongodb:
-+   container_name: mongodb
-+   image: mongo:8
-+   restart: always
-+   volumes:
-+     - mongo-data:/data/db
-+     - mongo-config:/data/configdb
+  mongodb:
+    container_name: mongodb
+    image: mongo:8
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
 volumes:
   fwgui-data:
   nginx-data:
   mysql-data:
   letsencrypt:
-+ mongo-data:
-+ mongo-config:
+  mongo-data:
+  mongo-config:
 ```
 
 ### Docker Run
 
-No longer recommended with additional MongoDB container needed.
+Not recommended: FW-GUI needs a MongoDB container alongside it, which Compose sets up for you.
 
 ### Docker Compose Minimal (just FW-GUI and MongoDB no TLS)
 
@@ -235,6 +265,7 @@ services:
       - DISABLE_REGISTRATION=False
       - SESSION_TIMEOUT=120
       - MONGODB_URI=mongodb
+      - MONGODB_DATABASE=fwgui_database
       - BUCKET_NAME=
       - AWS_ACCESS_KEY_ID=
       - AWS_SECRET_ACCESS_KEY=
@@ -292,5 +323,8 @@ Settings are read from the environment or a `.env` file (`APP_SECRET_KEY`, `MONG
 **Filters:** input and forward filters jumping to chains per interface and direction.
 ![Filters page](./images/fw-gui_interface_5.png)
 
-**Configurations:** configurations, snapshots, and create, rename, import, export and delete.
+**Configurations:** configurations, snapshots, and create, rename, import, export and delete, plus **Import from firewall**: over SSH, or paste / upload `show configuration json` output.
 ![Configurations page](./images/fw-gui_interface_6.png)
+
+**Import report:** what an import brought in, what was kept as extra configuration, and the check that a push would send exactly the firewall's current rules.
+![Import report](./images/fw-gui_interface_7.png)

@@ -1376,8 +1376,7 @@ class TestConfigRoutes:
     def test_configuration_push_post_commit_all_comments(self, auth_client):
         """A config of only banners and blanks forwards an empty string.
 
-        commit_to_firewall guards on that rather than handing NAPALM a falsy
-        config, which would raise MergeConfigException.
+        commit_to_firewall guards on that and does not connect.
         """
         with patch(
             "app.generate_config",

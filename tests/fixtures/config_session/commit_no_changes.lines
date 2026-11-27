@@ -1,0 +1,1 @@
+delete firewall ipv4 name FWGUI_NO_SUCH_CHAIN

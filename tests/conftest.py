@@ -142,6 +142,74 @@ def user_model():
     return make_user
 
 
+TELEMETRY_HOST = "telemetry.fw-gui.com"
+
+# The real package.telemetry_functions._send, captured before no_real_telemetry
+# stubs it; restored per test by the real_telemetry_send fixture.
+_REAL_TELEMETRY_SEND = None
+
+
+@pytest.fixture(scope="session", autouse=True)
+def no_real_telemetry():
+    """Stop the suite posting real telemetry to telemetry.fw-gui.com.
+
+    Tests that reach the real commit_to_firewall / get_diffs_from_firewall /
+    run_operational_command paths in package/napalm_ssh_functions.py call
+    telemetry_commit(), telemetry_diff() and telemetry_rule_usage(), and a login
+    calls telemetry_instance(). package/telemetry_functions.py:_send() then
+    POSTs with urllib3 on a background thread, and swallows any error, so the
+    leak was silent. The instance id comes from the session's mongomock
+    database, which is empty every run, so get_or_create_instance_id() minted
+    a new UUID per run: every local or .claude/worktrees pytest run appeared on
+    the telemetry dashboard as a new install with no version and identical
+    diff/commit/ops counts. CI was spared only because ci.yml sets
+    FWGUI_INSTANCE_ID=github-actions-ci, which the server excludes.
+
+    Two layers (pytest.MonkeyPatch directly, as the built-in monkeypatch
+    fixture is function-scoped):
+
+    1. telemetry_functions._send is a no-op for the whole session. Tests that
+       exercise the real _send take the real_telemetry_send fixture and patch
+       urllib3.request themselves.
+    2. urllib3.request refuses to run. A telemetry.fw-gui.com URL raises
+       AssertionError and is recorded in the list this fixture yields, so a
+       future path that skips _send fails loudly instead of posting; any
+       other URL raises RuntimeError, so no test reaches the network at all.
+    """
+    import urllib3
+
+    from package import telemetry_functions
+
+    global _REAL_TELEMETRY_SEND
+    _REAL_TELEMETRY_SEND = telemetry_functions._send
+
+    attempts = []
+
+    def guarded_request(method, url, *args, **kwargs):
+        if TELEMETRY_HOST in str(url):
+            attempts.append((method, str(url)))
+            raise AssertionError(f"a test tried to post telemetry: {method} {url}")
+        raise RuntimeError(f"network access is blocked in tests: {method} {url}")
+
+    mp = pytest.MonkeyPatch()
+    mp.setattr(telemetry_functions, "_send", lambda body, route: None)
+    mp.setattr(urllib3, "request", guarded_request)
+    yield attempts
+    mp.undo()
+
+
+@pytest.fixture
+def real_telemetry_send(monkeypatch):
+    """The real telemetry_functions._send, for tests of the send itself.
+
+    Such a test must patch urllib3.request too; the session guard still
+    refuses an unpatched call.
+    """
+    from package import telemetry_functions
+
+    monkeypatch.setattr(telemetry_functions, "_send", _REAL_TELEMETRY_SEND)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def no_real_sqlite_migration(tmp_path_factory):
     """Keep the legacy-user migration away from the real data directory.

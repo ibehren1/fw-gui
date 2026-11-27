@@ -1,0 +1,72 @@
+{
+    "bonding": {
+        "bond0": {
+            "description": "Description 208",
+            "vif": {
+                "10": {
+                    "description": "Description 209"
+                },
+                "12": {
+                    "description": "Description 210"
+                },
+                "24": {
+                    "description": "Description 211"
+                },
+                "41": {
+                    "description": "Description 212"
+                },
+                "42": {
+                    "description": "Description 213"
+                },
+                "48": {
+                    "description": "Description 214"
+                },
+                "83": {
+                    "description": "Description 215"
+                }
+            }
+        }
+    },
+    "ethernet": {
+        "eth0": {
+            "description": "Description 216"
+        },
+        "eth1": {
+            "description": "Description 217"
+        },
+        "eth2": {
+            "description": "Description 218"
+        },
+        "eth3": {},
+        "eth4": {
+            "description": "Description 219"
+        },
+        "eth5": {}
+    },
+    "loopback": {
+        "lo": {}
+    },
+    "wireguard": {
+        "wg0": {
+            "description": "Description 220"
+        },
+        "wg64510": {
+            "description": "Description 221"
+        },
+        "wg64511": {
+            "description": "Description 222"
+        },
+        "wg65010": {
+            "description": "Description 223"
+        },
+        "wg65032": {
+            "description": "Description 224"
+        },
+        "wg65096": {
+            "description": "Description 225"
+        },
+        "wg65254": {
+            "description": "Description 226"
+        }
+    }
+}

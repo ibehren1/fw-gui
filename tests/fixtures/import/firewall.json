@@ -1,0 +1,3200 @@
+{
+    "global-options": {
+        "all-ping": "enable",
+        "log-martians": "disable"
+    },
+    "group": {
+        "address-group": {
+            "name_001": {
+                "address": [
+                    "10.1.122.100",
+                    "10.1.122.101",
+                    "10.1.122.102",
+                    "10.1.122.103",
+                    "10.1.122.104",
+                    "10.1.122.105",
+                    "10.1.48.91"
+                ],
+                "description": "Description 001 & co"
+            },
+            "name_002": {
+                "address": [
+                    "10.64.11.8",
+                    "10.64.171.8"
+                ],
+                "description": "Description 002"
+            },
+            "name_003": {
+                "address": [
+                    "10.1.248.2",
+                    "10.1.248.3"
+                ],
+                "description": "Description 003"
+            },
+            "name_004": {
+                "address": [
+                    "10.1.122.11"
+                ],
+                "description": "Description 004"
+            },
+            "name_005": {
+                "address": [
+                    "10.1.11.2"
+                ],
+                "description": "Description 005"
+            },
+            "name_006": {
+                "address": [
+                    "10.65.159.3",
+                    "10.65.63.3"
+                ],
+                "description": "Description 006"
+            },
+            "name_007": {
+                "address": [
+                    "1.1.48.1",
+                    "10.1.48.10",
+                    "10.1.48.12",
+                    "10.53.180.53",
+                    "10.1.48.11"
+                ],
+                "description": "Description 007"
+            },
+            "name_008": {
+                "address": [
+                    "10.1.122.13"
+                ],
+                "description": "Description 008"
+            },
+            "name_009": {
+                "address": [
+                    "10.2.48.13",
+                    "10.2.48.14"
+                ],
+                "description": "Description 009"
+            },
+            "name_010": {
+                "address": [
+                    "100.64.11.11",
+                    "100.64.91.11",
+                    "100.64.171.11",
+                    "10.1.14.11"
+                ],
+                "description": "Description 010"
+            },
+            "name_011": {
+                "address": [
+                    "10.1.11.4",
+                    "10.1.11.5"
+                ],
+                "description": "Description 011"
+            },
+            "name_012": {
+                "address": [
+                    "10.1.29.2"
+                ],
+                "description": "Description 012"
+            },
+            "name_013": {
+                "address": [
+                    "10.1.122.85"
+                ],
+                "description": "Description 013"
+            },
+            "name_014": {
+                "address": [
+                    "10.1.48.70"
+                ],
+                "description": "Description 014"
+            },
+            "name_015": {
+                "address": [
+                    "10.1.48.9"
+                ],
+                "description": "Description 015"
+            },
+            "name_016": {
+                "address": [
+                    "10.1.131.150",
+                    "10.1.131.151"
+                ],
+                "description": "Description 016"
+            },
+            "name_017": {
+                "address": [
+                    "100.64.245.33"
+                ],
+                "description": "Description 017"
+            },
+            "name_018": {
+                "address": [
+                    "10.2.48.13"
+                ],
+                "description": "Description 018"
+            },
+            "name_019": {
+                "address": [
+                    "10.1.131.51"
+                ],
+                "description": "Description 019"
+            },
+            "name_020": {
+                "address": [
+                    "10.1.48.91"
+                ],
+                "description": "Description 020"
+            },
+            "name_021": {
+                "address": [
+                    "10.2.48.92"
+                ],
+                "description": "Description 021"
+            },
+            "name_022": {
+                "address": [
+                    "10.1.48.92"
+                ],
+                "description": "Description 022"
+            },
+            "name_023": {
+                "address": [
+                    "10.1.48.93"
+                ],
+                "description": "Description 023"
+            },
+            "name_024": {
+                "address": [
+                    "10.1.48.98"
+                ],
+                "description": "Description 024"
+            },
+            "name_025": {
+                "address": [
+                    "10.1.11.3"
+                ],
+                "description": "Description 025"
+            },
+            "name_026": {
+                "address": [
+                    "10.1.48.105"
+                ],
+                "description": "Description 026"
+            },
+            "name_027": {
+                "address": [
+                    "10.1.48.91",
+                    "10.1.48.104"
+                ],
+                "description": "Description 027"
+            },
+            "name_028": {
+                "address": [
+                    "192.168.230.1",
+                    "192.168.230.10",
+                    "192.168.230.16",
+                    "192.168.230.32"
+                ],
+                "description": "Description 028"
+            }
+        },
+        "ipv6-address-group": {
+            "name_007": {
+                "address": [
+                    "fc00:0:0:5::10",
+                    "fc00:0:0:5::11",
+                    "fc00:0:0:5::12",
+                    "fc00::53"
+                ],
+                "description": "Description 007"
+            }
+        },
+        "network-group": {
+            "name_029": {
+                "description": "Description 029",
+                "network": [
+                    "10.0.0.0/8",
+                    "172.16.0.0/12",
+                    "192.168.0.0/16"
+                ]
+            },
+            "name_030": {
+                "description": "Description 030",
+                "network": [
+                    "100.64.0.0/10"
+                ]
+            },
+            "name_031": {
+                "description": "Description 031",
+                "network": [
+                    "10.1.10.0/24"
+                ]
+            },
+            "name_032": {
+                "description": "Description 032",
+                "network": [
+                    "10.1.122.0/24",
+                    "10.1.159.0/27",
+                    "10.64.11.0/27",
+                    "10.64.171.0/27",
+                    "10.64.75.0/27"
+                ]
+            },
+            "name_033": {
+                "description": "Description 033",
+                "network": [
+                    "10.1.159.0/27"
+                ]
+            },
+            "name_034": {
+                "description": "Description 034",
+                "network": [
+                    "10.1.131.0/24"
+                ]
+            },
+            "name_035": {
+                "description": "Description 035",
+                "network": [
+                    "10.1.251.0/27"
+                ]
+            },
+            "name_036": {
+                "description": "Description 036",
+                "network": [
+                    "10.1.248.0/29",
+                    "10.2.248.0/29"
+                ]
+            },
+            "name_037": {
+                "description": "Description 037",
+                "network": [
+                    "10.1.29.0/29"
+                ]
+            },
+            "name_038": {
+                "description": "Description 038",
+                "network": [
+                    "10.1.48.0/24"
+                ]
+            },
+            "name_039": {
+                "description": "Description 039",
+                "network": [
+                    "10.2.122.0/24"
+                ]
+            },
+            "name_040": {
+                "description": "Description 040",
+                "network": [
+                    "10.1.11.0/24"
+                ]
+            },
+            "name_041": {
+                "description": "Description 041",
+                "network": [
+                    "100.64.0.0/20"
+                ]
+            },
+            "name_042": {
+                "description": "Description 042",
+                "network": [
+                    "100.64.32.0/20"
+                ]
+            },
+            "name_043": {
+                "description": "Description 043",
+                "network": [
+                    "100.64.48.0/20"
+                ]
+            },
+            "name_044": {
+                "description": "Description 044",
+                "network": [
+                    "100.64.16.0/20"
+                ]
+            }
+        },
+        "port-group": {
+            "name_045": {
+                "description": "Description 045",
+                "port": [
+                    "179"
+                ]
+            },
+            "name_046": {
+                "description": "Description 046",
+                "port": [
+                    "67-68"
+                ]
+            },
+            "name_047": {
+                "description": "Description 047",
+                "port": [
+                    "546-547"
+                ]
+            },
+            "name_048": {
+                "description": "Description 048",
+                "port": [
+                    "53"
+                ]
+            },
+            "name_049": {
+                "description": "Description 049",
+                "port": [
+                    "222"
+                ]
+            },
+            "name_050": {
+                "description": "Description 050",
+                "port": [
+                    "5514"
+                ]
+            },
+            "name_051": {
+                "description": "Description 051 & co.",
+                "port": [
+                    "500",
+                    "4500"
+                ]
+            },
+            "name_052": {
+                "description": "Description 052",
+                "port": [
+                    "5353",
+                    "5350",
+                    "5351"
+                ]
+            },
+            "name_053": {
+                "description": "Description 053",
+                "port": [
+                    "111",
+                    "2049"
+                ]
+            },
+            "name_054": {
+                "description": "Description 054",
+                "port": [
+                    "11434"
+                ]
+            },
+            "name_055": {
+                "description": "Description 055",
+                "port": [
+                    "554",
+                    "7447",
+                    "7441"
+                ]
+            },
+            "name_056": {
+                "description": "Description 056",
+                "port": [
+                    "111",
+                    "139",
+                    "445"
+                ]
+            },
+            "name_057": {
+                "description": "Description 057",
+                "port": [
+                    "161-162"
+                ]
+            },
+            "name_058": {
+                "description": "Description 058",
+                "port": [
+                    "22"
+                ]
+            },
+            "name_059": {
+                "description": "Description 059",
+                "port": [
+                    "5900"
+                ]
+            },
+            "name_060": {
+                "description": "Description 060",
+                "port": [
+                    "1514",
+                    "1515",
+                    "55000"
+                ]
+            },
+            "name_061": {
+                "description": "Description 061",
+                "port": [
+                    "80",
+                    "443"
+                ]
+            },
+            "name_062": {
+                "description": "Description 062",
+                "port": [
+                    "51820"
+                ]
+            }
+        }
+    },
+    "ipv4": {
+        "forward": {
+            "filter": {
+                "default-action": "accept",
+                "description": "Description 063",
+                "rule": {
+                    "1": {
+                        "action": "jump",
+                        "description": "Description 064",
+                        "inbound-interface": {
+                            "name": "eth0"
+                        },
+                        "jump-target": "name_063",
+                        "last-used": {}
+                    },
+                    "5": {
+                        "action": "jump",
+                        "description": "Description 065",
+                        "jump-target": "name_064",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "eth0"
+                        }
+                    },
+                    "10": {
+                        "action": "jump",
+                        "description": "Description 066",
+                        "jump-target": "name_065",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0"
+                        }
+                    },
+                    "100": {
+                        "action": "jump",
+                        "description": "Description 067",
+                        "jump-target": "name_066",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.10"
+                        }
+                    },
+                    "120": {
+                        "action": "jump",
+                        "description": "Description 068",
+                        "jump-target": "name_067",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.12"
+                        }
+                    },
+                    "240": {
+                        "action": "jump",
+                        "description": "Description 069",
+                        "jump-target": "name_068",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.24"
+                        }
+                    },
+                    "241": {
+                        "action": "jump",
+                        "description": "Description 070",
+                        "inbound-interface": {
+                            "name": "bond0.24"
+                        },
+                        "jump-target": "name_069",
+                        "last-used": {}
+                    },
+                    "410": {
+                        "action": "jump",
+                        "description": "Description 071",
+                        "jump-target": "name_070",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.41"
+                        }
+                    },
+                    "480": {
+                        "action": "jump",
+                        "description": "Description 072",
+                        "jump-target": "name_071",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.48"
+                        }
+                    },
+                    "481": {
+                        "action": "jump",
+                        "description": "Description 073",
+                        "inbound-interface": {
+                            "name": "bond0.48"
+                        },
+                        "jump-target": "name_072",
+                        "last-used": {}
+                    },
+                    "830": {
+                        "action": "jump",
+                        "description": "Description 074",
+                        "jump-target": "name_073",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.83"
+                        }
+                    },
+                    "1000": {
+                        "action": "jump",
+                        "description": "Description 075.",
+                        "jump-target": "name_074",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "wg64510"
+                        }
+                    },
+                    "1010": {
+                        "action": "jump",
+                        "description": "Description 075.",
+                        "jump-target": "name_074",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "wg64511"
+                        }
+                    },
+                    "2540": {
+                        "action": "jump",
+                        "description": "Description 076",
+                        "jump-target": "name_075",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "wg65254"
+                        }
+                    }
+                }
+            }
+        },
+        "input": {
+            "filter": {
+                "default-action": "accept",
+                "description": "Description 077",
+                "rule": {
+                    "1": {
+                        "action": "jump",
+                        "description": "Description 078",
+                        "inbound-interface": {
+                            "name": "eth0"
+                        },
+                        "jump-target": "name_076",
+                        "last-used": {}
+                    },
+                    "10": {
+                        "action": "jump",
+                        "description": "Description 079",
+                        "inbound-interface": {
+                            "name": "bond0"
+                        },
+                        "jump-target": "name_077",
+                        "last-used": {}
+                    },
+                    "100": {
+                        "action": "jump",
+                        "description": "Description 080",
+                        "inbound-interface": {
+                            "name": "bond0.10"
+                        },
+                        "jump-target": "name_078",
+                        "last-used": {}
+                    },
+                    "120": {
+                        "action": "jump",
+                        "description": "Description 081",
+                        "inbound-interface": {
+                            "name": "bond0.12"
+                        },
+                        "jump-target": "name_079",
+                        "last-used": {}
+                    },
+                    "240": {
+                        "action": "jump",
+                        "description": "Description 082",
+                        "inbound-interface": {
+                            "name": "bond0.24"
+                        },
+                        "jump-target": "name_080",
+                        "last-used": {}
+                    },
+                    "410": {
+                        "action": "jump",
+                        "description": "Description 083",
+                        "inbound-interface": {
+                            "name": "bond0.41"
+                        },
+                        "jump-target": "name_081",
+                        "last-used": {}
+                    },
+                    "480": {
+                        "action": "jump",
+                        "description": "Description 084",
+                        "inbound-interface": {
+                            "name": "bond0.48"
+                        },
+                        "jump-target": "name_082",
+                        "last-used": {}
+                    },
+                    "830": {
+                        "action": "jump",
+                        "description": "Description 085",
+                        "inbound-interface": {
+                            "name": "bond0.83"
+                        },
+                        "jump-target": "name_083",
+                        "last-used": {}
+                    },
+                    "1000": {
+                        "action": "jump",
+                        "description": "Description 086.",
+                        "inbound-interface": {
+                            "name": "wg64510"
+                        },
+                        "jump-target": "name_084",
+                        "last-used": {}
+                    },
+                    "1010": {
+                        "action": "jump",
+                        "description": "Description 086.",
+                        "inbound-interface": {
+                            "name": "wg64511"
+                        },
+                        "jump-target": "name_084",
+                        "last-used": {}
+                    }
+                }
+            }
+        },
+        "name": {
+            "name_084": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 087",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "drop",
+                        "description": "Description 090.",
+                        "last-used": {},
+                        "log": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_006"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 091.",
+                        "last-used": {},
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_074": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 092",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "accept",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 093.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 094.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 095.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_038"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 096.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_002"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_083": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 097",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "accept",
+                        "description": "Description 098",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 100.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_048"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_073": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 101",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_079": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 102",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 103.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_058"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "35": {
+                        "action": "accept",
+                        "description": "Description 104.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_046"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 105",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "source": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        }
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 106.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_062"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 107.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 108.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_067": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 109",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 110",
+                        "destination": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_020"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 111.",
+                        "destination": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_030"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 112.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 113.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "80": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "90": {
+                        "action": "accept",
+                        "description": "Description 114.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_008"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 115.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_004"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_069": {
+                "default-action": "accept",
+                "description": "Description 116",
+                "rule": {
+                    "10": {
+                        "action": "drop",
+                        "description": "Description 117.",
+                        "last-used": {},
+                        "log": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_019"
+                            }
+                        },
+                        "state": [
+                            "established",
+                            "invalid",
+                            "new",
+                            "related"
+                        ]
+                    }
+                }
+            },
+            "name_080": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 118",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 098",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 104.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_046"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_068": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 119",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 120",
+                        "destination": {
+                            "port": "80,443,51827"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 121.",
+                        "destination": {
+                            "port": "80,443,51827"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 122",
+                        "destination": {
+                            "port": "80,443,51827"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_038"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 123",
+                        "destination": {
+                            "port": "5010"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 124.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_016"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "80": {
+                        "action": "accept",
+                        "description": "Description 125.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_016"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_017"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "90": {
+                        "action": "accept",
+                        "description": "Description 126.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_016"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_038"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 127.",
+                        "last-used": {},
+                        "protocol": "icmp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_022"
+                            }
+                        }
+                    }
+                }
+            },
+            "name_072": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 128",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 129.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_005"
+                            }
+                        },
+                        "last-used": {},
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 100.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_007",
+                                "port-group": "name_048"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 104.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_046"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 130.",
+                        "destination": {
+                            "port": "123"
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_082": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 131",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 132.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 104.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_046"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_071": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 133",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 134.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_005"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_020"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 135",
+                        "destination": {
+                            "group": {
+                                "network-group": "name_035"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_013"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_081": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 136",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 104.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_046"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 103.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_058"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 137.",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 138",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 139",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_070": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 140",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 141.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 142.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_003",
+                                "port-group": "name_058"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 143.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_003",
+                                "port-group": "name_059"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 144",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    }
+                }
+            },
+            "name_078": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 145",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 146",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 148.",
+                        "destination": {
+                            "port": "9100,9119,9273,9617"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 149",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_045"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_007"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 150",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_058"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_026"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 138",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 139",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_066": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 151",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "drop",
+                        "description": "Description 152.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_015",
+                                "port-group": "name_056"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_033"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 100.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_007",
+                                "port-group": "name_048"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 153",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_023"
+                            },
+                            "port": "514"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 154",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_015",
+                                "port-group": "name_053"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_009"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 155.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_007"
+                            },
+                            "port": "123"
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "80": {
+                        "action": "accept",
+                        "description": "Description 156.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "90": {
+                        "action": "accept",
+                        "description": "Description 157.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_030"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 158.",
+                        "last-used": {},
+                        "source": {
+                            "address": "192.168.45.0/24"
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "110": {
+                        "action": "accept",
+                        "description": "Description 159.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_001"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "120": {
+                        "action": "accept",
+                        "description": "Description 160.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_015"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "130": {
+                        "action": "accept",
+                        "description": "Description 161.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_015"
+                            },
+                            "port": "111,139,445"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_039"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "140": {
+                        "action": "accept",
+                        "description": "Description 162.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_026",
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 163",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_026",
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 164",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_026",
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_075": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 165",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "drop",
+                        "description": "Description 166.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "source": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        }
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 167.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_038"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 168.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 169.",
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_036"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 170.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_021"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_017"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_077": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 171",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 098",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 146",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    },
+                    "50": {
+                        "action": "drop",
+                        "description": "Description 172.",
+                        "destination": {
+                            "address": "255.255.230.255"
+                        },
+                        "last-used": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    }
+                }
+            },
+            "name_065": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 173",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 146",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 174.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_057"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_022"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 175.",
+                        "destination": {
+                            "port": "22,80,443"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_022"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "60": {
+                        "action": "accept",
+                        "description": "Description 176.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_005"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "address-group": "name_020"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "70": {
+                        "action": "accept",
+                        "description": "Description 177.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_005"
+                            }
+                        },
+                        "last-used": {},
+                        "source": {
+                            "group": {
+                                "network-group": "name_035"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "80": {
+                        "action": "accept",
+                        "description": "Description 178.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_005"
+                            },
+                            "port": "32962,43589"
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "90": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 179.",
+                        "destination": {
+                            "port": "80,443"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "110": {
+                        "action": "accept",
+                        "description": "Description 180",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_025"
+                            },
+                            "port": "22,8088,8043"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_032"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "120": {
+                        "action": "accept",
+                        "description": "Description 181",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_025"
+                            },
+                            "port": "8043"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "address-group": "name_017"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "130": {
+                        "action": "accept",
+                        "description": "Description 182.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_025"
+                            },
+                            "port": "22,8088,8043"
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "source": {
+                            "group": {
+                                "network-group": "name_038"
+                            }
+                        },
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "140": {
+                        "action": "accept",
+                        "description": "Description 183",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_011",
+                                "port-group": "name_058"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_063": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 064",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    }
+                }
+            },
+            "name_076": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 078",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "icmp"
+                    },
+                    "100": {
+                        "action": "accept",
+                        "description": "Description 184",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_051"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "110": {
+                        "action": "accept",
+                        "description": "Description 106.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_062"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 138",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 139",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_064": {
+                "default-action": "accept",
+                "description": "Description 185",
+                "rule": {
+                    "10": {
+                        "action": "drop",
+                        "description": "Description 186",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 187",
+                        "destination": {
+                            "port": "1900"
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "30": {
+                        "action": "drop",
+                        "description": "Description 188",
+                        "destination": {
+                            "port": "137,138,139"
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "40": {
+                        "action": "drop",
+                        "description": "Description 189",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_056"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp"
+                    },
+                    "50": {
+                        "action": "drop",
+                        "description": "Description 190",
+                        "destination": {
+                            "port": "161,162"
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "60": {
+                        "action": "drop",
+                        "description": "Description 191",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_045"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp"
+                    }
+                }
+            }
+        }
+    },
+    "ipv6": {
+        "forward": {
+            "filter": {
+                "default-action": "accept",
+                "description": "Description 192",
+                "rule": {
+                    "1": {
+                        "action": "jump",
+                        "description": "Description 193",
+                        "inbound-interface": {
+                            "name": "eth0"
+                        },
+                        "jump-target": "name_063",
+                        "last-used": {}
+                    },
+                    "5": {
+                        "action": "jump",
+                        "description": "Description 065",
+                        "jump-target": "name_064",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "eth0"
+                        }
+                    },
+                    "10": {
+                        "action": "jump",
+                        "description": "Description 067",
+                        "jump-target": "name_066",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.10"
+                        }
+                    },
+                    "12": {
+                        "action": "jump",
+                        "description": "Description 194",
+                        "jump-target": "name_085",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.12"
+                        }
+                    },
+                    "24": {
+                        "action": "jump",
+                        "description": "Description 194",
+                        "jump-target": "name_085",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.24"
+                        }
+                    },
+                    "41": {
+                        "action": "jump",
+                        "description": "Description 194",
+                        "jump-target": "name_085",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.41"
+                        }
+                    },
+                    "83": {
+                        "action": "jump",
+                        "description": "Description 194",
+                        "jump-target": "name_085",
+                        "last-used": {},
+                        "outbound-interface": {
+                            "name": "bond0.83"
+                        }
+                    }
+                }
+            }
+        },
+        "input": {
+            "filter": {
+                "default-action": "accept",
+                "description": "Description 195",
+                "rule": {
+                    "1": {
+                        "action": "jump",
+                        "description": "Description 196",
+                        "inbound-interface": {
+                            "name": "eth0"
+                        },
+                        "jump-target": "name_076",
+                        "last-used": {}
+                    },
+                    "12": {
+                        "action": "jump",
+                        "description": "Description 197",
+                        "inbound-interface": {
+                            "name": "bond0.12"
+                        },
+                        "jump-target": "name_086",
+                        "last-used": {}
+                    },
+                    "24": {
+                        "action": "jump",
+                        "description": "Description 197",
+                        "inbound-interface": {
+                            "name": "bond0.24"
+                        },
+                        "jump-target": "name_086",
+                        "last-used": {}
+                    },
+                    "41": {
+                        "action": "jump",
+                        "description": "Description 197",
+                        "inbound-interface": {
+                            "name": "bond0.41"
+                        },
+                        "jump-target": "name_086",
+                        "last-used": {}
+                    },
+                    "83": {
+                        "action": "jump",
+                        "description": "Description 197",
+                        "inbound-interface": {
+                            "name": "bond0.83"
+                        },
+                        "jump-target": "name_086",
+                        "last-used": {}
+                    }
+                }
+            }
+        },
+        "name": {
+            "name_086": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 198",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 199",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 200",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_047"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "source": {
+                            "group": {
+                                "port-group": "name_047"
+                            }
+                        }
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "ipv6-icmp"
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 099.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "source": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        }
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 138",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 139",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_085": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 201",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "ipv6-icmp"
+                    }
+                }
+            },
+            "name_066": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 202",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 132.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "ipv6-icmp"
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 100.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_007",
+                                "port-group": "name_048"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp_udp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "50": {
+                        "action": "accept",
+                        "description": "Description 203.",
+                        "destination": {
+                            "group": {
+                                "address-group": "name_007",
+                                "port-group": "name_045"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_063": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 204",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "ipv6-icmp"
+                    }
+                }
+            },
+            "name_076": {
+                "default-action": "drop",
+                "default-log": {},
+                "description": "Description 205",
+                "rule": {
+                    "10": {
+                        "action": "accept",
+                        "description": "Description 088.",
+                        "last-used": {},
+                        "state": [
+                            "established",
+                            "related"
+                        ]
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 089.",
+                        "last-used": {},
+                        "log": {},
+                        "state": [
+                            "invalid"
+                        ]
+                    },
+                    "30": {
+                        "action": "accept",
+                        "description": "Description 206.",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_047"
+                            }
+                        },
+                        "last-used": {},
+                        "protocol": "udp",
+                        "source": {
+                            "group": {
+                                "port-group": "name_047"
+                            }
+                        }
+                    },
+                    "40": {
+                        "action": "accept",
+                        "description": "Description 147.",
+                        "last-used": {},
+                        "protocol": "ipv6-icmp"
+                    },
+                    "200": {
+                        "action": "accept",
+                        "description": "Description 138",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_061"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    },
+                    "210": {
+                        "action": "accept",
+                        "description": "Description 139",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_049"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp",
+                        "state": [
+                            "new"
+                        ]
+                    }
+                }
+            },
+            "name_064": {
+                "default-action": "accept",
+                "description": "Description 185",
+                "rule": {
+                    "10": {
+                        "action": "drop",
+                        "description": "Description 207",
+                        "icmpv6": {
+                            "type": "134"
+                        },
+                        "log": {},
+                        "protocol": "icmpv6"
+                    },
+                    "20": {
+                        "action": "drop",
+                        "description": "Description 186",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_052"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "30": {
+                        "action": "drop",
+                        "description": "Description 187",
+                        "destination": {
+                            "port": "1900"
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "40": {
+                        "action": "drop",
+                        "description": "Description 188",
+                        "destination": {
+                            "port": "137,138,139"
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "50": {
+                        "action": "drop",
+                        "description": "Description 189",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_056"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp"
+                    },
+                    "60": {
+                        "action": "drop",
+                        "description": "Description 190",
+                        "destination": {
+                            "port": "161,162"
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "udp"
+                    },
+                    "70": {
+                        "action": "drop",
+                        "description": "Description 191",
+                        "destination": {
+                            "group": {
+                                "port-group": "name_045"
+                            }
+                        },
+                        "last-used": {},
+                        "log": {},
+                        "protocol": "tcp"
+                    }
+                }
+            }
+        }
+    }
+}

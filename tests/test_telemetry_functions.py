@@ -74,7 +74,7 @@ def test_get_version_strips_v_prefix():
 
 
 @patch("package.telemetry_functions.urllib3.request")
-def test_post_telemetry_success(mock_request):
+def test_post_telemetry_success(mock_request, real_telemetry_send):
     body = json.dumps({"instance_id": "test-uuid"})
     post_telemetry(body, "instance", background=False)
 
@@ -88,7 +88,7 @@ def test_post_telemetry_success(mock_request):
 
 
 @patch("package.telemetry_functions.urllib3.request")
-def test_post_telemetry_exception(mock_request):
+def test_post_telemetry_exception(mock_request, real_telemetry_send):
     mock_request.side_effect = Exception("Network error")
     body = json.dumps({"instance_id": "test-uuid"})
 
@@ -151,7 +151,7 @@ import threading  # noqa: E402
 from package import telemetry_functions  # noqa: E402
 
 
-def test_post_telemetry_runs_off_the_calling_thread():
+def test_post_telemetry_runs_off_the_calling_thread(real_telemetry_send):
     started = threading.Event()
     release = threading.Event()
 
@@ -216,3 +216,75 @@ def test_heartbeat_delay_is_about_a_day():
     for _ in range(20):
         delay = telemetry_functions._heartbeat_delay()
         assert telemetry_functions.HEARTBEAT_SECONDS <= delay < telemetry_functions.HEARTBEAT_SECONDS + 3600
+
+
+# ---------------------------------------------------------------------------
+# The suite never posts telemetry (tests/conftest.py no_real_telemetry)
+# ---------------------------------------------------------------------------
+
+
+def _counter_calls_in_foreground(monkeypatch):
+    """Runs the three counters with post_telemetry(background=False)."""
+    real_post = telemetry_functions.post_telemetry
+    monkeypatch.setattr(
+        telemetry_functions,
+        "post_telemetry",
+        lambda body, route, background=True: real_post(body, route, background=False),
+    )
+    telemetry_commit()
+    telemetry_diff()
+    telemetry_rule_usage()
+
+
+def _spy_on_http(monkeypatch):
+    """Records any request that gets as far as an urllib3 connection pool."""
+    import urllib3
+
+    sent = []
+    monkeypatch.setattr(
+        urllib3.connectionpool.HTTPConnectionPool,
+        "urlopen",
+        lambda self, method, url, *a, **k: sent.append((self.host, method, url)),
+    )
+    return sent
+
+
+def test_counters_make_no_http_request(monkeypatch, no_real_telemetry):
+    """Regression: commit/diff/rule-usage counters reached telemetry.fw-gui.com
+    from every local test run, as a new install each time."""
+    sent = _spy_on_http(monkeypatch)
+    before = list(no_real_telemetry)
+
+    _counter_calls_in_foreground(monkeypatch)
+
+    assert sent == []
+    assert no_real_telemetry == before
+
+
+def test_guard_stops_a_path_that_skips_the_send_stub(
+    monkeypatch, no_real_telemetry, real_telemetry_send
+):
+    """With the real _send (as a future code path might use), the urllib3
+    guard refuses and records the attempt; nothing reaches a socket."""
+    sent = _spy_on_http(monkeypatch)
+    before = len(no_real_telemetry)
+
+    _counter_calls_in_foreground(monkeypatch)
+
+    assert sent == []
+    routes = [url.rsplit("/", 1)[1] for _, url in no_real_telemetry[before:]]
+    assert routes == ["commit", "diff", "rule_usage"]
+    del no_real_telemetry[before:]
+
+
+def test_guard_fails_loudly_for_a_direct_telemetry_request(no_real_telemetry):
+    import urllib3
+    import pytest
+
+    before = len(no_real_telemetry)
+    with pytest.raises(AssertionError, match="tried to post telemetry"):
+        urllib3.request("POST", "https://telemetry.fw-gui.com/commit", body="{}")
+    assert no_real_telemetry[before:] == [("POST", "https://telemetry.fw-gui.com/commit")]
+    del no_real_telemetry[before:]
+    with pytest.raises(RuntimeError, match="network access is blocked"):
+        urllib3.request("GET", "https://example.com/")

@@ -554,7 +554,7 @@ code, pre, .mono { font-family: var(--mono); }
 .meta b { color: var(--text); font-weight: 600; }
 .block-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
 .block-grid > .block { margin-bottom: 0; }
-.block-grid + .block-grid { margin-top: 14px; }
+.block-grid + .block-grid, .block-grid + .block { margin-top: 14px; }
 
 /* ------------------------------------------------------------------ */
 /* Data tables                                                         */
@@ -1237,6 +1237,10 @@ legend { padding: 0 6px; margin-left: -6px; }
 .rename-form { display: flex; gap: 6px; margin-top: 6px; }
 .rename-form .input { max-width: 260px; height: 24px; }
 .export { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--row-line); }
+/* Config import: its own full-width block below the grid, SSH and paste side by side */
+.import-intro { margin: 0 0 12px; max-width: 110ch; }
+.import-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 14px 28px; }
+.import-way > .field-label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
 /* Responsibility notice and statement */
 .legal-notice { margin: 8px 0; font-size: 0.88em; color: var(--muted); }
 .legal-notice summary { cursor: pointer; list-style: none; }

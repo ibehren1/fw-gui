@@ -1,0 +1,3 @@
+set firewall ipv4 name FWGUI_PROBE default-action 'drop'
+set firewall ipv4 name FWGUI_PROBE rule 10 action 'jump'
+set firewall ipv4 name FWGUI_PROBE rule 10 jump-target 'FWGUI_NO_SUCH_CHAIN'

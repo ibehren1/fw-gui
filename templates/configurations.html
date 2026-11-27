@@ -165,4 +165,78 @@
     </div>
     {% endif %}
 </div>
+
+    <div class="block" id="import">
+        <div class="block-head"><div class="block-title"><h3>Import from firewall</h3><span class="meta">a new configuration from a running VyOS firewall</span></div></div>
+        <div class="block-body">
+            <p class="form-help import-intro">Reads <span class="mono">show configuration json</span> and keeps only the firewall rules and interface names. Settings FW-GUI cannot edit are kept as extra items, so a push sends them back unchanged. Nothing else from the device is stored.</p>
+            <div class="import-ways">
+            <form action="{{ url_for('import_firewall_config') }}" method="post" class="import-way">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="source" value="ssh">
+                <span class="field-label">Over SSH</span>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>New configuration name</span>
+                        <input type="text" name="config_name" maxlength="50" placeholder="e.g. edge-fw-01" class="input" required>
+                    </label>
+                    <label class="field">
+                        <span>Firewall hostname or IP</span>
+                        <input type="text" name="hostname" maxlength="253" class="input mono" required>
+                    </label>
+                    <label class="field">
+                        <span>SSH port</span>
+                        <input type="text" name="port" value="22" maxlength="5" inputmode="numeric" class="input mono" required>
+                    </label>
+                    <label class="field">
+                        <span>SSH username</span>
+                        <input type="text" name="username" class="input" autocomplete="username" required>
+                    </label>
+                    <label class="field">
+                        <span>{{ 'Password, or the SSH key\'s Fernet key' if key_list else 'Password' }}</span>
+                        <input type="password" name="password" class="input" autocomplete="current-password">
+                    </label>
+                    {% if key_list %}
+                    <label class="field">
+                        <span>Authentication</span>
+                        <select name="ssh_key_name" class="input">
+                            <option value="">Password</option>
+                            {% for key in key_list %}
+                            <option value="{{ key }}">SSH key: {{ key }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    {% endif %}
+                </div>
+                <div class="form-foot">
+                    <span class="muted small">The firewall's SSH host key is pinned to the new configuration.</span>
+                    <button type="submit" class="btn btn-primary">Import over SSH</button>
+                </div>
+            </form>
+
+            <form action="{{ url_for('import_firewall_config') }}" method="post" enctype="multipart/form-data" class="import-way">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="source" value="text">
+                <span class="field-label">Or paste / upload the output of <span class="mono">show configuration json</span> (the whole config, or only its firewall part)</span>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>New configuration name</span>
+                        <input type="text" name="config_name" maxlength="50" placeholder="e.g. edge-fw-01" class="input" required>
+                    </label>
+                    <label class="field">
+                        <span>File</span>
+                        <input type="file" name="config_file" accept=".json,.txt,application/json,text/plain" class="form-file">
+                    </label>
+                    <label class="field wide">
+                        <span>Or paste it here</span>
+                        <textarea name="config_json" rows="6" class="input" spellcheck="false"></textarea>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn">Import</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
 {% endblock body %}

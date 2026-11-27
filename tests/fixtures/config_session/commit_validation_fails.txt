@@ -1,0 +1,23 @@
+@@FWGUI-0123456789abcdef L 1
+@@FWGUI-0123456789abcdef L 2
+@@FWGUI-0123456789abcdef L 3
+@@FWGUI-0123456789abcdef COMPARE
+[firewall ipv4 name]
++ FWGUI_PROBE {
++     default-action "drop"
++     rule 10 {
++         action "jump"
++         jump-target "FWGUI_NO_SUCH_CHAIN"
++     }
++ }
+
+@@FWGUI-0123456789abcdef COMMIT
+[ firewall ]
+Invalid jump-target. Firewall name FWGUI_NO_SUCH_CHAIN does not exist on
+the system
+
+[[firewall]] failed
+Commit failed
+@@FWGUI-0123456789abcdef COMMIT_FAILED
+calling discardChanges() without config session
+@@FWGUI-0123456789abcdef END

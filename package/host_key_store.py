@@ -33,9 +33,7 @@ hostname re-pins instead of locking the user out.
 import base64
 import hashlib
 import logging
-import os
 import socket
-import tempfile
 from datetime import datetime, timezone
 
 import paramiko
@@ -79,21 +77,22 @@ def get_pinned_key(session, hostname, port):
     return paramiko.PKey.from_type_string(pin["type"], base64.b64decode(pin["key"]))
 
 
+def pin_record(hostname, port, key):
+    """The ``system.host_key`` value that pins ``key`` for this address."""
+    return {
+        "host": _host_id(hostname, port),
+        "type": key.get_name(),
+        "key": key.get_base64(),
+        "pinned": datetime.now(timezone.utc),
+    }
+
+
 def pin_key(session, hostname, port, key):
     """Pins ``key`` as the host key for this firewall and address."""
     collection, firewall = _locate(session)
     collection.update_one(
         {"_id": firewall},
-        {
-            "$set": {
-                "system.host_key": {
-                    "host": _host_id(hostname, port),
-                    "type": key.get_name(),
-                    "key": key.get_base64(),
-                    "pinned": datetime.now(timezone.utc),
-                }
-            }
-        },
+        {"$set": {"system.host_key": pin_record(hostname, port, key)}},
     )
     logging.info(
         f"Pinned SSH host key {fingerprint(key)} for {_host_id(hostname, port)} "
@@ -171,19 +170,3 @@ def add_to_host_keys(host_keys, hostname, port, key):
     """Adds ``key`` for this address to a paramiko HostKeys object."""
     for name in _known_host_names(hostname, port):
         host_keys.add(name, key.get_name(), key)
-
-
-def write_known_hosts(hostname, port, key):
-    """Stages a known_hosts file holding only ``key``, for netmiko.
-
-    Returns:
-        str: Path to the file; the caller must delete it in a ``finally`` block.
-
-    Like decrypted SSH keys, it goes to the system temp dir, not data/.
-    """
-    host_keys = paramiko.HostKeys()
-    add_to_host_keys(host_keys, hostname, port, key)
-    fd, path = tempfile.mkstemp(prefix="fwgui-known-hosts-")
-    os.close(fd)
-    host_keys.save(path)
-    return path

@@ -16,8 +16,10 @@ This document is written for two audiences:
 ## 1. Overview for end users
 
 FW-GUI talks to a VyOS device only when you use the **Configuration Push** page
-to *View Diffs*, *Commit*, or *Run an Operational Command*. Two authentication
-methods are supported:
+to *View Diffs*, *Commit*, or *Run an Operational Command*, or **Import from
+firewall** on the Configurations page (as of 4.2.2). Every connection first
+checks the firewall's SSH host key (pinned on first use) before sending any
+credential. Two authentication methods are supported:
 
 | Method | What you enter | What actually authenticates to the device |
 |--------|----------------|--------------------------------------------|
@@ -29,10 +31,11 @@ password auth it is your device password; when you select an uploaded SSH key it
 is the *encryption key* (a Fernet key) that unlocks the stored private key. In
 both cases FW-GUI treats it as a high-value secret.
 
-For convenience, once you enter credentials while logged in, FW-GUI remembers
-them **on the server** for the rest of your session, so you can run several
+For convenience, credentials entered on the **Configuration Push** page are
+remembered **on the server** for the rest of your session, so you can run several
 actions without re-typing. The secret is never placed in your browser and never
-rendered back into the page.
+rendered back into the page. The import form uses its credentials for that one
+request only and never caches them.
 
 ```mermaid
 flowchart TD
@@ -42,7 +45,8 @@ flowchart TD
     P --> A["Submit: View Diffs / Commit / Run Command"]
     K --> A
     A --> S["Server caches username + secret<br/>in the server-side session"]
-    S --> C{"Key selected?"}
+    S --> H["Check the pinned SSH host key<br/>(pin on first use; refuse a changed key)"]
+    H --> C{"Key selected?"}
     C -->|No| PW["Connect with password auth"]
     C -->|Yes| DEC["Decrypt stored key file to a temp file<br/>connect with key auth<br/>delete temp file"]
     PW --> R(["Result shown; secret stays server-side"])
@@ -55,15 +59,18 @@ flowchart TD
 
 | Concern | Location |
 |---------|----------|
-| Push page route (build connection, cache creds, render) | `app.py` → `configuration_push()` (~`app.py:1418`) |
-| Session backend configuration | `app.py:195-208` (Flask-Session) |
-| Session lifetime | `app.py:169-183` (`SESSION_TIMEOUT` → `PERMANENT_SESSION_LIFETIME`, `SESSION_PERMANENT`) |
-| Cached-secret encryption helpers | `app.py` → `_session_fernet()` / `encrypt_secret()` / `decrypt_secret()` (after `Session(app)`) |
-| Logout (clears + deletes session record) | `app.py` → `user_logout()` (`:457`) |
-| NAPALM driver assembly (View Diffs / Commit) | `package/napalm_ssh_functions.py` → `assemble_napalm_driver_string()` (`:26`) |
-| Paramiko client assembly (Run Command) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` (`:69`) |
-| Commit / diff / operational actions | `commit_to_firewall()` (`:116`), `get_diffs_from_firewall()` (`:198`) — both take the candidate configuration as a `merge_config` string — and `run_operational_command()` (`:265`) |
-| TCP reachability check | `test_connection()` (`:333`) |
+| Push page route (build connection, cache creds, render) | `app.py` → `configuration_push()` |
+| Config import route (SSH or paste/upload) | `app.py` → `import_firewall_config()` / `_import_from_device()`; form in `templates/configurations.html` |
+| Session backend and cookie settings | `app.py` (Flask-Session setup, `SESSION_COOKIE_*`) |
+| Session lifetime | `app.py` (`SESSION_TIMEOUT` → `PERMANENT_SESSION_LIFETIME`, `SESSION_PERMANENT`) |
+| Cached-secret encryption helpers | `app.py` → `_session_fernet()` / `encrypt_secret()` / `decrypt_secret()` |
+| Logout (clears + deletes session record) | `app.py` → `user_logout()` |
+| Paramiko client assembly (all device connections) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` (the module name is historical; NAPALM was removed in 4.2.6) |
+| View Diffs / Commit | `commit_to_firewall()` / `get_diffs_from_firewall()` → `_run_config_session()`; script, line safety check and output parser in `package/config_session.py` |
+| Operational commands | `run_operational_command()`; allow-list in `package/validators.py` → `is_allowed_op_command()` |
+| Config import fetch | `fetch_running_config()` |
+| TCP reachability check (push page GET) | `test_connection()` |
+| Host key pinning | `package/host_key_store.py` → `probe_host_key()`, `verify_host_key()`, `pin_record()`, `clear_pinned_key()`; reset route `app.py` → `configuration_host_key_reset()` |
 | Key upload + encryption | `package/data_file_functions.py` → `process_upload()` |
 | Key storage (MongoDB `keys` collection) | `package/ssh_key_store.py` → `store_key()` / `get_ciphertext()` |
 | Key decryption (temp staging) | `package/ssh_key_store.py` → `decrypt_ssh_key()` |
@@ -79,7 +86,7 @@ When a user uploads a private key file (must end in `.key`), FW-GUI encrypts it
 at rest with a freshly generated **Fernet** symmetric key and hands that key to
 the user *once*. The plaintext key is never stored.
 
-Reference: `process_upload()` in `package/data_file_functions.py:728-756`.
+Reference: `process_upload()` in `package/data_file_functions.py`.
 
 ```mermaid
 sequenceDiagram
@@ -102,8 +109,8 @@ sequenceDiagram
 Key facts for auditors:
 
 - **Encryption:** `cryptography.fernet` (AES-128-CBC + HMAC-SHA256). Symmetric.
-- **The generated Fernet key is displayed to the user once** (`flash(..., "key")`,
-  `data_file_functions.py:746-749`) and is **not** persisted by FW-GUI. Losing it
+- **The generated Fernet key is displayed to the user once** (`flash(..., "key")`
+  in `process_upload()`) and is **not** persisted by FW-GUI. Losing it
   means the stored key file cannot be decrypted — the user must re-upload.
 - **Storage location (3.0.0+):** the encrypted blob is a document in the MongoDB
   `keys` collection, `_id` = `"<username>/<name>"`, with the ciphertext as BSON
@@ -123,35 +130,35 @@ Key facts for auditors:
   still excluded, as a redundant second copy of what the dump already carries.
 - `# TODO -- validate key is a valid ssh key` — uploaded content is not
   yet validated as a real SSH key.
+- **A failed upload leaves the raw file behind.** The raw upload in
+  `data/uploads/` is deleted only after the ciphertext is stored; if encryption
+  or storage raises, the plaintext key stays there until removed by hand
+  (nothing clears `data/uploads/` at startup). See Threats.
 
 ---
 
 ## 4. Connecting to a firewall (both auth paths)
 
-The Configuration Push route builds a `connection_string` dict and calls one of
-the driver-assembly helpers. For **key auth**, the encrypted key file is
-decrypted to a short-lived temp file, used, then removed in a `finally` block.
+As of 4.2.6 every device connection is Paramiko through
+`assemble_paramiko_driver_string()`: View Diffs, Commit, Run Operational Command
+and the config import's fetch. (Before 4.2.6 View Diffs and Commit used NAPALM /
+napalm-vyos over netmiko, with a second host-key enforcement path.) For **key
+auth**, the stored key is decrypted to a short-lived temp file, used, then
+removed in a `finally` block.
 
 ```mermaid
 flowchart TD
-    START([configuration_push POST]) --> CRED["username = form or cached<br/>password = form or cached<br/>(app.py:1454-1461)"]
-    CRED --> ACT{action}
-    ACT -->|View Diffs / Commit| NAP[assemble_napalm_driver_string]
-    ACT -->|Run Operational Command| PAR[assemble_paramiko_driver_string]
-
-    NAP --> NK{ssh_key_name present?}
-    NK -->|No| NPW["driver password = connection_string password<br/>napalm_ssh_functions.py:56-65"]
-    NK -->|Yes| NDEC["fernet_key = password.encode()<br/>tmp = decrypt_ssh_key(user, name, fernet_key)<br/>driver key_file = tmp, password = ''"]
-
+    START([configuration_push POST]) --> CRED["username = form or cached<br/>password = form or cached"]
+    CRED --> PAR["assemble_paramiko_driver_string<br/>verify_host_key, RejectPolicy"]
     PAR --> PK{ssh_key_name present?}
-    PK -->|No| PPW["ssh.connect(..., password=password)<br/>napalm_ssh_functions.py:96-99"]
+    PK -->|No| PPW["ssh.connect(..., password=password)"]
     PK -->|Yes| PDEC["fernet_key = password.encode()<br/>tmp = decrypt_ssh_key(...)<br/>ssh.connect(..., key_filename=tmp)"]
-
-    NPW --> RUN[Open connection, run action]
-    NDEC --> RUN
-    PPW --> RUN
-    PDEC --> RUN
-    RUN --> FIN["finally: if tmp file exists, os.remove(tmp)<br/>commit:190-195 / diff same pattern / op:325-330"]
+    PPW --> ACT{action}
+    PDEC --> ACT
+    ACT -->|View Diffs / Commit| CS["vbash -s: config_session script<br/>(configure, lines, compare, discard or gated commit)"]
+    ACT -->|Run Operational Command| OP["vbash -s: run show ..."]
+    CS --> FIN["finally: ssh.close(); os.remove(tmp) if any"]
+    OP --> FIN
     FIN --> DONE([Return result to route])
 ```
 
@@ -170,45 +177,78 @@ flowchart TD
    **No `dir=`**, so it lands in the system temp directory, *not* the mounted data
    volume: as of 3.0.0 `data/` holds no secrets at all. Decryption happens before
    the file is created, so a wrong Fernet key leaves nothing staged.
-4. Returns that path; NAPALM/Paramiko use it as `key_file` / `key_filename`.
-5. The caller deletes it in a `finally` block:
-   - `commit_to_firewall()` → `napalm_ssh_functions.py` finally / `os.remove`
-   - `get_diffs_from_firewall()` → same pattern
-   - `run_operational_command()` → same pattern
+4. Returns that path; Paramiko uses it as `key_filename`.
+5. The caller deletes it in a `finally` block: `_run_config_session()` (View
+   Diffs and Commit), `run_operational_command()` and `fetch_running_config()`
+   each `os.remove` it.
 6. In the Paramiko path the temp file is created before `ssh.connect()`; if
    `connect` fails, `assemble_paramiko_driver_string` removes the temp key
    itself (so it is not left staged when the caller never receives the path).
 7. If driver assembly raises before a temp file is created, `tmpfile` is
    `None` and cleanup is correctly skipped.
 
-`data/tmp/` is no longer written to, but `initialize_data_dir()` still creates and
-wipes it on every startup. That is deliberate legacy cleanup: on an install
-upgrading from a version that crashed mid-operation, the wipe is what removes a
-stale plaintext private key staged there.
+`data/tmp/` no longer holds key material (only a full backup's zip while it is
+being built), but `initialize_data_dir()` still wipes it on every startup. That
+is deliberate legacy cleanup: on an install upgrading from a version that
+crashed mid-operation, the wipe is what removes a stale plaintext private key
+staged there.
 
 ### Host key policy
 
-`assemble_paramiko_driver_string()` sets
-`paramiko.AutoAddPolicy()` (`napalm_ssh_functions.py:81`) — unknown host keys are
-trusted automatically. This is intentional today (marked `# nosec B507`) but is
-a MITM exposure; see Threats.
+As of 3.1.0 the host key is pinned on first use in the config document and
+enforced on the authenticating connection (`host_key_store`): only the pinned
+key is loaded and `paramiko.RejectPolicy()` refuses any other, so no credential
+is sent to an impostor (GHSA-64wj-4f9q-rwr7). As of 4.2.6 this is the only
+enforcement path; the netmiko known_hosts staging went with NAPALM.
+
+### View Diffs / Commit config session (as of 4.2.6)
+
+`commit_to_firewall()` / `get_diffs_from_firewall()` run one vbash script built
+by `config_session.build_script()`: `configure`, each line of
+`build_merge_config()` in its own `{ ... } >>log 2>&1` group between numbered
+markers, `compare`, then `exit discard` (View Diffs) or, for Commit, `commit` and
+`save` only when no line matched the error pattern and there are changes (a
+failed commit is discarded, never saved). As of 4.2.8 a commit also counts only
+if a `compare` afterwards shows nothing left uncommitted, and the session's
+working files live in a private `mktemp -d` directory: vyos-configd (root)
+reopens the commit's output, which the kernel refuses for another user's file
+directly in sticky `/tmp`. VyOS exits 0 even for a rejected
+line, so errors are read from the output. The lines include the user's extra
+items and are run as shell input, as typing them at the VyOS CLI would be; a
+line that could escape its redirection (unbalanced quote, trailing backslash,
+unquoted comment or shell operator, brace word) is refused before connecting.
+
+### Config import fetch (as of 4.2.1)
+
+`fetch_running_config()` runs the fixed command `show configuration json` over
+the same Paramiko/vbash path. Nothing user-supplied reaches the script. The
+config does not exist yet, so there is no pin to check: the route probes the
+host key (`probe_host_key`), passes it as `host_key=` to
+`assemble_paramiko_driver_string()` (enforced with `RejectPolicy`), and on a
+successful import writes it into the new config as `system.host_key`
+(`pin_record`). The output is the whole device config, WireGuard private keys
+and password hashes included, so it is never logged, and `config_import` keeps
+only the `firewall` subtree and interface names/descriptions.
 
 ### Operational command execution
 
 `run_operational_command()` wraps the user-supplied `op_command` into a VyOS
-`vbash` script and runs it over the Paramiko channel
-(`napalm_ssh_functions.py:258-267`). The command string is not currently
-allowlisted; see Threats.
+`vbash` script and runs it over the Paramiko channel. The command must pass
+`validators.is_allowed_op_command` before connecting: the first word must be
+`show`, and no shell metacharacters (including quotes, backslash and newlines)
+are allowed.
 
 ---
 
 ## 5. Session, cookie & credential caching lifecycle
 
 FW-GUI uses **server-side sessions** (Flask-Session). The browser cookie holds
-only an opaque, signed **session id**; all session contents — including the
-cached SSH username and secret — are stored server-side.
+only an opaque random **session id** (`secrets.token_urlsafe`; Flask-Session's
+`SESSION_USE_SIGNER` is left at its default, off, so the id is not signed); all
+session contents — including the cached SSH username and secret — are stored
+server-side.
 
-Backend configuration (`app.py:195-208`):
+Backend configuration (`app.py`):
 
 - `SESSION_TYPE` (env, default `"mongodb"`) selects the backend. With `mongodb`,
   session documents are stored in the existing MongoDB database in a `sessions`
@@ -216,15 +256,17 @@ Backend configuration (`app.py:195-208`):
   offline runs.
 - `SESSION_PERMANENT = True` makes sessions honor
   `PERMANENT_SESSION_LIFETIME`, which is derived from the `SESSION_TIMEOUT` env
-  var (minutes, default 120) at `app.py:169-183`.
-- The session cookie / id is signed with `APP_SECRET_KEY`.
+  var (minutes, default 120).
+- The cookie is `HttpOnly` and `SameSite=Lax`, and `Secure` when
+  `SESSION_COOKIE_SECURE=True` (off by default so plain-HTTP installs work).
+- `APP_SECRET_KEY` signs the CSRF tokens and derives the key that encrypts the
+  cached SSH secret (§10).
 
 ### What is cached and when
 
 In `configuration_push()` (POST):
 
-- Credentials are resolved **freshly-typed first, else cached**
-  (`app.py:1454-1461`):
+- Credentials are resolved **freshly-typed first, else cached**:
   `username = request.form.get("username") or session.get("ssh_user", "")` and
   the same for `password`. An empty password field therefore means "reuse the
   credential cached this session."
@@ -232,7 +274,8 @@ In `configuration_push()` (POST):
   `session["ssh_pass"]`, and `session["ssh_keyname"]` when a key is chosen. The
   password/Fernet key is **encrypted before storage** via `encrypt_secret()` and
   decrypted with `decrypt_secret()` on read, so it is not held in cleartext in
-  the session store (see §10).
+  the session store (see §10). This happens before the action runs, so
+  credentials that then fail are cached too (re-enter to replace them).
 - **The secret is never rendered back to the browser.** The template receives
   only `ssh_pass_cached` (a boolean) and `ssh_user_name`; the password input has
   no `value=` and is `required` only when nothing is cached
@@ -242,8 +285,11 @@ In `configuration_push()` (POST):
 
 - On switching / (re)loading a firewall config, `select_firewall_config()`
   resets `session["ssh_user"] = ""`, `session["ssh_pass"] = ""`,
-  `session["ssh_keyname"] = ""` (`app.py:1858-1860`).
-- **Explicit logout** (`user_logout()`, `app.py:457-484`) calls `logout_user()`
+  `session["ssh_keyname"] = ""`.
+- A successful **Import from firewall** selects the new config and blanks the
+  cache the same way (`import_firewall_config()`). The import never reads or
+  writes the cache itself.
+- **Explicit logout** (`user_logout()`) calls `logout_user()`
   then `session.clear()`. Emptying a modified session causes Flask-Session's
   `save_session` to **delete the server-side record** (the Mongo `sessions`
   document) and expire the cookie — so the cached secret is actively removed on
@@ -251,14 +297,14 @@ In `configuration_push()` (POST):
 - **Session timeout** (idle past `SESSION_TIMEOUT`) is different: no logout
   request runs, so the document persists until it expires. Flask-Session's
   MongoDB backend writes an `expiration` datetime on every save and creates a
-  **TTL index** on that field at startup (`flask_session/mongodb/mongodb.py:68`),
+  **TTL index** on that field at startup (Flask-Session's MongoDB interface),
   so MongoDB automatically deletes expired session documents (its TTL monitor
   runs about once per minute). Net effect: explicit logout deletes the row
   immediately; timeout deletes it automatically shortly after expiry via the TTL
   index. Because the cached secret is encrypted (see §10), a document lingering
   briefly before reaping does not expose the cleartext secret.
-- Note: logout/timeout does **not** touch the encrypted `.key` file at rest
-  (persists by design) or the system temp directory (decrypted keys are deleted per-action in
+- Note: logout/timeout does **not** touch the encrypted key in the `keys`
+  collection (persists by design) or the system temp directory (decrypted keys are deleted per-action in
   the action `finally` blocks, not at logout).
 
 ```mermaid
@@ -267,7 +313,7 @@ stateDiagram-v2
     NoCache --> Cached: First push submit with username + secret<br/>(server stores ENCRYPTED secret in session["ssh_pass"])
     Cached --> Cached: Subsequent submits with blank password<br/>(server decrypts and reuses cached secret)
     Cached --> Cached: Re-enter to change credentials
-    Cached --> NoCache: Switch/reload firewall config<br/>(select_firewall_config clears cache)
+    Cached --> NoCache: Switch/reload a firewall config, or import one<br/>(select_firewall_config / import_firewall_config clear the cache)
     Cached --> [*]: Logout (session.clear deletes Mongo record)
     Cached --> [*]: Timeout (TTL index reaps record ~1 min after expiry)
     NoCache --> [*]: Logout / session timeout
@@ -278,11 +324,11 @@ stateDiagram-v2
 ```mermaid
 flowchart LR
     subgraph Browser
-      Cookie["Session cookie<br/>= opaque signed session id ONLY"]
+      Cookie["Session cookie<br/>= opaque random session id ONLY"]
     end
     subgraph Server
       Sess["Server-side session store<br/>(Mongo 'sessions' collection)<br/>ssh_user / ssh_keyname (plain)<br/>ssh_pass (Fernet-encrypted)"]
-      KeyFile["data/&lt;user&gt;/&lt;name&gt;.key<br/>Fernet-encrypted private key (at rest)"]
+      KeyFile["MongoDB keys collection (_id user/name)<br/>Fernet-encrypted private key (at rest)"]
       Tmp["TMPDIR/&lt;mkstemp 0o600&gt;<br/>plaintext key, only during one action,<br/>deleted in finally"]
     end
     Device[("VyOS device")]
@@ -291,7 +337,7 @@ flowchart LR
     Sess -->|password path: password sent as SSH login| Device
     Sess -->|key path: Fernet key decrypts| KeyFile
     KeyFile --> Tmp
-    Tmp -->|key_file used for SSH login| Device
+    Tmp -->|key_filename used for SSH login| Device
 ```
 
 ---
@@ -300,26 +346,35 @@ flowchart LR
 
 | Secret | Created / entered | Stored where | Sent to device? | Destroyed |
 |--------|-------------------|--------------|-----------------|-----------|
-| Device SSH password | User types on push form | Server-side session (`ssh_pass`), **Fernet-encrypted at rest** | Yes, as SSH login password | On config switch, logout, or session timeout |
-| Fernet encryption key (for uploaded key) | Generated at upload, shown once | **Not stored** by FW-GUI; user keeps it. Cached in server-side session (`ssh_pass`) **encrypted** after entry, for the session | No | Cache cleared on config switch / logout / timeout |
+| Device SSH password | User types on push form | Server-side session (`ssh_pass`), **Fernet-encrypted at rest** | Yes, as SSH login password | On config switch, successful config import, logout, or session timeout |
+| Fernet encryption key (for uploaded key) | Generated at upload, shown once | **Not stored** by FW-GUI; user keeps it. Cached in server-side session (`ssh_pass`) **encrypted** after entry, for the session | No | Cache cleared on config switch / config import / logout / timeout |
 | Encrypted private key | Encrypted at upload | MongoDB `keys` collection, ciphertext as BSON Binary (3.0.0+; previously `data/<username>/<name>.key`) | No (only its decrypted form is used) | Replaced on re-upload; there is no delete-key feature |
-| Decrypted private key (temp) | Per action, by `decrypt_ssh_key()` | System temp dir via `mkstemp` (plaintext, `0o600`) | Used as `key_file` for the SSH login | Removed in the action's `finally` (and on connect failure) |
-| Session id | On login | Signed cookie in browser | No | Cookie expiry / logout / timeout |
+| Decrypted private key (temp) | Per action, by `decrypt_ssh_key()` | System temp dir via `mkstemp` (plaintext, `0o600`) | Used as Paramiko `key_filename` for the SSH login | Removed in the action's `finally` (and on connect failure) |
+| Session id | On login | Random opaque id in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` with `SESSION_COOKIE_SECURE=True`) | No | Cookie expiry / logout / timeout |
 
 ---
 
 ## 7. Logging behavior
 
 - `assemble_paramiko_driver_string()` logs the connection parameters at DEBUG
-  with the `password` key **removed** (`napalm_ssh_functions.py:88`), so the
-  password / Fernet key is not written to `data/log/app.log`.
-- `decrypt_ssh_key()` logs the temp file *path* (not contents) at DEBUG
-  (`data_file_functions.py:242`).
-- `run_operational_command()` logs the operational command text and its output
-  at INFO/DEBUG (`napalm_ssh_functions.py:257,276`).
-- Note (tracked separately): several route handlers still log the entire
-  `request.form` at debug/info elsewhere in the app; those forms are not on the
-  SSH path but are a general log-hygiene item.
+  with the `password` key **removed**, so the password / Fernet key is not
+  written to `data/log/app.log`. Hostname, port, username and key name are.
+- `ssh_key_store.decrypt_ssh_key()` logs the temp file *path* (not contents) at
+  DEBUG.
+- `run_operational_command()` logs the command at INFO and its output at DEBUG;
+  a rejected command is logged at WARNING.
+- View Diffs / Commit (`_run_config_session()`) logs the action, line count and
+  hostname at INFO, and the full session output at DEBUG. That output echoes the
+  pushed lines (including extra items) and the device's messages.
+- Connection and authentication failures are logged as the exception type or
+  message, never with credentials. Import failures are logged as the exception
+  type only.
+- Host key events: a new pin at INFO with its fingerprint, a mismatch at
+  WARNING, a reset at INFO.
+- `fetch_running_config()` (config import) never logs its output; it holds the
+  device's secrets.
+- No route handler logs a whole `request.form`. `configuration_extra_items()`
+  logs the submitted extra configuration lines at INFO.
 
 ---
 
@@ -327,20 +382,22 @@ flowchart LR
 
 | # | Risk | Status |
 |---|------|--------|
-| 1 | Secret in **client cookie** (readable) | **Mitigated** — sessions are server-side; cookie holds only an opaque id. |
-| 2 | Secret **echoed into HTML** `value=` | **Mitigated** — password input is never prefilled; template gets only a boolean. |
-| 3 | Secret in logs | **Mitigated** on the SSH path — password stripped before logging. |
+| 1 | Secret in **client cookie** (readable) | **Mitigated** — sessions are server-side; the cookie holds only a random opaque id (unsigned; `HttpOnly`, `SameSite=Lax`, `Secure` opt-in). |
+| 2 | Secret **echoed into HTML** `value=` | **Mitigated** — the push and import password inputs are never prefilled; the push template gets only a boolean. |
+| 3 | Secret in logs | **Mitigated** on the SSH path — password stripped before logging; the import fetch never logs its output. Residual: at DEBUG, operational-command output and config-session output (pushed lines and device messages) go to `app.log`, and extra items are logged at INFO. |
 | 4 | Cached secret at rest in the Mongo `sessions` collection | **Mitigated** — the cached secret is Fernet-encrypted before storage (§10). Residual: the derivation key comes from `APP_SECRET_KEY`, so a host/app compromise that exposes that key defeats it; still lock down DB access. |
-| 5 | `paramiko.AutoAddPolicy()` trusts unknown host keys | **Residual** — MITM exposure; intentional today. Consider `RejectPolicy` + known-hosts. |
-| 6 | `run_operational_command()` sends arbitrary `op_command` to the device with no allowlist | **Residual** — authenticated users can run any operational command. |
-| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 3.0.0, and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
-| 8 | Uploaded `.key` content is not validated as a real SSH key | **Residual** — see `# TODO` at `data_file_functions.py:730`. |
+| 5 | Impersonated firewall (MITM) | **Mitigated** (3.1.0, GHSA-64wj-4f9q-rwr7) — the host key is pinned on first use in `system.host_key` and enforced with `RejectPolicy` on every connection, including the import (via `host_key=`); a changed key is refused before authentication. Residual: trust on first use means the first connection (new config, after a reset, after a hostname/port change, or an import) trusts whatever key is presented — check the fingerprint on the push page. |
+| 6 | Arbitrary operational commands | **Mitigated** — `is_allowed_op_command` allows only `show ...` with no shell metacharacters or newlines, checked before connecting. Residual: any `show` command is allowed; `show configuration` returns device secrets to the page and, at DEBUG, to `app.log` (unlike the import fetch, which never logs). |
+| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 3.0.0, removed in the `finally` of `_run_config_session()`, `run_operational_command()` and `fetch_running_config()`, and by `assemble_paramiko_driver_string()` if `ssh.connect` fails. Residual: the key is still briefly on disk (Paramiko needs a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
+| 8 | Uploaded `.key` content is not validated as a real SSH key | **Residual** — see the `# TODO` in `process_upload()`. |
+| 9 | Plaintext upload left in `data/uploads/` when key encryption or storage fails | **Residual** — the raw file is removed only on success, and nothing clears `data/uploads/` at startup. |
+| 10 | Pushed lines (including the user's extra items) run as vbash shell input | **By design, contained** — the same as typing them at the VyOS CLI with the user's own credentials; a line that could escape its per-line redirection (unbalanced quote, trailing backslash, unquoted comment or shell operator, brace word) is refused before connecting (`config_session.unsafe_reason`). |
 
 ---
 
 ## 9. Operator notes
 
-- Set a unique `APP_SECRET_KEY` — it signs the session id **and** derives the key
+- Set a unique `APP_SECRET_KEY` — it signs CSRF tokens **and** derives the key
   that encrypts the cached SSH secret (§10). See the inline comments in `.env` /
   compose files / Helm values.
 - With `SESSION_TYPE=mongodb` (default), still restrict MongoDB access. The
@@ -348,6 +405,10 @@ flowchart LR
   (username, firewall name) is not, and defense-in-depth matters.
 - The Fernet encryption key shown after a key upload is displayed **once** and is
   not recoverable — users must record it to use key auth later.
+- Set `SESSION_COOKIE_SECURE=True` when FW-GUI is served over HTTPS.
+- After the first connection to a firewall (or an import), check the pinned
+  host key fingerprint shown on the push page against the device, and use the
+  reset button only for a legitimate key change.
 
 ---
 
@@ -387,7 +448,7 @@ Consequences:
 ### Expiry / reaping
 
 Flask-Session's MongoDB backend creates a **TTL index** on the `expiration`
-field at startup (`flask_session/mongodb/mongodb.py:68`), so MongoDB
+field at startup, so MongoDB
 automatically deletes expired session documents (TTL monitor runs ~once/minute).
 No manual index is required.
 
@@ -400,5 +461,5 @@ If a stronger boundary is later required:
 | Infra: MongoDB Enterprise/Atlas encrypted storage engine | Stolen disk (transparent) | Enterprise/Atlas only; not community `mongo` |
 | Infra: volume/disk encryption (LUKS, cloud disk) under Mongo data dir | Stolen disk | Ops-only, no app change; does **not** stop DB-read access |
 | App: whole-session encryption via a custom `MongoDBSessionInterface` subclass | DB-read access, for all session fields | Couples to Flask-Session internals |
-| App: dedicated `SESSION_ENC_KEY` env var instead of deriving from `APP_SECRET_KEY` | Decouples secret rotation; key not tied to session signing | One more secret to manage |
+| App: dedicated `SESSION_ENC_KEY` env var instead of deriving from `APP_SECRET_KEY` | Decouples secret rotation; key not tied to CSRF signing | One more secret to manage |
 | MongoDB CSFLE / Queryable Encryption | DB-read access, with KMS-managed keys | Requires KMS + `libmongocrypt`; heavy for session blobs |

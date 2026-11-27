@@ -37,6 +37,7 @@ from functools import wraps
 from urllib.parse import urlsplit
 
 import certifi
+import paramiko
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from flask import (
@@ -135,7 +136,13 @@ from package.group_funtions import (
     delete_group_from_data,
     group_section_anchor,
 )
-from package.host_key_store import clear_pinned_key, get_pinned_fingerprint
+from package.config_import import MAX_IMPORT_BYTES, ConfigImportError, import_config
+from package.host_key_store import (
+    clear_pinned_key,
+    get_pinned_fingerprint,
+    pin_record,
+    probe_host_key,
+)
 from package.release_features import (
     FEATURES,
     get_session_release,
@@ -153,6 +160,7 @@ from package.interface_functions import (
 from package.mongo_converter import mongo_converter
 from package.napalm_ssh_functions import (
     commit_to_firewall,
+    fetch_running_config,
     get_diffs_from_firewall,
     run_operational_command,
     test_connection,
@@ -2205,6 +2213,7 @@ def configurations():
         "configurations.html",
         file_list=list_user_files(session),
         snapshot_list=list_snapshots(session) if session.get("firewall_name") else [],
+        key_list=list_user_keys(session),
         firewall_name=session.get("firewall_name"),
         username=session["username"],
     )
@@ -2600,6 +2609,141 @@ def select_firewall_config():
         return _snapshot_created(created_snapshot)
 
     return _after_selecting()
+
+
+# Device address for the config import: a hostname, IPv4 or IPv6 literal.
+_DEVICE_HOST = re.compile(r"^[A-Za-z0-9._:\-]{1,253}$")
+
+
+def _import_from_device(form):
+    """
+    Fetches and converts a running firewall's configuration.
+
+    Returns:
+        tuple: (document, report), with system.hostname / port / host_key set.
+
+    Raises:
+        ConfigImportError: Bad address, unreachable device, failed login, or
+            unusable output -- the message is safe to show.
+    """
+    hostname = form.get("hostname", "").strip()
+    port = form.get("port", "").strip() or "22"
+    username = form.get("username", "").strip()
+    if not _DEVICE_HOST.match(hostname):
+        raise ConfigImportError("Enter the firewall's hostname or IP address.")
+    if not port.isdigit() or not 1 <= int(port) <= 65535:
+        raise ConfigImportError("Enter an SSH port from 1 to 65535.")
+    if not username:
+        raise ConfigImportError("Enter the SSH username.")
+
+    connection_string = {
+        "hostname": hostname,
+        "port": port,
+        "username": username,
+        "password": form.get("password", ""),
+    }
+    if form.get("ssh_key_name"):
+        connection_string["ssh_key_name"] = form["ssh_key_name"]
+
+    try:
+        # Trust on first use, as for the first push: the new config is pinned
+        # to the key presented here.
+        host_key = probe_host_key(hostname, port)
+    except (OSError, paramiko.SSHException) as e:
+        logging.info(f"Config import: cannot reach {hostname}:{port}: {e}")
+        raise ConfigImportError(f"Could not reach {hostname}:{port} over SSH.") from None
+    try:
+        raw = fetch_running_config(connection_string, session, host_key)
+    except ConfigImportError:
+        raise
+    except Exception as e:
+        # Wrong password or key passphrase (InvalidToken), refused login, ...
+        logging.info(f"Config import: login to {hostname}:{port} failed: {type(e).__name__}")
+        raise ConfigImportError(
+            f"Could not log in to {hostname}:{port}. Check the username and "
+            "password, or the SSH key and its passphrase."
+        ) from None
+
+    doc, report = import_config(raw)
+    doc["system"].update(
+        hostname=hostname, port=port, host_key=pin_record(hostname, port, host_key)
+    )
+    return doc, report
+
+
+def _import_from_text(form, files):
+    """Converts pasted or uploaded `show configuration json` output."""
+    upload = files.get("config_file")
+    if upload and upload.filename:
+        data = upload.read(MAX_IMPORT_BYTES + 1)
+    else:
+        data = form.get("config_json", "").encode("utf-8")
+    if len(data) > MAX_IMPORT_BYTES:
+        raise ConfigImportError("The configuration is too large to import.")
+    if not data.strip():
+        raise ConfigImportError("Paste or choose the output of show configuration json.")
+    return import_config(data.decode("utf-8", errors="replace"))
+
+
+@app.route("/import_config", methods=["POST"])
+@login_required
+def import_firewall_config():
+    """
+    Handle importing a running firewall's configuration as a new config.
+
+    The source is the device itself (SSH, `show configuration json`) or that
+    command's output pasted or uploaded. The new configuration is written
+    only if the import succeeds; an existing one is never touched. Renders
+    the import report.
+
+    Returns:
+        Response: Rendered import report, or a redirect back to the form
+    """
+    # Pasted output arrives as a form field; allow it up to the import limit
+    # (Werkzeug's default for in-memory form fields is 500 kB).
+    request.max_form_memory_size = MAX_IMPORT_BYTES + 64 * 1024
+    name = request.form.get("config_name", "").strip()
+    source = request.form.get("source")
+    back = redirect(url_for("configurations", _anchor="import"))
+
+    if not is_safe_name(name):
+        flash("Enter a valid configuration name.", "danger")
+        return back
+    if name in list_user_files(session):
+        flash(f"A configuration named {name} already exists.", "danger")
+        return back
+
+    try:
+        if source == "ssh":
+            doc, report = _import_from_device(request.form)
+        elif source == "text":
+            doc, report = _import_from_text(request.form, request.files)
+        else:
+            flash("Choose where to import from.", "danger")
+            return back
+    except ConfigImportError as e:
+        flash(str(e), "danger")
+        return back
+
+    write_user_data_file(f"{session['data_dir']}/{name}", doc)
+    logging.info(f"Imported configuration <{name}> ({source}): {report['counts']}")
+
+    # Select it, as select_firewall_config does.
+    session["firewall_name"] = name
+    session["hostname"], session["port"] = get_system_name(session)
+    # B105 -- Intentional hardcoding of password to ""
+    session["ssh_user"] = ""
+    session["ssh_pass"] = ""  # nosec
+    session["ssh_keyname"] = ""
+
+    flash(f"Imported {name}.", "success")
+    return render_template(
+        "import_report.html",
+        report=report,
+        source=source,
+        firewall_name=name,
+        username=session["username"],
+    )
 
 
 @app.route("/upload_json", methods=["POST"])

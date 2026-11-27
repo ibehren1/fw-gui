@@ -1,0 +1,6 @@
+set firewall ipv4 name FWGUI_PROBE description 'probe chain'
+set firewall ipv4 name FWGUI_PROBE default-action 'drop'
+set firewall ipv4 nosuchnode foo
+set firewall ipv4 name FWGUI_PROBE rule 10 action 'bogus'
+bogusverb firewall foo
+delete firewall ipv4 name FWGUI_NO_SUCH_CHAIN

@@ -89,6 +89,34 @@ def generate_config(session, snapshot="current", diff=False):
             diff=diff,
         )
 
+    config = render_config(user_data)
+
+    # If this is a Diff, just return the config
+    if diff:
+        message = ""
+        for line in config:
+            message = message + line.replace("\n", "<br>") + "<br>"
+        return message, config
+
+    # Convert list of lines to single string
+    message = ""
+    for line in config:
+        message = message + line.replace("\n", "<br>") + "<br>"
+
+    # Return message of config commands
+    return message, config
+
+
+def render_config(user_data):
+    """
+    Renders a configuration document into VyOS set commands.
+
+    Args:
+        user_data: Firewall configuration document (working copy or snapshot)
+
+    Returns:
+        list: Configuration lines, comment banners included
+    """
     # Rolling-release features this config (or snapshot) targets; empty for
     # stable, which leaves the output unchanged.
     rolling_features = enabled_features(user_data)
@@ -498,25 +526,11 @@ def generate_config(session, snapshot="current", diff=False):
                         )
                     config.append("")
 
-    # If this is a Diff, just return the config
-    if diff:
-        message = ""
-        for line in config:
-            message = message + line.replace("\n", "<br>") + "<br>"
-        return message, config
 
-    # Convert list of lines to single string
-    message = ""
-    for line in config:
-        message = message + line.replace("\n", "<br>") + "<br>"
-
-    # Return message of config commands
-    return message, config
-
-
+    return config
 def build_merge_config(command_list, delete=False):
     """
-    Renders a command list into the configuration string handed to NAPALM.
+    Renders a command list into the configuration string sent to the device.
 
     Args:
         command_list (list): Commands from generate_config()
@@ -525,17 +539,17 @@ def build_merge_config(command_list, delete=False):
 
     Returns:
         str: Newline-joined commands, comments and blank lines removed. Empty
-            when nothing survives the filter -- callers MUST guard on that,
-            because napalm-vyos raises MergeConfigException for a falsy config
-            (see commit_to_firewall / get_diffs_from_firewall).
+            when nothing survives the filter -- callers guard on that and do
+            not connect (see commit_to_firewall / get_diffs_from_firewall).
 
     Comments and blanks are dropped here rather than in generate_config because
     the same command list feeds the human-facing views: the snapshot diff
     (diff_functions.process_diff) renders the "# Extra Configuration Items" /
     "# FLOW TABLES" banners as section headings and wants them. The
-    device does not: VyOS rejects a '#' line as an invalid command, and
-    napalm-vyos only greps its output for "Set failed" / "Delete failed", so the
-    rejection is swallowed silently. Every push used to ship those lines.
+    device does not: VyOS rejects a '#' line as an invalid command, and before
+    4.2.6 (NAPALM, which only grepped for "Set failed" / "Delete failed") the
+    rejection was swallowed silently. config_session would now refuse such a
+    line outright, as an unquoted comment.
 
     The list is joined *before* it is split, not filtered element by element.
     Elements can hold several lines: generate_config appends multi-line banners,

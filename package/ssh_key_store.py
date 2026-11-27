@@ -117,8 +117,8 @@ def decrypt_ssh_key(user, name, fernet_key):
         FileNotFoundError: If no key of that name is stored for that user
         cryptography.fernet.InvalidToken: If the Fernet key is wrong
 
-    NAPALM and Paramiko both want a filesystem path (``key_file`` /
-    ``key_filename``), so the plaintext has to touch disk. It is staged with
+    Paramiko wants a filesystem path (``key_filename``), so the plaintext has
+    to touch disk. It is staged with
     ``tempfile.mkstemp()`` -- a cryptographically-random name at ``0o600`` -- and
     deliberately **without** ``dir=``, so it lands in the system temp directory
     rather than the mounted data volume. The caller must delete it in a

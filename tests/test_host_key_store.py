@@ -7,7 +7,6 @@ the known_hosts naming and RejectPolicy are exercised for real rather than
 mocked.
 """
 
-import os
 import socket
 import threading
 
@@ -23,8 +22,8 @@ from package.host_key_store import (
     get_pinned_fingerprint,
     get_pinned_key,
     pin_key,
+    pin_record,
     verify_host_key,
-    write_known_hosts,
 )
 
 USER = "hostkeyuser"
@@ -119,6 +118,16 @@ def test_pin_round_trip(session, rsa_keys):
     assert get_pinned_fingerprint(session, "127.0.0.1", 22) == fingerprint(
         rsa_keys[0]
     )
+
+
+def test_pin_record_written_directly_is_honoured(session, rsa_keys):
+    """The config import writes pin_record() into the new document itself."""
+    collection = host_key_store.data_file_functions._get_mongo_db()[USER]
+    collection.update_one(
+        {"_id": session["firewall_name"]},
+        {"$set": {"system.host_key": pin_record("127.0.0.1", 22, rsa_keys[0])}},
+    )
+    assert get_pinned_key(session, "127.0.0.1", 22) == rsa_keys[0]
 
 
 def test_pin_leaves_rest_of_config_alone(session, rsa_keys):
@@ -226,29 +235,6 @@ def test_strict_client_rejects_impostor(rsa_keys, ssh_server):
             ),
             impostor.port,
         )
-
-
-def test_known_hosts_file_is_what_netmiko_loads(rsa_keys, ssh_server):
-    """netmiko's alt_key_file path: load_host_keys(file) + RejectPolicy."""
-    server = ssh_server(rsa_keys[0])
-    impostor = ssh_server(rsa_keys[1])
-
-    path = write_known_hosts("127.0.0.1", server.port, rsa_keys[0])
-    try:
-        assert oct(os.stat(path).st_mode & 0o777) == "0o600"
-        with pytest.raises(paramiko.AuthenticationException):
-            _connect_strict(lambda c: c.load_host_keys(path), server.port)
-
-        path_impostor = write_known_hosts("127.0.0.1", impostor.port, rsa_keys[0])
-        try:
-            with pytest.raises(paramiko.BadHostKeyException):
-                _connect_strict(
-                    lambda c: c.load_host_keys(path_impostor), impostor.port
-                )
-        finally:
-            os.remove(path_impostor)
-    finally:
-        os.remove(path)
 
 
 def test_probe_unreachable_raises_oserror():

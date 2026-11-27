@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FW-GUI is a Flask web application for visually creating and managing VyOS firewall configurations. Users create firewall chains, filters, groups, interfaces, and flowtables through web forms, then push generated VyOS CLI commands to devices via NAPALM/SSH.
+FW-GUI is a Flask web application for visually creating and managing VyOS firewall configurations. Users create firewall chains, filters, groups, interfaces, and flowtables through web forms, then push generated VyOS CLI commands to devices over SSH.
 
 ## Tech Stack
 
 - **Backend:** Python 3.14+ / Flask / Waitress (WSGI)
 - **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 3.0.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
-- **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
+- **Network:** Paramiko for all device connectivity (vbash script-template sessions); NAPALM/napalm-vyos removed in 4.2.6
 - **Frontend:** Jinja2 templates + plain JavaScript (no jQuery as of 4.0.40) + CSS Grid/Flexbox. One stylesheet, `static/styles.css`, with dark and light themes as custom properties scoped by `data-theme` on `<html>` (dark before login); components use only those tokens. Templates have no page-local `<style>` blocks; shared Jinja macros live in `templates/_macros.html`
 - **Package Manager:** uv (with uv.lock for deterministic builds)
 - **Container:** Docker (Ubuntu 24.04 base, multi-arch ARM64/AMD64)
@@ -71,7 +71,8 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `interface_functions.py` | Network interface management |
 | `flowtable_functions.py` | Flowtable configuration |
 | `generate_config.py` | Converts data structures to VyOS CLI commands |
-| `napalm_ssh_functions.py` | SSH connectivity, config push, diffs, operational commands |
+| `napalm_ssh_functions.py` | SSH connectivity (Paramiko only; the name is historical): config push, diffs, operational commands, config import fetch |
+| `config_session.py` | View Diffs / Commit as one vbash configure session: line safety check, script builder (per-line markers, commit gated on no rejected line and real changes), output parser. VyOS exits 0 even for a rejected line, so errors come from the output |
 | `diff_functions.py` | Configuration diff generation |
 | `op_tables.py` | Splits operational command output into text and table segments (VyOS tabulate tables: header, dash-run line, rows; blank-first-column continuation lines) |
 | `op_output.py` | Chooses the push page's view of operational output: a table view when it parses into tables, else raw text (`None`) |
@@ -79,6 +80,7 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `release_features.py` | VyOS rolling-release target per config (`system.vyos_release`): the `FEATURES` / `MILESTONES` tables, `enabled_features()` used by forms and `generate_config`, and the VyOS release page's read/save |
 | `mongo_converter.py` | Legacy pre-1.4.0 JSON-to-MongoDB config migration (runs at startup) |
 | `start_functions.py` | Getting started page: build-order progress for the selected config, and the quick-start starter config |
+| `config_import.py` | Import a running firewall: `show configuration json` (full config or firewall subtree) → a new config document. Modelled paths map to fields, every other `set firewall` leaf goes to `extra-items` verbatim, and a self-check compares a render of the document (`generate_config.render_config`) with the device. Keeps only the firewall subtree and interface names/descriptions; the rest (keys, password hashes) is discarded, never logged |
 | `mongo_admin.py` | MongoDB server version and feature compatibility version (FCV) for Admin Settings; raising the FCV to match the server before a major upgrade (docs/mongodb-upgrade.md) |
 | `telemetry_functions.py` | Anonymous usage telemetry: instance check-ins (startup, login, daily heartbeat) and diff/commit counters, posted on a background thread; never raises, so it cannot break a config push. Payload in docs/data-architecture.md §10 |
 | `telemetry_collect.py` | Builds the anonymous deployment / bucketed size / feature-flag fields of the startup and heartbeat check-ins; every collector isolated and time-bounded |
@@ -100,6 +102,7 @@ HTTP Request → Flask route (app.py) → package function
 - **MongoDB:** One collection per user/firewall config. Documents contain complete firewall configuration (chains, filters, groups, etc.) with IPv4/IPv6 root keys.
 - **MongoDB `users` collection:** one document per account, `_id` = username, fields `email`, `password` (bcrypt hash, str), `disabled`, `theme` (`dark`/`light`; absent until the user picks one on the post-login chooser). Accounts are disabled, never deleted — deleting one frees the username, and the next registrant would inherit that username's collection and `data/<username>` directory. Pre-3.0.0 this was SQLite (`data/database/auth.db`); an upgraded install retains it as `auth.db.migrated` for rollback only.
 - **MongoDB `instance` collection:** two fixed documents. `{_id: "instance_id", value: <uuid4>}` holds the anonymous telemetry id — pre-3.0.0 this was `data/database/instance.id`; the value is adopted on upgrade and the file retired as `instance.id.migrated`. `{_id: "backup_schedule", ...}` holds the automatic weekly backup's **entire configuration and state** (`enabled`, `day_of_week`, `hour`, `retention`, `poll_seconds`, `lease_seconds`, `next_run`, the claim fields and the last result) — there are no environment variables for it. The schedule shares this collection deliberately: a username is also a collection name, so a new collection would mean reserving another username. `users`, `sessions`, `instance` and `keys` are all rejected as usernames for that reason.
+- **Imported configs:** `/import_config` writes a new config (never an existing one) with `origin: "import"`. Over SSH, `fetch_running_config` runs the fixed `show configuration json` (output never logged) with the probed host key enforced, and the import writes that key as the new config's pin (`host_key_store.pin_record`). The op-command allow-list still rejects pipes; filtering to the firewall subtree happens in Python.
 - **SSH host key pins:** each firewall config document carries `system.host_key` (`host`, `type`, `key`, `pinned`). The first connection to a hostname/port pins the presented key; later connections must match or are refused before authentication. Changing hostname/port drops the pin; the push page shows the fingerprint and a reset button. Pre-3.1.0 no host key was checked (GHSA-64wj-4f9q-rwr7).
 - **VyOS release target:** each firewall config document may carry `system.vyos_release` (`rolling`, `milestone` "YYYY-MM", `last_used_all`), set on the VyOS release page. If it is absent the config targets stable and is generated as before 4.1.0. A rolling feature is gated on `FEATURES[key]["since"] <= milestone`. To add a feature, add a `FEATURES` entry, plus a `MILESTONES` entry if its month is new; the dropdown lists only months where FW-GUI gained a feature. Per-rule flags (e.g. `last_used` on chain/filter rules) are stored whatever the release and emitted only while the feature is enabled.
 - **MongoDB `keys` collection:** one document per SSH key, `_id` = `"<user>/<name>"`, ciphertext as BSON Binary. The Fernet key is generated at upload, shown to the user once and **never stored**, so the server holds a blob it cannot read. Decrypted keys are staged in the system temp dir, never under `data/`.
