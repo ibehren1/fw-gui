@@ -86,6 +86,19 @@ class TestParseRealOutput:
         assert result["committed"] is True
         assert result["errors"] == [] and result["commit_error"] is None
 
+    def test_commit_that_left_changes_is_a_failure_even_without_an_error(self):
+        """E.g. refused for a commit lock: no error string, nothing applied."""
+        output = "\n".join([
+            f"{MARKER} L 1", f"{MARKER} COMPARE", "[firewall]", "+ x",
+            f"{MARKER} COMMIT", "some message without the error words",
+            f"{MARKER} VERIFY", f"{MARKER} COMMIT_FAILED", f"{MARKER} END",
+        ])
+        result = parse_output(output, MARKER, ["set x"])
+        assert result["committed"] is False
+        assert result["commit_error"] == "some message without the error words"
+        bare = output.replace("some message without the error words\n", "")
+        assert "uncommitted changes" in parse_output(bare, MARKER, ["set x"])["commit_error"]
+
     def test_session_cut_short_is_incomplete(self):
         result = parse_output(f"{MARKER} L 1\n", MARKER, ["set x"])
         assert result["complete"] is False
@@ -138,6 +151,21 @@ class TestBuildScript:
         assert script.count(f"grep -qE '{ERROR_PATTERN}'") == 2
         assert script.index("ABORT") < script.index(f"{MARKER} COMMIT")
         assert script.index("COMMIT_FAILED") < script.index("save")
+
+    def test_save_needs_a_clean_compare_after_commit(self):
+        script = build_script(["set a 'b'"], MARKER, commit=True)
+        after_commit = script.split(f'echo "{MARKER} COMMIT"', 1)[1]
+        assert after_commit.index("compare") < after_commit.index("save")
+        assert "! grep -q 'No changes between working and active configurations'" in after_commit
+
+    def test_session_files_live_in_a_private_directory(self):
+        """vyos-configd (root) reopens commit's stdout; a file directly in
+        sticky /tmp owned by the SSH user is refused (protected_regular), which
+        crashed configd and hung the commit on a real box."""
+        script = build_script(["set a 'b'"], MARKER, commit=True)
+        assert "fwgui_dir=$(mktemp -d)" in script
+        assert "$(mktemp)" not in script
+        assert 'rm -rf "$fwgui_dir"' in script
 
     def test_script_is_valid_bash(self):
         script = build_script(

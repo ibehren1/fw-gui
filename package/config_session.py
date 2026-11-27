@@ -125,8 +125,13 @@ def build_script(lines, marker, commit):
     script = [
         "exec 2>&1",
         "source /opt/vyatta/etc/functions/script-template",
-        "fwgui_log=$(mktemp)",
-        "fwgui_out=$(mktemp)",
+        # A private directory, not files directly in sticky /tmp: during a real
+        # commit vyos-configd (root) reopens the session's stdout, and the
+        # kernel's protected_regular refuses root opening another user's file
+        # in a sticky directory -- configd crashes and the commit hangs.
+        "fwgui_dir=$(mktemp -d)",
+        'fwgui_log="$fwgui_dir/log"',
+        'fwgui_out="$fwgui_dir/out"',
         "configure",
     ]
     for number, line in enumerate(lines, start=1):
@@ -154,7 +159,13 @@ def build_script(lines, marker, commit):
             f'  echo "{marker} COMMIT"',
             '  commit >"$fwgui_out" 2>&1',
             '  cat "$fwgui_out"',
-            f"  if grep -qE '{ERROR_PATTERN}' \"$fwgui_out\"; then",
+            # A commit counts only if it reported no error AND nothing is left
+            # uncommitted: a commit refused for another reason (e.g. a commit
+            # lock) need not print an error string.
+            f'  echo "{marker} VERIFY"',
+            '  compare >"$fwgui_dir/after" 2>&1',
+            f"  if grep -qE '{ERROR_PATTERN}' \"$fwgui_out\" || "
+            f"! grep -q '{_NO_CHANGES}' \"$fwgui_dir/after\"; then",
             f'    echo "{marker} COMMIT_FAILED"',
             "    exit discard",
             "  else",
@@ -167,7 +178,7 @@ def build_script(lines, marker, commit):
     else:
         script += [f'echo "{marker} DISCARD"', "exit discard"]
     script += [
-        'rm -f "$fwgui_log" "$fwgui_out"',
+        'rm -rf "$fwgui_dir"',
         f'echo "{marker} END"',
     ]
     return "\n".join(script) + "\n"
@@ -215,7 +226,9 @@ def parse_output(output, marker, lines):
 
     commit_error = None
     if "COMMIT_FAILED" in segments:
-        commit_error = _clean(segments.get("COMMIT", ""))
+        commit_error = _clean(segments.get("COMMIT", "")) or (
+            "The firewall still had uncommitted changes after the commit."
+        )
 
     return {
         "errors": errors,
