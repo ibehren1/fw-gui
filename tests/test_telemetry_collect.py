@@ -73,7 +73,18 @@ def test_collect_usage(db):
         "light_theme": True, "quick_start": True, "flowtables": True,
         "interface_types": True, "scheduled_backup": True, "s3_backup": False,
         "ssh_keys": False, "registration_open": False, "rolling_release": False,
+        "config_import": False,
     }
+
+
+def test_collect_usage_config_import(db):
+    db["bob"].update_one({"_id": "lab"}, {"$set": {"origin": "import"}})
+    assert telemetry_collect.collect_usage()[1]["config_import"] is True
+
+
+def test_config_import_ignores_snapshots(db):
+    db["bob"].insert_one({"firewall": "lab", "snapshot": "s1", "origin": "import"})
+    assert telemetry_collect.collect_usage()[1]["config_import"] is False
 
 
 def test_collect_usage_rolling_release(db):

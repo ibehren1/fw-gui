@@ -126,7 +126,7 @@ def _scan_configs():
     """One pass over the configurations for everything telemetry counts."""
     totals = {"configs": 0, "rules": 0, "flowtables": False,
               "interface_types": False, "quick_start": False,
-              "rolling_release": False}
+              "config_import": False, "rolling_release": False}
     for config in _current_configs():
         totals["configs"] += 1
         for ip_version in ("ipv4", "ipv6"):
@@ -141,6 +141,8 @@ def _scan_configs():
             totals["interface_types"] = True
         if config.get("origin") == "quick_start":
             totals["quick_start"] = True
+        if config.get("origin") == "import":
+            totals["config_import"] = True
         if ((config.get("system") or {}).get("vyos_release") or {}).get("rolling"):
             totals["rolling_release"] = True
     return totals
@@ -191,6 +193,7 @@ def collect_usage():
     features = {
         "light_theme": _safe(_any_light_theme),
         "quick_start": scan.get("quick_start"),
+        "config_import": scan.get("config_import"),
         "flowtables": scan.get("flowtables"),
         "interface_types": scan.get("interface_types"),
         "rolling_release": scan.get("rolling_release"),
