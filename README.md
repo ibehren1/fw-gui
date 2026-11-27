@@ -323,5 +323,8 @@ Settings are read from the environment or a `.env` file (`APP_SECRET_KEY`, `MONG
 **Filters:** input and forward filters jumping to chains per interface and direction.
 ![Filters page](./images/fw-gui_interface_5.png)
 
-**Configurations:** configurations, snapshots, and create, rename, import, export and delete. The **Import from firewall** section (4.2) is not in this screenshot yet.
+**Configurations:** configurations, snapshots, and create, rename, import, export and delete, plus **Import from firewall**: over SSH, or paste / upload `show configuration json` output.
 ![Configurations page](./images/fw-gui_interface_6.png)
+
+**Import report:** what an import brought in, what was kept as extra configuration, and the check that a push would send exactly the firewall's current rules.
+![Import report](./images/fw-gui_interface_7.png)
