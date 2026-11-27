@@ -3,10 +3,13 @@ from unittest.mock import Mock, call, patch
 import paramiko
 import pytest
 
+from package.config_import import MAX_IMPORT_BYTES, ConfigImportError
 from package.host_key_store import HostKeyMismatch
 from package.napalm_ssh_functions import (
+    RUNNING_CONFIG_COMMAND,
     assemble_paramiko_driver_string,
     commit_to_firewall,
+    fetch_running_config,
     get_diffs_from_firewall,
     run_operational_command,
 )
@@ -497,3 +500,89 @@ def test_napalm_vyos_forwards_strict_host_key_args():
 
     for name, value in STRICT_ARGS.items():
         assert driver.netmiko_optional_args[name] == value
+
+
+# Test the config import's fetch
+def test_assemble_paramiko_given_host_key_skips_pin_lookup(connection_string, session):
+    """The import connects before its config exists: the probed key is used as is."""
+    with (
+        patch("paramiko.SSHClient") as mock_ssh,
+        patch("package.napalm_ssh_functions.verify_host_key") as mock_verify,
+        patch("package.napalm_ssh_functions.add_to_host_keys") as mock_add,
+    ):
+        ssh_instance = mock_ssh.return_value
+        host_key = Mock()
+
+        assemble_paramiko_driver_string(connection_string, session, host_key=host_key)
+
+        mock_verify.assert_not_called()
+        mock_add.assert_called_once_with(
+            ssh_instance.get_host_keys.return_value, "192.168.1.1", 22, host_key
+        )
+        (policy,), _ = ssh_instance.set_missing_host_key_policy.call_args
+        assert isinstance(policy, paramiko.RejectPolicy)
+
+
+def _fetch_ssh(stdout=b"", stderr=b""):
+    mock_ssh = Mock()
+    mock_stdin, mock_stdout, mock_stderr = Mock(), Mock(), Mock()
+    mock_stdout.read.return_value = stdout
+    mock_stderr.read.return_value = stderr
+    mock_ssh.exec_command.return_value = (mock_stdin, mock_stdout, mock_stderr)
+    return mock_ssh, mock_stdin
+
+
+def test_fetch_running_config_runs_fixed_command_and_never_logs_output(
+    connection_string, session, caplog
+):
+    secret_config = '{"firewall": {}, "interfaces": {"wireguard": {"private-key": "SECRET"}}}'
+    mock_ssh, mock_stdin = _fetch_ssh(stdout=secret_config.encode())
+    host_key = Mock()
+    with patch(
+        "package.napalm_ssh_functions.assemble_paramiko_driver_string",
+        return_value=(mock_ssh, None),
+    ) as mock_assemble:
+        caplog.set_level("DEBUG")
+        result = fetch_running_config(connection_string, session, host_key)
+
+    assert result == secret_config
+    mock_assemble.assert_called_once_with(connection_string, session, host_key=host_key)
+    script = mock_stdin.write.call_args.args[0]
+    assert f"run {RUNNING_CONFIG_COMMAND}\n" in script
+    assert RUNNING_CONFIG_COMMAND == "show configuration json"
+    assert "SECRET" not in caplog.text
+    mock_ssh.close.assert_called_once()
+
+
+def test_fetch_running_config_empty_output_reports_stderr(connection_string, session):
+    mock_ssh, _ = _fetch_ssh(stderr=b"Invalid command")
+    with patch(
+        "package.napalm_ssh_functions.assemble_paramiko_driver_string",
+        return_value=(mock_ssh, None),
+    ):
+        with pytest.raises(ConfigImportError, match="Invalid command"):
+            fetch_running_config(connection_string, session, Mock())
+    mock_ssh.close.assert_called_once()
+
+
+def test_fetch_running_config_too_large(connection_string, session):
+    mock_ssh, _ = _fetch_ssh(stdout=b"x" * (MAX_IMPORT_BYTES + 1))
+    with patch(
+        "package.napalm_ssh_functions.assemble_paramiko_driver_string",
+        return_value=(mock_ssh, None),
+    ):
+        with pytest.raises(ConfigImportError, match="too large"):
+            fetch_running_config(connection_string, session, Mock())
+
+
+def test_fetch_running_config_removes_decrypted_key(connection_string_with_key, session):
+    mock_ssh, _ = _fetch_ssh(stdout=b"{}")
+    with (
+        patch(
+            "package.napalm_ssh_functions.assemble_paramiko_driver_string",
+            return_value=(mock_ssh, "/tmp/decrypted_key"),
+        ),
+        patch("os.remove") as mock_remove,
+    ):
+        fetch_running_config(connection_string_with_key, session, Mock())
+    mock_remove.assert_called_once_with("/tmp/decrypted_key")

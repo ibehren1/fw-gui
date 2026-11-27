@@ -79,21 +79,22 @@ def get_pinned_key(session, hostname, port):
     return paramiko.PKey.from_type_string(pin["type"], base64.b64decode(pin["key"]))
 
 
+def pin_record(hostname, port, key):
+    """The ``system.host_key`` value that pins ``key`` for this address."""
+    return {
+        "host": _host_id(hostname, port),
+        "type": key.get_name(),
+        "key": key.get_base64(),
+        "pinned": datetime.now(timezone.utc),
+    }
+
+
 def pin_key(session, hostname, port, key):
     """Pins ``key`` as the host key for this firewall and address."""
     collection, firewall = _locate(session)
     collection.update_one(
         {"_id": firewall},
-        {
-            "$set": {
-                "system.host_key": {
-                    "host": _host_id(hostname, port),
-                    "type": key.get_name(),
-                    "key": key.get_base64(),
-                    "pinned": datetime.now(timezone.utc),
-                }
-            }
-        },
+        {"$set": {"system.host_key": pin_record(hostname, port, key)}},
     )
     logging.info(
         f"Pinned SSH host key {fingerprint(key)} for {_host_id(hostname, port)} "

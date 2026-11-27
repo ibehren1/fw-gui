@@ -23,6 +23,7 @@ from package.host_key_store import (
     get_pinned_fingerprint,
     get_pinned_key,
     pin_key,
+    pin_record,
     verify_host_key,
     write_known_hosts,
 )
@@ -119,6 +120,16 @@ def test_pin_round_trip(session, rsa_keys):
     assert get_pinned_fingerprint(session, "127.0.0.1", 22) == fingerprint(
         rsa_keys[0]
     )
+
+
+def test_pin_record_written_directly_is_honoured(session, rsa_keys):
+    """The config import writes pin_record() into the new document itself."""
+    collection = host_key_store.data_file_functions._get_mongo_db()[USER]
+    collection.update_one(
+        {"_id": session["firewall_name"]},
+        {"$set": {"system.host_key": pin_record("127.0.0.1", 22, rsa_keys[0])}},
+    )
+    assert get_pinned_key(session, "127.0.0.1", 22) == rsa_keys[0]
 
 
 def test_pin_leaves_rest_of_config_alone(session, rsa_keys):

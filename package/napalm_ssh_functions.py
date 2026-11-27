@@ -14,6 +14,7 @@ import paramiko
 from flask import flash
 from napalm import get_network_driver
 
+from package.config_import import MAX_IMPORT_BYTES, ConfigImportError
 from package.host_key_store import (
     HostKeyMismatch,
     add_to_host_keys,
@@ -95,13 +96,17 @@ def assemble_napalm_driver_string(connection_string, session):
         raise
 
 
-def assemble_paramiko_driver_string(connection_string, session):
+def assemble_paramiko_driver_string(connection_string, session, host_key=None):
     """
     Creates a Paramiko SSH client instance for connecting to a VyOS device.
 
     Args:
         connection_string (dict): Connection parameters including hostname, port, credentials
         session (dict): Session data including data directory path
+        host_key (paramiko.PKey): Key the device must present. When given, the
+            pinned key of the session's config is not consulted (or set): the
+            config import connects before its config exists and pins the key
+            itself. Either way RejectPolicy refuses any other key.
 
     Returns:
         tuple: (Paramiko SSH client instance, temporary key file path if using SSH key auth)
@@ -117,7 +122,8 @@ def assemble_paramiko_driver_string(connection_string, session):
     # Only the verified (or just-pinned) key is loaded, and RejectPolicy refuses
     # anything else, so the authenticating connection cannot be swapped for an
     # impostor after the probe.
-    host_key = verify_host_key(session, hostname, port)
+    if host_key is None:
+        host_key = verify_host_key(session, hostname, port)
     ssh = paramiko.SSHClient()
     add_to_host_keys(ssh.get_host_keys(), hostname, port, host_key)
     ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
@@ -388,6 +394,64 @@ def run_operational_command(connection_string, session, op_command):
             os.remove(tmpfile)
             logging.debug(f" |--> Deleted temporary key: {tmpfile}")
             logging.debug(" |------------------------------------------")
+
+
+# The whole configuration, as JSON. A fixed command: nothing user-supplied
+# reaches the vbash script.
+RUNNING_CONFIG_COMMAND = "show configuration json"
+
+
+def fetch_running_config(connection_string, session, host_key):
+    """
+    Fetches the device's running configuration for the config import.
+
+    Args:
+        connection_string (dict): Connection parameters, as for the push page
+        session (dict): Session data; username for a stored SSH key
+        host_key (paramiko.PKey): Key the device must present (probed by the
+            caller, pinned on the new config after a successful import)
+
+    Returns:
+        str: `show configuration json` output.
+
+    Raises:
+        ConfigImportError: No output, or more than MAX_IMPORT_BYTES.
+        Exception: Connection and authentication errors, unchanged.
+
+    The output is the whole configuration, secrets included (WireGuard private
+    keys, password hashes), so unlike run_operational_command it is never
+    logged; config_import keeps only the firewall and interface parts.
+    """
+    ssh, tmpfile = assemble_paramiko_driver_string(
+        connection_string, session, host_key=host_key
+    )
+    try:
+        logging.info(f"Fetching running config from {connection_string['hostname']}.")
+        script = "\n".join([
+            "source /opt/vyatta/etc/functions/script-template",
+            f"run {RUNNING_CONFIG_COMMAND}",
+            "exit",
+        ]) + "\n"
+        # B601 -- fixed script, fed via stdin only.
+        stdin, stdout, stderr = ssh.exec_command("vbash -s")  # nosec
+        stdin.write(script)
+        stdin.flush()
+        stdin.channel.shutdown_write()
+
+        output = stdout.read(MAX_IMPORT_BYTES + 1).decode("utf-8", errors="replace")
+        if len(output) > MAX_IMPORT_BYTES:
+            raise ConfigImportError("The device configuration is too large to import.")
+        if not output.strip():
+            error = stderr.read(4096).decode("utf-8", errors="replace").strip()
+            raise ConfigImportError(
+                f"The device returned no configuration{': ' + error if error else '.'}"
+            )
+        return output
+    finally:
+        ssh.close()
+        if tmpfile is not None:
+            os.remove(tmpfile)
+            logging.debug(f" |--> Deleted temporary key: {tmpfile}")
 
 
 def test_connection(session):
