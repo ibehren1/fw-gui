@@ -144,13 +144,37 @@
         </div>
     </div>
 
+    {% if file_list %}
+    <div class="block">
+        <div class="block-head"><div class="block-title"><h3>Delete configuration</h3></div></div>
+        <form action="/delete_config" method="post" class="block-body">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="field">
+                <span>Configuration</span>
+                <select id="delete_config" name="delete_config" class="input">
+                    <option value="">Select configuration…</option>
+                    {% for file in file_list %}
+                    <option value="{{ file }}">{{ file }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger" title="Delete selected configuration">Delete</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
     <div class="block" id="import">
         <div class="block-head"><div class="block-title"><h3>Import from firewall</h3><span class="meta">a new configuration from a running VyOS firewall</span></div></div>
         <div class="block-body">
-            <p class="form-help">Reads <span class="mono">show configuration json</span> and keeps only the firewall rules and interface names. Settings FW-GUI cannot edit are kept as extra items, so a push sends them back unchanged. Nothing else from the device is stored.</p>
-            <form action="{{ url_for('import_firewall_config') }}" method="post">
+            <p class="form-help import-intro">Reads <span class="mono">show configuration json</span> and keeps only the firewall rules and interface names. Settings FW-GUI cannot edit are kept as extra items, so a push sends them back unchanged. Nothing else from the device is stored.</p>
+            <div class="import-ways">
+            <form action="{{ url_for('import_firewall_config') }}" method="post" class="import-way">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="source" value="ssh">
+                <span class="field-label">Over SSH</span>
                 <div class="form-grid">
                     <label class="field">
                         <span>New configuration name</span>
@@ -190,7 +214,7 @@
                 </div>
             </form>
 
-            <form action="{{ url_for('import_firewall_config') }}" method="post" enctype="multipart/form-data" class="import-text">
+            <form action="{{ url_for('import_firewall_config') }}" method="post" enctype="multipart/form-data" class="import-way">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="source" value="text">
                 <span class="field-label">Or paste / upload the output of <span class="mono">show configuration json</span> (the whole config, or only its firewall part)</span>
@@ -212,28 +236,7 @@
                     <button type="submit" class="btn">Import</button>
                 </div>
             </form>
+            </div>
         </div>
     </div>
-
-    {% if file_list %}
-    <div class="block">
-        <div class="block-head"><div class="block-title"><h3>Delete configuration</h3></div></div>
-        <form action="/delete_config" method="post" class="block-body">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label class="field">
-                <span>Configuration</span>
-                <select id="delete_config" name="delete_config" class="input">
-                    <option value="">Select configuration…</option>
-                    {% for file in file_list %}
-                    <option value="{{ file }}">{{ file }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-danger" title="Delete selected configuration">Delete</button>
-            </div>
-        </form>
-    </div>
-    {% endif %}
-</div>
 {% endblock body %}

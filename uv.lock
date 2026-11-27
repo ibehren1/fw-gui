@@ -461,7 +461,7 @@ wheels = [
 
 [[package]]
 name = "fw-gui"
-version = "4.2.12"
+version = "4.2.13"
 source = { virtual = "." }
 dependencies = [
     { name = "boto3" },
