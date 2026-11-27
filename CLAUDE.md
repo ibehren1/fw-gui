@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FW-GUI is a Flask web application for visually creating and managing VyOS firewall configurations. Users create firewall chains, filters, groups, interfaces, and flowtables through web forms, then push generated VyOS CLI commands to devices via NAPALM/SSH.
+FW-GUI is a Flask web application for visually creating and managing VyOS firewall configurations. Users create firewall chains, filters, groups, interfaces, and flowtables through web forms, then push generated VyOS CLI commands to devices over SSH.
 
 ## Tech Stack
 
 - **Backend:** Python 3.14+ / Flask / Waitress (WSGI)
 - **Database:** MongoDB via PyMongo — firewall configs, user accounts (`users`), encrypted SSH keys (`keys`), the telemetry instance id (`instance`), and server-side sessions (all as of 3.0.0)
 - **Auth:** Flask-Login + Flask-Bcrypt
-- **Network:** NAPALM 5.1.0 + napalm-vyos + Paramiko for device connectivity
+- **Network:** Paramiko for all device connectivity (vbash script-template sessions); NAPALM/napalm-vyos removed in 4.2.6
 - **Frontend:** Jinja2 templates + plain JavaScript (no jQuery as of 4.0.40) + CSS Grid/Flexbox. One stylesheet, `static/styles.css`, with dark and light themes as custom properties scoped by `data-theme` on `<html>` (dark before login); components use only those tokens. Templates have no page-local `<style>` blocks; shared Jinja macros live in `templates/_macros.html`
 - **Package Manager:** uv (with uv.lock for deterministic builds)
 - **Container:** Docker (Ubuntu 24.04 base, multi-arch ARM64/AMD64)
@@ -71,7 +71,8 @@ Each module handles a specific domain. Routes in `app.py` delegate to these func
 | `interface_functions.py` | Network interface management |
 | `flowtable_functions.py` | Flowtable configuration |
 | `generate_config.py` | Converts data structures to VyOS CLI commands |
-| `napalm_ssh_functions.py` | SSH connectivity, config push, diffs, operational commands |
+| `napalm_ssh_functions.py` | SSH connectivity (Paramiko only; the name is historical): config push, diffs, operational commands, config import fetch |
+| `config_session.py` | View Diffs / Commit as one vbash configure session: line safety check, script builder (per-line markers, commit gated on no rejected line and real changes), output parser. VyOS exits 0 even for a rejected line, so errors come from the output |
 | `diff_functions.py` | Configuration diff generation |
 | `op_tables.py` | Splits operational command output into text and table segments (VyOS tabulate tables: header, dash-run line, rows; blank-first-column continuation lines) |
 | `op_output.py` | Chooses the push page's view of operational output: a table view when it parses into tables, else raw text (`None`) |

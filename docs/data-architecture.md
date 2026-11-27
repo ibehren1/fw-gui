@@ -563,7 +563,7 @@ flowchart TD
   per-user dir on the first startup after upgrade, both of which earlier releases
   created and never deleted, and both of which shipped in every full-backup zip:
   - `<firewall_name>.conf` — the generated set commands, written on every push
-    purely to give NAPALM a file path. NAPALM is now handed the commands as a
+    purely to give NAPALM a file path. Pushes now send the commands as a
     string (`build_merge_config`), so nothing writes or reads them.
   - `<name>.old` — a JSON config already imported into MongoDB by
     `mongo_converter` (§8.3). Safe to delete because the rename happens only

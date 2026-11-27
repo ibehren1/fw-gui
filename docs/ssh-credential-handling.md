@@ -60,8 +60,8 @@ flowchart TD
 | Session lifetime | `app.py:169-183` (`SESSION_TIMEOUT` → `PERMANENT_SESSION_LIFETIME`, `SESSION_PERMANENT`) |
 | Cached-secret encryption helpers | `app.py` → `_session_fernet()` / `encrypt_secret()` / `decrypt_secret()` (after `Session(app)`) |
 | Logout (clears + deletes session record) | `app.py` → `user_logout()` (`:457`) |
-| NAPALM driver assembly (View Diffs / Commit) | `package/napalm_ssh_functions.py` → `assemble_napalm_driver_string()` (`:26`) |
-| Paramiko client assembly (Run Command) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` (`:69`) |
+| Paramiko client assembly (all device connections) | `package/napalm_ssh_functions.py` → `assemble_paramiko_driver_string()` |
+| View Diffs / Commit session script and parser | `package/config_session.py` |
 | Commit / diff / operational actions | `commit_to_firewall()` (`:116`), `get_diffs_from_firewall()` (`:198`) — both take the candidate configuration as a `merge_config` string — and `run_operational_command()` (`:265`) |
 | TCP reachability check | `test_connection()` (`:333`) |
 | Key upload + encryption | `package/data_file_functions.py` → `process_upload()` |
@@ -128,30 +128,26 @@ Key facts for auditors:
 
 ## 4. Connecting to a firewall (both auth paths)
 
-The Configuration Push route builds a `connection_string` dict and calls one of
-the driver-assembly helpers. For **key auth**, the encrypted key file is
-decrypted to a short-lived temp file, used, then removed in a `finally` block.
+As of 4.2.6 every device connection is Paramiko through
+`assemble_paramiko_driver_string()`: View Diffs, Commit, Run Operational Command
+and the config import's fetch. (Before 4.2.6 View Diffs and Commit used NAPALM /
+napalm-vyos over netmiko, with a second host-key enforcement path.) For **key
+auth**, the stored key is decrypted to a short-lived temp file, used, then
+removed in a `finally` block.
 
 ```mermaid
 flowchart TD
-    START([configuration_push POST]) --> CRED["username = form or cached<br/>password = form or cached<br/>(app.py:1454-1461)"]
-    CRED --> ACT{action}
-    ACT -->|View Diffs / Commit| NAP[assemble_napalm_driver_string]
-    ACT -->|Run Operational Command| PAR[assemble_paramiko_driver_string]
-
-    NAP --> NK{ssh_key_name present?}
-    NK -->|No| NPW["driver password = connection_string password<br/>napalm_ssh_functions.py:56-65"]
-    NK -->|Yes| NDEC["fernet_key = password.encode()<br/>tmp = decrypt_ssh_key(user, name, fernet_key)<br/>driver key_file = tmp, password = ''"]
-
+    START([configuration_push POST]) --> CRED["username = form or cached<br/>password = form or cached"]
+    CRED --> PAR["assemble_paramiko_driver_string<br/>verify_host_key, RejectPolicy"]
     PAR --> PK{ssh_key_name present?}
-    PK -->|No| PPW["ssh.connect(..., password=password)<br/>napalm_ssh_functions.py:96-99"]
+    PK -->|No| PPW["ssh.connect(..., password=password)"]
     PK -->|Yes| PDEC["fernet_key = password.encode()<br/>tmp = decrypt_ssh_key(...)<br/>ssh.connect(..., key_filename=tmp)"]
-
-    NPW --> RUN[Open connection, run action]
-    NDEC --> RUN
-    PPW --> RUN
-    PDEC --> RUN
-    RUN --> FIN["finally: if tmp file exists, os.remove(tmp)<br/>commit:190-195 / diff same pattern / op:325-330"]
+    PPW --> ACT{action}
+    PDEC --> ACT
+    ACT -->|View Diffs / Commit| CS["vbash -s: config_session script<br/>(configure, lines, compare, discard or gated commit)"]
+    ACT -->|Run Operational Command| OP["vbash -s: run show ..."]
+    CS --> FIN["finally: ssh.close(); os.remove(tmp) if any"]
+    OP --> FIN
     FIN --> DONE([Return result to route])
 ```
 
@@ -170,7 +166,7 @@ flowchart TD
    **No `dir=`**, so it lands in the system temp directory, *not* the mounted data
    volume: as of 3.0.0 `data/` holds no secrets at all. Decryption happens before
    the file is created, so a wrong Fernet key leaves nothing staged.
-4. Returns that path; NAPALM/Paramiko use it as `key_file` / `key_filename`.
+4. Returns that path; Paramiko uses it as `key_filename`.
 5. The caller deletes it in a `finally` block:
    - `commit_to_firewall()` → `napalm_ssh_functions.py` finally / `os.remove`
    - `get_diffs_from_firewall()` → same pattern
@@ -188,10 +184,24 @@ stale plaintext private key staged there.
 
 ### Host key policy
 
-`assemble_paramiko_driver_string()` sets
-`paramiko.AutoAddPolicy()` (`napalm_ssh_functions.py:81`) — unknown host keys are
-trusted automatically. This is intentional today (marked `# nosec B507`) but is
-a MITM exposure; see Threats.
+As of 3.1.0 the host key is pinned on first use in the config document and
+enforced on the authenticating connection (`host_key_store`): only the pinned
+key is loaded and `paramiko.RejectPolicy()` refuses any other, so no credential
+is sent to an impostor (GHSA-64wj-4f9q-rwr7). As of 4.2.6 this is the only
+enforcement path; the netmiko known_hosts staging went with NAPALM.
+
+### View Diffs / Commit config session (as of 4.2.6)
+
+`commit_to_firewall()` / `get_diffs_from_firewall()` run one vbash script built
+by `config_session.build_script()`: `configure`, each line of
+`build_merge_config()` in its own `{ ... } >>log 2>&1` group between numbered
+markers, `compare`, then `exit discard` (View Diffs) or, for Commit, `commit` and
+`save` only when no line matched the error pattern and there are changes (a
+failed commit is discarded, never saved). VyOS exits 0 even for a rejected
+line, so errors are read from the output. The lines include the user's extra
+items and are run as shell input, as typing them at the VyOS CLI would be; a
+line that could escape its redirection (unbalanced quote, trailing backslash,
+unquoted comment or shell operator, brace word) is refused before connecting.
 
 ### Config import fetch (as of 4.2.1)
 
@@ -208,9 +218,9 @@ only the `firewall` subtree and interface names/descriptions.
 ### Operational command execution
 
 `run_operational_command()` wraps the user-supplied `op_command` into a VyOS
-`vbash` script and runs it over the Paramiko channel
-(`napalm_ssh_functions.py:258-267`). The command string is not currently
-allowlisted; see Threats.
+`vbash` script and runs it over the Paramiko channel. The command must pass
+`validators.is_allowed_op_command` (starts with `show`, no shell
+metacharacters).
 
 ---
 
@@ -347,7 +357,7 @@ flowchart LR
 | 4 | Cached secret at rest in the Mongo `sessions` collection | **Mitigated** — the cached secret is Fernet-encrypted before storage (§10). Residual: the derivation key comes from `APP_SECRET_KEY`, so a host/app compromise that exposes that key defeats it; still lock down DB access. |
 | 5 | `paramiko.AutoAddPolicy()` trusts unknown host keys | **Residual** — MITM exposure; intentional today. Consider `RejectPolicy` + known-hosts. |
 | 6 | `run_operational_command()` sends arbitrary `op_command` to the device with no allowlist | **Residual** — authenticated users can run any operational command. |
-| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 3.0.0, and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (paramiko/napalm need a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
+| 7 | `decrypt_ssh_key()` writes the plaintext key to a temp file | **Mitigated** — `tempfile.mkstemp` (crypto-random name, `0o600` owner-only), in the system temp directory rather than the data volume as of 3.0.0, and cleaned up even if `ssh.connect` fails. Residual: the key is still briefly on disk (Paramiko needs a file path), and a hard process kill between create and `os.remove` could leave it until the OS clears the temp dir. |
 | 8 | Uploaded `.key` content is not validated as a real SSH key | **Residual** — see `# TODO` at `data_file_functions.py:730`. |
 
 ---
